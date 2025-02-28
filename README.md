@@ -401,6 +401,7 @@ Thanks goes to all these people ([emoji key](https://allcontributors.org/docs/en
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/c-winder"><img src="https://avatars.githubusercontent.com/u/50587864?v=4?s=100" width="100px;" alt="Chris Winder"/><br /><sub><b>Chris Winder</b></sub></a><br /><a href="https://github.com/TorchIO-project/torchio/issues?q=author%3Ac-winder" title="Bug reports">🐛</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://www.linkedin.com/in/ricky-walsh/"><img src="https://avatars.githubusercontent.com/u/70853488?v=4?s=100" width="100px;" alt="Ricky Walsh"/><br /><sub><b>Ricky Walsh</b></sub></a><br /><a href="https://github.com/TorchIO-project/torchio/commits?author=rickymwalsh" title="Code">💻</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/sravan953"><img src="https://avatars.githubusercontent.com/u/6049061?v=4?s=100" width="100px;" alt="Keerthi Sravan Ravi"/><br /><sub><b>Keerthi Sravan Ravi</b></sub></a><br /><a href="https://github.com/TorchIO-project/torchio/issues?q=author%3Asravan953" title="Bug reports">🐛</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/RJacobArthrex"><img src="https://avatars.githubusercontent.com/u/144900466?v=4" width="100px;" alt="Rahul Kurian Jacob"/><br /><sub><b>Rahul Kurian Jacob</b></sub></a><br /><a href="https://github.com/TorchIO-project/torchio/issues?q=author%3ARJacobArthrex" title="Documentation">📖</a></td>
     </tr>
   </tbody>
 </table>
