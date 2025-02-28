@@ -306,7 +306,7 @@ def nib_to_sitk(
     # Possibilities
     # (1, w, h, 1)
     # (c, w, h, 1)
-    # (1, w, h, 1)
+    # (1, w, h, d)
     # (c, w, h, d)
     array = np.asarray(data)
     affine = np.asarray(affine).astype(np.float64)
