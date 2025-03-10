@@ -24,8 +24,8 @@ from torch.utils.data._utils.collate import default_collate
 from tqdm.auto import trange
 
 from . import constants
-from .typing import TypeNumber
-from .typing import TypePath
+from .types import TypeNumber
+from .types import TypePath
 
 
 def to_tuple(
