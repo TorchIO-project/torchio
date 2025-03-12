@@ -9,8 +9,8 @@ import numpy as np
 import torch
 
 from ....data.subject import Subject
-from ....typing import TypeTripletInt
-from ....typing import TypeTuple
+from ....types import TypeTripletInt
+from ....types import TypeTuple
 from ....utils import to_tuple
 from ...intensity_transform import IntensityTransform
 from .. import RandomTransform

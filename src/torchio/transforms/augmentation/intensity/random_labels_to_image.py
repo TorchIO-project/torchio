@@ -6,8 +6,8 @@ import torch
 from ....data.image import LabelMap
 from ....data.image import ScalarImage
 from ....data.subject import Subject
-from ....typing import TypeData
-from ....typing import TypeRangeFloat
+from ....types import TypeData
+from ....types import TypeRangeFloat
 from ....utils import check_sequence
 from ...intensity_transform import IntensityTransform
 from .. import RandomTransform

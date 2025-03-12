@@ -6,9 +6,9 @@ import scipy.ndimage as ndi
 import torch
 
 from ....data.subject import Subject
-from ....typing import TypeData
-from ....typing import TypeSextetFloat
-from ....typing import TypeTripletFloat
+from ....types import TypeData
+from ....types import TypeSextetFloat
+from ....types import TypeTripletFloat
 from ...intensity_transform import IntensityTransform
 from .. import RandomTransform
 

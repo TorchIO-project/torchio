@@ -8,7 +8,7 @@ from .data.image import LabelMap
 from .data.subject import Subject
 from .transforms.preprocessing.intensity.rescale import RescaleIntensity
 from .transforms.preprocessing.spatial.to_canonical import ToCanonical
-from .typing import TypePath
+from .types import TypePath
 
 
 def import_mpl_plt():

@@ -5,7 +5,7 @@ import numpy as np
 import torch
 
 from ....data.subject import Subject
-from ....typing import TypeData
+from ....types import TypeData
 from ...intensity_transform import IntensityTransform
 from .. import RandomTransform
 

@@ -2,9 +2,9 @@ from __future__ import annotations
 
 import torch
 
-from ...typing import TypeRangeFloat
-from ...typing import TypeSextetFloat
-from ...typing import TypeTripletFloat
+from ...types import TypeRangeFloat
+from ...types import TypeSextetFloat
+from ...types import TypeTripletFloat
 from ..transform import Transform
 
 

@@ -12,14 +12,14 @@ from nibabel.filebasedimages import ImageFileError
 from nibabel.spatialimages import SpatialImage
 
 from ..constants import REPO_URL
-from ..typing import TypeData
-from ..typing import TypeDataAffine
-from ..typing import TypeDirection
-from ..typing import TypeDoubletInt
-from ..typing import TypePath
-from ..typing import TypeQuartetInt
-from ..typing import TypeTripletFloat
-from ..typing import TypeTripletInt
+from ..types import TypeData
+from ..types import TypeDataAffine
+from ..types import TypeDirection
+from ..types import TypeDoubletInt
+from ..types import TypePath
+from ..types import TypeQuartetInt
+from ..types import TypeTripletFloat
+from ..types import TypeTripletInt
 
 # Matrices used to switch between LPS and RAS
 FLIPXY_33 = np.diag([-1, -1, 1])

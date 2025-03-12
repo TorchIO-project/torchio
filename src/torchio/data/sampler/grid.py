@@ -5,8 +5,8 @@ from typing import Union
 import numpy as np
 
 from ...data.subject import Subject
-from ...typing import TypeSpatialShape
-from ...typing import TypeTripletInt
+from ...types import TypeSpatialShape
+from ...types import TypeTripletInt
 from ...utils import to_tuple
 from .sampler import PatchSampler
 

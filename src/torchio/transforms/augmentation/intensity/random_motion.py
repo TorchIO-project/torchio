@@ -8,7 +8,7 @@ import torch
 
 from ....data.io import nib_to_sitk
 from ....data.subject import Subject
-from ....typing import TypeTripletFloat
+from ....types import TypeTripletFloat
 from ...fourier import FourierTransform
 from ...intensity_transform import IntensityTransform
 from .. import RandomTransform

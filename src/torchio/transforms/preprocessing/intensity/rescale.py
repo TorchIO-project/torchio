@@ -6,7 +6,7 @@ import torch
 
 from ....data.image import Image
 from ....data.subject import Subject
-from ....typing import TypeDoubleFloat
+from ....types import TypeDoubleFloat
 from .normalization_transform import NormalizationTransform
 from .normalization_transform import TypeMaskingMethod
 

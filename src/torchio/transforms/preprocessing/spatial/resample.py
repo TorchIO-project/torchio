@@ -14,8 +14,8 @@ from ....data.image import ScalarImage
 from ....data.io import get_sitk_metadata_from_ras_affine
 from ....data.io import sitk_to_nib
 from ....data.subject import Subject
-from ....typing import TypePath
-from ....typing import TypeTripletFloat
+from ....types import TypePath
+from ....types import TypeTripletFloat
 from ...spatial_transform import SpatialTransform
 
 TypeSpacing = Union[float, tuple[float, float, float]]

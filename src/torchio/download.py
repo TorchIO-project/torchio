@@ -14,7 +14,7 @@ from typing import Optional
 
 from torch.hub import tqdm
 
-from .typing import TypePath
+from .types import TypePath
 
 
 def calculate_md5(fpath, chunk_size=1024 * 1024):

@@ -6,7 +6,7 @@ from typing import Union
 import numpy as np
 
 from ....data.subject import Subject
-from ....typing import TypeTripletInt
+from ....types import TypeTripletInt
 from ....utils import to_tuple
 from ...spatial_transform import SpatialTransform
 from .crop_or_pad import CropOrPad

@@ -24,7 +24,7 @@ from ..data import Subject
 from ..data import SubjectsDataset
 from ..download import download_and_extract_archive
 from ..transforms import Transform
-from ..typing import TypePath
+from ..types import TypePath
 
 
 class IXI(SubjectsDataset):

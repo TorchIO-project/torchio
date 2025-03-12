@@ -8,7 +8,7 @@ from ..data import LabelMap
 from ..data import ScalarImage
 from ..data import Subject
 from ..data import SubjectsDataset
-from ..typing import TypePath
+from ..types import TypePath
 from ..utils import normalize_path
 
 TypeBoxes = list[dict[str, Union[str, float, int]]]

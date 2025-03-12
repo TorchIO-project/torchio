@@ -7,7 +7,7 @@ from typing import Union
 from ..data import ScalarImage
 from ..data import Subject
 from ..data import SubjectsDataset
-from ..typing import TypePath
+from ..types import TypePath
 
 
 class RSNAMICCAI(SubjectsDataset):

@@ -5,7 +5,7 @@ import torch
 
 from ..constants import TYPE
 from ..data.subject import Subject
-from ..typing import TypeCallable
+from ..types import TypeCallable
 from .transform import Transform
 
 

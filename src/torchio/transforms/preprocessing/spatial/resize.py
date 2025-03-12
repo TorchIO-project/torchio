@@ -3,7 +3,7 @@ import warnings
 import numpy as np
 
 from ....data.subject import Subject
-from ....typing import TypeSpatialShape
+from ....types import TypeSpatialShape
 from ....utils import to_tuple
 from ...spatial_transform import SpatialTransform
 from .crop_or_pad import CropOrPad

@@ -13,7 +13,7 @@ from ..data.image import ScalarImage
 from ..data.io import nib_to_sitk
 from ..data.io import sitk_to_nib
 from ..data.subject import Subject
-from ..typing import TypeData
+from ..types import TypeData
 
 TypeTransformInput = Union[
     Subject,
