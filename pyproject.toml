@@ -95,7 +95,14 @@ maintain = [
 ]
 quality = [
     "ruff==0.9.4",
-    "mypy==1.14.1",
+]
+types = [
+    "mypy>=1.14.1",
+    "pandas-stubs>=2.2.2.240807",
+    "pillow==11.0.0",
+    "pip>=25.0.1",
+    "types-deprecated==1.2.15.20241117",
+    "types-tqdm>=4.67.0.20250301",
 ]
 test = [
     "coverage==7.6.10",
@@ -105,7 +112,6 @@ test = [
     "pytest-cov==6.0.0",
     "pytest-sugar==1.0.0",
     "tox-uv==1.20.2",
-    "types-deprecated==1.2.15.20241117",
 ]
 
 [tool.bumpversion]
