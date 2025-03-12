@@ -11,7 +11,7 @@ from tqdm.auto import tqdm
 
 from ....data.io import read_image
 from ....data.subject import Subject
-from ....typing import TypePath
+from ....types import TypePath
 from .normalization_transform import NormalizationTransform
 from .normalization_transform import TypeMaskingMethod
 

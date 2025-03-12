@@ -4,7 +4,7 @@ import numpy as np
 import torch
 
 from ....data.subject import Subject
-from ....typing import TypeRangeFloat
+from ....types import TypeRangeFloat
 from ....utils import to_tuple
 from ...intensity_transform import IntensityTransform
 from .. import RandomTransform

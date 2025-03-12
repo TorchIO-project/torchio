@@ -7,7 +7,7 @@ from ...constants import LABEL
 from ...constants import TYPE
 from ...data.image import Image
 from ...data.subject import Subject
-from ...typing import TypeSpatialShape
+from ...types import TypeSpatialShape
 from .weighted import WeightedSampler
 
 

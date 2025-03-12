@@ -11,9 +11,9 @@ from ....constants import INTENSITY
 from ....constants import TYPE
 from ....data.io import nib_to_sitk
 from ....data.subject import Subject
-from ....typing import TypeRangeFloat
-from ....typing import TypeSextetFloat
-from ....typing import TypeTripletFloat
+from ....types import TypeRangeFloat
+from ....types import TypeSextetFloat
+from ....types import TypeTripletFloat
 from ....utils import get_major_sitk_version
 from ....utils import to_tuple
 from ...spatial_transform import SpatialTransform

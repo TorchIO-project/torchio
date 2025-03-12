@@ -10,8 +10,8 @@ import torch
 from ....data.image import ScalarImage
 from ....data.io import nib_to_sitk
 from ....data.subject import Subject
-from ....typing import TypeTripletFloat
-from ....typing import TypeTripletInt
+from ....types import TypeTripletFloat
+from ....types import TypeTripletInt
 from ....utils import to_tuple
 from ...spatial_transform import SpatialTransform
 from .. import RandomTransform

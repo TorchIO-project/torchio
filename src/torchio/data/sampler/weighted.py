@@ -5,7 +5,7 @@ import numpy as np
 import torch
 
 from ...constants import MIN_FLOAT_32
-from ...typing import TypeSpatialShape
+from ...types import TypeSpatialShape
 from ..image import Image
 from ..subject import Subject
 from .sampler import RandomSampler
