@@ -34,6 +34,26 @@ TypeSplit = Union[
 class CtRate(SubjectsDataset):
     _REPO_ID = 'ibrahimhamamci/CT-RATE'
     _FILENAME_KEY = 'VolumeName'
+    ABNORMALITIES = [
+        'Medical material',
+        'Arterial wall calcification',
+        'Cardiomegaly',
+        'Pericardial effusion',
+        'Coronary artery wall calcification',
+        'Hiatal hernia',
+        'Lymphadenopathy',
+        'Emphysema',
+        'Atelectasis',
+        'Lung nodule',
+        'Lung opacity',
+        'Pulmonary fibrotic sequela',
+        'Pleural effusion',
+        'Mosaic attenuation pattern',
+        'Peribronchial thickening',
+        'Consolidation',
+        'Bronchiectasis',
+        'Interlobular septal thickening',
+    ]
 
     def __init__(
         self,
@@ -53,8 +73,8 @@ class CtRate(SubjectsDataset):
         self._report_key = report_key
 
         self._split = self._parse_split(split)
-        self._metadata = self._get_metadata()
-        subjects_list = self._get_subjects_list()
+        self.metadata = self._get_metadata()
+        subjects_list = self._get_subjects_list(self.metadata)
         super().__init__(subjects_list, **kwargs)
 
     @staticmethod
@@ -81,8 +101,8 @@ class CtRate(SubjectsDataset):
             table = table.head(num_subjects)
         return table
 
-    def _get_csv_prefix(self) -> str:
-        if self._split == 'valid':
+    def _get_csv_prefix(self, expand_validation: bool = True) -> str:
+        if expand_validation and self._split == 'valid':
             prefix = 'validation'
         else:
             prefix = self._split
@@ -102,25 +122,34 @@ class CtRate(SubjectsDataset):
         pattern = r'\w+_(\d+)_(\w+)_(\d+)\.nii\.gz'
         metadata[index_columns] = metadata[self._FILENAME_KEY].str.extract(pattern)
 
-        # Add reports to metadata, keeping only the reports for the images in the
-        # metadata table
-        pd = get_pandas()
-        metadata = pd.merge(
-            metadata,
-            self._get_reports(),
-            on=self._FILENAME_KEY,
-            how='left',
-        )
+        # Add reports and abnormality labels to metadata, keeping only the rows for the
+        # images in the metadata table
+        metadata = self._merge(metadata, self._get_reports())
+        metadata = self._merge(metadata, self._get_labels())
 
         metadata.set_index(index_columns, inplace=True)
         return metadata
+
+    def _merge(self, base_df, new_df):
+        pd = get_pandas()
+        return pd.merge(
+            base_df,
+            new_df,
+            on=self._FILENAME_KEY,
+            how='left',
+        )
 
     def _get_reports(self) -> pd.DataFrame:
         dirname = 'radiology_text_reports'
         prefix = self._get_csv_prefix()
         filename = f'{prefix}_reports.csv'
-        reports = self._get_csv(dirname, filename)
-        return reports
+        return self._get_csv(dirname, filename)
+
+    def _get_labels(self) -> pd.DataFrame:
+        dirname = 'multi_abnormality_labels'
+        prefix = self._get_csv_prefix(expand_validation=False)
+        filename = f'{prefix}_predicted_labels.csv'
+        return self._get_csv(dirname, filename)
 
     def _download_file_if_needed(self, path: Path) -> None:
         if self._download:
@@ -152,8 +181,8 @@ class CtRate(SubjectsDataset):
             )
             raise RuntimeError(message) from e
 
-    def _get_subjects_list(self) -> list[Subject]:
-        df_no_index = self._metadata.reset_index()
+    def _get_subjects_list(self, metadata: pd.DataFrame) -> list[Subject]:
+        df_no_index = metadata.reset_index()
         num_subjects = df_no_index['subject_id'].nunique()
         iterable = df_no_index.groupby('subject_id')
         subjects = thread_map(
