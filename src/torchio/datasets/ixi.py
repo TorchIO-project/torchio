@@ -17,6 +17,7 @@ from collections.abc import Sequence
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 from typing import Optional
+from typing import Union
 
 from ..data import LabelMap
 from ..data import ScalarImage
@@ -74,7 +75,6 @@ class IXI(SubjectsDataset):
     def __init__(
         self,
         root: TypePath,
-        transform: Optional[Transform] = None,
         download: bool = False,
         modalities: Sequence[str] = ('T1', 'T2'),
         **kwargs,
@@ -93,7 +93,7 @@ class IXI(SubjectsDataset):
             message = 'Dataset not found. You can use download=True to download it'
             raise RuntimeError(message)
         subjects_list = self._get_subjects_list(root, modalities)
-        super().__init__(subjects_list, transform=transform, **kwargs)
+        super().__init__(subjects_list, **kwargs)
 
     @staticmethod
     def _check_exists(root, modalities):
@@ -117,7 +117,7 @@ class IXI(SubjectsDataset):
         subjects = []
         for filepath in paths:
             subject_id = get_subject_id(filepath)
-            images_dict = {'subject_id': subject_id}
+            images_dict: dict[str, Union[str, ScalarImage]] = {'subject_id': subject_id}
             images_dict[one_modality] = ScalarImage(filepath)
             for modality in modalities[1:]:
                 globbed = sglob(
