@@ -58,6 +58,9 @@ csv = [
 plot = [
     "matplotlib>=3.4",
 ]
+huggingface = [
+    "huggingface-hub",
+]
 
 [project.scripts]
 tiohd = "torchio.cli.print_info:app"
