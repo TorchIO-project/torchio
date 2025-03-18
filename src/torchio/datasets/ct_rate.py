@@ -31,9 +31,11 @@ TypeSplit = Union[
 
 
 # TODO: add docstring
+# TODO: is downloading with datasets package safer?
 class CtRate(SubjectsDataset):
     _REPO_ID = 'ibrahimhamamci/CT-RATE'
     _FILENAME_KEY = 'VolumeName'
+    _SIZES = [512, 768, 1024]
     ABNORMALITIES = [
         'Medical material',
         'Arterial wall calcification',
@@ -64,6 +66,7 @@ class CtRate(SubjectsDataset):
         download: bool = False,
         num_subjects: Optional[int] = None,
         report_key: str = 'report',
+        sizes: Optional[list[int]] = None,
         **kwargs,
     ):
         self._root_dir = Path(root)
@@ -71,6 +74,7 @@ class CtRate(SubjectsDataset):
         self._download = download
         self._num_subjects = num_subjects
         self._report_key = report_key
+        self._sizes = self._SIZES if sizes is None else sizes
 
         self._split = self._parse_split(split)
         self.metadata = self._get_metadata()
@@ -89,7 +93,6 @@ class CtRate(SubjectsDataset):
         self,
         dirname: str,
         filename: str,
-        num_subjects: Optional[int] = None,
     ) -> pd.DataFrame:
         subfolder = Path(f'dataset/{dirname}')
         path = Path(self._root_dir, subfolder, filename)
@@ -97,8 +100,6 @@ class CtRate(SubjectsDataset):
             self._download_file_if_needed(path)
         pd = get_pandas()
         table = pd.read_csv(path)
-        if num_subjects is not None:
-            table = table.head(num_subjects)
         return table
 
     def _get_csv_prefix(self, expand_validation: bool = True) -> str:
@@ -112,7 +113,11 @@ class CtRate(SubjectsDataset):
         dirname = 'metadata'
         prefix = self._get_csv_prefix()
         filename = f'{prefix}_metadata.csv'
-        metadata = self._get_csv(dirname, filename, self._num_subjects)
+        metadata = self._get_csv(dirname, filename)
+
+        # Exclude images with size not in self._sizes
+        rows_int = metadata['Rows'].astype(int)
+        metadata = metadata[rows_int.isin(self._sizes)]
 
         index_columns = [
             'subject_id',
@@ -121,6 +126,9 @@ class CtRate(SubjectsDataset):
         ]
         pattern = r'\w+_(\d+)_(\w+)_(\d+)\.nii\.gz'
         metadata[index_columns] = metadata[self._FILENAME_KEY].str.extract(pattern)
+
+        if self._num_subjects is not None:
+            metadata = self._keep_n_subjects(metadata, self._num_subjects)
 
         # Add reports and abnormality labels to metadata, keeping only the rows for the
         # images in the metadata table
@@ -138,6 +146,11 @@ class CtRate(SubjectsDataset):
             on=self._FILENAME_KEY,
             how='left',
         )
+
+    def _keep_n_subjects(self, metadata: pd.DataFrame, n: int) -> pd.DataFrame:
+        unique_subjects = metadata['subject_id'].unique()
+        selected_subjects = unique_subjects[:n]
+        return metadata[metadata['subject_id'].isin(selected_subjects)]
 
     def _get_reports(self) -> pd.DataFrame:
         dirname = 'radiology_text_reports'
