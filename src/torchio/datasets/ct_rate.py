@@ -81,7 +81,6 @@ class CtRate(SubjectsDataset):
         table = pd.read_csv(path)
         if num_subjects is not None:
             table = table.head(num_subjects)
-        table.set_index('VolumeName', inplace=True)
         return table
 
     def _get_csv_prefix(self) -> str:
@@ -97,16 +96,25 @@ class CtRate(SubjectsDataset):
         filename = f'{prefix}_metadata.csv'
         metadata = self._get_csv(dirname, filename, self._num_subjects)
 
+        index_columns = [
+            'subject_id',
+            'scan_id',
+            'reconstruction_id',
+        ]
+        pattern = r'\w+_(\d+)_(\w+)_(\d+)\.nii\.gz'
+        metadata[index_columns] = metadata['VolumeName'].str.extract(pattern)
+
         # Add reports to metadata, keeping only the reports for the images in the
         # metadata table
         pd = get_pandas()
         metadata = pd.merge(
             metadata,
             self._get_reports(),
-            left_index=True,
-            right_index=True,
+            on='VolumeName',
             how='left',
         )
+
+        metadata.set_index(index_columns, inplace=True)
         return metadata
 
     def _get_reports(self) -> pd.DataFrame:
@@ -156,9 +164,10 @@ class CtRate(SubjectsDataset):
         )
         return subjects
 
-    def _get_subject(self, filename_and_row: tuple[str, pd.Series]) -> Subject:
-        filename, row = filename_and_row
+    def _get_subject(self, index_and_row: tuple[str, pd.Series]) -> Subject:
+        _, row = index_and_row
         subject_dict = row.to_dict()
+        filename = subject_dict['VolumeName']
         image_path = self._root_dir / self._get_image_path(filename)
         if not image_path.exists():
             self._download_file_if_needed(image_path)
