@@ -1,22 +1,28 @@
+from __future__ import annotations
+
 import ast
 import multiprocessing
 from importlib.util import find_spec
 from pathlib import Path
+from typing import TYPE_CHECKING
 from typing import Literal
 from typing import Optional
 from typing import Union
 
 import numpy as np
-import pandas as pd
 import SimpleITK as sitk
-from huggingface_hub import hf_hub_download
-from huggingface_hub.errors import GatedRepoError
 from tqdm.contrib.concurrent import thread_map
 
 from ..data.dataset import SubjectsDataset
 from ..data.image import ScalarImage
 from ..data.subject import Subject
+from ..external.imports import get_huggingface_hub
+from ..external.imports import get_pandas
 from ..types import TypePath
+
+if TYPE_CHECKING:
+    import pandas as pd
+
 
 TypeSplit = Union[
     Literal['train'],
@@ -71,6 +77,7 @@ class CtRate(SubjectsDataset):
         path = Path(self._root_dir, subfolder, filename)
         if not path.exists():
             self._download_file_if_needed(path)
+        pd = get_pandas()
         table = pd.read_csv(path)
         if num_subjects is not None:
             table = table.head(num_subjects)
@@ -92,8 +99,9 @@ class CtRate(SubjectsDataset):
 
         # Add reports to metadata, keeping only the reports for the images in the
         # metadata table
-        self._metadata = pd.merge(
-            self._metadata,
+        pd = get_pandas()
+        metadata = pd.merge(
+            metadata,
             self._get_reports(),
             left_index=True,
             right_index=True,
@@ -120,8 +128,9 @@ class CtRate(SubjectsDataset):
     def _download_file(self, path: Path) -> None:
         _check_huggingface_hub()
         relative_path = path.relative_to(self._root_dir)
+        huggingface_hub = get_huggingface_hub()
         try:
-            hf_hub_download(
+            huggingface_hub.hf_hub_download(
                 repo_id=self._REPO_ID,
                 repo_type='dataset',
                 token=self._token,
@@ -129,7 +138,7 @@ class CtRate(SubjectsDataset):
                 filename=relative_path.name,
                 local_dir=self._root_dir,
             )
-        except GatedRepoError as e:
+        except huggingface_hub.errors.GatedRepoError as e:
             message = (
                 f'The dataset "{self._REPO_ID}" is gated. Visit'
                 f' https://huggingface.co/datasets/{self._REPO_ID}, accept the'
