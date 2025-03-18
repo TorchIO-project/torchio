@@ -34,6 +34,7 @@ TypeSplit = Union[
 # TODO: add docstring
 class CtRate(SubjectsDataset):
     _REPO_ID = 'ibrahimhamamci/CT-RATE'
+    _FILENAME_KEY = 'VolumeName'
 
     def __init__(
         self,
@@ -102,7 +103,7 @@ class CtRate(SubjectsDataset):
             'reconstruction_id',
         ]
         pattern = r'\w+_(\d+)_(\w+)_(\d+)\.nii\.gz'
-        metadata[index_columns] = metadata['VolumeName'].str.extract(pattern)
+        metadata[index_columns] = metadata[self._FILENAME_KEY].str.extract(pattern)
 
         # Add reports to metadata, keeping only the reports for the images in the
         # metadata table
@@ -110,7 +111,7 @@ class CtRate(SubjectsDataset):
         metadata = pd.merge(
             metadata,
             self._get_reports(),
-            on='VolumeName',
+            on=self._FILENAME_KEY,
             how='left',
         )
 
@@ -167,7 +168,7 @@ class CtRate(SubjectsDataset):
     def _get_subject(self, index_and_row: tuple[str, pd.Series]) -> Subject:
         _, row = index_and_row
         subject_dict = row.to_dict()
-        filename = subject_dict['VolumeName']
+        filename = subject_dict[self._FILENAME_KEY]
         image_path = self._root_dir / self._get_image_path(filename)
         if not image_path.exists():
             self._download_file_if_needed(image_path)
