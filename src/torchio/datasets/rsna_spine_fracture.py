@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from pathlib import Path
-from types import ModuleType
 from typing import Any
 from typing import Union
 
@@ -9,6 +8,7 @@ from ..data import LabelMap
 from ..data import ScalarImage
 from ..data import Subject
 from ..data import SubjectsDataset
+from ..external.imports import get_pandas
 from ..types import TypePath
 from ..utils import normalize_path
 
@@ -134,16 +134,3 @@ class RSNACervicalSpineFracture(SubjectsDataset):
         if boxes:
             subject_dict['boxes'] = boxes
         return Subject(**subject_dict)
-
-
-def get_pandas() -> ModuleType:
-    try:
-        import pandas
-
-        return pandas
-    except ImportError as e:
-        message = (
-            'Pandas is required for this operation.'
-            ' Install pandas with "pip install pandas" and try again'
-        )
-        raise ImportError(message) from e
