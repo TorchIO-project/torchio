@@ -59,6 +59,7 @@ plot = [
 ]
 huggingface = [
     "huggingface-hub",
+    "pandas>=1",
 ]
 
 [project.scripts]
