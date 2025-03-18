@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import ast
 import multiprocessing
-from importlib.util import find_spec
 from pathlib import Path
 from typing import TYPE_CHECKING
 from typing import Literal
@@ -135,7 +134,6 @@ class CtRate(SubjectsDataset):
             )
 
     def _download_file(self, path: Path) -> None:
-        _check_huggingface_hub()
         relative_path = path.relative_to(self._root_dir)
         huggingface_hub = get_huggingface_hub()
         try:
@@ -222,13 +220,3 @@ class CtRate(SubjectsDataset):
         cast_int16 = sitk.Cast(adjusted_hu, sitk.sitkInt16)
 
         sitk.WriteImage(cast_int16, str(path))
-
-
-def _check_huggingface_hub() -> None:
-    if find_spec('huggingface_hub') is None:
-        message = (
-            'The `huggingface_hub` package is required to download the dataset.'
-            ' Install TorchIO with the `huggingface` extra:'
-            ' `pip install torchio[huggingface]`.'
-        )
-        raise ImportError(message)
