@@ -16,11 +16,11 @@ done. See more information about the submission process in the
 CONTRIBUTING (https://github.com/TorchIO-project/torchio/blob/main/CONTRIBUTING.rst) docs. -->
 
 <!-- Write an `x` in all the boxes that apply -->
-- [ ] I have read the [`CONTRIBUTING`](https://github.com/TorchIO-project/torchio/blob/main/CONTRIBUTING.rst) docs and have a developer setup (especially important are `pre-commit`and `pytest`)
-- [ ] Non-breaking change (would not break existing functionality)
-- [ ] Breaking change (would cause existing functionality to change)
+- [ ] I have read the [`CONTRIBUTING`](https://github.com/TorchIO-project/torchio/blob/main/CONTRIBUTING.rst) docs and have a developer setup ready
+- Changes are
+  - [ ] Non-breaking (would not break existing functionality)
+  - [ ] Breaking (would cause existing functionality to change)
 - [ ] Tests added or modified to cover the changes
-- [ ] Integration tests passed locally by running `pytest`
 - [ ] In-line docstrings updated
-- [ ] Documentation updated, tested running `make html` inside the `docs/` folder
+- [ ] Documentation updated
 - [ ] This pull request is ready to be reviewed
