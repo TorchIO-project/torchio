@@ -43,7 +43,6 @@ class CtRate(SubjectsDataset):
         token: Optional[str] = None,
         download: bool = False,
         num_subjects: Optional[int] = None,
-        image_key: str = 'image',
         report_key: str = 'report',
         **kwargs,
     ):
@@ -51,7 +50,6 @@ class CtRate(SubjectsDataset):
         self._token = token
         self._download = download
         self._num_subjects = num_subjects
-        self._image_key = image_key
         self._report_key = report_key
 
         self._split = self._parse_split(split)
@@ -155,27 +153,42 @@ class CtRate(SubjectsDataset):
             raise RuntimeError(message) from e
 
     def _get_subjects_list(self) -> list[Subject]:
+        df_no_index = self._metadata.reset_index()
+        num_subjects = df_no_index['subject_id'].nunique()
+        iterable = df_no_index.groupby('subject_id')
         subjects = thread_map(
             self._get_subject,
-            self._metadata.iterrows(),
+            iterable,
             max_workers=multiprocessing.cpu_count(),
-            total=len(self._metadata),
+            total=num_subjects,
         )
         return subjects
 
-    def _get_subject(self, index_and_row: tuple[str, pd.Series]) -> Subject:
-        _, row = index_and_row
-        subject_dict = row.to_dict()
-        filename = subject_dict[self._FILENAME_KEY]
+    def _get_subject(
+        self,
+        subject_id_and_metadata: tuple[str, pd.DataFrame],
+    ) -> Subject:
+        subject_id, subject_df = subject_id_and_metadata
+        subject_dict: dict[str, Union[str, ScalarImage]] = {'subject_id': subject_id}
+        for _, image_row in subject_df.iterrows():
+            image = self._instantiate_image(image_row)
+            scan_id = image_row['scan_id']
+            reconstruction_id = image_row['reconstruction_id']
+            image_key = f'scan_{scan_id}_reconstruction_{reconstruction_id}'
+            subject_dict[image_key] = image
+        return Subject(**subject_dict)
+
+    def _instantiate_image(self, image_row: pd.Series) -> ScalarImage:
+        image_dict = image_row.to_dict()
+        filename = image_dict[self._FILENAME_KEY]
         image_path = self._root_dir / self._get_image_path(filename)
         if not image_path.exists():
             self._download_file_if_needed(image_path)
-            self._fix_image(image_path, subject_dict)
-        image = ScalarImage(image_path)
-        subject_dict[self._image_key] = image
-        report_dict = self._extract_report_dict(subject_dict)
-        subject_dict[self._report_key] = report_dict
-        return Subject(**subject_dict)
+            self._fix_image(image_path, image_dict)
+        report_dict = self._extract_report_dict(image_dict)
+        image_dict[self._report_key] = report_dict
+        image = ScalarImage(image_path, **image_dict)
+        return image
 
     def _extract_report_dict(self, subject_dict: dict[str, str]) -> dict[str, str]:
         report_keys = [
