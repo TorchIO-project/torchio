@@ -30,9 +30,32 @@ TypeSplit = Union[
 ]
 
 
-# TODO: add docstring
-# TODO: is downloading with datasets package safer?
 class CtRate(SubjectsDataset):
+    """CT-RATE dataset.
+
+    This class provides access to the CT-RATE dataset, which contains chest CT scans with
+    associated radiology reports and abnormality labels. The dataset can be automatically
+    downloaded from Hugging Face Hub if needed.
+
+    Args:
+        root: Root directory where the dataset is stored or will be downloaded to.
+        split: Dataset split to use, either ``'train'`` or ``'validation'``.
+        token: Hugging Face token for accessing gated repositories. Alternatively,
+            login using `huggingface-cli login` to cache the token.
+        download: If True, download the dataset if files are not found locally.
+        num_subjects: Optional limit on the number of subjects to load (useful for
+            testing). If ``None``, all subjects in the split are loaded.
+        report_key: Key to use for storing radiology reports in the Subject metadata.
+        sizes: List of image sizes (in pixels) to include. Default: [512, 768, 1024].
+        **kwargs: Additional arguments for SubjectsDataset.
+
+    Examples:
+        >>> dataset = CtRate('/path/to/data', split='train', download=True)
+
+    References:
+        https://huggingface.co/datasets/ibrahimhamamci/CT-RATE
+    """
+
     _REPO_ID = 'ibrahimhamamci/CT-RATE'
     _FILENAME_KEY = 'VolumeName'
     _SIZES = [512, 768, 1024]
@@ -83,6 +106,20 @@ class CtRate(SubjectsDataset):
 
     @staticmethod
     def _parse_split(split: str) -> str:
+        """Normalize the split name.
+
+        Converts 'validation' to 'valid' and validates that the split name
+        is one of the allowed values.
+
+        Args:
+            split: The split name to parse ('train', 'valid', or 'validation').
+
+        Returns:
+            str: Normalized split name ('train' or 'valid').
+
+        Raises:
+            ValueError: If the split name is not one of the allowed values.
+        """
         if split in ['valid', 'validation']:
             return 'valid'
         if split not in ['train', 'valid']:
@@ -94,6 +131,15 @@ class CtRate(SubjectsDataset):
         dirname: str,
         filename: str,
     ) -> pd.DataFrame:
+        """Download (if needed) and load a CSV file from the dataset.
+
+        Load a CSV file from the specified directory within the dataset.
+        If the file doesn't exist and download is enabled, download it.
+
+        Args:
+            dirname: Directory name within 'dataset/' where the CSV is located.
+            filename: Name of the CSV file to load.
+        """
         subfolder = Path(f'dataset/{dirname}')
         path = Path(self._root_dir, subfolder, filename)
         if not path.exists():
@@ -103,6 +149,16 @@ class CtRate(SubjectsDataset):
         return table
 
     def _get_csv_prefix(self, expand_validation: bool = True) -> str:
+        """Get the prefix for CSV filenames based on the current split.
+
+        Returns the appropriate prefix for CSV filenames based on the current split.
+        For the validation split, can either return 'valid' or 'validation' depending
+        on the expand_validation parameter.
+
+        Args:
+            expand_validation: If ``True`` and split is ``'valid'``, return
+                ``'validation'``. Otherwise, return the split name as is.
+        """
         if expand_validation and self._split == 'valid':
             prefix = 'validation'
         else:
@@ -110,6 +166,12 @@ class CtRate(SubjectsDataset):
         return prefix
 
     def _get_metadata(self) -> pd.DataFrame:
+        """Load and process the dataset metadata.
+
+        Loads metadata from the appropriate CSV file, filters images by size,
+        extracts subject, scan, and reconstruction IDs from filenames, and
+        merges in reports and abnormality labels.
+        """
         dirname = 'metadata'
         prefix = self._get_csv_prefix()
         filename = f'{prefix}_metadata.csv'
@@ -138,7 +200,21 @@ class CtRate(SubjectsDataset):
         metadata.set_index(index_columns, inplace=True)
         return metadata
 
-    def _merge(self, base_df, new_df):
+    def _merge(self, base_df: pd.DataFrame, new_df: pd.DataFrame) -> pd.DataFrame:
+        """Merge a new dataframe into the base dataframe using the filename as the key.
+
+        This method performs a left join between ``base_df`` and ``new_df`` using the
+        volume filename as the join key, ensuring that all records from ``base_df`` are
+        preserved while matching data from ``new_df`` is added.
+
+        Args:
+            base_df: The primary dataframe to merge into.
+            new_df: The dataframe containing additional data to be merged.
+
+        Returns:
+            pd.DataFrame: The merged dataframe with all rows from base_df and
+            matching columns from new_df.
+        """
         pd = get_pandas()
         return pd.merge(
             base_df,
@@ -148,23 +224,50 @@ class CtRate(SubjectsDataset):
         )
 
     def _keep_n_subjects(self, metadata: pd.DataFrame, n: int) -> pd.DataFrame:
+        """Limit the metadata to the first ``n`` subjects.
+
+        Args:
+            metadata: The complete metadata dataframe.
+            n: Maximum number of subjects to keep.
+        """
         unique_subjects = metadata['subject_id'].unique()
         selected_subjects = unique_subjects[:n]
         return metadata[metadata['subject_id'].isin(selected_subjects)]
 
     def _get_reports(self) -> pd.DataFrame:
+        """Load the radiology reports associated with the CT scans.
+
+        Retrieves the CSV file containing radiology reports for the current split
+        (train or validation).
+        """
         dirname = 'radiology_text_reports'
         prefix = self._get_csv_prefix()
         filename = f'{prefix}_reports.csv'
         return self._get_csv(dirname, filename)
 
     def _get_labels(self) -> pd.DataFrame:
+        """Load the abnormality labels for the CT scans.
+
+        Retrieves the CSV file containing predicted abnormality labels for the
+        current split.
+        """
         dirname = 'multi_abnormality_labels'
         prefix = self._get_csv_prefix(expand_validation=False)
         filename = f'{prefix}_predicted_labels.csv'
         return self._get_csv(dirname, filename)
 
     def _download_file_if_needed(self, path: Path) -> None:
+        """Download a file if it does not exist locally and ``download`` is enabled.
+
+        Checks if the specified file exists at the given path. If not, and ``download``
+        is enabled, it downloads the file; otherwise, it raises an error.
+
+        Args:
+            path: The local file path to check and potentially download to.
+
+        Raises:
+            FileNotFoundError: If the file doesn't exist and download=False.
+        """
         if self._download:
             self._download_file(path)
         else:
@@ -174,6 +277,22 @@ class CtRate(SubjectsDataset):
             )
 
     def _download_file(self, path: Path) -> None:
+        """Download a file from the Hugging Face repository to the specified path.
+
+        Downloads a single file from the CT-RATE dataset repository on Hugging Face,
+        preserving the directory structure.
+
+        Args:
+            path: The destination path where the file will be saved.
+
+        Raises:
+            RuntimeError: If the repository is gated and no valid token is provided.
+
+        Note:
+            This method requires access to the CT-RATE repository. If the repository
+            is gated, a valid Hugging Face token with appropriate permissions must
+            be provided, or the user must log in using the Hugging Face CLI.
+        """
         relative_path = path.relative_to(self._root_dir)
         huggingface_hub = get_huggingface_hub()
         try:
@@ -195,6 +314,15 @@ class CtRate(SubjectsDataset):
             raise RuntimeError(message) from e
 
     def _get_subjects_list(self, metadata: pd.DataFrame) -> list[Subject]:
+        """Create a list of Subject instances from the metadata.
+
+        Processes the metadata to create Subject objects, each containing one or more
+        CT images. Processing is performed in parallel.
+
+        Note:
+            This method uses parallelization to improve performance when creating
+            multiple Subject instances.
+        """
         df_no_index = metadata.reset_index()
         num_subjects = df_no_index['subject_id'].nunique()
         iterable = df_no_index.groupby('subject_id')
@@ -210,6 +338,15 @@ class CtRate(SubjectsDataset):
         self,
         subject_id_and_metadata: tuple[str, pd.DataFrame],
     ) -> Subject:
+        """Create a Subject instance for a specific subject.
+
+        Processes all images belonging to a single subject and creates a Subject
+        object containing those images.
+
+        Args:
+            subject_id_and_metadata: A tuple containing the subject ID (string) and a
+                DataFrame containing metadata for all images associated to that subject.
+        """
         subject_id, subject_df = subject_id_and_metadata
         subject_dict: dict[str, Union[str, ScalarImage]] = {'subject_id': subject_id}
         for _, image_row in subject_df.iterrows():
@@ -221,6 +358,19 @@ class CtRate(SubjectsDataset):
         return Subject(**subject_dict)
 
     def _instantiate_image(self, image_row: pd.Series) -> ScalarImage:
+        """Create a ScalarImage object for a specific image.
+
+        Processes a row from the metadata DataFrame to create a ScalarImage object,
+        downloading the image if necessary and extracting the radiology report.
+
+        Args:
+            image_row: A pandas Series representing a row from the metadata DataFrame,
+                containing information about a single image.
+
+        Note:
+            If the image file doesn't exist locally and download is enabled, this
+            method will download the file and fix the metadata.
+        """
         image_dict = image_row.to_dict()
         filename = image_dict[self._FILENAME_KEY]
         image_path = self._root_dir / self._get_image_path(filename)
@@ -233,6 +383,18 @@ class CtRate(SubjectsDataset):
         return image
 
     def _extract_report_dict(self, subject_dict: dict[str, str]) -> dict[str, str]:
+        """Extract radiology report information from the subject dictionary.
+
+        Extracts the English radiology report components (clinical information,
+        findings, impressions, and technique) from the subject dictionary and
+        removes these keys from the original dictionary.
+
+        Args:
+            subject_dict: Image metadata including report fields.
+
+        Note:
+            This method modifies the input subject_dict by removing the report keys.
+        """
         report_keys = [
             'ClinicalInformation_EN',
             'Findings_EN',
@@ -246,6 +408,21 @@ class CtRate(SubjectsDataset):
 
     @staticmethod
     def _get_image_path(filename: str) -> Path:
+        """Construct the relative path to an image file within the dataset structure.
+
+        Parses the filename to determine the hierarchical directory structure
+        where the image is stored in the CT-RATE dataset.
+
+        Args:
+            filename: The name of the image file (e.g., 'train_2_a_1.nii.gz').
+
+        Returns:
+            Path: The relative path to the image file within the dataset directory.
+
+        Example:
+            >>> path = CtRate._get_image_path('train_2_a_1.nii.gz')
+            # Returns Path('dataset/train/train_2/train_2_a/train_2_a_1.nii.gz')
+        """
         parts = filename.split('_')
         base_dir = 'dataset'
         split_dir = parts[0]
@@ -255,6 +432,22 @@ class CtRate(SubjectsDataset):
 
     @staticmethod
     def _fix_image(path: Path, metadata: dict[str, str]) -> None:
+        """Fix the metadata of a downloaded image file.
+
+        The original NIfTI files in the CT-RATE dataset have incorrect spatial
+        metadata. This method reads the image, fixes the spacing, origin, and
+        orientation based on the metadata provided in the CSV, and applies the correct
+        rescaling to convert to Hounsfield units.
+
+        Args:
+            path: The path to the image file to fix.
+            metadata: A dictionary containing image metadata including spacing,
+                orientation, and rescale parameters.
+
+        Note:
+            This method overwrites the original file with the fixed version.
+            The fixed image is stored as INT16 with proper HU values.
+        """
         # Adapted from https://huggingface.co/datasets/ibrahimhamamci/CT-RATE/blob/main/download_scripts/fix_metadata.py
         image = sitk.ReadImage(str(path))
 
