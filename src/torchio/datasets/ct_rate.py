@@ -355,7 +355,7 @@ class CtRate(SubjectsDataset):
             reconstruction_id = image_row['reconstruction_id']
             image_key = f'scan_{scan_id}_reconstruction_{reconstruction_id}'
             subject_dict[image_key] = image
-        return Subject(**subject_dict)
+        return Subject(**subject_dict)  # type: ignore[arg-type]
 
     def _instantiate_image(self, image_row: pd.Series) -> ScalarImage:
         """Create a ScalarImage object for a specific image.
