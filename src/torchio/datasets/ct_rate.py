@@ -53,9 +53,6 @@ class CtRate(SubjectsDataset):
 
     Examples:
         >>> dataset = CtRate('/path/to/data', split='train', download=True)
-
-    References:
-        https://huggingface.co/datasets/ibrahimhamamci/CT-RATE
     """
 
     _REPO_ID = 'ibrahimhamamci/CT-RATE'
