@@ -33,9 +33,11 @@ TypeSplit = Union[
 class CtRate(SubjectsDataset):
     """CT-RATE dataset.
 
-    This class provides access to the CT-RATE dataset, which contains chest CT scans with
-    associated radiology reports and abnormality labels. The dataset can be automatically
-    downloaded from Hugging Face Hub if needed.
+    This class provides access to
+    `CT-RATE <https://huggingface.co/datasets/ibrahimhamamci/CT-RATE>`_,
+    which contains chest CT scans with associated radiology reports and
+    abnormality labels. The dataset can be automatically downloaded from
+    Hugging Face if needed.
 
     Args:
         root: Root directory where the dataset is stored or will be downloaded to.

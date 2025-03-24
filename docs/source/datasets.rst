@@ -18,6 +18,16 @@ GitHub repository:
    <a class="github-button" href="https://github.com/TorchIO-project/torchio/discussions" data-icon="octicon-comment-discussion" aria-label="Discuss TorchIO-project/torchio on GitHub">Discuss</a>
    <script async defer src="https://buttons.github.io/buttons.js"></script>
 
+CT-RATE
+-------
+
+.. currentmodule:: torchio.datasets.ct_rate
+
+:class:`CtRate`
+~~~~~~~~~~~~~~~~
+
+.. autoclass:: CtRate
+    :members:
 
 IXI
 ---
