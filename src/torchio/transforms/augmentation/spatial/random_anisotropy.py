@@ -99,21 +99,28 @@ class RandomAnisotropy(RandomTransform):
         target_spacing = list(subject.spacing)
         target_spacing[axis] *= downsampling
 
-        arguments = {
-            'image_interpolation': 'nearest',
-            'scalars_only': self.scalars_only,
-        }
-
-        sx, sy, sz = target_spacing  # for mypy
-        downsample = Resample(target=(sx, sy, sz), **self.add_base_args(arguments))
-        downsampled = downsample(subject)
-        image = subject.get_first_image()
-        target = image.spatial_shape, image.affine
-        upsample = Resample(
-            target=target,  # type: ignore[arg-type]
-            image_interpolation=self.image_interpolation,
-            scalars_only=self.scalars_only,
+        downsample_args = self.add_base_args(
+            {
+                'target': tuple(target_spacing),  # for mypy
+                'image_interpolation': 'nearest',
+                'scalars_only': self.scalars_only,
+            }
         )
+
+        # NOTE: If copy=False, the underlying image data will be modified in place.
+        # We have to obtain the target spatial shape and affine before the transform
+        image = subject.get_first_image()
+        upsample_args = self.add_base_args(
+            {
+                'target': (image.spatial_shape, image.affine),
+                'image_interpolation': self.image_interpolation,
+                'scalars_only': self.scalars_only,
+            }
+        )
+
+        downsample = Resample(**downsample_args)
+        downsampled = downsample(subject)
+        upsample = Resample(**upsample_args)
         upsampled = upsample(downsampled)
         assert isinstance(upsampled, Subject)
         return upsampled
