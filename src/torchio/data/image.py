@@ -887,9 +887,11 @@ class LabelMap(Image):
         >>> labels = tio.LabelMap(tensor=torch.rand(1, 128, 128, 68) > 0.5)
         >>> labels = tio.LabelMap('t1_seg.nii.gz')  # loading from a file
         >>> tpm = tio.LabelMap(                     # loading from files
-        ...     'gray_matter.nii.gz',
-        ...     'white_matter.nii.gz',
-        ...     'csf.nii.gz',
+        ...     (
+        ...         'gray_matter.nii.gz',
+        ...         'white_matter.nii.gz',
+        ...         'csf.nii.gz',
+        ...     )
         ... )
 
     Intensity transforms are not applied to these images.
