@@ -51,6 +51,9 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+cpu = [
+    "torch>=1.9",
+]
 csv = [
     "pandas>=1",
 ]
@@ -181,3 +184,13 @@ ignore = [
 
 [tool.ruff.lint.isort]
 force-single-line = true
+
+[tool.uv.sources]
+torch = [
+  { index = "pytorch-cpu", extra = "cpu" },
+]
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
