@@ -84,6 +84,9 @@ at [OpenAI](https://openai.com/) ([link](https://jack-clark.net/2020/03/17/)).
             <a href="https://www.youtube.com/watch?v=UEUVSw5-M9M">
                 <img src="https://img.shields.io/youtube/views/UEUVSw5-M9M?label=watch&style=social" alt="YouTube">
             </a>
+            <a href="https://github.com/TorchIO-project/torchio#contributors">
+                <img src="https://img.shields.io/github/all-contributors/TorchIO-project/torchio?color=ee8449&style=flat-square" alt="All Contributors">
+            </a>
         </td>
     </tr>
 </table>

@@ -105,6 +105,10 @@ If you found a bug or have a feature request, please open an issue:
    :target: https://www.youtube.com/watch?v=UEUVSw5-M9M
    :alt: YouTube
 
+.. |All-Contributors| image:: https://img.shields.io/github/all-contributors/TorchIO-project/torchio?color=ee8449&style=flat-square
+   :target: https://github.com/TorchIO-project/torchio#contributors
+   :alt: All contributors
+
 .. |Code-Maintainability| image:: https://api.codeclimate.com/v1/badges/518673e49a472dd5714d/maintainability
    :target: https://codeclimate.com/github/TorchIO-project/torchio
    :alt: Maintainability
