@@ -1,7 +1,12 @@
 name: 'Check PR title'
+
 on:
   pull_request:
     types: [edited, opened, synchronize, reopened]
+
+permissions:
+  pull-requests: read
+  statuses: write         # Required to update commit status (e.g. pass/fail)
 
 jobs:
   pr-title-check:

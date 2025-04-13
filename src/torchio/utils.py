@@ -27,6 +27,9 @@ from . import constants
 from .types import TypeNumber
 from .types import TypePath
 
+ITK_SNAP = 'ITK-SNAP'
+SLICER = 'Slicer'
+
 
 def to_tuple(
     value: Any,
@@ -344,46 +347,61 @@ def add_images_from_batch(
 
 
 def guess_external_viewer() -> Optional[Path]:
-    """Guess the path to an executable that could be used to visualize images.
+    """Guess the path to an executable that can be used to visualize images.
 
-    Currently, it looks for 1) ITK-SNAP and 2) 3D Slicer. Implemented
-    for macOS and Windows.
+    It looks for 1) ITK-SNAP and 2) 3D Slicer.
     """
     if 'SITK_SHOW_COMMAND' in os.environ:
         return Path(os.environ['SITK_SHOW_COMMAND'])
-    platform = sys.platform
-    itk = 'ITK-SNAP'
-    slicer = 'Slicer'
-    if platform == 'darwin':
+
+    if (platform := sys.platform) == 'darwin':
+        return _guess_macos_viewer()
+    elif platform == 'win32':
+        return _guess_windows_viewer()
+    elif 'linux' in platform:
+        return _guess_linux_viewer()
+    return None  # for mypy
+
+
+def _guess_macos_viewer() -> Optional[Path]:
+    def _get_app_path(app_name: str) -> Path:
         app_path = '/Applications/{}.app/Contents/MacOS/{}'
-        itk_snap_path = Path(app_path.format(2 * (itk,)))
+        return Path(app_path.format(2 * (app_name,)))
+
+    if (itk_snap_path := _get_app_path(ITK_SNAP)).is_file():
+        return itk_snap_path
+
+    if (slicer_path := _get_app_path(SLICER)).is_file():
+        return slicer_path
+
+
+def _guess_windows_viewer() -> Optional[Path]:
+    def _get_app_path(app_dirs: list[Path], bin_name: str) -> Path:
+        app_dir = app_dirs[-1]
+        app_path = app_dir / bin_name
+        if app_path.is_file():
+            return app_path
+
+    program_files_dir = Path(os.environ['ProgramW6432'])
+    itk_snap_dirs = list(program_files_dir.glob(f'{ITK_SNAP}*'))
+    if itk_snap_dirs:
+        itk_snap_path = _get_app_path(itk_snap_dirs, 'bin/itk-snap.exe')
         if itk_snap_path.is_file():
             return itk_snap_path
-        slicer_path = Path(app_path.format(2 * (slicer,)))
+
+    slicer_dirs = list(program_files_dir.glob(f'{SLICER}*'))
+    if slicer_dirs:
+        slicer_path = _get_app_path(slicer_dirs, 'slicer.exe')
         if slicer_path.is_file():
             return slicer_path
-    elif platform == 'win32':
-        program_files_dir = Path(os.environ['ProgramW6432'])
-        itk_snap_dirs = list(program_files_dir.glob('ITK-SNAP*'))
-        if itk_snap_dirs:
-            itk_snap_dir = itk_snap_dirs[-1]
-            itk_snap_path = itk_snap_dir / 'bin/itk-snap.exe'
-            if itk_snap_path.is_file():
-                return itk_snap_path
-        slicer_dirs = list(program_files_dir.glob('Slicer*'))
-        if slicer_dirs:
-            slicer_dir = slicer_dirs[-1]
-            slicer_path = slicer_dir / 'slicer.exe'
-            if slicer_path.is_file():
-                return slicer_path
-    elif 'linux' in platform:
-        itk_snap_which = shutil.which('itksnap')
-        if itk_snap_which is not None:
-            return Path(itk_snap_which)
-        slicer_which = shutil.which('Slicer')
-        if slicer_which is not None:
-            return Path(slicer_which)
-    return None  # for mypy
+
+
+def _guess_linux_viewer() -> Optional[Path]:
+    if (itk_snap_which := shutil.which('itksnap')) is not None:
+        return Path(itk_snap_which)
+
+    if (slicer_which := shutil.which('Slicer')) is not None:
+        return Path(slicer_which)
 
 
 def parse_spatial_shape(shape):

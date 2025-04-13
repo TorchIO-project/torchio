@@ -2,6 +2,9 @@ name: Publish
 
 on: push
 
+permissions:
+  pull-requests: read
+
 jobs:
   build:
     name: Build the package
