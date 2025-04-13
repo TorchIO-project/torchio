@@ -146,7 +146,7 @@ class Image(dict):
                 'Not specifying the image type is deprecated and will be'
                 ' mandatory in the future. You can probably use'
                 ' tio.ScalarImage or tio.LabelMap instead',
-                DeprecationWarning,
+                FutureWarning,
                 stacklevel=2,
             )
             type = INTENSITY  # noqa: A001
@@ -171,7 +171,7 @@ class Image(dict):
                 ' https://github.com/TorchIO-project/torchio/pull/685 and will be'
                 ' removed in the future'
             )
-            warnings.warn(message, DeprecationWarning, stacklevel=2)
+            warnings.warn(message, FutureWarning, stacklevel=2)
 
         super().__init__(**kwargs)
         self._check_data_loader()

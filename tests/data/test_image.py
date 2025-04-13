@@ -189,7 +189,7 @@ class TestImage(TorchioTestCase):
             im.data = im.data
 
     def test_no_type(self):
-        with pytest.warns(DeprecationWarning):
+        with pytest.warns(FutureWarning):
             tio.Image(tensor=torch.rand(1, 2, 3, 4))
 
     def test_custom_reader(self):

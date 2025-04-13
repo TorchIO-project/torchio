@@ -110,7 +110,7 @@ class Transform(ABC):
                 'The "keys" argument is deprecated and will be removed in the'
                 ' future. Use "include" instead'
             )
-            warnings.warn(message, DeprecationWarning, stacklevel=2)
+            warnings.warn(message, FutureWarning, stacklevel=2)
             include = keys
         self.include, self.exclude = self.parse_include_and_exclude_keys(
             include,
