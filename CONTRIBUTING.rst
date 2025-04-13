@@ -60,14 +60,16 @@ Get started!
 
 Ready to contribute? Here's how to set up ``torchio`` for local development.
 
-1) Create an issue about it on the GitHub repo
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+1) Create an issue on the GitHub repository
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 It's good practice to first discuss the proposed changes as the feature might
 already be implemented.
 
-2) Fork the ``torchio`` repo on GitHub
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+2) Fork the ``torchio`` repository on GitHub
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Click `here <https://github.com/TorchIO-project/torchio/fork>`_ to create your fork.
 
 3) Clone your fork locally
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -122,18 +124,12 @@ more <https://medium.com/@joshuatauberer/write-joyous-git-commit-messages-2f9889
 If you have modified the documentation or some docstrings, build the docs and
 verify that everything looks good::
 
-    cd docs
-    make html
+    just build-docs
 
-You can also use ``livehtml`` instead, to automatically build the docs every
+You can also build, serve and automatically rebuild the docs every
 time you modify them and reload them in the browser::
 
-    make livehtml
-
-If you prefer to activate your environment manually or not use ``uv``,
-add ``PREFIX=""`` to the command::
-
-    make html PREFIX=""
+    just serve-docs
 
 9) Submit a pull request on GitHub
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -143,4 +139,4 @@ Tips
 
 To run a subset of tests::
 
-    pytest tests/data/test_image.py
+    uv run pytest tests/data/test_image.py
