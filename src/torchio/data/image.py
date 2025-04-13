@@ -879,26 +879,29 @@ class ScalarImage(Image):
 
 
 class LabelMap(Image):
-    """Image whose pixel values represent categorical labels.
+    """Image whose pixel values represent segmentation labels.
 
-    Example:
-        >>> import torch
-        >>> import torchio as tio
-        >>> labels = tio.LabelMap(tensor=torch.rand(1, 128, 128, 68) > 0.5)
-        >>> labels = tio.LabelMap('t1_seg.nii.gz')  # loading from a file
-        >>> tpm = tio.LabelMap(                     # loading from files
-        ...     (
-        ...         'gray_matter.nii.gz',
-        ...         'white_matter.nii.gz',
-        ...         'csf.nii.gz',
-        ...     )
-        ... )
+    A sequence of paths to 3D images can be passed to create a 4D image.
+    This is useful to create a
+    `tissue probability map (TPM) <https://andysbrainbook.readthedocs.io/en/latest/SPM/SPM_Short_Course/SPM_04_Preprocessing/04_SPM_Segmentation.html#tissue-probability-maps>`,
+    which contains the probability of each voxel belonging to a certain tissue type,
+    or to create a label map with overlapping labels.
 
     Intensity transforms are not applied to these images.
 
     Nearest neighbor interpolation is always used to resample label maps,
     independently of the specified interpolation type in the transform
     instantiation.
+
+    Example:
+        >>> import torch
+        >>> import torchio as tio
+        >>> binary_tensor = torch.rand(1, 128, 128, 68) > 0.5
+        >>> label_map = tio.LabelMap(tensor=binary_tensor)  # from a tensor
+        >>> label_map = tio.LabelMap('t1_seg.nii.gz')  # from a file
+        >>> # Create a 4D tissue probability map from different 3D images
+        >>> tissues = 'gray_matter.nii.gz', 'white_matter.nii.gz', 'csf.nii.gz'
+        >>> tpm = tio.LabelMap(tissues)
 
     See :class:`~torchio.Image` for more information.
     """
