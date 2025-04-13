@@ -25,20 +25,32 @@ setup: install_uv
 bump part="patch":
     uv run bump-my-version bump {{part}} --verbose
 
-bump-dry part='patch':
+bump-dry part="patch":
     uv run bump-my-version bump {{part}} --dry-run --verbose --allow-dirty
 
 push:
     git push && git push --tags
 
+quality_cmd := "uv run --group quality"
+
 types:
-    uv run --group quality -- tox -e types
+    {{quality_cmd}} -- tox -e types
 
 lint:
-    uv run --group quality -- ruff check
+    {{quality_cmd}} -- ruff check
 
 format:
-    uv run --group quality -- ruff format --diff
+    {{quality_cmd}} -- ruff format --diff
 
 test:
     uv run --group test -- tox -e pytest
+
+docs_cmd := "uv run --group doc --directory docs"
+
+[positional-arguments]
+build-docs *args='':
+    {{docs_cmd}} -- sphinx-build -M html source build
+
+[positional-arguments]
+serve-docs *args='':
+    {{docs_cmd}} -- sphinx-autobuild source build "$@"
