@@ -46,7 +46,8 @@ class ToOrientation(SpatialTransform):
 
         valid_codes = set('RLAPIS')
         orientation = orientation.upper()
-        if not all(c in valid_codes for c in orientation):
+        all_valid = all(axis in valid_codes for axis in orientation)
+        if not all_valid:
             message = (
                 'Orientation code must be composed of three distinct characters'
                 f' in {valid_codes} but got "{orientation}"'
