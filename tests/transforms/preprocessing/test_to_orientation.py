@@ -12,14 +12,13 @@ class TestToOrientation(TorchioTestCase):
             tio.ToOrientation('RA')  # Too short
 
     def test_invalid_orientation_characters(self):
-        with pytest.raises(ValueError, match="characters from 'RLAPIS'"):
+        with pytest.raises(ValueError, match='three distinct characters'):
             tio.ToOrientation('XYZ')
 
     def test_missing_axis_direction(self):
-        with pytest.raises(
-            ValueError, match='must include one character for each axis'
-        ):
-            tio.ToOrientation('RAA')  # No S/I direction
+        match = 'must include one character for each axis'
+        with pytest.raises(ValueError, match=match):
+            tio.ToOrientation('RAA')  # no S/I direction
 
     def test_no_change_if_already_correct(self):
         transform = tio.ToOrientation('RAS')
