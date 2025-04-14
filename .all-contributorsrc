@@ -842,14 +842,23 @@
       "contributions": [
         "doc"
       ]
+    },
+    {
+      "login": "erooke",
+      "name": "Ethan Rooke",
+      "avatar_url": "https://avatars.githubusercontent.com/u/46689793?v=4",
+      "profile": "https://ethan.roo.ke",
+      "contributions": [
+        "doc"
+      ]
     }
   ],
   "contributorsPerLine": 7,
   "projectName": "torchio",
-  "projectOwner": "fepegar",
+  "projectOwner": "TorchIO-project",
   "repoType": "github",
   "repoHost": "https://github.com",
   "skipCi": true,
-  "commitConvention": "angular",
+  "commitConvention": "atom",
   "commitType": "docs"
 }
