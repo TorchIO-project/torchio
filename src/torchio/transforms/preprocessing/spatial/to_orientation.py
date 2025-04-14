@@ -33,7 +33,7 @@ class ToOrientation(SpatialTransform):
     .. _NiBabel docs about image orientation: https://nipy.org/nibabel/image_orientation.html
     """
 
-    def __init__(self, orientation='RAS', **kwargs):
+    def __init__(self, orientation: str = 'RAS', **kwargs):
         super().__init__(**kwargs)
         if not isinstance(orientation, str) or len(orientation) != 3:
             raise ValueError(
