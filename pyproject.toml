@@ -38,6 +38,7 @@ keywords = ["medical", "image processing", "pytorch", "augmentation", "mri"]
 requires-python = ">=3.9"
 dependencies = [
     "deprecated>=1.2",
+    "einops>=0.3",
     "humanize>=0.1",
     "nibabel>=3",
     "numpy>=1.20",
