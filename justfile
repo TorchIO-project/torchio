@@ -28,6 +28,36 @@ bump part="patch":
 bump-dry part="patch":
     uv run bump-my-version bump {{part}} --dry-run --verbose --allow-dirty
 
+bump-python:
+    #!/usr/bin/env -S uv run --script
+    # /// script
+    # dependencies = [
+    #     "packaging",
+    # ]
+    # ///
+    from pathlib import Path
+    from packaging.version import Version
+    python_version_path = Path(".python-version")
+    old_version_string = python_version_path.read_text().strip()
+    old_version = Version(old_version_string)
+    new_version_string = f"3.{old_version.minor + 1}\n"
+    python_version_path.write_text(new_version_string)
+    print(f"Updated Python version to {new_version_string}")
+    docs_config_path = Path(".readthedocs.yml")
+    docs_config = docs_config_path.read_text()
+    docs_config = docs_config.replace(
+        f'python: "{old_version_string}"',
+        f'python: "{new_version_string}"',
+    )
+    docs_config_path.write_text(docs_config)
+    tests_workflow_path = Path(".github/workflows/tests.yml")
+    tests_workflow = tests_workflow_path.read_text()
+    tests_workflow = tests_workflow.replace(
+        f'"{old_version_string}"]',
+        f'"{old_version_string}", "{new_version_string}"]',
+    )
+    tests_workflow_path.write_text(tests_workflow)
+
 push:
     git push && git push --tags
 
