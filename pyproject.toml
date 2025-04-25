@@ -107,10 +107,10 @@ types = [
 ]
 test = [
     "coverage==7.6.10",
+    "matplotlib==3.9.4",
     "parameterized==0.9.0",
     "pillow==11.0.0",
     "pytest==8.3.4",
-    "pytest-cov==6.0.0",
     "pytest-sugar==1.0.0",
     "tox-uv==1.20.2",
 ]
@@ -182,3 +182,8 @@ ignore = [
 
 [tool.ruff.lint.isort]
 force-single-line = true
+
+[tool.coverage.run]
+omit = [
+    "**/_remote_module_non_scriptable.py",
+]
