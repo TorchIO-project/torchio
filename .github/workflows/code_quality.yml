@@ -35,16 +35,3 @@ jobs:
 
       - name: Run check for tox env "${{ matrix.tox_env }}"
         run: uvx --with tox-uv -- tox -e ${{ matrix.tox_env }}
-
-  docs:
-    name: Documentation
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Run doc8 hook
-        run: uvx --with pre-commit-uv -- pre-commit run --all-files doc8
