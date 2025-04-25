@@ -5,6 +5,7 @@ on:
     branches:
       - main
   pull_request:
+  workflow_dispatch:
   schedule:
     - cron: "0 4 * * *"
 
@@ -31,34 +32,19 @@ jobs:
 
       - name: Install the latest version of uv
         uses: astral-sh/setup-uv@v5
-        with:
-          enable-cache: true
-          cache-dependency-glob: "pyproject.toml"
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Install tox
-        run: uv tool install tox --with tox-uv
 
       - name: Run check for tox env "${{ matrix.tox_env }}"
-        run: tox -e ${{ matrix.tox_env }}
+        run: uvx --with tox-uv -- tox -e ${{ matrix.tox_env }}
 
   docs:
     name: Documentation
     runs-on: ubuntu-latest
 
     steps:
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Install pre-commit
-        run: pip install pre-commit
-
       - name: Run doc8 hook
-        run: pre-commit run --all-files doc8
+        run: uvx --with pre-commit-uv -- pre-commit run --all-files doc8
