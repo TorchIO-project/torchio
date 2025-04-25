@@ -39,11 +39,5 @@ repos:
       - id: pyupgrade
         args: ['--py39-plus', '--keep-runtime-typing']
 
-  - repo: https://github.com/PyCQA/doc8
-    rev: v1.1.2
-    hooks:
-    - id: doc8
-
-
 ci:
   autoupdate_commit_msg: Autoupdate pre-commit hooks
