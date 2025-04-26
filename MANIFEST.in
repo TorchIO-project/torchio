@@ -1,6 +1,0 @@
-include CONTRIBUTING.rst
-include CHANGELOG.md
-include LICENSE
-include README.md
-
-recursive-include docs *.rst conf.py *.jpg *.png *.gif
