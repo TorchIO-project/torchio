@@ -40,7 +40,7 @@ bump-python:
     python_version_path = Path(".python-version")
     old_version_string = python_version_path.read_text().strip()
     old_version = Version(old_version_string)
-    new_version_string = f"3.{old_version.minor + 1}"
+    new_version_string = f"{old_version.major}.{old_version.minor + 1}"
     python_version_path.write_text(new_version_string + "\n")
 
     docs_config_path = Path(".readthedocs.yml")
@@ -64,14 +64,62 @@ bump-python:
     tests_workflow_path.write_text(tests_workflow)
 
     pyproject_path = Path("pyproject.toml")
-    pyproject = pyproject_path.read_text()
+    pyproject_text = pyproject_path.read_text()
     old_str = f'    "Programming Language :: Python :: {old_version_string}",\n'
     new_str = f'    "Programming Language :: Python :: {new_version_string}",\n'
-    pyproject = pyproject.replace(
+    pyproject_text = pyproject_text.replace(
         old_str,
         old_str + new_str,
     )
-    pyproject_path.write_text(pyproject)
+    pyproject_path.write_text(pyproject_text)
+
+deprecate-python:
+    #!/usr/bin/env -S uv run --script
+    # /// script
+    # dependencies = [
+    #     "packaging",
+    # ]
+    # ///
+    from pathlib import Path
+    from packaging.version import Version
+    from tomllib import load
+
+    pyproject_path = Path("pyproject.toml")
+    with open(pyproject_path, "rb") as f:
+        pyproject = load(f)
+
+    classifiers = pyproject["project"]["classifiers"]
+    for classifier in classifiers:
+        if classifier.startswith("Programming Language :: Python :: 3."):
+            old_version = Version(classifier.split("::")[-1].strip())
+            break
+    pyproject_text = pyproject_path.read_text()
+    to_replace = f'    "Programming Language :: Python :: {old_version}",\n'
+    pyproject_text = pyproject_text.replace(to_replace, "")
+    new_version = Version(f"{old_version.major}.{old_version.minor + 1}")
+    pyproject_text = pyproject_text.replace(
+        f'requires-python = ">={old_version}"',
+        f'requires-python = ">={new_version}"',
+    )
+    pyproject_path.write_text(pyproject_text)
+
+    pre_commit_path = Path(".pre-commit-config.yaml")
+    pre_commit_text = pre_commit_path.read_text()
+    old_version_pyupgrade = str(old_version).replace(".", "")
+    new_version_pyupgrade = str(new_version).replace(".", "")
+    pre_commit_text = pre_commit_text.replace(
+        f"--py{old_version_pyupgrade}-plus",
+        f"--py{new_version_pyupgrade}-plus",
+    )
+    pre_commit_path.write_text(pre_commit_text)
+
+    tests_workflow_path = Path(".github/workflows/tests.yml")
+    tests_workflow = tests_workflow_path.read_text()
+    tests_workflow = tests_workflow.replace(
+        f'["{old_version}", ',
+        f'[',
+    )
+    tests_workflow_path.write_text(tests_workflow)
 
 push:
     git push && git push --tags
