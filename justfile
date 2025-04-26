@@ -138,6 +138,9 @@ format:
 test:
     uv run --group test -- tox -e pytest
 
+add-remote remote:
+    git remote add {{remote}} git@github.com:{{remote}}/torchio.git
+
 docs_cmd := "uv run --group doc --directory docs"
 
 [positional-arguments]
