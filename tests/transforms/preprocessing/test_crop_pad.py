@@ -212,3 +212,31 @@ class TestCropOrPad(TorchioTestCase):
             shape_a = crop(subject_a).image.shape
             shape_b = crop(subject_b).image.shape
             assert shape_a != shape_b
+
+    def test_apply_crop_pad_false(self):
+        with pytest.raises(ValueError):
+            tio.CropOrPad((1, 2, 3), apply_crop=False, apply_pad=False)
+
+    def test_apply_crop_false(self):
+        target_shape = 9, 21, 30
+        orig_shape = self.sample_subject['t1'].spatial_shape
+        expected_shape = tuple(
+            t if t > o else o for o, t in zip(orig_shape, target_shape)
+        )
+        transform = tio.CropOrPad(target_shape, apply_crop=False)
+        transformed = transform(self.sample_subject)
+        for key in transformed:
+            result_shape = transformed[key].spatial_shape
+            assert result_shape == expected_shape
+
+    def test_apply_pad_false(self):
+        target_shape = 9, 21, 30
+        orig_shape = self.sample_subject['t1'].spatial_shape
+        expected_shape = tuple(
+            t if t < o else o for o, t in zip(orig_shape, target_shape)
+        )
+        transform = tio.CropOrPad(target_shape, apply_pad=False)
+        transformed = transform(self.sample_subject)
+        for key in transformed:
+            result_shape = transformed[key].spatial_shape
+            assert result_shape == expected_shape
