@@ -56,7 +56,7 @@ jobs:
         shell: bash # this wouldn't work on Powershell
 
       - name: Upload coverage reports to Codecov
-        if: ${{ matrix.os == 'ubuntu-latest' && matrix.python == '3.12' }}
+        if: ${{ matrix.os == 'ubuntu-latest' && matrix.python == '3.13' }}
         uses: codecov/codecov-action@v5.4.0
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}

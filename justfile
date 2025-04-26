@@ -40,9 +40,9 @@ bump-python:
     python_version_path = Path(".python-version")
     old_version_string = python_version_path.read_text().strip()
     old_version = Version(old_version_string)
-    new_version_string = f"3.{old_version.minor + 1}\n"
-    python_version_path.write_text(new_version_string)
-    print(f"Updated Python version to {new_version_string}")
+    new_version_string = f"3.{old_version.minor + 1}"
+    python_version_path.write_text(new_version_string + "\n")
+
     docs_config_path = Path(".readthedocs.yml")
     docs_config = docs_config_path.read_text()
     docs_config = docs_config.replace(
@@ -50,13 +50,28 @@ bump-python:
         f'python: "{new_version_string}"',
     )
     docs_config_path.write_text(docs_config)
+
     tests_workflow_path = Path(".github/workflows/tests.yml")
     tests_workflow = tests_workflow_path.read_text()
     tests_workflow = tests_workflow.replace(
         f'"{old_version_string}"]',
         f'"{old_version_string}", "{new_version_string}"]',
     )
+    tests_workflow = tests_workflow.replace(
+        f"matrix.python == '{old_version_string}'",
+        f"matrix.python == '{new_version_string}'",
+    )
     tests_workflow_path.write_text(tests_workflow)
+
+    pyproject_path = Path("pyproject.toml")
+    pyproject = pyproject_path.read_text()
+    old_str = f'    "Programming Language :: Python :: {old_version_string}",\n'
+    new_str = f'    "Programming Language :: Python :: {new_version_string}",\n'
+    pyproject = pyproject.replace(
+        old_str,
+        old_str + new_str,
+    )
+    pyproject_path.write_text(pyproject)
 
 push:
     git push && git push --tags
