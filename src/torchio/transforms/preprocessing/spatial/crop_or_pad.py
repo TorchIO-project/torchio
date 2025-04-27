@@ -34,12 +34,10 @@ class CropOrPad(SpatialTransform):
             :attr:`mask_name`.
         labels: If a label map is used to generate the mask, sequence of labels
             to consider.
-        apply_crop: If ``False``, the volume will not be cropped even if the
-            target shape is smaller than the input shape. At least one of
-            ``apply_crop`` or ``apply_pad`` must be ``True``.
-        apply_pad: If ``False``, the volume will not be padded even if the
-            target shape is larger than the input shape. At least one of
-            ``apply_crop`` or ``apply_pad`` must be ``True``.
+        only_crop: If ``True``, padding will not be applied, only cropping will
+            be done. ``only_crop`` and ``only_pad`` cannot both be ``True``.
+        only_pad: If ``True``, cropping will not be applied, only padding will
+            be done. ``only_crop`` and ``only_pad`` cannot both be ``True``.
         **kwargs: See :class:`~torchio.transforms.Transform` for additional
             keyword arguments.
 
@@ -82,8 +80,8 @@ class CropOrPad(SpatialTransform):
         padding_mode: Union[str, float] = 0,
         mask_name: Optional[str] = None,
         labels: Optional[Sequence[int]] = None,
-        apply_crop: bool = True,
-        apply_pad: bool = True,
+        only_crop: bool = False,
+        only_pad: bool = False,
         **kwargs,
     ):
         if target_shape is None and mask_name is None:
@@ -119,11 +117,11 @@ class CropOrPad(SpatialTransform):
         self.mask_name = mask_name
         self.labels = labels
 
-        if not (apply_crop or apply_pad):
-            message = 'At least one of apply_crop or apply_pad must be True'
+        if only_pad and only_crop:
+            message = 'only_crop and only_pad cannot both be True'
             raise ValueError(message)
-        self.apply_crop = apply_crop
-        self.apply_pad = apply_pad
+        self.only_crop = only_crop
+        self.only_pad = only_pad
 
     @staticmethod
     def _bbox_mask(mask_volume: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
@@ -291,10 +289,10 @@ class CropOrPad(SpatialTransform):
         subject.check_consistent_space()
         padding_params, cropping_params = self.compute_crop_or_pad(subject)
         padding_kwargs = {'padding_mode': self.padding_mode}
-        if self.apply_pad and padding_params is not None:
+        if padding_params is not None and not self.only_crop:
             pad = Pad(padding_params, **self.get_base_args(), **padding_kwargs)
             subject = pad(subject)  # type: ignore[assignment]
-        if self.apply_crop and cropping_params is not None:
+        if cropping_params is not None and not self.only_pad:
             crop = Crop(cropping_params, **self.get_base_args())
             subject = crop(subject)  # type: ignore[assignment]
         return subject
