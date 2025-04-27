@@ -2,6 +2,7 @@ import copy
 
 import pytest
 import torch
+
 import torchio as tio
 
 from .utils import TorchioTestCase
@@ -43,10 +44,37 @@ class TestUtils(TorchioTestCase):
 
     def test_subjects_from_batch(self):
         dataset = tio.SubjectsDataset(4 * [self.sample_subject])
-        loader = torch.utils.data.DataLoader(dataset, batch_size=4)
+        loader = tio.SubjectsLoader(dataset, batch_size=4)
         batch = tio.utils.get_first_item(loader)
         subjects = tio.utils.get_subjects_from_batch(batch)
         assert isinstance(subjects[0], tio.Subject)
+
+    def test_subjects_from_batch_with_string_metadata(self):
+        subject_c_with_string_metadata = tio.Subject(
+            name='John Doe',
+            label=tio.LabelMap(self.get_image_path('label_c', binary=True)),
+        )
+
+        dataset = tio.SubjectsDataset(4 * [subject_c_with_string_metadata])
+        loader = tio.SubjectsLoader(dataset, batch_size=4)
+        batch = tio.utils.get_first_item(loader)
+        subjects = tio.utils.get_subjects_from_batch(batch)
+        assert isinstance(subjects[0], tio.Subject)
+        assert 'label' in subjects[0]
+        assert 'name' in subjects[0]
+
+    def test_subjects_from_batch_with_int_metadata(self):
+        subject_c_with_int_metadata = tio.Subject(
+            age=45,
+            label=tio.LabelMap(self.get_image_path('label_c', binary=True)),
+        )
+        dataset = tio.SubjectsDataset(4 * [subject_c_with_int_metadata])
+        loader = tio.SubjectsLoader(dataset, batch_size=4)
+        batch = tio.utils.get_first_item(loader)
+        subjects = tio.utils.get_subjects_from_batch(batch)
+        assert isinstance(subjects[0], tio.Subject)
+        assert 'label' in subjects[0]
+        assert 'age' in subjects[0]
 
     def test_add_images_from_batch(self):
         subject = copy.deepcopy(self.sample_subject)

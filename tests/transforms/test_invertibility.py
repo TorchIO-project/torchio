@@ -2,6 +2,7 @@ import copy
 import warnings
 
 import torch
+
 import torchio as tio
 
 from ..utils import TorchioTestCase
@@ -13,7 +14,7 @@ class TestInvertibility(TorchioTestCase):
         # Remove RandomLabelsToImage as it will add a new image to the subject
         for t in transform.transforms:
             if t.name == 'RandomLabelsToImage':
-                transform.transforms.remove(t)
+                transform.transforms.remove(t)  # noqa: B038
                 break
         # Ignore elastic deformation and gamma warnings during execution
         # Ignore some transforms not invertible

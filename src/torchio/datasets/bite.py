@@ -1,16 +1,15 @@
 import abc
 from pathlib import Path
-from typing import Dict
 from typing import Optional
 
-from .. import Image
-from .. import LabelMap
-from .. import ScalarImage
-from .. import Subject
-from .. import SubjectsDataset
+from ..data import Image
+from ..data import LabelMap
+from ..data import ScalarImage
+from ..data import Subject
+from ..data import SubjectsDataset
 from ..download import download_and_extract_archive
 from ..transforms import Transform
-from ..typing import TypePath
+from ..types import TypePath
 
 
 class BITE(SubjectsDataset, abc.ABC):
@@ -49,14 +48,14 @@ class BITE3(BITE):
     Please check the `BITE website`_ for more information and
     acknowledgments instructions.
 
-    .. _BITE website: http://nist.mni.mcgill.ca/bite-brain-images-of-tumors-for-evaluation-database/
+    .. _BITE website: https://nist.mni.mcgill.ca/bite-brain-images-of-tumors-for-evaluation-database/
 
     Args:
         root: Root directory to which the dataset will be downloaded.
         transform: An instance of
             :class:`~torchio.transforms.transform.Transform`.
         download: If set to ``True``, will download the data into :attr:`root`.
-    """  # noqa: B950
+    """
 
     dirname = 'group3'
 
@@ -83,7 +82,7 @@ class BITE3(BITE):
             subject_dir = subjects_dir / subject_id
             preop_path = subject_dir / f'{subject_id}_preop_mri.mnc'
             postop_path = subject_dir / f'{subject_id}_postop_mri.mnc'
-            images_dict: Dict[str, Image] = {}
+            images_dict: dict[str, Image] = {}
             images_dict['preop'] = ScalarImage(preop_path)
             images_dict['postop'] = ScalarImage(postop_path)
             for fp in subject_dir.glob('*tumor*'):

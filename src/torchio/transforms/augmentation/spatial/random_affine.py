@@ -1,25 +1,23 @@
+from collections.abc import Sequence
 from numbers import Number
 from typing import Optional
-from typing import Sequence
-from typing import Tuple
 from typing import Union
 
 import numpy as np
 import SimpleITK as sitk
 import torch
 
-from .. import RandomTransform
-from ... import SpatialTransform
 from ....constants import INTENSITY
 from ....constants import TYPE
 from ....data.io import nib_to_sitk
 from ....data.subject import Subject
-from ....typing import TypeRangeFloat
-from ....typing import TypeSextetFloat
-from ....typing import TypeTripletFloat
+from ....types import TypeRangeFloat
+from ....types import TypeSextetFloat
+from ....types import TypeTripletFloat
 from ....utils import get_major_sitk_version
 from ....utils import to_tuple
-
+from ...spatial_transform import SpatialTransform
+from .. import RandomTransform
 
 TypeOneToSixFloat = Union[TypeRangeFloat, TypeTripletFloat, TypeSextetFloat]
 
@@ -68,8 +66,12 @@ class RandomAffine(RandomTransform, SpatialTransform):
             10 mm to the right, 20 mm to the front, and 30 mm upwards.
             If the image was in, e.g., PIR+ orientation, the sample will move
             10 mm to the back, 20 mm downwards, and 30 mm to the right.
-        isotropic: If ``True``, the scaling factor along all dimensions is the
-            same, i.e. :math:`s_1 = s_2 = s_3`.
+        isotropic: If ``True``, only one scaling factor will be sampled for all dimensions,
+            i.e. :math:`s_1 = s_2 = s_3`.
+            If one value :math:`x` is provided in :attr:`scales`, the scaling factor along all
+            dimensions will be :math:`s \sim \mathcal{U}(1 - x, 1 + x)`.
+            If two values provided :math:`(a, b)` in :attr:`scales`, the scaling factor along all
+            dimensions will be :math:`s \sim \mathcal{U}(a, b)`.
         center: If ``'image'``, rotations and scaling will be performed around
             the image center. If ``'origin'``, rotations and scaling will be
             performed around the origin in world coordinates.
@@ -107,7 +109,7 @@ class RandomAffine(RandomTransform, SpatialTransform):
         ct_transformed = transform(ct)
         subject.add_image(ct_transformed, 'Transformed')
         subject.plot()
-    """  # noqa: B950
+    """
 
     def __init__(
         self,
@@ -147,12 +149,21 @@ class RandomAffine(RandomTransform, SpatialTransform):
         degrees: TypeSextetFloat,
         translation: TypeSextetFloat,
         isotropic: bool,
-    ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
-        scaling_params = RandomTransform.sample_uniform_sextet(scales)
+    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+        scaling_params = torch.as_tensor(
+            RandomTransform.sample_uniform_sextet(scales),
+            dtype=torch.float64,
+        )
         if isotropic:
             scaling_params.fill_(scaling_params[0])
-        rotation_params = RandomTransform.sample_uniform_sextet(degrees)
-        translation_params = RandomTransform.sample_uniform_sextet(translation)
+        rotation_params = torch.as_tensor(
+            RandomTransform.sample_uniform_sextet(degrees),
+            dtype=torch.float64,
+        )
+        translation_params = torch.as_tensor(
+            RandomTransform.sample_uniform_sextet(translation),
+            dtype=torch.float64,
+        )
         return scaling_params, rotation_params, translation_params
 
     def apply_transform(self, subject: Subject) -> Subject:
@@ -163,16 +174,16 @@ class RandomAffine(RandomTransform, SpatialTransform):
             self.isotropic,
         )
         arguments = {
-            'scales': scaling_params.tolist(),
-            'degrees': rotation_params.tolist(),
-            'translation': translation_params.tolist(),
+            'scales': scaling_params,
+            'degrees': rotation_params,
+            'translation': translation_params,
             'center': self.center,
             'default_pad_value': self.default_pad_value,
             'image_interpolation': self.image_interpolation,
             'label_interpolation': self.label_interpolation,
             'check_shape': self.check_shape,
         }
-        transform = Affine(**self.add_include_exclude(arguments))
+        transform = Affine(**self.add_base_args(arguments))
         transformed = transform(subject)
         assert isinstance(transformed, Subject)
         return transformed
@@ -291,7 +302,7 @@ class Affine(SpatialTransform):
         radians = np.radians(degrees).tolist()
 
         # SimpleITK uses LPS
-        radians_lps = ras_to_lps(radians)
+        radians_lps = ras_to_lps(radians)  # type: ignore[arg-type]
         translation_lps = ras_to_lps(translation)
 
         transform.SetRotation(*radians_lps)
@@ -337,7 +348,7 @@ class Affine(SpatialTransform):
         # the input space. Intuitively, the passed arguments should take us
         # from the input space to the output space, so we need to invert the
         # transform.
-        # More info at https://github.com/fepegar/torchio/discussions/693
+        # More info at https://github.com/TorchIO-project/torchio/discussions/693
         transform = transform.GetInverse()
 
         if self.invert_transform:
@@ -449,7 +460,9 @@ def _parse_scales_isotropic(scales, isotropic):
     if isotropic and len(scales) in (3, 6):
         message = (
             'If "isotropic" is True, the value for "scales" must have'
-            f' length 1 or 2, but "{scales}" was passed'
+            f' length 1 or 2, but "{scales}" was passed.'
+            ' If you want to set isotropic scaling, use a single value or two values as a range'
+            ' for the scaling factor. Refer to the documentation for more information.'
         )
         raise ValueError(message)
 

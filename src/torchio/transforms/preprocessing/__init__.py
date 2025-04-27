@@ -17,7 +17,7 @@ from .spatial.pad import Pad
 from .spatial.resample import Resample
 from .spatial.resize import Resize
 from .spatial.to_canonical import ToCanonical
-
+from .spatial.to_orientation import ToOrientation
 
 __all__ = [
     'Pad',
@@ -25,6 +25,7 @@ __all__ = [
     'Resize',
     'Resample',
     'ToCanonical',
+    'ToOrientation',
     'CropOrPad',
     'CopyAffine',
     'EnsureShapeMultiple',

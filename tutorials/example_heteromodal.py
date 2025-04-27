@@ -4,10 +4,12 @@ be missing for some of the subjects, as in.
 Dorent et al. 2019, Hetero-Modal Variational Encoder-Decoder for Joint
 Modality Completion and Segmentation
 """
+
 import logging
 
 import torch.nn as nn
-from torch.utils.data import DataLoader
+
+import torchio as tio
 from torchio import LabelMap
 from torchio import Queue
 from torchio import ScalarImage
@@ -53,7 +55,7 @@ def main():
     # This collate_fn is needed in the case of missing modalities
     # In this case, the batch will be composed by a *list* of samples instead
     # of the typical Python dictionary that is collated by default in Pytorch
-    batch_loader = DataLoader(
+    batch_loader = tio.SubjectsLoader(
         queue_dataset,
         batch_size=batch_size,
         collate_fn=lambda x: x,

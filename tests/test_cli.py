@@ -1,11 +1,12 @@
 #!/usr/bin/env python
 """Tests for CLI tool package."""
+
 from typer.testing import CliRunner
+
 from torchio.cli import apply_transform
 from torchio.cli import print_info
 
 from .utils import TorchioTestCase
-
 
 runner = CliRunner()
 
@@ -39,8 +40,11 @@ class TestCLI(TorchioTestCase):
         result = runner.invoke(print_info.app, args)
         assert result.exit_code == 0
         assert (
-            result.output
-            == 'ScalarImage(shape: (1, 10, 20, 30); spacing: (1.00, 1.00,'
-            ' 1.00); orientation: RAS+; dtype: torch.DoubleTensor; memory:'
-            ' 46.9 KiB)\n'
-        )  # noqa: B950
+            result.output == 'ScalarImage('
+            'shape: (1, 10, 20, 30);'
+            ' spacing: (1.00, 1.00, 1.00);'
+            ' orientation: RAS+;'
+            ' dtype: torch.DoubleTensor;'
+            ' memory: 46.9 KiB'
+            ')\n'
+        )

@@ -1,10 +1,11 @@
 import copy
 
-import nibabel as nib
 import numpy as np
 import pytest
 import SimpleITK as sitk
 import torch
+from nibabel.nifti1 import Nifti1Image
+
 import torchio as tio
 
 from ..utils import TorchioTestCase
@@ -144,9 +145,9 @@ class TestTransforms(TorchioTestCase):
                 'CopyAffine',
             )
             if transform.name not in exclude:
-                assert (
-                    subject.shape[0] == transformed.shape[0]
-                ), f'Different number of channels after {transform.name}'
+                assert subject.shape[0] == transformed.shape[0], (
+                    f'Different number of channels after {transform.name}'
+                )
                 self.assert_tensor_not_equal(
                     subject.t1.data[1],
                     transformed.t1.data[1],
@@ -215,7 +216,7 @@ class TestTransforms(TorchioTestCase):
             tio.RandomNoise(include=['t2'], exclude=['t1'])
 
     def test_keys_deprecated(self):
-        with pytest.warns(DeprecationWarning):
+        with pytest.warns(FutureWarning):
             tio.RandomNoise(keys=['t2'])
 
     def test_keep_original(self):
@@ -285,7 +286,7 @@ class TestTransform(TorchioTestCase):
             transform.inverse()
 
     def test_batch_history(self):
-        # https://github.com/fepegar/torchio/discussions/743
+        # https://github.com/TorchIO-project/torchio/discussions/743
         subject = self.sample_subject
         transform = tio.Compose(
             [
@@ -295,7 +296,7 @@ class TestTransform(TorchioTestCase):
             ]
         )
         dataset = tio.SubjectsDataset([subject], transform=transform)
-        loader = torch.utils.data.DataLoader(
+        loader = tio.SubjectsLoader(
             dataset,
             collate_fn=tio.utils.history_collate,
         )
@@ -341,7 +342,7 @@ class TestTransform(TorchioTestCase):
 
     def test_label_keys(self):
         # Adapted from the issue in which the feature was requested:
-        # https://github.com/fepegar/torchio/issues/866#issue-1222255576
+        # https://github.com/TorchIO-project/torchio/issues/866#issue-1222255576
         size = 1, 10, 10, 10
         image = torch.rand(size)
         num_classes = 2  # excluding background
@@ -363,19 +364,47 @@ class TestTransform(TorchioTestCase):
 
     def test_nibabel_input(self):
         image = self.sample_subject.t1
-        image_nib = nib.Nifti1Image(image.data[0].numpy(), image.affine)
+        image_nib = Nifti1Image(image.data[0].numpy(), image.affine)
         transformed = tio.RandomAffine()(image_nib)
         transformed.get_fdata()
-        transformed.affine
+        _ = transformed.affine
 
         image = self.subject_4d.t1
         tensor_5d = image.data[np.newaxis].permute(2, 3, 4, 0, 1)
-        image_nib = nib.Nifti1Image(tensor_5d.numpy(), image.affine)
+        image_nib = Nifti1Image(tensor_5d.numpy(), image.affine)
         transformed = tio.RandomAffine()(image_nib)
         transformed.get_fdata()
-        transformed.affine
+        _ = transformed.affine
 
     def test_bad_shape(self):
         tensor = torch.rand(1, 2, 3)
         with pytest.raises(ValueError, match='must be a 4D tensor'):
             tio.RandomAffine()(tensor)
+
+    def test_bad_keys_type(self):
+        # From https://github.com/TorchIO-project/torchio/issues/923
+        with self.assertRaises(ValueError):
+            tio.RandomAffine(include='t1')
+
+    def test_init_args(self):
+        transform = tio.Compose([tio.RandomNoise()])
+        base_args = transform.get_base_args()
+        assert 'parse_input' not in base_args
+
+        transform = tio.OneOf([tio.RandomNoise()])
+        base_args = transform.get_base_args()
+        assert 'parse_input' not in base_args
+
+        transform = tio.RandomNoise()
+        base_args = transform.get_base_args()
+        assert all(
+            arg in base_args
+            for arg in [
+                'copy',
+                'include',
+                'exclude',
+                'keep',
+                'parse_input',
+                'label_keys',
+            ]
+        )

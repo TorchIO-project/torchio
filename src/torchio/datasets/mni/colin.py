@@ -6,7 +6,6 @@ from ...download import download_and_extract_archive
 from ...utils import compress
 from .mni import SubjectMNI
 
-
 TISSUES_2008 = {
     1: 'Cerebro-spinal fluid',
     2: 'Gray Matter',
@@ -27,7 +26,7 @@ class Colin27(SubjectMNI):
     r"""Colin27 MNI template.
 
     More information can be found in the website of the
-    `1998 <http://nist.mni.mcgill.ca/colin-27-average-brain/>`_ and
+    `1998 <https://nist.mni.mcgill.ca/colin-27-average-brain/>`_ and
     `2008 <http://www.bic.mni.mcgill.ca/ServicesAtlases/Colin27Highres>`_
     versions.
 
@@ -57,7 +56,7 @@ class Colin27(SubjectMNI):
         >>> colin_2008.load()
         >>> colin_2008.t1
         ScalarImage(shape: (1, 362, 434, 362); spacing: (0.50, 0.50, 0.50); orientation: RAS+; memory: 217.0 MiB; type: intensity)
-    """  # noqa: B950
+    """
 
     def __init__(self, version=1998):
         if version not in (1998, 2008):
@@ -74,7 +73,7 @@ class Colin27(SubjectMNI):
                 filename=self.filename,
             )
 
-            # Fix label map (https://github.com/fepegar/torchio/issues/220)
+            # Fix label map (https://github.com/TorchIO-project/torchio/issues/220)
             if version == 2008:
                 path = self.download_root / 'colin27_cls_tal_hires.nii'
                 cls_image = LabelMap(path)

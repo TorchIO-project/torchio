@@ -3,12 +3,10 @@ import numbers
 import warnings
 from abc import ABC
 from abc import abstractmethod
+from collections.abc import Sequence
 from contextlib import contextmanager
-from typing import Dict
-from typing import List
 from typing import Optional
-from typing import Sequence
-from typing import Tuple
+from typing import TypeVar
 from typing import Union
 
 import numpy as np
@@ -19,19 +17,20 @@ from ..data.image import LabelMap
 from ..data.io import nib_to_sitk
 from ..data.io import sitk_to_nib
 from ..data.subject import Subject
-from ..typing import TypeCallable
-from ..typing import TypeData
-from ..typing import TypeDataAffine
-from ..typing import TypeKeys
-from ..typing import TypeNumber
-from ..typing import TypeTripletInt
+from ..types import TypeCallable
+from ..types import TypeData
+from ..types import TypeDataAffine
+from ..types import TypeKeys
+from ..types import TypeNumber
+from ..types import TypeTripletInt
+from ..utils import is_iterable
 from ..utils import to_tuple
 from .data_parser import DataParser
 from .data_parser import TypeTransformInput
-from .interpolation import get_sitk_interpolator
 from .interpolation import Interpolation
+from .interpolation import get_sitk_interpolator
 
-TypeSixBounds = Tuple[int, int, int, int, int, int]
+TypeSixBounds = tuple[int, int, int, int, int, int]
 TypeBounds = Union[
     int,
     TypeTripletInt,
@@ -47,6 +46,8 @@ ANATOMICAL_AXES = (
     'Inferior',
     'Superior',
 )
+
+InputType = TypeVar('InputType', bound=TypeTransformInput)
 
 
 class Transform(ABC):
@@ -98,9 +99,9 @@ class Transform(ABC):
         include: TypeKeys = None,
         exclude: TypeKeys = None,
         keys: TypeKeys = None,
-        keep: Optional[Dict[str, str]] = None,
+        keep: Optional[dict[str, str]] = None,
         parse_input: bool = True,
-        label_keys: Optional[Sequence[str]] = None,
+        label_keys: TypeKeys = None,
     ):
         self.probability = self.parse_probability(p)
         self.copy = copy
@@ -109,11 +110,12 @@ class Transform(ABC):
                 'The "keys" argument is deprecated and will be removed in the'
                 ' future. Use "include" instead'
             )
-            warnings.warn(message, DeprecationWarning, stacklevel=2)
+            warnings.warn(message, FutureWarning, stacklevel=2)
             include = keys
-        self.include, self.exclude = self.parse_include_and_exclude(
+        self.include, self.exclude = self.parse_include_and_exclude_keys(
             include,
             exclude,
+            label_keys,
         )
         self.keep = keep
         self.parse_input = parse_input
@@ -121,12 +123,9 @@ class Transform(ABC):
         # args_names is the sequence of parameters from self that need to be
         # passed to a non-random version of a random transform. They are also
         # used to invert invertible transforms
-        self.args_names: List[str] = []
+        self.args_names: list[str] = []
 
-    def __call__(
-        self,
-        data: TypeTransformInput,
-    ) -> TypeTransformInput:
+    def __call__(self, data: InputType) -> InputType:
         """Transform data and return a result of the same type.
 
         Args:
@@ -156,9 +155,9 @@ class Transform(ABC):
         if self.keep is not None:
             images_to_keep = {}
             for name, new_name in self.keep.items():
-                images_to_keep[new_name] = copy.copy(subject[name])
+                images_to_keep[new_name] = copy.deepcopy(subject[name])
         if self.copy:
-            subject = copy.copy(subject)
+            subject = copy.deepcopy(subject)
         with np.errstate(all='raise', under='ignore'):
             transformed = self.apply_transform(subject)
         if self.keep is not None:
@@ -187,6 +186,38 @@ class Transform(ABC):
         else:
             return super().__repr__()
 
+    def get_base_args(self) -> dict:
+        r"""Provides easy access to the arguments used to instantiate the base class
+        (:class:`~torchio.transforms.transform.Transform`) of any transform.
+
+        This method is particularly useful when a new transform can be represented as a variant
+        of an existing transform (e.g. all random transforms), allowing for seamless instantiation
+        of the existing transform with the same arguments as the new transform during `apply_transform`.
+
+        Note: The `p` argument (probability of applying the transform) is excluded to avoid
+        multiplying the probability of both existing and new transform.
+        """
+        return {
+            'copy': self.copy,
+            'include': self.include,
+            'exclude': self.exclude,
+            'keep': self.keep,
+            'parse_input': self.parse_input,
+            'label_keys': self.label_keys,
+        }
+
+    def add_base_args(
+        self,
+        arguments,
+        overwrite_on_existing: bool = False,
+    ):
+        """Add the init args to existing arguments"""
+        for key, value in self.get_base_args().items():
+            if key in arguments and not overwrite_on_existing:
+                continue
+            arguments[key] = value
+        return arguments
+
     @property
     def name(self):
         return self.__class__.__name__
@@ -196,9 +227,13 @@ class Transform(ABC):
         raise NotImplementedError
 
     def add_transform_to_subject_history(self, subject):
+        from . import Compose
+        from . import CropOrPad
+        from . import EnsureShapeMultiple
+        from . import OneOf
         from .augmentation import RandomTransform
-        from . import Compose, OneOf, CropOrPad, EnsureShapeMultiple
-        from .preprocessing import SequentialLabels, Resize
+        from .preprocessing import Resize
+        from .preprocessing import SequentialLabels
 
         call_others = (
             RandomTransform,
@@ -241,12 +276,12 @@ class Transform(ABC):
 
     @staticmethod
     def _parse_range(
-        nums_range: Union[TypeNumber, Tuple[TypeNumber, TypeNumber]],
+        nums_range: Union[TypeNumber, tuple[TypeNumber, TypeNumber]],
         name: str,
         min_constraint: Optional[TypeNumber] = None,
         max_constraint: Optional[TypeNumber] = None,
         type_constraint: Optional[type] = None,
-    ) -> Tuple[TypeNumber, TypeNumber]:
+    ) -> tuple[TypeNumber, TypeNumber]:
         r"""Adapted from :class:`torchvision.transforms.RandomRotation`.
 
         Args:
@@ -281,45 +316,36 @@ class Transform(ABC):
         if isinstance(nums_range, numbers.Number):  # single number given
             if nums_range < 0:
                 raise ValueError(
-                    (
-                        f'If {name} is a single number,'
-                        f' it must be positive, not {nums_range}'
-                    ),
+                    f'If {name} is a single number,'
+                    f' it must be positive, not {nums_range}',
                 )
             if min_constraint is not None and nums_range < min_constraint:
                 raise ValueError(
-                    (
-                        f'If {name} is a single number, it must be greater'
-                        f' than {min_constraint}, not {nums_range}'
-                    ),
+                    f'If {name} is a single number, it must be greater'
+                    f' than {min_constraint}, not {nums_range}',
                 )
             if max_constraint is not None and nums_range > max_constraint:
                 raise ValueError(
-                    (
-                        f'If {name} is a single number, it must be smaller'
-                        f' than {max_constraint}, not {nums_range}'
-                    ),
+                    f'If {name} is a single number, it must be smaller'
+                    f' than {max_constraint}, not {nums_range}',
                 )
             if type_constraint is not None:
                 if not isinstance(nums_range, type_constraint):
                     raise ValueError(
-                        (
-                            f'If {name} is a single number, it must be of'
-                            f' type {type_constraint}, not {nums_range}'
-                        ),
+                        f'If {name} is a single number, it must be of'
+                        f' type {type_constraint}, not {nums_range}',
                     )
             min_range = -nums_range if min_constraint is None else nums_range
             return (min_range, nums_range)
 
         try:
             min_value, max_value = nums_range  # type: ignore[misc]
-        except (TypeError, ValueError):
-            raise ValueError(
-                (
-                    f'If {name} is not a single number, it must be'
-                    f' a sequence of len 2, not {nums_range}'
-                ),
+        except (TypeError, ValueError) as err:
+            message = (
+                f'If {name} is not a single number, it must be'
+                f' a sequence of len 2, not {nums_range}'
             )
+            raise ValueError(message) from err
 
         min_is_number = isinstance(min_value, numbers.Number)
         max_is_number = isinstance(max_value, numbers.Number)
@@ -329,26 +355,20 @@ class Transform(ABC):
 
         if min_value > max_value:
             raise ValueError(
-                (
-                    f'If {name} is a sequence, the second value must be'
-                    f' equal or greater than the first, but it is {nums_range}'
-                ),
+                f'If {name} is a sequence, the second value must be'
+                f' equal or greater than the first, but it is {nums_range}',
             )
 
         if min_constraint is not None and min_value < min_constraint:
             raise ValueError(
-                (
-                    f'If {name} is a sequence, the first value must be greater'
-                    f' than {min_constraint}, but it is {min_value}'
-                ),
+                f'If {name} is a sequence, the first value must be greater'
+                f' than {min_constraint}, but it is {min_value}',
             )
 
         if max_constraint is not None and max_value > max_constraint:
             raise ValueError(
-                (
-                    f'If {name} is a sequence, the second value must be'
-                    f' smaller than {max_constraint}, but it is {max_value}'
-                ),
+                f'If {name} is a sequence, the second value must be'
+                f' smaller than {max_constraint}, but it is {max_value}',
             )
 
         if type_constraint is not None:
@@ -356,10 +376,8 @@ class Transform(ABC):
             max_type_ok = isinstance(max_value, type_constraint)
             if not min_type_ok or not max_type_ok:
                 raise ValueError(
-                    (
-                        f'If "{name}" is a sequence, its values must be of'
-                        f' type "{type_constraint}", not "{type(nums_range)}"'
-                    ),
+                    f'If "{name}" is a sequence, its values must be of'
+                    f' type "{type_constraint}", not "{type(nums_range)}"',
                 )
         return nums_range  # type: ignore[return-value]
 
@@ -389,13 +407,29 @@ class Transform(ABC):
         return probability
 
     @staticmethod
-    def parse_include_and_exclude(
-        include: TypeKeys = None,
-        exclude: TypeKeys = None,
-    ) -> Tuple[TypeKeys, TypeKeys]:
+    def parse_include_and_exclude_keys(
+        include: TypeKeys,
+        exclude: TypeKeys,
+        label_keys: TypeKeys,
+    ) -> tuple[TypeKeys, TypeKeys]:
         if include is not None and exclude is not None:
             raise ValueError('Include and exclude cannot both be specified')
+        Transform.validate_keys_sequence(include, 'include')
+        Transform.validate_keys_sequence(exclude, 'exclude')
+        Transform.validate_keys_sequence(label_keys, 'label_keys')
         return include, exclude
+
+    @staticmethod
+    def validate_keys_sequence(keys: TypeKeys, name: str) -> None:
+        """Ensure that the input is not a string but a sequence of strings."""
+        if keys is None:
+            return
+        if isinstance(keys, str):
+            message = f'"{name}" must be a sequence of strings, not a string "{keys}"'
+            raise ValueError(message)
+        if not is_iterable(keys):
+            message = f'"{name}" must be a sequence of strings, not {type(keys)}'
+            raise ValueError(message)
 
     @staticmethod
     def nib_to_sitk(data: TypeData, affine: TypeData) -> sitk.Image:
@@ -445,9 +479,9 @@ class Transform(ABC):
         if bounds_parameters is None:
             return None
         try:
-            bounds_parameters = tuple(bounds_parameters)  # type: ignore[assignment,arg-type]  # noqa: B950
+            bounds_parameters = tuple(bounds_parameters)  # type: ignore[assignment,arg-type]
         except TypeError:
-            bounds_parameters = (bounds_parameters,)  # type: ignore[assignment]  # noqa: B950
+            bounds_parameters = (bounds_parameters,)  # type: ignore[assignment]
 
         # Check that numbers are integers
         for number in bounds_parameters:  # type: ignore[union-attr]
@@ -457,7 +491,7 @@ class Transform(ABC):
                     f' not "{bounds_parameters}" of type {type(number)}'
                 )
                 raise ValueError(message)
-        bounds_parameters_tuple = tuple(int(n) for n in bounds_parameters)  # type: ignore[assignment,union-attr]  # noqa: B950
+        bounds_parameters_tuple = tuple(int(n) for n in bounds_parameters)  # type: ignore[assignment,union-attr]
         bounds_parameters_length = len(bounds_parameters_tuple)
         if bounds_parameters_length == 6:
             return bounds_parameters_tuple  # type: ignore[return-value]
@@ -508,7 +542,7 @@ class Transform(ABC):
                     tensor,
                 )
         elif type(masking_method) in (tuple, list, int):
-            return self.get_mask_from_bounds(masking_method, tensor)  # type: ignore[arg-type]  # noqa: B950
+            return self.get_mask_from_bounds(masking_method, tensor)  # type: ignore[arg-type]
         first_anat_axes = tuple(s[0] for s in ANATOMICAL_AXES)
         message = (
             'Masking method must be one of:\n'

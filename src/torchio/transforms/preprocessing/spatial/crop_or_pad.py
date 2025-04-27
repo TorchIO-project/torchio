@@ -1,14 +1,13 @@
 import warnings
+from collections.abc import Sequence
 from typing import Optional
-from typing import Sequence
-from typing import Tuple
 from typing import Union
 
 import numpy as np
 
-from ... import SpatialTransform
 from ....data.subject import Subject
 from ....utils import parse_spatial_shape
+from ...spatial_transform import SpatialTransform
 from ...transform import TypeSixBounds
 from ...transform import TypeTripletInt
 from .crop import Crop
@@ -35,6 +34,10 @@ class CropOrPad(SpatialTransform):
             :attr:`mask_name`.
         labels: If a label map is used to generate the mask, sequence of labels
             to consider.
+        only_crop: If ``True``, padding will not be applied, only cropping will
+            be done. ``only_crop`` and ``only_pad`` cannot both be ``True``.
+        only_pad: If ``True``, cropping will not be applied, only padding will
+            be done. ``only_crop`` and ``only_pad`` cannot both be ``True``.
         **kwargs: See :class:`~torchio.transforms.Transform` for additional
             keyword arguments.
 
@@ -69,7 +72,7 @@ class CropOrPad(SpatialTransform):
         t1_pad_crop = crop_pad(t1)
         subject = tio.Subject(t1=t1, crop_pad=t1_pad_crop)
         subject.plot()
-    """  # noqa: B950
+    """
 
     def __init__(
         self,
@@ -77,6 +80,8 @@ class CropOrPad(SpatialTransform):
         padding_mode: Union[str, float] = 0,
         mask_name: Optional[str] = None,
         labels: Optional[Sequence[int]] = None,
+        only_crop: bool = False,
+        only_pad: bool = False,
         **kwargs,
     ):
         if target_shape is None and mask_name is None:
@@ -112,15 +117,21 @@ class CropOrPad(SpatialTransform):
         self.mask_name = mask_name
         self.labels = labels
 
+        if only_pad and only_crop:
+            message = 'only_crop and only_pad cannot both be True'
+            raise ValueError(message)
+        self.only_crop = only_crop
+        self.only_pad = only_pad
+
     @staticmethod
-    def _bbox_mask(mask_volume: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+    def _bbox_mask(mask_volume: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
         """Return 6 coordinates of a 3D bounding box from a given mask.
 
         Taken from `this SO question <https://stackoverflow.com/questions/31400769/bounding-box-of-numpy-array>`_.
 
         Args:
             mask_volume: 3D NumPy array.
-        """  # noqa: B950
+        """
         i_any = np.any(mask_volume, axis=(1, 2))
         j_any = np.any(mask_volume, axis=(0, 2))
         k_any = np.any(mask_volume, axis=(0, 1))
@@ -150,7 +161,7 @@ class CropOrPad(SpatialTransform):
             >>> p = np.array((4, 0, 7))
             >>> CropOrPad._get_six_bounds_parameters(p)
             (2, 2, 0, 0, 4, 3)
-        """  # noqa: B950
+        """
         parameters = parameters / 2
         result = []
         for number in parameters:
@@ -162,7 +173,7 @@ class CropOrPad(SpatialTransform):
     def _compute_cropping_padding_from_shapes(
         self,
         source_shape: TypeTripletInt,
-    ) -> Tuple[Optional[TypeSixBounds], Optional[TypeSixBounds]]:
+    ) -> tuple[Optional[TypeSixBounds], Optional[TypeSixBounds]]:
         diff_shape = np.array(self.target_shape) - source_shape
 
         cropping = -np.minimum(diff_shape, 0)
@@ -182,7 +193,7 @@ class CropOrPad(SpatialTransform):
     def _compute_center_crop_or_pad(
         self,
         subject: Subject,
-    ) -> Tuple[Optional[TypeSixBounds], Optional[TypeSixBounds]]:
+    ) -> tuple[Optional[TypeSixBounds], Optional[TypeSixBounds]]:
         source_shape = subject.spatial_shape
         parameters = self._compute_cropping_padding_from_shapes(source_shape)
         padding_params, cropping_params = parameters
@@ -191,7 +202,7 @@ class CropOrPad(SpatialTransform):
     def _compute_mask_center_crop_or_pad(
         self,
         subject: Subject,
-    ) -> Tuple[Optional[TypeSixBounds], Optional[TypeSixBounds]]:
+    ) -> tuple[Optional[TypeSixBounds], Optional[TypeSixBounds]]:
         if self.mask_name not in subject:
             message = (
                 f'Mask name "{self.mask_name}"'
@@ -278,10 +289,10 @@ class CropOrPad(SpatialTransform):
         subject.check_consistent_space()
         padding_params, cropping_params = self.compute_crop_or_pad(subject)
         padding_kwargs = {'padding_mode': self.padding_mode}
-        if padding_params is not None:
-            pad = Pad(padding_params, **padding_kwargs)
+        if padding_params is not None and not self.only_crop:
+            pad = Pad(padding_params, **self.get_base_args(), **padding_kwargs)
             subject = pad(subject)  # type: ignore[assignment]
-        if cropping_params is not None:
-            crop = Crop(cropping_params)
+        if cropping_params is not None and not self.only_pad:
+            crop = Crop(cropping_params, **self.get_base_args())
             subject = crop(subject)  # type: ignore[assignment]
         return subject

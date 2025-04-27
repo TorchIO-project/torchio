@@ -1,4 +1,3 @@
-from typing import Dict
 from typing import Optional
 
 import numpy as np
@@ -8,7 +7,7 @@ from ...constants import LABEL
 from ...constants import TYPE
 from ...data.image import Image
 from ...data.subject import Subject
-from ...typing import TypeSpatialShape
+from ...types import TypeSpatialShape
 from .weighted import WeightedSampler
 
 
@@ -63,7 +62,7 @@ class LabelSampler(WeightedSampler):
         self,
         patch_size: TypeSpatialShape,
         label_name: Optional[str] = None,
-        label_probabilities: Optional[Dict[int, float]] = None,
+        label_probabilities: Optional[dict[int, float]] = None,
     ):
         super().__init__(patch_size, probability_map=label_name)
         self.label_probabilities_dict = label_probabilities
@@ -106,7 +105,7 @@ class LabelSampler(WeightedSampler):
     @staticmethod
     def get_probabilities_from_label_map(
         label_map: torch.Tensor,
-        label_probabilities_dict: Dict[int, float],
+        label_probabilities_dict: dict[int, float],
         patch_size: np.ndarray,
     ) -> torch.Tensor:
         """Create probability map according to label map probabilities."""
@@ -118,7 +117,7 @@ class LabelSampler(WeightedSampler):
             raise RuntimeError(message)
         crop_fin_i, crop_fin_j, crop_fin_k = crop_fin = (patch_size - 1) // 2
         fin_i, fin_j, fin_k = spatial_shape - crop_fin
-        # See https://github.com/fepegar/torchio/issues/458
+        # See https://github.com/TorchIO-project/torchio/issues/458
         label_map = label_map[:, ini_i:fin_i, ini_j:fin_j, ini_k:fin_k]
 
         multichannel = label_map.shape[0] > 1
@@ -142,7 +141,7 @@ class LabelSampler(WeightedSampler):
         if multichannel:
             probability_map = probability_map.sum(dim=0, keepdim=True)
 
-        # See https://github.com/fepegar/torchio/issues/458
+        # See https://github.com/TorchIO-project/torchio/issues/458
         padding = ini_k, crop_fin_k, ini_j, crop_fin_j, ini_i, crop_fin_i
         probability_map = torch.nn.functional.pad(
             probability_map,

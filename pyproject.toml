@@ -1,10 +1,189 @@
 [build-system]
-requires = [
-  "setuptools>=42",
-]
-build-backend = "setuptools.build_meta"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
-[tool.black]
+[project]
+name = "torchio"
+version = "0.20.8"
+description = "Tools for medical image processing with PyTorch"
+readme = {file = "README.md", content-type = "text/markdown"}
+authors = [
+    {name = "TorchIO contributors"}
+]
+maintainers = [
+    {name = "Fernando Perez-Garcia", email = "fepegar@gmail.com"}
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: Apache Software License",
+    "Natural Language :: English",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Scientific/Engineering :: Image Processing",
+    "Topic :: Scientific/Engineering :: Medical Science Apps.",
+    "Typing :: Typed"
+]
+keywords = ["medical", "image processing", "pytorch", "augmentation", "mri"]
+requires-python = ">=3.9"
+dependencies = [
+    "deprecated>=1.2",
+    "einops>=0.3",
+    "humanize>=0.1",
+    "nibabel>=3",
+    "numpy>=1.20",
+    "packaging>=20",
+    "rich>=10",
+    "scipy>=1.7",
+    "simpleitk >=1.3, !=2.0.*, !=2.1.1.1",
+    "torch>=1.9",
+    "tqdm>=4.40",
+    "typer>=0.1",
+]
+
+[project.optional-dependencies]
+csv = [
+    "pandas>=1",
+]
+plot = [
+    "matplotlib>=3.4",
+]
+
+[project.scripts]
+tiohd = "torchio.cli.print_info:app"
+tiotr = "torchio.cli.apply_transform:app"
+torchio-transform = "torchio.cli.apply_transform:app"
+
+[project.urls]
+Homepage = "http://torchio.rtfd.io"
+Source = "https://github.com/TorchIO-project/torchio"
+"Issue tracker" = "https://github.com/TorchIO-project/torchio/issues"
+Documentation = "http://torchio.rtfd.io"
+"Release notes" = "https://github.com/TorchIO-project/torchio/releases"
+
+[dependency-groups]
+dev = [
+    { include-group = "doc" },
+    { include-group = "maintain" },
+    { include-group = "quality" },
+    { include-group = "test" },
+    "ipykernel==6.29.5",
+    "ipywidgets==8.1.5",
+    "pre-commit-uv==4.1.4",
+]
+doc = [
+    "einops==0.8.0",
+    "furo==2024.8.6",
+    "matplotlib==3.9.4",
+    "sphinx==7.4.7",
+    "sphinx-autobuild==2024.10.3",
+    "sphinx-copybutton==0.5.2",
+    "sphinx-gallery==0.18.0",
+    "sphinxext-opengraph==0.9.1",
+]
+maintain = [
+    "bump-my-version==0.30.1",
+]
+quality = [
+    "ruff==0.9.4",
+]
+types = [
+    "mypy>=1.14.1",
+    "pandas-stubs>=2.2.2.240807",
+    "pillow==11.0.0",
+    "pip>=25.0.1",
+    "types-deprecated==1.2.15.20241117",
+    "types-tqdm>=4.67.0.20250301",
+]
+test = [
+    "coverage==7.6.10",
+    "matplotlib==3.9.4",
+    "parameterized==0.9.0",
+    "pillow==11.0.0",
+    "pytest==8.3.4",
+    "pytest-sugar==1.0.0",
+    "tox-uv==1.20.2",
+]
+
+[tool.bumpversion]
+current_version = "0.20.8"
+commit = true
+tag = true
+
+[[tool.bumpversion.files]]
+filename = "src/torchio/__init__.py"
+search = "__version__ = '{current_version}'"
+replace = "__version__ = '{new_version}'"
+
+[[tool.bumpversion.files]]
+filename = "pyproject.toml"
+search = 'version = "{current_version}"'
+replace = 'version = "{new_version}"'
+
+[tool.mypy]
+pretty = true
+
+[[tool.mypy.overrides]]
+module = "duecredit.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "matplotlib.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "nibabel.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "scipy.*"
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+markers = [
+  "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+  "serial",
+]
+filterwarnings = [
+    # Ignore SimpleITK Swig warnings
+    "ignore:builtin type .* has no __module__ attribute",
+    "ignore:Casting complex values to real discards the imaginary part",
+    # Raised by SimpleITK on CI
+    "ignore:invalid escape sequence",
+]
+
+[tool.ruff.format]
+quote-style = 'single'
+
+[tool.ruff.lint]
 preview = true
-skip-string-normalization = 1
-target-version = ['py311']
+select = [
+    "B",
+    "E",
+    "F",
+    "I",
+    "W",
+]
+ignore = [
+    "E203",
+    "E501",
+    "N813",
+]
+
+[tool.ruff.lint.isort]
+force-single-line = true
+
+[tool.coverage.run]
+omit = [
+    "**/_remote_module_non_scriptable.py",
+]

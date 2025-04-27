@@ -7,12 +7,14 @@ size of the clip (height and width) by two and
 ``RandomAffine(degrees=(0, 0, 20))`` to rotate a maximum of 20 degrees around
 the time axis.
 """
+
 import matplotlib.animation as animation
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
-import torchio as tio
 from PIL import Image
+
+import torchio as tio
 
 
 def read_clip(path, undersample=4):
@@ -48,7 +50,7 @@ def plot_gif(image):
     )
 
 
-# Source: https://thehigherlearning.wordpress.com/2014/06/25/watching-a-cell-divide-under-an-electron-microscope-is-mesmerizing-gif/  # noqa: B950
+# Source: https://thehigherlearning.wordpress.com/2014/06/25/watching-a-cell-divide-under-an-electron-microscope-is-mesmerizing-gif/
 array, delay = read_clip('nBTu3oi.gif')
 plt.imshow(array[..., 0].transpose(1, 2, 0))
 plt.plot()

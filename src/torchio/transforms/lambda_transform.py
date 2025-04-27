@@ -1,11 +1,11 @@
+from collections.abc import Sequence
 from typing import Optional
-from typing import Sequence
 
 import torch
 
 from ..constants import TYPE
 from ..data.subject import Subject
-from ..typing import TypeCallable
+from ..types import TypeCallable
 from .transform import Transform
 
 
@@ -28,7 +28,7 @@ class Lambda(Transform):
         >>> def double(x):
         ...     return 2 * x
         >>> double_transform = tio.Lambda(double)
-    """  # noqa: B950
+    """
 
     def __init__(
         self,

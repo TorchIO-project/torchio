@@ -1,13 +1,13 @@
 import warnings
+from collections.abc import Sequence
 from typing import Optional
-from typing import Sequence
 
 import torch
 
-from ... import IntensityTransform
 from ....data.image import ScalarImage
 from ....data.subject import Subject
 from ....transforms.transform import TypeMaskingMethod
+from ...intensity_transform import IntensityTransform
 
 
 class Mask(IntensityTransform):
@@ -45,7 +45,7 @@ class Mask(IntensityTransform):
         masked = mask(subject)
         subject.add_image(masked.t1, 'Masked')
         subject.plot()
-    """  # noqa: B950
+    """
 
     def __init__(
         self,
@@ -58,6 +58,7 @@ class Mask(IntensityTransform):
         self.masking_method = masking_method
         self.masking_labels = labels
         self.outside_value = outside_value
+        self.args_names = ['masking_method']
 
     def apply_transform(self, subject: Subject) -> Subject:
         for image in self.get_images(subject):

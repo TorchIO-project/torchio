@@ -3,6 +3,7 @@
 I will remove all this once verbosity is reduced. More info:
 https://github.com/pytorch/vision/issues/2830
 """
+
 import gzip
 import hashlib
 import os
@@ -13,7 +14,7 @@ from typing import Optional
 
 from torch.hub import tqdm
 
-from .typing import TypePath
+from .types import TypePath
 
 
 def calculate_md5(fpath, chunk_size=1024 * 1024):

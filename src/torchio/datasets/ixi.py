@@ -1,30 +1,31 @@
-"""The `Information eXtraction from Images (IXI)`_ dataset contains "nearly 600
-MR images from normal, healthy subjects", including "T1, T2 and PD-weighted
-images, MRA images and Diffusion-weighted images (15 directions)".
+"""The `Information eXtraction from Images (IXI) <https://brain-development.org/ixi-dataset/>`_
+dataset contains "nearly 600 MR images from normal, healthy subjects",
+including "T1, T2 and PD-weighted images, MRA images and Diffusion-weighted
+images (15 directions)".
 
 .. note ::
     This data is made available under the
     Creative Commons CC BY-SA 3.0 license.
     If you use it please acknowledge the source of the IXI data, e.g.
     `the IXI website <https://brain-development.org/ixi-dataset/>`_.
+"""
 
-.. _Information eXtraction from Images (IXI): https://brain-development.org/ixi-dataset/
-"""  # noqa: B950
 # Adapted from
 # https://pytorch.org/docs/stable/_modules/torchvision/datasets/mnist.html#MNIST
 import shutil
+from collections.abc import Sequence
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 from typing import Optional
-from typing import Sequence
+from typing import Union
 
-from .. import LabelMap
-from .. import ScalarImage
-from .. import Subject
-from .. import SubjectsDataset
+from ..data import LabelMap
+from ..data import ScalarImage
+from ..data import Subject
+from ..data import SubjectsDataset
 from ..download import download_and_extract_archive
 from ..transforms import Transform
-from ..typing import TypePath
+from ..types import TypePath
 
 
 class IXI(SubjectsDataset):
@@ -60,9 +61,9 @@ class IXI(SubjectsDataset):
         >>> print('Keys in subject:', tuple(sample_subject.keys()))  # ('T1', 'T2')
         >>> print('Shape of T1 data:', sample_subject['T1'].shape)  # [1, 180, 268, 268]
         >>> print('Shape of T2 data:', sample_subject['T2'].shape)  # [1, 241, 257, 188]
-    """  # noqa: B950
+    """
 
-    base_url = 'http://biomedic.doc.ic.ac.uk/brain-development/downloads/IXI/IXI-{modality}.tar'  # noqa: FS003,B950
+    base_url = 'http://biomedic.doc.ic.ac.uk/brain-development/downloads/IXI/IXI-{modality}.tar'
     md5_dict = {
         'T1': '34901a0593b41dd19c1a1f746eac2d58',
         'T2': 'e3140d78730ecdd32ba92da48c0a9aaa',
@@ -74,7 +75,6 @@ class IXI(SubjectsDataset):
     def __init__(
         self,
         root: TypePath,
-        transform: Optional[Transform] = None,
         download: bool = False,
         modalities: Sequence[str] = ('T1', 'T2'),
         **kwargs,
@@ -93,7 +93,7 @@ class IXI(SubjectsDataset):
             message = 'Dataset not found. You can use download=True to download it'
             raise RuntimeError(message)
         subjects_list = self._get_subjects_list(root, modalities)
-        super().__init__(subjects_list, transform=transform, **kwargs)
+        super().__init__(subjects_list, **kwargs)
 
     @staticmethod
     def _check_exists(root, modalities):
@@ -117,7 +117,7 @@ class IXI(SubjectsDataset):
         subjects = []
         for filepath in paths:
             subject_id = get_subject_id(filepath)
-            images_dict = {'subject_id': subject_id}
+            images_dict: dict[str, Union[str, ScalarImage]] = {'subject_id': subject_id}
             images_dict[one_modality] = ScalarImage(filepath)
             for modality in modalities[1:]:
                 globbed = sglob(
@@ -172,8 +172,9 @@ class IXITiny(SubjectsDataset):
             :class:`~torchio.transforms.transform.Transform`.
         download: If set to ``True``, will download the data into :attr:`root`.
 
-    .. _notebook: https://github.com/fepegar/torchio/blob/main/tutorials/README.md
-    """  # noqa: B950
+    .. _notebook: https://github.com/TorchIO-project/torchio/blob/main/tutorials/README.md
+    """
+
     url = 'https://www.dropbox.com/s/ogxjwjxdv5mieah/ixi_tiny.zip?dl=1'
     md5 = 'bfb60f4074283d78622760230bfa1f98'
 

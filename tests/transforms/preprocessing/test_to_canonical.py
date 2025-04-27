@@ -1,5 +1,6 @@
 import numpy as np
 import torch
+
 import torchio as tio
 
 from ...utils import TorchioTestCase
@@ -27,6 +28,7 @@ class TestToCanonical(TorchioTestCase):
         self.assert_tensor_almost_equal(
             transformed.t1.data,
             torch.from_numpy(array_flip),
+            check_stride=False,
         )
 
         fixture = np.eye(4)

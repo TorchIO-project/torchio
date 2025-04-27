@@ -1,21 +1,20 @@
 from typing import Any
-from typing import Dict
 from typing import Optional
 
 import numpy as np
 import SimpleITK as sitk
 import torch
 
-from .random_affine import Affine
-from .random_affine import RandomAffine
-from .random_elastic_deformation import ElasticDeformation
-from .random_elastic_deformation import RandomElasticDeformation
-from .. import RandomTransform
-from ... import SpatialTransform
 from ....constants import INTENSITY
 from ....constants import TYPE
 from ....data.io import nib_to_sitk
 from ....data.subject import Subject
+from ... import SpatialTransform
+from .. import RandomTransform
+from .random_affine import Affine
+from .random_affine import RandomAffine
+from .random_elastic_deformation import ElasticDeformation
+from .random_elastic_deformation import RandomElasticDeformation
 
 
 class RandomCombinedAffineElasticDeformation(RandomTransform, SpatialTransform):
@@ -59,8 +58,8 @@ class RandomCombinedAffineElasticDeformation(RandomTransform, SpatialTransform):
     def __init__(
         self,
         affine_first: bool = True,
-        affine_kwargs: Optional[Dict[str, Any]] = None,
-        elastic_kwargs: Optional[Dict[str, any]] = None,
+        affine_kwargs: Optional[dict[str, Any]] = None,
+        elastic_kwargs: Optional[dict[str, any]] = None,
         **kwargs,
     ) -> None:
         super().__init__(**kwargs)
@@ -141,8 +140,8 @@ class CombinedAffineElasticDeformation(SpatialTransform):
     def __init__(
         self,
         affine_first: bool,
-        affine_params: Dict[str, Any],
-        elastic_params: Dict[str, Any],
+        affine_params: dict[str, Any],
+        elastic_params: dict[str, Any],
         **kwargs,
     ) -> None:
         super().__init__(**kwargs)

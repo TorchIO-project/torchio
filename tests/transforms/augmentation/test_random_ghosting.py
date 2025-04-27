@@ -1,4 +1,5 @@
 import pytest
+
 from torchio import RandomGhosting
 
 from ...utils import TorchioTestCase
@@ -72,5 +73,5 @@ class TestRandomGhosting(TorchioTestCase):
             RandomGhosting(restore=-1)
 
     def test_wrong_restore_type(self):
-        with pytest.raises(TypeError):
+        with pytest.raises(ValueError):
             RandomGhosting(restore='wrong')

@@ -1,6 +1,5 @@
+from collections.abc import Iterator
 from itertools import islice
-from typing import Iterator
-from typing import List
 from typing import Optional
 
 import humanize
@@ -9,7 +8,7 @@ from torch.utils.data import DataLoader
 from torch.utils.data import Dataset
 from torch.utils.data import Sampler
 
-from .. import NUM_SAMPLES
+from ..constants import NUM_SAMPLES
 from .dataset import SubjectsDataset
 from .sampler import PatchSampler
 from .subject import Subject
@@ -92,7 +91,7 @@ class Queue(Dataset):
     and the :class:`~torch.utils.data.DataLoader` used to pop batches from the
     queue.
 
-    .. image:: https://raw.githubusercontent.com/fepegar/torchio/main/docs/images/diagram_patches.svg
+    .. image:: https://raw.githubusercontent.com/TorchIO-project/torchio/main/docs/images/diagram_patches.svg
         :alt: Training with patches
 
     This sketch can be used to experiment and understand how the queue works.
@@ -115,7 +114,6 @@ class Queue(Dataset):
 
     >>> import torch
     >>> import torchio as tio
-    >>> from torch.utils.data import DataLoader
     >>> patch_size = 96
     >>> queue_length = 300
     >>> samples_per_volume = 10
@@ -129,7 +127,7 @@ class Queue(Dataset):
     ...     sampler,
     ...     num_workers=4,
     ... )
-    >>> patches_loader = DataLoader(
+    >>> patches_loader = tio.SubjectsLoader(
     ...     patches_queue,
     ...     batch_size=16,
     ...     num_workers=0,  # this must be 0
@@ -168,7 +166,7 @@ class Queue(Dataset):
     ...     num_workers=4,
     ...     subject_sampler=subject_sampler,
     ... )
-    >>> patches_loader = DataLoader(
+    >>> patches_loader = tio.SubjectsLoader(
     ...     patches_queue,
     ...     batch_size=16,
     ...     num_workers=0,  # this must be 0
@@ -181,7 +179,7 @@ class Queue(Dataset):
     ...         inputs = patches_batch['t1'][tio.DATA]  # key 't1' is in subject
     ...         targets = patches_batch['brain'][tio.DATA]  # key 'brain' is in subject
     ...         logits = model(inputs)  # model being an instance of torch.nn.Module
-    """  # noqa: B950
+    """
 
     def __init__(
         self,
@@ -211,14 +209,12 @@ class Queue(Dataset):
         self._num_sampled_subjects = 0
         if start_background:
             self._initialize_subjects_iterable()
-        self.patches_list: List[Subject] = []
+        self.patches_list: list[Subject] = []
 
         if self.shuffle_subjects and self.subject_sampler is not None:
             raise ValueError(
-                (
-                    'The flag shuffle_subjects cannot be set'
-                    ' when a subject sampler is passed'
-                ),
+                'The flag shuffle_subjects cannot be set'
+                ' when a subject sampler is passed',
             )
 
     def __len__(self):
@@ -259,7 +255,16 @@ class Queue(Dataset):
 
     @property
     def num_subjects(self) -> int:
-        return len(self.subjects_dataset)
+        if self.subject_sampler is not None:
+            if not hasattr(self.subject_sampler, '__len__'):
+                raise ValueError(
+                    'The subject sampler passed to the queue must have a'
+                    ' __len__ method',
+                )
+            num_subjects = len(self.subject_sampler)  # type: ignore[arg-type]
+        else:
+            num_subjects = len(self.subjects_dataset)
+        return num_subjects
 
     @property
     def num_patches(self) -> int:
@@ -267,9 +272,17 @@ class Queue(Dataset):
 
     @property
     def iterations_per_epoch(self) -> int:
+        all_subjects_list = self.subjects_dataset.dry_iter()
+        if self.subject_sampler is not None:
+            subjects_list = []
+            for subject_index in self.subject_sampler:
+                subject = all_subjects_list[subject_index]
+                subjects_list.append(subject)
+        else:
+            subjects_list = all_subjects_list
+
         total_num_patches = sum(
-            self._get_subject_num_samples(subject)
-            for subject in self.subjects_dataset.dry_iter()
+            self._get_subject_num_samples(subject) for subject in subjects_list
         )
         return total_num_patches
 
@@ -330,6 +343,7 @@ class Queue(Dataset):
                     ' patches from the queue should be 0. Is it?'
                 )
                 raise RuntimeError(message) from exception
+            raise exception
         return subject
 
     @staticmethod

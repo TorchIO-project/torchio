@@ -1,25 +1,25 @@
 import warnings
 from pathlib import Path
 from typing import Optional
-from typing import Tuple
 from typing import Union
 
 import nibabel as nib
 import numpy as np
+import numpy.typing as npt
 import SimpleITK as sitk
 import torch
+from nibabel.filebasedimages import ImageFileError
 from nibabel.spatialimages import SpatialImage
 
 from ..constants import REPO_URL
-from ..typing import TypeData
-from ..typing import TypeDataAffine
-from ..typing import TypeDirection
-from ..typing import TypeDoubletInt
-from ..typing import TypePath
-from ..typing import TypeQuartetInt
-from ..typing import TypeTripletFloat
-from ..typing import TypeTripletInt
-
+from ..types import TypeData
+from ..types import TypeDataAffine
+from ..types import TypeDirection
+from ..types import TypeDoubletInt
+from ..types import TypePath
+from ..types import TypeQuartetInt
+from ..types import TypeTripletFloat
+from ..types import TypeTripletInt
 
 # Matrices used to switch between LPS and RAS
 FLIPXY_33 = np.diag([-1, -1, 1])
@@ -38,7 +38,7 @@ def read_image(path: TypePath) -> TypeDataAffine:
         warnings.warn(message, stacklevel=2)
         try:
             result = _read_nibabel(path)
-        except nib.loadsave.ImageFileError as e:
+        except ImageFileError as e:
             message = (
                 f'File "{path}" not understood.'
                 ' Check supported formats by at'
@@ -58,6 +58,7 @@ def _read_nibabel(path: TypePath) -> TypeDataAffine:
     data = check_uint_to_int(data)
     tensor = torch.as_tensor(data)
     affine = img.affine
+    assert isinstance(affine, np.ndarray)
     return tensor, affine
 
 
@@ -157,19 +158,19 @@ def _write_nibabel(
     else:
         tensor = tensor[np.newaxis].permute(2, 3, 4, 0, 1)
     suffix = Path(str(path).replace('.gz', '')).suffix
-    img: Union[nib.Nifti1Image, nib.Nifti1Pair]
+    img: Union[nib.nifti1.Nifti1Image, nib.nifti1.Nifti1Pair]
     if '.nii' in suffix:
-        img = nib.Nifti1Image(np.asarray(tensor), affine)
+        img = nib.nifti1.Nifti1Image(np.asarray(tensor), affine)
     elif '.hdr' in suffix or '.img' in suffix:
-        img = nib.Nifti1Pair(np.asarray(tensor), affine)
+        img = nib.nifti1.Nifti1Pair(np.asarray(tensor), affine)
     else:
-        raise nib.loadsave.ImageFileError
-    assert isinstance(img.header, nib.Nifti1Header)
+        raise ImageFileError
+    assert isinstance(img.header, nib.nifti1.Nifti1Header)
     if num_components > 1:
         img.header.set_intent('vector')
     img.header['qform_code'] = 1
     img.header['sform_code'] = 0
-    nib.save(img, str(path))
+    nib.loadsave.save(img, str(path))
 
 
 def _write_sitk(
@@ -181,18 +182,19 @@ def _write_sitk(
 ) -> None:
     assert tensor.ndim == 4
     path = Path(path)
+    array = tensor.numpy()
     if path.suffix in ('.png', '.jpg', '.jpeg', '.bmp'):
         warnings.warn(
             f'Casting to uint 8 before saving to {path}',
             RuntimeWarning,
             stacklevel=2,
         )
-        tensor = tensor.numpy().astype(np.uint8)
+        array = array.astype(np.uint8)
     if squeeze is None:
         force_3d = path.suffix not in IMAGE_2D_FORMATS
     else:
         force_3d = not squeeze
-    image = nib_to_sitk(tensor, affine, force_3d=force_3d)
+    image = nib_to_sitk(array, affine, force_3d=force_3d)
     sitk.WriteImage(image, str(path), use_compression)
 
 
@@ -219,15 +221,17 @@ def write_matrix(matrix: torch.Tensor, path: TypePath):
         _write_niftyreg_matrix(matrix, path)
 
 
-def _to_itk_convention(matrix):
+def _to_itk_convention(matrix: TypeData) -> np.ndarray:
     """RAS to LPS."""
+    if isinstance(matrix, torch.Tensor):
+        matrix = matrix.numpy()
     matrix = np.dot(FLIPXY_44, matrix)
     matrix = np.dot(matrix, FLIPXY_44)
     matrix = np.linalg.inv(matrix)
     return matrix
 
 
-def _from_itk_convention(matrix):
+def _from_itk_convention(matrix: TypeData) -> np.ndarray:
     """LPS to RAS."""
     matrix = np.dot(matrix, FLIPXY_44)
     matrix = np.dot(FLIPXY_44, matrix)
@@ -235,7 +239,7 @@ def _from_itk_convention(matrix):
     return matrix
 
 
-def _read_itk_matrix(path):
+def _read_itk_matrix(path: TypePath) -> torch.Tensor:
     """Read an affine transform in ITK's .tfm format."""
     transform = sitk.ReadTransform(str(path))
     parameters = transform.GetParameters()
@@ -249,13 +253,16 @@ def _read_itk_matrix(path):
     return torch.as_tensor(homogeneous_matrix_ras)
 
 
-def _write_itk_matrix(matrix, tfm_path):
+def _write_itk_matrix(matrix: TypeData, tfm_path: TypePath) -> None:
     """The tfm file contains the matrix from floating to reference."""
     transform = _matrix_to_itk_transform(matrix)
     transform.WriteTransform(str(tfm_path))
 
 
-def _matrix_to_itk_transform(matrix, dimensions=3):
+def _matrix_to_itk_transform(
+    matrix: TypeData,
+    dimensions: int = 3,
+) -> sitk.AffineTransform:
     matrix = _to_itk_convention(matrix)
     rotation = matrix[:dimensions, :dimensions].ravel().tolist()
     translation = matrix[:dimensions, 3].tolist()
@@ -263,14 +270,14 @@ def _matrix_to_itk_transform(matrix, dimensions=3):
     return transform
 
 
-def _read_niftyreg_matrix(trsf_path):
+def _read_niftyreg_matrix(trsf_path: TypePath) -> torch.Tensor:
     """Read a NiftyReg matrix and return it as a NumPy array."""
-    matrix = np.loadtxt(trsf_path)
-    matrix = np.linalg.inv(matrix)
-    return torch.as_tensor(matrix)
+    read_matrix = np.loadtxt(trsf_path).astype(np.float64)
+    inverted = np.linalg.inv(read_matrix)
+    return torch.from_numpy(inverted)
 
 
-def _write_niftyreg_matrix(matrix, txt_path):
+def _write_niftyreg_matrix(matrix: TypeData, txt_path: TypePath) -> None:
     """Write an affine transform in NiftyReg's .txt format (ref -> flo)"""
     matrix = np.linalg.inv(matrix)
     np.savetxt(txt_path, matrix, fmt='%.8f')
@@ -278,7 +285,7 @@ def _write_niftyreg_matrix(matrix, txt_path):
 
 def get_rotation_and_spacing_from_affine(
     affine: np.ndarray,
-) -> Tuple[np.ndarray, np.ndarray]:
+) -> tuple[np.ndarray, np.ndarray]:
     # From https://github.com/nipy/nibabel/blob/master/nibabel/orientations.py
     rotation_zoom = affine[:3, :3]
     spacing = np.sqrt(np.sum(rotation_zoom * rotation_zoom, axis=0))
@@ -299,7 +306,7 @@ def nib_to_sitk(
     # Possibilities
     # (1, w, h, 1)
     # (c, w, h, 1)
-    # (1, w, h, 1)
+    # (1, w, h, d)
     # (c, w, h, d)
     array = np.asarray(data)
     affine = np.asarray(affine).astype(np.float64)
@@ -332,7 +339,7 @@ def nib_to_sitk(
 def sitk_to_nib(
     image: sitk.Image,
     keepdim: bool = False,
-) -> Tuple[np.ndarray, np.ndarray]:
+) -> tuple[np.ndarray, np.ndarray]:
     data = sitk.GetArrayFromImage(image).transpose()
     data = check_uint_to_int(data)
     num_components = image.GetNumberOfComponentsPerPixel()
@@ -357,10 +364,11 @@ def sitk_to_nib(
 def get_ras_affine_from_sitk(
     sitk_object: Union[sitk.Image, sitk.ImageFileReader],
 ) -> np.ndarray:
-    spacing = np.array(sitk_object.GetSpacing())
-    direction_lps = np.array(sitk_object.GetDirection())
-    origin_lps = np.array(sitk_object.GetOrigin())
+    spacing = np.array(sitk_object.GetSpacing(), dtype=np.float64)
+    direction_lps = np.array(sitk_object.GetDirection(), dtype=np.float64)
+    origin_lps = np.array(sitk_object.GetOrigin(), dtype=np.float64)
     direction_length = len(direction_lps)
+    rotation_lps: npt.NDArray[np.float64]
     if direction_length == 9:
         rotation_lps = direction_lps.reshape(3, 3)
     elif direction_length == 4:  # ignore last dimension if 2D (1, W, H, 1)
@@ -386,7 +394,7 @@ def get_sitk_metadata_from_ras_affine(
     affine: np.ndarray,
     is_2d: bool = False,
     lps: bool = True,
-) -> Tuple[TypeTripletFloat, TypeTripletFloat, TypeDirection]:
+) -> tuple[TypeTripletFloat, TypeTripletFloat, TypeDirection]:
     direction_ras, spacing_array = get_rotation_and_spacing_from_affine(affine)
     origin_ras = affine[:3, 3]
     origin_lps = np.dot(FLIPXY_33, origin_ras)

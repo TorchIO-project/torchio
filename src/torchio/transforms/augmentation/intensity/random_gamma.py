@@ -1,15 +1,13 @@
 from collections import defaultdict
-from typing import Dict
-from typing import Tuple
 
 import numpy as np
 import torch
 
-from .. import RandomTransform
-from ... import IntensityTransform
 from ....data.subject import Subject
-from ....typing import TypeRangeFloat
+from ....types import TypeRangeFloat
 from ....utils import to_tuple
+from ...intensity_transform import IntensityTransform
+from .. import RandomTransform
 
 
 class RandomGamma(RandomTransform, IntensityTransform):
@@ -38,7 +36,7 @@ class RandomGamma(RandomTransform, IntensityTransform):
         :class:`~torchio.transforms.RescaleIntensity`
         transform may be used to ensure that all values are positive. This is
         generally not problematic, but it is recommended to visualize results
-        on image with negative values. More information can be found on
+        on images with negative values. More information can be found on
         `this StackExchange question`_.
 
         .. _this StackExchange question: https://math.stackexchange.com/questions/317528/how-do-you-compute-negative-numbers-to-fractional-powers
@@ -62,23 +60,27 @@ class RandomGamma(RandomTransform, IntensityTransform):
         >>> subject = tio.datasets.FPG()
         >>> transform = tio.RandomGamma(log_gamma=(-0.3, 0.3))  # gamma between 0.74 and 1.34
         >>> transformed = transform(subject)
-    """  # noqa: B950
+    """
 
     def __init__(self, log_gamma: TypeRangeFloat = (-0.3, 0.3), **kwargs):
         super().__init__(**kwargs)
         self.log_gamma_range = self._parse_range(log_gamma, 'log_gamma')
 
     def apply_transform(self, subject: Subject) -> Subject:
-        arguments: Dict[str, dict] = defaultdict(dict)
-        for name, image in self.get_images_dict(subject).items():
+        images_dict = self.get_images_dict(subject)
+        if not images_dict:
+            return subject
+
+        arguments: dict[str, dict] = defaultdict(dict)
+        for name, image in images_dict.items():
             gammas = [self.get_params(self.log_gamma_range) for _ in image.data]
             arguments['gamma'][name] = gammas
-        transform = Gamma(**self.add_include_exclude(arguments))
+        transform = Gamma(**self.add_base_args(arguments))
         transformed = transform(subject)
         assert isinstance(transformed, Subject)
         return transformed
 
-    def get_params(self, log_gamma_range: Tuple[float, float]) -> float:
+    def get_params(self, log_gamma_range: tuple[float, float]) -> float:
         gamma = np.exp(self.sample_uniform(*log_gamma_range))
         return gamma
 
@@ -115,7 +117,7 @@ class Gamma(IntensityTransform):
         >>> subject = tio.datasets.FPG()
         >>> transform = tio.Gamma(0.8)
         >>> transformed = transform(subject)
-    """  # noqa: B950
+    """
 
     def __init__(self, gamma: float, **kwargs):
         super().__init__(**kwargs)

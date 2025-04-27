@@ -8,6 +8,7 @@ version: 2
 # Don't publish the docs if there are any warnings, as they might be relevant
 # https://github.com/readthedocs/readthedocs.org/issues/6837#issuecomment-607229633
 sphinx:
+  configuration: docs/source/conf.py
   fail_on_warning: true
 
 # Formats of the documentation to be built
@@ -15,9 +16,12 @@ formats:
   - htmlzip
   - pdf
 
-python:
-  install:
-    - method: pip
-      path: .
-      extra_requirements:
-        - doc
+build:
+  os: ubuntu-lts-latest
+  tools:
+    python: "3.13"
+  jobs:
+    install:
+      - pip install .
+      - pip install dependency-groups
+      - pip-install-dependency-groups doc

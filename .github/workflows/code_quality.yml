@@ -2,94 +2,36 @@ name: Code quality
 
 on:
   push:
-    branches: [main]
+    branches:
+      - main
   pull_request:
-    branches: [main]
+  workflow_dispatch:
   schedule:
     - cron: "0 4 * * *"
 
+env:
+  FORCE_COLOR: 1
+
 jobs:
-
-  mypy:
-    name: Type checks
+  check:
+    name: tox env ${{ matrix.tox_env }}
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        tox_env:
+          - format
+          - lint
+          - types
 
     steps:
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: "3.11"
-
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Install tox
-        run: pip install tox
+      - name: Install the latest version of uv
+        uses: astral-sh/setup-uv@v5
 
-      - name: Run mypy
-        run: tox -e mypy
-
-  flake8:
-    name: Code style
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: "3.11"
-
-      - name: Checkout repository
-        uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
-
-      - name: Install pre-commit
-        run: pip install pre-commit
-
-      - name: Run flake8 hooks
-        run: pre-commit run --all-files flake8
-
-  black:
-    name: Code formatting
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: "3.11"
-
-      - name: Checkout repository
-        uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
-
-      - name: Install black
-        run: pip install black
-
-      - name: Run black
-        run: black --check --diff .
-
-  docs:
-    name: Documentation
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: "3.11"
-
-      - name: Checkout repository
-        uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
-
-      - name: Install pre-commit
-        run: pip install pre-commit
-
-      - name: Run doc8 hook
-        run: pre-commit run --all-files doc8
+      - name: Run check for tox env "${{ matrix.tox_env }}"
+        run: uvx --with tox-uv -- tox -e ${{ matrix.tox_env }}

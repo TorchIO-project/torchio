@@ -2,11 +2,15 @@ name: Tests
 
 on:
   push:
-    branches: [main]
+    branches:
+      - main
   pull_request:
-    branches: [main]
+  workflow_dispatch:
   schedule:
     - cron: "0 4 * * *"
+
+env:
+  FORCE_COLOR: 1
 
 jobs:
   pytest:
@@ -14,27 +18,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-        python-version: ['3.7', '3.8', '3.9', '3.10', '3.11']
-        exclude:
-          - os: macos-latest
-            python-version: '3.7'
-          - os: macos-latest
-            python-version: '3.8'
-          - os: macos-latest
-            python-version: '3.9'
-          - os: macos-latest
-            python-version: '3.11'
-
-          - os: windows-latest
-            python-version: '3.7'
-          - os: windows-latest
-            python-version: '3.8'
-          - os: windows-latest
-            python-version: '3.9'
-          - os: windows-latest
-            python-version: '3.10'
-          - os: windows-latest
-            python-version: '3.11'
+        python: ["3.9", "3.10", "3.11", "3.12", "3.13"]
       fail-fast: false
 
     runs-on: ${{ matrix.os }}
@@ -42,49 +26,56 @@ jobs:
       OS: ${{ matrix.os }}
 
     steps:
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v4
-        with:
-          python-version: ${{ matrix.python-version }}
-
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Install tox
-        run: pip install tox
+      - name: Install the latest version of uv
+        uses: astral-sh/setup-uv@v5
 
-      - name: Run unit tests
-        run: tox -e py
+      - name: Install tox
+        run: uv tool install --python ${{ matrix.python }} --with tox-uv tox
+
+      - name: Add local bin to path on Windows
+        if: runner.os == 'Windows'
+        run: echo "C:/Users/runneradmin/.local/bin" >> $GITHUB_PATH
+        shell: bash
+
+      - name: Setup test suite
+        run: tox run -v --notest --skip-missing-interpreters false -e ${{ matrix.python }}
+
+      # Run all tests on schedule, but only non-slow tests on push
+      - name: Run pytest
+        run: |
+          if [ "${{ github.event_name }}" == "schedule" ]; then
+            tox -e pytest
+          else
+            tox -e pytest -- -m "not slow"
+          fi
+        shell: bash # this wouldn't work on Powershell
 
       - name: Upload coverage reports to Codecov
-        run: |
-          OS_LOWERCASE=$(echo $RUNNER_OS | tr '[:upper:]' '[:lower:]')
-          curl -Os https://uploader.codecov.io/latest/${OS_LOWERCASE}/codecov
-          chmod +x codecov
-          ./codecov
+        if: ${{ matrix.os == 'ubuntu-latest' && matrix.python == '3.13' }}
+        uses: codecov/codecov-action@v5.4.0
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
   cli:
     name: CLI smoke tests
     runs-on: ubuntu-latest
 
     steps:
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: "3.11"
-
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Install project
-        run: pip install .
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
 
       - name: Test transforms CLI tool
-        run: tiotr --help
+        run: uv run -- tiotr --help
 
       - name: Test info CLI tool
-        run: tiohd --help
+        run: uv run -- tiohd --help

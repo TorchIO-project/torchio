@@ -1,5 +1,6 @@
 import pytest
 import torch
+
 import torchio as tio
 
 from ...utils import TorchioTestCase
@@ -18,7 +19,7 @@ class TestAggregator(TorchioTestCase):
         patch_overlap = 0, 2, 2
         sampler = tio.data.GridSampler(subject, patch_size, patch_overlap)
         aggregator = tio.data.GridAggregator(sampler, overlap_mode=mode)
-        loader = torch.utils.data.DataLoader(sampler, batch_size=3)
+        loader = tio.SubjectsLoader(sampler, batch_size=3)
         values_dict = {
             (0, 0): 0,
             (0, 1): 2,
@@ -70,7 +71,7 @@ class TestAggregator(TorchioTestCase):
             patch_size,
             patch_overlap,
         )
-        patch_loader = torch.utils.data.DataLoader(grid_sampler)
+        patch_loader = tio.SubjectsLoader(grid_sampler)
         aggregator = tio.inference.GridAggregator(
             grid_sampler,
             overlap_mode=overlap_mode,
@@ -86,7 +87,7 @@ class TestAggregator(TorchioTestCase):
             aggregator.get_output_tensor()
 
     def run_patch_crop_issue(self, *, padding_mode):
-        # https://github.com/fepegar/torchio/issues/813
+        # https://github.com/TorchIO-project/torchio/issues/813
         pao, pas, ims, bb1, bb2 = 4, 102, 320, 100, 120
 
         patch_overlap = pao, 0, 0
@@ -102,7 +103,7 @@ class TestAggregator(TorchioTestCase):
             patch_size,
             patch_overlap,
         )
-        patch_loader = torch.utils.data.DataLoader(grid_sampler)
+        patch_loader = tio.SubjectsLoader(grid_sampler)
         aggregator = tio.inference.GridAggregator(grid_sampler)
         for patches_batch in patch_loader:
             input_tensor = patches_batch['image'][tio.DATA]
@@ -118,7 +119,7 @@ class TestAggregator(TorchioTestCase):
         self.run_patch_crop_issue(padding_mode='constant')
 
     def test_bad_aggregator_shape(self):
-        # https://github.com/microsoft/InnerEye-DeepLearning/pull/677/checks?check_run_id=5395915817  # noqa: B950
+        # https://github.com/microsoft/InnerEye-DeepLearning/pull/677/checks?check_run_id=5395915817
         tensor = torch.ones(1, 40, 40, 40)
         image_name = 'img'
         subject = tio.Subject({image_name: tio.ScalarImage(tensor=tensor)})
@@ -131,7 +132,7 @@ class TestAggregator(TorchioTestCase):
             padding_mode='edge',
         )
         aggregator = tio.data.GridAggregator(sampler)
-        loader = torch.utils.data.DataLoader(sampler, batch_size=3)
+        loader = tio.SubjectsLoader(sampler, batch_size=3)
         for batch in loader:
             input_batch = batch[image_name][tio.DATA]
             crop = tio.CropOrPad(12)

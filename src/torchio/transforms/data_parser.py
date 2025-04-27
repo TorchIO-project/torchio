@@ -1,5 +1,5 @@
+from collections.abc import Sequence
 from typing import Optional
-from typing import Sequence
 from typing import Union
 
 import nibabel as nib
@@ -13,8 +13,7 @@ from ..data.image import ScalarImage
 from ..data.io import nib_to_sitk
 from ..data.io import sitk_to_nib
 from ..data.subject import Subject
-from ..typing import TypeData
-
+from ..types import TypeData
 
 TypeTransformInput = Union[
     Subject,
@@ -75,7 +74,7 @@ class DataParser:
                     'If the input is a dictionary, a value for "include" must'
                     ' be specified when instantiating the transform. See the'
                     ' docs for Transform:'
-                    ' https://torchio.readthedocs.io/transforms/transforms.html#torchio.transforms.Transform'  # noqa: B950
+                    ' https://torchio.readthedocs.io/transforms/transforms.html#torchio.transforms.Transform'
                 )
                 raise RuntimeError(message)
             subject = self._get_subject_from_dict(

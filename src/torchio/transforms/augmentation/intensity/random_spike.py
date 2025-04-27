@@ -1,16 +1,14 @@
 from collections import defaultdict
 from numbers import Number
-from typing import Dict
-from typing import Tuple
 from typing import Union
 
 import numpy as np
 import torch
 
-from .. import RandomTransform
-from ... import FourierTransform
-from ... import IntensityTransform
 from ....data.subject import Subject
+from ...fourier import FourierTransform
+from ...intensity_transform import IntensityTransform
+from .. import RandomTransform
 
 
 class RandomSpike(RandomTransform, IntensityTransform, FourierTransform):
@@ -44,8 +42,8 @@ class RandomSpike(RandomTransform, IntensityTransform, FourierTransform):
 
     def __init__(
         self,
-        num_spikes: Union[int, Tuple[int, int]] = 1,
-        intensity: Union[float, Tuple[float, float]] = (1, 3),
+        num_spikes: Union[int, tuple[int, int]] = 1,
+        intensity: Union[float, tuple[float, float]] = (1, 3),
         **kwargs,
     ):
         super().__init__(**kwargs)
@@ -53,7 +51,7 @@ class RandomSpike(RandomTransform, IntensityTransform, FourierTransform):
             intensity,
             'intensity_range',
         )
-        self.num_spikes_range: Tuple[int, int] = self._parse_range(  # type: ignore[assignment]  # noqa: B950
+        self.num_spikes_range: tuple[int, int] = self._parse_range(  # type: ignore[assignment]
             num_spikes,
             'num_spikes',
             min_constraint=0,
@@ -61,24 +59,28 @@ class RandomSpike(RandomTransform, IntensityTransform, FourierTransform):
         )
 
     def apply_transform(self, subject: Subject) -> Subject:
-        arguments: Dict[str, dict] = defaultdict(dict)
-        for image_name in self.get_images_dict(subject):
+        images_dict = self.get_images_dict(subject)
+        if not images_dict:
+            return subject
+
+        arguments: dict[str, dict] = defaultdict(dict)
+        for image_name in images_dict:
             spikes_positions_param, intensity_param = self.get_params(
                 self.num_spikes_range,
                 self.intensity_range,
             )
             arguments['spikes_positions'][image_name] = spikes_positions_param
             arguments['intensity'][image_name] = intensity_param
-        transform = Spike(**self.add_include_exclude(arguments))
+        transform = Spike(**self.add_base_args(arguments))
         transformed = transform(subject)
         assert isinstance(transformed, Subject)
         return transformed
 
     def get_params(
         self,
-        num_spikes_range: Tuple[int, int],
-        intensity_range: Tuple[float, float],
-    ) -> Tuple[np.ndarray, float]:
+        num_spikes_range: tuple[int, int],
+        intensity_range: tuple[float, float],
+    ) -> tuple[np.ndarray, float]:
         ns_min, ns_max = num_spikes_range
         num_spikes_param = int(torch.randint(ns_min, ns_max + 1, (1,)).item())
         intensity_param = self.sample_uniform(*intensity_range)
@@ -90,7 +92,7 @@ class Spike(IntensityTransform, FourierTransform):
     r"""Add MRI spike artifacts.
 
     Also known as `Herringbone artifact
-    <https://radiopaedia.org/articles/herringbone-artifact?lang=gb>`_,
+    <https://radiopaedia.org/articles/herringbone-artifact>`_,
     crisscross artifact or corduroy artifact, it creates stripes in different
     directions in image space due to spikes in k-space.
 
@@ -107,8 +109,8 @@ class Spike(IntensityTransform, FourierTransform):
 
     def __init__(
         self,
-        spikes_positions: Union[np.ndarray, Dict[str, np.ndarray]],
-        intensity: Union[float, Dict[str, float]],
+        spikes_positions: Union[np.ndarray, dict[str, np.ndarray]],
+        intensity: Union[float, dict[str, float]],
         **kwargs,
     ):
         super().__init__(**kwargs)

@@ -1,4 +1,4 @@
-from typing import Generator
+from collections.abc import Generator
 from typing import Optional
 
 import numpy as np
@@ -6,8 +6,8 @@ import torch
 
 from ...constants import LOCATION
 from ...data.subject import Subject
-from ...typing import TypeSpatialShape
-from ...typing import TypeTripletInt
+from ...types import TypeSpatialShape
+from ...types import TypeTripletInt
 from ...utils import to_tuple
 
 
@@ -40,7 +40,7 @@ class PatchSampler:
         subject: Subject,
         index_ini: TypeTripletInt,
     ) -> Subject:
-        cropped_subject = self.crop(subject, index_ini, self.patch_size)  # type: ignore[arg-type]  # noqa: B950
+        cropped_subject = self.crop(subject, index_ini, self.patch_size)  # type: ignore[arg-type]
         return cropped_subject
 
     def crop(
@@ -76,7 +76,7 @@ class PatchSampler:
         crop_ini = index_ini_array.tolist()
         crop_fin = (shape - index_fin).tolist()
         start = ()
-        cropping = sum(zip(crop_ini, crop_fin), start)
+        cropping = sum(zip(crop_ini, crop_fin), start)  # type: ignore[arg-type]
         return Crop(cropping)  # type: ignore[arg-type]
 
     def __call__(

@@ -1,26 +1,24 @@
 from collections.abc import Iterable
+from collections.abc import Sized
 from numbers import Number
 from pathlib import Path
 from typing import Optional
-from typing import Sized
-from typing import Tuple
 from typing import Union
 
 import numpy as np
 import SimpleITK as sitk
 import torch
 
-from ... import SpatialTransform
 from ....data.image import Image
 from ....data.image import ScalarImage
 from ....data.io import get_sitk_metadata_from_ras_affine
 from ....data.io import sitk_to_nib
 from ....data.subject import Subject
-from ....typing import TypePath
-from ....typing import TypeTripletFloat
+from ....types import TypePath
+from ....types import TypeTripletFloat
+from ...spatial_transform import SpatialTransform
 
-
-TypeSpacing = Union[float, Tuple[float, float, float]]
+TypeSpacing = Union[float, tuple[float, float, float]]
 
 
 class Resample(SpatialTransform):
@@ -76,7 +74,7 @@ class Resample(SpatialTransform):
         t1_resampled = resample(subject.t1)
         subject.add_image(t1_resampled, 'Downsampled')
         subject.plot()
-    """  # noqa: B950
+    """
 
     def __init__(
         self,
@@ -106,7 +104,7 @@ class Resample(SpatialTransform):
         ]
 
     @staticmethod
-    def _parse_spacing(spacing: TypeSpacing) -> Tuple[float, float, float]:
+    def _parse_spacing(spacing: TypeSpacing) -> tuple[float, float, float]:
         result: Iterable
         if isinstance(spacing, Iterable) and len(spacing) == 3:
             result = spacing
@@ -158,14 +156,17 @@ class Resample(SpatialTransform):
             self.check_affine_key_presence(self.pre_affine_name, subject)
 
         for image in self.get_images(subject):
-            # Do not resample the reference image if it is in the subject
+            # If the current image is the reference, don't resample it
             if self.target is image:
                 continue
+
+            # If the target is not a string, or is not an image in the subject,
+            # do nothing
             try:
                 target_image = subject[self.target]
                 if target_image is image:
                     continue
-            except (KeyError, TypeError):
+            except (KeyError, TypeError, RuntimeError):
                 pass
 
             # Choose interpolation
