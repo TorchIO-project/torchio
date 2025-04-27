@@ -18,7 +18,7 @@ class TestTransforms(TorchioTestCase):
         landmarks_dict = {channel: np.linspace(0, 100, 13) for channel in channels}
         disp = 1 if is_3d else (1, 1, 0.01)
         elastic = tio.RandomElasticDeformation(max_displacement=disp)
-        affine_elastic = tio.RandomCombinedAffineElasticDeformation(
+        affine_elastic = tio.RandomAffineElasticDeformation(
             elastic_kwargs={'max_displacement': disp}
         )
         cp_args = (9, 21, 30) if is_3d else (21, 30, 1)

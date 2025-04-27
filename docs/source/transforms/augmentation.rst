@@ -71,10 +71,10 @@ Spatial
     :show-inheritance:
 
 
-:class:`RandomCombinedAffineElasticDeformation`
+:class:`RandomAffineElasticDeformation`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. autoclass:: RandomCombinedAffineElasticDeformation
+.. autoclass:: RandomAffineElasticDeformation
     :show-inheritance:
 
 

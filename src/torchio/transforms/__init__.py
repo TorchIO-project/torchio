@@ -21,12 +21,12 @@ from .augmentation.intensity import RandomSwap
 from .augmentation.intensity import Spike
 from .augmentation.intensity import Swap
 from .augmentation.spatial import Affine
-from .augmentation.spatial import CombinedAffineElasticDeformation
+from .augmentation.spatial import AffineElasticDeformation
 from .augmentation.spatial import ElasticDeformation
 from .augmentation.spatial import Flip
 from .augmentation.spatial import RandomAffine
+from .augmentation.spatial import RandomAffineElasticDeformation
 from .augmentation.spatial import RandomAnisotropy
-from .augmentation.spatial import RandomCombinedAffineElasticDeformation
 from .augmentation.spatial import RandomElasticDeformation
 from .augmentation.spatial import RandomFlip
 from .fourier import FourierTransform
@@ -77,8 +77,8 @@ __all__ = [
     'RandomAnisotropy',
     'RandomElasticDeformation',
     'ElasticDeformation',
-    'RandomCombinedAffineElasticDeformation',
-    'CombinedAffineElasticDeformation',
+    'RandomAffineElasticDeformation',
+    'AffineElasticDeformation',
     'RandomSwap',
     'Swap',
     'RandomBlur',

@@ -17,7 +17,7 @@ from .random_elastic_deformation import ElasticDeformation
 from .random_elastic_deformation import RandomElasticDeformation
 
 
-class RandomCombinedAffineElasticDeformation(RandomTransform, SpatialTransform):
+class RandomAffineElasticDeformation(RandomTransform, SpatialTransform):
     r"""Apply a RandomAffine and RandomElasticDeformation simultaneously.
 
     Optimization to use only a single SimpleITK resampling. For additional details on
@@ -37,7 +37,7 @@ class RandomCombinedAffineElasticDeformation(RandomTransform, SpatialTransform):
         >>> image = tio.datasets.Colin27().t1
         >>> affine_kwargs = {'scales': (0.9, 1.2), 'degrees': 15}
         >>> elastic_kwargs = {'max_displacement': (17, 12, 2)}
-        >>> transform = tio.RandomCombinedAffineElasticDeformation(
+        >>> transform = tio.RandomAffineElasticDeformation(
         ...     affine_kwargs,
         ...     elastic_kwargs
         ... )
@@ -49,7 +49,7 @@ class RandomCombinedAffineElasticDeformation(RandomTransform, SpatialTransform):
         subject = tio.datasets.Slicer('CTChest')
         ct = subject.CT_chest
         elastic_kwargs = {'max_displacement': (17, 12, 2)}
-        transform = tio.RandomCombinedAffineElasticDeformation(elastic_kwargs=elastic_kwargs)
+        transform = tio.RandomAffineElasticDeformation(elastic_kwargs=elastic_kwargs)
         ct_transformed = transform(ct)
         subject.add_image(ct_transformed, 'Transformed')
         subject.plot()
@@ -113,15 +113,13 @@ class RandomCombinedAffineElasticDeformation(RandomTransform, SpatialTransform):
             'elastic_params': elastic_params,
         }
 
-        transform = CombinedAffineElasticDeformation(
-            **self.add_include_exclude(arguments)
-        )
+        transform = AffineElasticDeformation(**self.add_include_exclude(arguments))
         transformed = transform(subject)
         assert isinstance(transformed, Subject)
         return transformed
 
 
-class CombinedAffineElasticDeformation(SpatialTransform):
+class AffineElasticDeformation(SpatialTransform):
     r"""Apply an Affine and ElasticDeformation simultaneously.
 
     Optimization to use only a single SimpleITK resampling. For additional details

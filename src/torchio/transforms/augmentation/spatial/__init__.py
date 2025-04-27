@@ -1,7 +1,7 @@
 from .random_affine import Affine
 from .random_affine import RandomAffine
-from .random_affine_elastic_deformation import CombinedAffineElasticDeformation
-from .random_affine_elastic_deformation import RandomCombinedAffineElasticDeformation
+from .random_affine_elastic_deformation import AffineElasticDeformation
+from .random_affine_elastic_deformation import RandomAffineElasticDeformation
 from .random_anisotropy import RandomAnisotropy
 from .random_elastic_deformation import ElasticDeformation
 from .random_elastic_deformation import RandomElasticDeformation
@@ -16,6 +16,6 @@ __all__ = [
     'RandomAnisotropy',
     'RandomElasticDeformation',
     'ElasticDeformation',
-    'RandomCombinedAffineElasticDeformation',
-    'CombinedAffineElasticDeformation',
+    'RandomAffineElasticDeformation',
+    'AffineElasticDeformation',
 ]
