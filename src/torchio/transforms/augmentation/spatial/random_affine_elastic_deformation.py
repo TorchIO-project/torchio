@@ -9,12 +9,10 @@ from ....constants import INTENSITY
 from ....constants import TYPE
 from ....data.io import nib_to_sitk
 from ....data.subject import Subject
-from ... import SpatialTransform
+from ...spatial_transform import SpatialTransform
 from .. import RandomTransform
 from .random_affine import Affine
-from .random_affine import RandomAffine
 from .random_elastic_deformation import ElasticDeformation
-from .random_elastic_deformation import RandomElasticDeformation
 
 
 class RandomAffineElasticDeformation(RandomTransform, SpatialTransform):
@@ -65,6 +63,10 @@ class RandomAffineElasticDeformation(RandomTransform, SpatialTransform):
         super().__init__(**kwargs)
         self.affine_first = affine_first
 
+        # Avoid circular imports
+        from .random_affine import RandomAffine
+        from .random_elastic_deformation import RandomElasticDeformation
+
         self.affine_kwargs = affine_kwargs or {}
         self.random_affine = RandomAffine(**self.affine_kwargs)
 
@@ -113,7 +115,7 @@ class RandomAffineElasticDeformation(RandomTransform, SpatialTransform):
             'elastic_params': elastic_params,
         }
 
-        transform = AffineElasticDeformation(**self.add_include_exclude(arguments))
+        transform = AffineElasticDeformation(**self.add_base_args(arguments))
         transformed = transform(subject)
         assert isinstance(transformed, Subject)
         return transformed
