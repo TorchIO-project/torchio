@@ -63,6 +63,14 @@ bump-python:
     )
     tests_workflow_path.write_text(tests_workflow)
 
+    scrutinizer_config_path = Path(".scrutinizer.yml")
+    scrutinizer_config = scrutinizer_config_path.read_text()
+    scrutinizer_config = scrutinizer_config.replace(
+        old_version_string,
+        new_version_string,
+    )
+    scrutinizer_config_path.write_text(scrutinizer_config)
+
     pyproject_path = Path("pyproject.toml")
     pyproject_text = pyproject_path.read_text()
     old_str = f'    "Programming Language :: Python :: {old_version_string}",\n'
