@@ -44,9 +44,10 @@ class RandomTransform(Transform):
         """
         return int(torch.randint(0, 2**31, (1,)).item())
 
-    def sample_uniform_sextet(self, params: TypeSextetFloat) -> TypeTripletFloat:
+    @staticmethod
+    def sample_uniform_sextet(params: TypeSextetFloat) -> TypeTripletFloat:
         results = []
         for a, b in zip(params[::2], params[1::2]):
-            results.append(self.sample_uniform(a, b))
+            results.append(RandomTransform.sample_uniform(a, b))
         sx, sy, sz = results
         return sx, sy, sz

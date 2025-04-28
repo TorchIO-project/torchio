@@ -1,5 +1,4 @@
 import warnings
-from collections.abc import Sequence
 from numbers import Number
 from typing import Union
 
@@ -120,8 +119,8 @@ class RandomElasticDeformation(RandomTransform, SpatialTransform):
 
     def __init__(
         self,
-        num_control_points: Union[int, tuple[int, int, int]] = 7,
-        max_displacement: Union[float, tuple[float, float, float]] = 7.5,
+        num_control_points: Union[int, TypeTripletInt] = 7,
+        max_displacement: Union[float, TypeTripletFloat] = 7.5,
         locked_borders: int = 2,
         image_interpolation: str = 'linear',
         label_interpolation: str = 'nearest',
@@ -252,7 +251,7 @@ class ElasticDeformation(SpatialTransform):
     @staticmethod
     def parse_free_form_transform(
         transform: sitk.BSplineTransform,
-        max_displacement: Sequence[TypeTripletInt],
+        max_displacement: TypeTripletFloat,
     ) -> None:
         """Issue a warning is possible folding is detected."""
         coefficient_images = transform.GetCoefficientImages()

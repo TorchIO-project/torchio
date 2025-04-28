@@ -1,5 +1,3 @@
-# noreorder
-
 from .augmentation.composition import Compose
 
 # Augmentation
@@ -23,9 +21,11 @@ from .augmentation.intensity import RandomSwap
 from .augmentation.intensity import Spike
 from .augmentation.intensity import Swap
 from .augmentation.spatial import Affine
+from .augmentation.spatial import AffineElasticDeformation
 from .augmentation.spatial import ElasticDeformation
 from .augmentation.spatial import Flip
 from .augmentation.spatial import RandomAffine
+from .augmentation.spatial import RandomAffineElasticDeformation
 from .augmentation.spatial import RandomAnisotropy
 from .augmentation.spatial import RandomElasticDeformation
 from .augmentation.spatial import RandomFlip
@@ -77,6 +77,8 @@ __all__ = [
     'RandomAnisotropy',
     'RandomElasticDeformation',
     'ElasticDeformation',
+    'RandomAffineElasticDeformation',
+    'AffineElasticDeformation',
     'RandomSwap',
     'Swap',
     'RandomBlur',
