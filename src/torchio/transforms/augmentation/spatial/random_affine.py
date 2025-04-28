@@ -143,25 +143,25 @@ class RandomAffine(RandomTransform, SpatialTransform):
         )
         self.check_shape = check_shape
 
+    @staticmethod
     def get_params(
-        self,
         scales: TypeSextetFloat,
         degrees: TypeSextetFloat,
         translation: TypeSextetFloat,
         isotropic: bool,
     ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         scaling_params = torch.as_tensor(
-            self.sample_uniform_sextet(scales),
+            RandomTransform.sample_uniform_sextet(scales),
             dtype=torch.float64,
         )
         if isotropic:
             scaling_params.fill_(scaling_params[0])
         rotation_params = torch.as_tensor(
-            self.sample_uniform_sextet(degrees),
+            RandomTransform.sample_uniform_sextet(degrees),
             dtype=torch.float64,
         )
         translation_params = torch.as_tensor(
-            self.sample_uniform_sextet(translation),
+            RandomTransform.sample_uniform_sextet(translation),
             dtype=torch.float64,
         )
         return scaling_params, rotation_params, translation_params
@@ -356,6 +356,27 @@ class Affine(SpatialTransform):
 
         return transform
 
+    def get_default_pad_value(
+        self, tensor: torch.Tensor, sitk_image: sitk.Image
+    ) -> float:
+        default_value: float
+        if self.default_pad_value == 'minimum':
+            default_value = tensor.min().item()
+        elif self.default_pad_value == 'mean':
+            default_value = get_borders_mean(
+                sitk_image,
+                filter_otsu=False,
+            )
+        elif self.default_pad_value == 'otsu':
+            default_value = get_borders_mean(
+                sitk_image,
+                filter_otsu=True,
+            )
+        else:
+            assert isinstance(self.default_pad_value, Number)
+            default_value = float(self.default_pad_value)
+        return default_value
+
     def apply_transform(self, subject: Subject) -> Subject:
         if self.check_shape:
             subject.check_consistent_spatial_shape()
@@ -374,21 +395,7 @@ class Affine(SpatialTransform):
                     default_value = 0
                 else:
                     interpolation = self.image_interpolation
-                    if self.default_pad_value == 'minimum':
-                        default_value = tensor.min().item()
-                    elif self.default_pad_value == 'mean':
-                        default_value = get_borders_mean(
-                            sitk_image,
-                            filter_otsu=False,
-                        )
-                    elif self.default_pad_value == 'otsu':
-                        default_value = get_borders_mean(
-                            sitk_image,
-                            filter_otsu=True,
-                        )
-                    else:
-                        assert isinstance(self.default_pad_value, Number)
-                        default_value = float(self.default_pad_value)
+                    default_value = self.get_default_pad_value(tensor, sitk_image)
                 transformed_tensor = self.apply_affine_transform(
                     sitk_image,
                     transform,
