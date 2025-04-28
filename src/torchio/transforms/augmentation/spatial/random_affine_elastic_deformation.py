@@ -57,7 +57,7 @@ class RandomAffineElasticDeformation(RandomTransform, SpatialTransform):
         self,
         affine_first: bool = True,
         affine_kwargs: Optional[dict[str, Any]] = None,
-        elastic_kwargs: Optional[dict[str, any]] = None,
+        elastic_kwargs: Optional[dict[str, Any]] = None,
         **kwargs,
     ) -> None:
         super().__init__(**kwargs)
@@ -185,7 +185,8 @@ class AffineElasticDeformation(SpatialTransform):
 
                 bspline_transform = self._elastic.get_bspline_transform(sitk_image)
                 self._elastic.parse_free_form_transform(
-                    bspline_transform, self._elastic.max_displacement
+                    bspline_transform,
+                    self._elastic.max_displacement,
                 )
 
                 # stack: LIFO
