@@ -851,6 +851,15 @@
       "contributions": [
         "doc"
       ]
+    },
+    {
+      "login": "mrdkucher",
+      "name": "David Kucher",
+      "avatar_url": "https://avatars.githubusercontent.com/u/13631603?v=4",
+      "profile": "https://github.com/mrdkucher",
+      "contributions": [
+        "code"
+      ]
     }
   ],
   "contributorsPerLine": 7,
