@@ -1,7 +1,7 @@
+from __future__ import annotations
+
 from collections import defaultdict
 from collections.abc import Iterable
-from typing import Optional
-from typing import Union
 
 import numpy as np
 import torch
@@ -55,10 +55,10 @@ class RandomGhosting(RandomTransform, IntensityTransform):
 
     def __init__(
         self,
-        num_ghosts: Union[int, tuple[int, int]] = (4, 10),
-        axes: Union[int, tuple[int, ...]] = (0, 1, 2),
-        intensity: Union[float, tuple[float, float]] = (0.5, 1),
-        restore: Optional[float] = None,
+        num_ghosts: int | tuple[int, int] = (4, 10),
+        axes: int | tuple[int, ...] = (0, 1, 2),
+        intensity: float | tuple[float, float] = (0.5, 1),
+        restore: float | None = None,
         **kwargs,
     ):
         super().__init__(**kwargs)
@@ -127,8 +127,8 @@ class RandomGhosting(RandomTransform, IntensityTransform):
         num_ghosts_range: tuple[int, int],
         axes: tuple[int, ...],
         intensity_range: tuple[float, float],
-        restore_range: Optional[tuple[float, float]],
-    ) -> tuple[int, int, float, Optional[float]]:
+        restore_range: tuple[float, float] | None,
+    ) -> tuple[int, int, float, float | None]:
         ng_min, ng_max = num_ghosts_range
         num_ghosts = int(torch.randint(ng_min, ng_max + 1, (1,)).item())
         axis = axes[torch.randint(0, len(axes), (1,))]
@@ -171,10 +171,10 @@ class Ghosting(IntensityTransform, FourierTransform):
 
     def __init__(
         self,
-        num_ghosts: Union[int, dict[str, int]],
-        axis: Union[int, dict[str, int]],
-        intensity: Union[float, dict[str, float]],
-        restore: Union[Optional[float], dict[str, Optional[float]]],
+        num_ghosts: int | dict[str, int],
+        axis: int | dict[str, int],
+        intensity: float | dict[str, float],
+        restore: float | None | dict[str, float | None],
         **kwargs,
     ):
         super().__init__(**kwargs)
@@ -185,10 +185,10 @@ class Ghosting(IntensityTransform, FourierTransform):
         self.args_names = ['num_ghosts', 'axis', 'intensity', 'restore']
 
     def apply_transform(self, subject: Subject) -> Subject:
-        axis: Union[int, dict[str, int]]
-        num_ghosts: Union[int, dict[str, int]]
-        intensity: Union[float, dict[str, float]]
-        restore: Union[Optional[float], dict[str, Optional[float]]]
+        axis: int | dict[str, int]
+        num_ghosts: int | dict[str, int]
+        intensity: float | dict[str, float]
+        restore: float | None | dict[str, float | None]
         for name, image in self.get_images_dict(subject).items():
             if self.arguments_are_dict():
                 assert isinstance(self.axis, dict)
@@ -228,7 +228,7 @@ class Ghosting(IntensityTransform, FourierTransform):
         num_ghosts: int,
         axis: int,
         intensity: float,
-        restore_center: Optional[float],
+        restore_center: float | None,
     ):
         if not num_ghosts or not intensity:
             return tensor
@@ -267,7 +267,7 @@ class Ghosting(IntensityTransform, FourierTransform):
     def _get_slices_to_restore(
         spectrum: torch.Tensor,
         axis: int,
-        restore_center: Optional[float],
+        restore_center: float | None,
     ) -> tuple[torch.Tensor, tuple[slice, ...]]:
         dim_shape = spectrum.shape[axis]
         mid_idx = dim_shape // 2

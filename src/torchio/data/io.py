@@ -1,7 +1,7 @@
+from __future__ import annotations
+
 import warnings
 from pathlib import Path
-from typing import Optional
-from typing import Union
 
 import nibabel as nib
 import numpy as np
@@ -130,7 +130,7 @@ def write_image(
     tensor: torch.Tensor,
     affine: TypeData,
     path: TypePath,
-    squeeze: Optional[bool] = None,
+    squeeze: bool | None = None,
 ) -> None:
     args = tensor, affine, path
     try:
@@ -158,7 +158,7 @@ def _write_nibabel(
     else:
         tensor = tensor[np.newaxis].permute(2, 3, 4, 0, 1)
     suffix = Path(str(path).replace('.gz', '')).suffix
-    img: Union[nib.nifti1.Nifti1Image, nib.nifti1.Nifti1Pair]
+    img: nib.nifti1.Nifti1Image | nib.nifti1.Nifti1Pair
     if '.nii' in suffix:
         img = nib.nifti1.Nifti1Image(np.asarray(tensor), affine)
     elif '.hdr' in suffix or '.img' in suffix:
@@ -178,7 +178,7 @@ def _write_sitk(
     affine: TypeData,
     path: TypePath,
     use_compression: bool = True,
-    squeeze: Optional[bool] = None,
+    squeeze: bool | None = None,
 ) -> None:
     assert tensor.ndim == 4
     path = Path(path)
@@ -362,7 +362,7 @@ def sitk_to_nib(
 
 
 def get_ras_affine_from_sitk(
-    sitk_object: Union[sitk.Image, sitk.ImageFileReader],
+    sitk_object: sitk.Image | sitk.ImageFileReader,
 ) -> np.ndarray:
     spacing = np.array(sitk_object.GetSpacing(), dtype=np.float64)
     direction_lps = np.array(sitk_object.GetDirection(), dtype=np.float64)

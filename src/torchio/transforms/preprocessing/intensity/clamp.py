@@ -1,4 +1,4 @@
-from typing import Optional
+from __future__ import annotations
 
 import torch
 
@@ -39,8 +39,8 @@ class Clamp(IntensityTransform):
 
     def __init__(
         self,
-        out_min: Optional[float] = None,
-        out_max: Optional[float] = None,
+        out_min: float | None = None,
+        out_max: float | None = None,
         **kwargs,
     ):
         super().__init__(**kwargs)

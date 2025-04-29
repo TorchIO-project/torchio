@@ -1,6 +1,7 @@
+from __future__ import annotations
+
 from collections.abc import Iterator
 from itertools import islice
-from typing import Optional
 
 import humanize
 import torch
@@ -187,7 +188,7 @@ class Queue(Dataset):
         max_length: int,
         samples_per_volume: int,
         sampler: PatchSampler,
-        subject_sampler: Optional[Sampler] = None,
+        subject_sampler: Sampler | None = None,
         num_workers: int = 0,
         shuffle_subjects: bool = True,
         shuffle_patches: bool = True,
@@ -204,7 +205,7 @@ class Queue(Dataset):
         self.num_workers = num_workers
         self.verbose = verbose
         self._subjects_iterable = None
-        self._incomplete_subject: Optional[Subject] = None
+        self._incomplete_subject: Subject | None = None
         self._num_patches_incomplete = 0
         self._num_sampled_subjects = 0
         if start_background:
@@ -367,7 +368,7 @@ class Queue(Dataset):
         self._num_sampled_subjects = 0
         return iter(subjects_loader)
 
-    def get_max_memory(self, subject: Optional[Subject] = None) -> int:
+    def get_max_memory(self, subject: Subject | None = None) -> int:
         """Get the maximum RAM occupied by the patches queue in bytes.
 
         Args:
@@ -382,7 +383,7 @@ class Queue(Dataset):
         bytes_per_patch = 4 * voxels_in_patch  # assume float32
         return int(bytes_per_patch * self.max_length)
 
-    def get_max_memory_pretty(self, subject: Optional[Subject] = None) -> str:
+    def get_max_memory_pretty(self, subject: Subject | None = None) -> str:
         """Get human-readable maximum RAM occupied by the patches queue.
 
         Args:

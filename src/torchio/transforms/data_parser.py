@@ -1,5 +1,6 @@
+from __future__ import annotations
+
 from collections.abc import Sequence
-from typing import Optional
 from typing import Union
 
 import nibabel as nib
@@ -30,8 +31,8 @@ class DataParser:
     def __init__(
         self,
         data: TypeTransformInput,
-        keys: Optional[Sequence[str]] = None,
-        label_keys: Optional[Sequence[str]] = None,
+        keys: Sequence[str] | None = None,
+        label_keys: Sequence[str] | None = None,
     ):
         self.data = data
         self.keys = keys
@@ -132,7 +133,7 @@ class DataParser:
     def _get_subject_from_dict(
         data: dict,
         image_keys: Sequence[str],
-        label_keys: Optional[Sequence[str]] = None,
+        label_keys: Sequence[str] | None = None,
     ) -> Subject:
         subject_dict = {}
         label_keys = [] if label_keys is None else label_keys

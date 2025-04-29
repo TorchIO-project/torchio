@@ -1,5 +1,6 @@
+from __future__ import annotations
+
 from collections.abc import Generator
-from typing import Optional
 
 import numpy as np
 import torch
@@ -52,7 +53,7 @@ class WeightedSampler(RandomSampler):
     def __init__(
         self,
         patch_size: TypeSpatialShape,
-        probability_map: Optional[str],
+        probability_map: str | None,
     ):
         super().__init__(patch_size)
         self.probability_map_name = probability_map
@@ -61,8 +62,8 @@ class WeightedSampler(RandomSampler):
     def _generate_patches(
         self,
         subject: Subject,
-        num_patches: Optional[int] = None,
-    ) -> Generator[Subject, None, None]:
+        num_patches: int | None = None,
+    ) -> Generator[Subject]:
         probability_map = self.get_probability_map(subject)
         probability_map_array = self.process_probability_map(
             probability_map,

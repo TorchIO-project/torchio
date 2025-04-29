@@ -1,5 +1,6 @@
+from __future__ import annotations
+
 import warnings
-from typing import Optional
 
 import numpy as np
 import torch
@@ -49,7 +50,7 @@ class RescaleIntensity(NormalizationTransform):
         out_min_max: TypeDoubleFloat = (0, 1),
         percentiles: TypeDoubleFloat = (0, 100),
         masking_method: TypeMaskingMethod = None,
-        in_min_max: Optional[TypeDoubleFloat] = None,
+        in_min_max: TypeDoubleFloat | None = None,
         **kwargs,
     ):
         super().__init__(masking_method=masking_method, **kwargs)

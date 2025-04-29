@@ -12,12 +12,12 @@ images (15 directions)".
 
 # Adapted from
 # https://pytorch.org/docs/stable/_modules/torchvision/datasets/mnist.html#MNIST
+from __future__ import annotations
+
 import shutil
 from collections.abc import Sequence
 from pathlib import Path
 from tempfile import NamedTemporaryFile
-from typing import Optional
-from typing import Union
 
 from ..data import LabelMap
 from ..data import ScalarImage
@@ -117,7 +117,7 @@ class IXI(SubjectsDataset):
         subjects = []
         for filepath in paths:
             subject_id = get_subject_id(filepath)
-            images_dict: dict[str, Union[str, ScalarImage]] = {'subject_id': subject_id}
+            images_dict: dict[str, str | ScalarImage] = {'subject_id': subject_id}
             images_dict[one_modality] = ScalarImage(filepath)
             for modality in modalities[1:]:
                 globbed = sglob(
@@ -181,7 +181,7 @@ class IXITiny(SubjectsDataset):
     def __init__(
         self,
         root: TypePath,
-        transform: Optional[Transform] = None,
+        transform: Transform | None = None,
         download: bool = False,
         **kwargs,
     ):

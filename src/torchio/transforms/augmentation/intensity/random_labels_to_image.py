@@ -1,5 +1,6 @@
+from __future__ import annotations
+
 from collections.abc import Sequence
-from typing import Optional
 
 import torch
 
@@ -127,11 +128,11 @@ class RandomLabelsToImage(RandomTransform, IntensityTransform):
 
     def __init__(
         self,
-        label_key: Optional[str] = None,
-        used_labels: Optional[Sequence[int]] = None,
+        label_key: str | None = None,
+        used_labels: Sequence[int] | None = None,
         image_key: str = 'image_from_labels',
-        mean: Optional[Sequence[TypeRangeFloat]] = None,
-        std: Optional[Sequence[TypeRangeFloat]] = None,
+        mean: Sequence[TypeRangeFloat] | None = None,
+        std: Sequence[TypeRangeFloat] | None = None,
         default_mean: TypeRangeFloat = (0.1, 0.9),
         default_std: TypeRangeFloat = (0.01, 0.1),
         discretize: bool = False,
@@ -331,10 +332,10 @@ class LabelsToImage(IntensityTransform):
     def __init__(
         self,
         label_key: str,
-        mean: Optional[Sequence[float]],
-        std: Optional[Sequence[float]],
+        mean: Sequence[float] | None,
+        std: Sequence[float] | None,
         image_key: str = 'image_from_labels',
-        used_labels: Optional[Sequence[int]] = None,
+        used_labels: Sequence[int] | None = None,
         ignore_background: bool = False,
         discretize: bool = False,
         **kwargs,
@@ -435,7 +436,7 @@ class LabelsToImage(IntensityTransform):
         return gaussian * data
 
 
-def _parse_label_key(label_key: Optional[str]) -> Optional[str]:
+def _parse_label_key(label_key: str | None) -> str | None:
     if label_key is not None and not isinstance(label_key, str):
         message = f'"label_key" must be a string or None, not {type(label_key)}'
         raise TypeError(message)
@@ -443,8 +444,8 @@ def _parse_label_key(label_key: Optional[str]) -> Optional[str]:
 
 
 def _parse_used_labels(
-    used_labels: Optional[Sequence[int]],
-) -> Optional[Sequence[int]]:
+    used_labels: Sequence[int] | None,
+) -> Sequence[int] | None:
     if used_labels is None:
         return None
     check_sequence(used_labels, 'used_labels')
@@ -460,8 +461,8 @@ def _parse_used_labels(
 
 def _check_mean_and_std_length(
     labels: Sequence[int],
-    means: Optional[Sequence[TypeRangeFloat]],
-    stds: Optional[Sequence[TypeRangeFloat]],
+    means: Sequence[TypeRangeFloat] | None,
+    stds: Sequence[TypeRangeFloat] | None,
 ) -> None:
     num_labels = len(labels)
     if means is not None:

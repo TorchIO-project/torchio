@@ -1,5 +1,6 @@
+from __future__ import annotations
+
 from collections.abc import Sequence
-from typing import Optional
 
 import torch
 
@@ -33,7 +34,7 @@ class Lambda(Transform):
     def __init__(
         self,
         function: TypeCallable,
-        types_to_apply: Optional[Sequence[str]] = None,
+        types_to_apply: Sequence[str] | None = None,
         **kwargs,
     ):
         super().__init__(**kwargs)

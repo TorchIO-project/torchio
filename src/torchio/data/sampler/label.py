@@ -1,4 +1,4 @@
-from typing import Optional
+from __future__ import annotations
 
 import numpy as np
 import torch
@@ -61,8 +61,8 @@ class LabelSampler(WeightedSampler):
     def __init__(
         self,
         patch_size: TypeSpatialShape,
-        label_name: Optional[str] = None,
-        label_probabilities: Optional[dict[int, float]] = None,
+        label_name: str | None = None,
+        label_probabilities: dict[int, float] | None = None,
     ):
         super().__init__(patch_size, probability_map=label_name)
         self.label_probabilities_dict = label_probabilities

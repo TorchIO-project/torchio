@@ -2,7 +2,6 @@ import csv
 import warnings
 from collections.abc import Sequence
 from pathlib import Path
-from typing import Union
 
 from ..data import ScalarImage
 from ..data import Subject
@@ -103,7 +102,7 @@ class RSNAMICCAI(SubjectsDataset):
                 int(subject_id)
             except ValueError:
                 continue
-            images_dict: dict[str, Union[str, int, ScalarImage]]
+            images_dict: dict[str, str | int | ScalarImage]
             images_dict = {self.id_key: subject_dir.name}
             if train and labels_dict:
                 images_dict[self.label_key] = labels_dict[subject_id]

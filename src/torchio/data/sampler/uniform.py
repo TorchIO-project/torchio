@@ -1,5 +1,6 @@
+from __future__ import annotations
+
 from collections.abc import Generator
-from typing import Optional
 
 import torch
 
@@ -20,8 +21,8 @@ class UniformSampler(RandomSampler):
     def _generate_patches(
         self,
         subject: Subject,
-        num_patches: Optional[int] = None,
-    ) -> Generator[Subject, None, None]:
+        num_patches: int | None = None,
+    ) -> Generator[Subject]:
         valid_range = subject.spatial_shape - self.patch_size
         patches_left = num_patches if num_patches is not None else True
         while patches_left:

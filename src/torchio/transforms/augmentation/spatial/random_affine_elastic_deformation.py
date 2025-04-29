@@ -1,5 +1,6 @@
+from __future__ import annotations
+
 from typing import Any
-from typing import Optional
 
 import numpy as np
 import SimpleITK as sitk
@@ -56,8 +57,8 @@ class RandomAffineElasticDeformation(RandomTransform, SpatialTransform):
     def __init__(
         self,
         affine_first: bool = True,
-        affine_kwargs: Optional[dict[str, Any]] = None,
-        elastic_kwargs: Optional[dict[str, Any]] = None,
+        affine_kwargs: dict[str, Any] | None = None,
+        elastic_kwargs: dict[str, Any] | None = None,
         **kwargs,
     ) -> None:
         super().__init__(**kwargs)
