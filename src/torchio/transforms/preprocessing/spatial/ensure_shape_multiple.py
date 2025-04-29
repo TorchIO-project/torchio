@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from typing import Callable
-from typing import Union
 
 import numpy as np
 
@@ -116,7 +115,7 @@ class EnsureShapeMultiple(SpatialTransform):
 
     def __init__(
         self,
-        target_multiple: Union[int, TypeTripletInt],
+        target_multiple: int | TypeTripletInt,
         *,
         method: str = 'pad',
         **kwargs,

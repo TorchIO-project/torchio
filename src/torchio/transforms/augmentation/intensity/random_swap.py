@@ -3,7 +3,6 @@ from __future__ import annotations
 from collections import defaultdict
 from collections.abc import Sequence
 from typing import TypeVar
-from typing import Union
 
 import numpy as np
 import torch
@@ -122,8 +121,8 @@ class Swap(IntensityTransform):
 
     def __init__(
         self,
-        patch_size: Union[TypeTripletInt, dict[str, TypeTripletInt]],
-        locations: Union[TypeLocations, dict[str, TypeLocations]],
+        patch_size: TypeTripletInt | dict[str, TypeTripletInt],
+        locations: TypeLocations | dict[str, TypeLocations],
         **kwargs,
     ):
         super().__init__(**kwargs)

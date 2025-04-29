@@ -1,5 +1,6 @@
+from __future__ import annotations
+
 from collections.abc import Generator
-from typing import Optional
 
 import numpy as np
 import torch
@@ -82,8 +83,8 @@ class PatchSampler:
     def __call__(
         self,
         subject: Subject,
-        num_patches: Optional[int] = None,
-    ) -> Generator[Subject, None, None]:
+        num_patches: int | None = None,
+    ) -> Generator[Subject]:
         subject.check_consistent_space()
         if np.any(self.patch_size > subject.spatial_shape):
             message = (
@@ -97,8 +98,8 @@ class PatchSampler:
     def _generate_patches(
         self,
         subject: Subject,
-        num_patches: Optional[int] = None,
-    ) -> Generator[Subject, None, None]:
+        num_patches: int | None = None,
+    ) -> Generator[Subject]:
         raise NotImplementedError
 
 

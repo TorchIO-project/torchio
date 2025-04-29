@@ -1,6 +1,7 @@
+from __future__ import annotations
+
 from typing import Any
 from typing import Callable
-from typing import Optional
 from typing import TypeVar
 
 import numpy as np
@@ -17,7 +18,7 @@ class SubjectsLoader(DataLoader):
     def __init__(
         self,
         dataset: Dataset,
-        collate_fn: Optional[Callable[[list[T]], Any]] = None,
+        collate_fn: Callable[[list[T]], Any] | None = None,
         **kwargs,
     ):
         if collate_fn is None:
