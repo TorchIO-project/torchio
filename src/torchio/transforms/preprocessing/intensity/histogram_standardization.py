@@ -1,8 +1,9 @@
+from __future__ import annotations
+
 from collections.abc import Iterable
 from collections.abc import Sequence
 from pathlib import Path
 from typing import Callable
-from typing import Optional
 from typing import Union
 
 import numpy as np
@@ -102,10 +103,10 @@ class HistogramStandardization(NormalizationTransform):
     def train(
         cls,
         images_paths: Sequence[TypePath],
-        cutoff: Optional[tuple[float, float]] = None,
-        mask_path: Optional[Union[Sequence[TypePath], TypePath]] = None,
-        masking_function: Optional[Callable] = None,
-        output_path: Optional[TypePath] = None,
+        cutoff: tuple[float, float] | None = None,
+        mask_path: Sequence[TypePath] | TypePath | None = None,
+        masking_function: Callable | None = None,
+        output_path: TypePath | None = None,
         *,
         progress: bool = True,
     ) -> np.ndarray:
@@ -250,8 +251,8 @@ def _get_percentiles(percentiles_cutoff: tuple[float, float]) -> np.ndarray:
 def _normalize(
     tensor: torch.Tensor,
     landmarks: np.ndarray,
-    mask: Optional[np.ndarray],
-    cutoff: Optional[tuple[float, float]] = None,
+    mask: np.ndarray | None,
+    cutoff: tuple[float, float] | None = None,
     epsilon: float = 1e-5,
 ) -> torch.Tensor:
     cutoff_ = DEFAULT_CUTOFF if cutoff is None else cutoff

@@ -1,6 +1,7 @@
+from __future__ import annotations
+
 from collections.abc import Sequence
 from numbers import Number
-from typing import Optional
 from typing import Union
 
 import numpy as np
@@ -118,7 +119,7 @@ class RandomAffine(RandomTransform, SpatialTransform):
         translation: TypeOneToSixFloat = 0,
         isotropic: bool = False,
         center: str = 'image',
-        default_pad_value: Union[str, float] = 'minimum',
+        default_pad_value: str | float = 'minimum',
         image_interpolation: str = 'linear',
         label_interpolation: str = 'nearest',
         check_shape: bool = True,
@@ -225,7 +226,7 @@ class Affine(SpatialTransform):
         degrees: TypeTripletFloat,
         translation: TypeTripletFloat,
         center: str = 'image',
-        default_pad_value: Union[str, float] = 'minimum',
+        default_pad_value: str | float = 'minimum',
         image_interpolation: str = 'linear',
         label_interpolation: str = 'nearest',
         check_shape: bool = True,
@@ -279,7 +280,7 @@ class Affine(SpatialTransform):
     @staticmethod
     def _get_scaling_transform(
         scaling_params: Sequence[float],
-        center_lps: Optional[TypeTripletFloat] = None,
+        center_lps: TypeTripletFloat | None = None,
     ) -> sitk.ScaleTransform:
         # 1.5 means the objects look 1.5 times larger
         transform = sitk.ScaleTransform(3)
@@ -293,7 +294,7 @@ class Affine(SpatialTransform):
     def _get_rotation_transform(
         degrees: Sequence[float],
         translation: Sequence[float],
-        center_lps: Optional[TypeTripletFloat] = None,
+        center_lps: TypeTripletFloat | None = None,
     ) -> sitk.Euler3DTransform:
         def ras_to_lps(triplet: Sequence[float]):
             return np.array((-1, -1, 1), dtype=float) * np.asarray(triplet)
@@ -467,7 +468,7 @@ def _parse_scales_isotropic(scales, isotropic):
         raise ValueError(message)
 
 
-def _parse_default_value(value: Union[str, float]) -> Union[str, float]:
+def _parse_default_value(value: str | float) -> str | float:
     if isinstance(value, Number) or value in ('minimum', 'otsu', 'mean'):
         return value
     message = (

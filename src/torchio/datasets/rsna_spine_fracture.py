@@ -1,8 +1,8 @@
+from __future__ import annotations
+
 from pathlib import Path
 from types import ModuleType
 from typing import Any
-from typing import Optional
-from typing import Union
 
 from ..data import LabelMap
 from ..data import ScalarImage
@@ -11,7 +11,7 @@ from ..data import SubjectsDataset
 from ..types import TypePath
 from ..utils import normalize_path
 
-TypeBoxes = list[dict[str, Union[str, float, int]]]
+TypeBoxes = list[dict[str, str | float | int]]
 
 
 class RSNACervicalSpineFracture(SubjectsDataset):
@@ -120,9 +120,9 @@ class RSNACervicalSpineFracture(SubjectsDataset):
 
     def _get_subject(
         self,
-        csv_row_dict: dict[str, Union[str, int]],
+        csv_row_dict: dict[str, str | int],
         image_dir: Path,
-        seg_path: Optional[Path],
+        seg_path: Path | None,
         boxes: TypeBoxes,
     ) -> Subject:
         subject_dict: dict[str, Any] = {}

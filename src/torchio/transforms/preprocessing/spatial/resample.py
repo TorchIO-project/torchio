@@ -1,8 +1,9 @@
+from __future__ import annotations
+
 from collections.abc import Iterable
 from collections.abc import Sized
 from numbers import Number
 from pathlib import Path
-from typing import Optional
 from typing import Union
 
 import numpy as np
@@ -78,10 +79,10 @@ class Resample(SpatialTransform):
 
     def __init__(
         self,
-        target: Union[TypeSpacing, str, Path, Image, None] = 1,
+        target: TypeSpacing | str | Path | Image | None = 1,
         image_interpolation: str = 'linear',
         label_interpolation: str = 'nearest',
-        pre_affine_name: Optional[str] = None,
+        pre_affine_name: str | None = None,
         scalars_only: bool = False,
         **kwargs,
     ):
@@ -207,7 +208,7 @@ class Resample(SpatialTransform):
     def _set_resampler_reference(
         self,
         resampler: sitk.ResampleImageFilter,
-        target: Union[TypeSpacing, TypePath, Image],
+        target: TypeSpacing | TypePath | Image,
         floating_sitk,
         subject,
     ):

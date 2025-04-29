@@ -3,7 +3,6 @@ from __future__ import annotations
 from collections.abc import Sequence
 from pathlib import Path
 from typing import Callable
-from typing import Optional
 from typing import Union
 
 import numpy as np
@@ -12,7 +11,7 @@ import torch
 # For typing hints
 TypePath = Union[str, Path]
 TypeNumber = Union[int, float]
-TypeKeys = Optional[Sequence[str]]
+TypeKeys = Sequence[str] | None
 TypeData = Union[torch.Tensor, np.ndarray]
 TypeDataAffine = tuple[torch.Tensor, np.ndarray]
 TypeSlice = Union[int, slice]
