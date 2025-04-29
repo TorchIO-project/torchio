@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
+from typing import Union
 
 import nibabel as nib
 import numpy as np
@@ -15,9 +16,15 @@ from ..data.io import sitk_to_nib
 from ..data.subject import Subject
 from ..types import TypeData
 
-TypeTransformInput = (
-    Subject | Image | torch.Tensor | np.ndarray | sitk.Image | dict | nib.Nifti1Image
-)
+TypeTransformInput = Union[
+    Subject,
+    Image,
+    torch.Tensor,
+    np.ndarray,
+    sitk.Image,
+    dict,
+    nib.Nifti1Image,
+]
 
 
 class DataParser:
