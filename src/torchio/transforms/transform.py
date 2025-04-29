@@ -32,8 +32,8 @@ from .interpolation import Interpolation
 from .interpolation import get_sitk_interpolator
 
 TypeSixBounds = tuple[int, int, int, int, int, int]
-TypeBounds = Union[int, TypeTripletInt, TypeSixBounds] | None
-TypeMaskingMethod = Union[str, TypeCallable, TypeBounds] | None
+TypeBounds = Union[int, TypeTripletInt, TypeSixBounds, None]
+TypeMaskingMethod = Union[str, TypeCallable, TypeBounds, None]
 ANATOMICAL_AXES = (
     'Left',
     'Right',
