@@ -3,6 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 from types import ModuleType
 from typing import Any
+from typing import Union
 
 from ..data import LabelMap
 from ..data import ScalarImage
@@ -11,7 +12,7 @@ from ..data import SubjectsDataset
 from ..types import TypePath
 from ..utils import normalize_path
 
-TypeBoxes = list[dict[str, str | float | int]]
+TypeBoxes = list[dict[str, Union[str, float, int]]]
 
 
 class RSNACervicalSpineFracture(SubjectsDataset):
