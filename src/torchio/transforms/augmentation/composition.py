@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import warnings
 from collections.abc import Sequence
+from typing import Union
 
 import numpy as np
 import torch
@@ -10,7 +11,7 @@ from ...data.subject import Subject
 from ..transform import Transform
 from . import RandomTransform
 
-TypeTransformsDict = dict[Transform, float] | Sequence[Transform]
+TypeTransformsDict = Union[dict[Transform, float], Sequence[Transform]]
 
 
 class Compose(Transform):
