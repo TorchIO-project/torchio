@@ -1,6 +1,7 @@
+from __future__ import annotations
+
 import abc
 from pathlib import Path
-from typing import Optional
 
 from ..data import Image
 from ..data import LabelMap
@@ -18,7 +19,7 @@ class BITE(SubjectsDataset, abc.ABC):
     def __init__(
         self,
         root: TypePath,
-        transform: Optional[Transform] = None,
+        transform: Transform | None = None,
         download: bool = False,
         **kwargs,
     ):

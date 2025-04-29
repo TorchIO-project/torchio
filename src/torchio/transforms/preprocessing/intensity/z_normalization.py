@@ -1,4 +1,4 @@
-from typing import Optional
+from __future__ import annotations
 
 import torch
 
@@ -44,7 +44,7 @@ class ZNormalization(NormalizationTransform):
     def znorm(
         tensor: torch.Tensor,
         mask: torch.Tensor,
-    ) -> Optional[torch.Tensor]:
+    ) -> torch.Tensor | None:
         tensor = tensor.clone().float()
         values = tensor[mask]
         mean, std = values.mean(), values.std()

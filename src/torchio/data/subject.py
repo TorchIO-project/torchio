@@ -5,7 +5,6 @@ import pprint
 from collections.abc import Sequence
 from typing import TYPE_CHECKING
 from typing import Any
-from typing import Optional
 
 import numpy as np
 
@@ -154,7 +153,7 @@ class Subject(dict):
     def get_applied_transforms(
         self,
         ignore_intensity: bool = False,
-        image_interpolation: Optional[str] = None,
+        image_interpolation: str | None = None,
     ) -> list[Transform]:
         from ..transforms.intensity_transform import IntensityTransform
         from ..transforms.transform import Transform
@@ -175,7 +174,7 @@ class Subject(dict):
     def get_composed_history(
         self,
         ignore_intensity: bool = False,
-        image_interpolation: Optional[str] = None,
+        image_interpolation: str | None = None,
     ) -> Compose:
         from ..transforms.augmentation.composition import Compose
 
@@ -189,7 +188,7 @@ class Subject(dict):
         self,
         warn: bool = True,
         ignore_intensity: bool = False,
-        image_interpolation: Optional[str] = None,
+        image_interpolation: str | None = None,
     ) -> Compose:
         """Get a reversed list of the inverses of the applied transforms.
 
@@ -229,7 +228,7 @@ class Subject(dict):
         attribute: str,
         relative_tolerance: float = 1e-6,
         absolute_tolerance: float = 1e-6,
-        message: Optional[str] = None,
+        message: str | None = None,
     ) -> None:
         r"""Check for consistency of an attribute across all images.
 
@@ -332,8 +331,8 @@ class Subject(dict):
     def get_images_dict(
         self,
         intensity_only=True,
-        include: Optional[Sequence[str]] = None,
-        exclude: Optional[Sequence[str]] = None,
+        include: Sequence[str] | None = None,
+        exclude: Sequence[str] | None = None,
     ) -> dict[str, Image]:
         images = {}
         for image_name, image in self.items():
@@ -351,8 +350,8 @@ class Subject(dict):
     def get_images(
         self,
         intensity_only=True,
-        include: Optional[Sequence[str]] = None,
-        exclude: Optional[Sequence[str]] = None,
+        include: Sequence[str] | None = None,
+        exclude: Sequence[str] | None = None,
     ) -> list[Image]:
         images_dict = self.get_images_dict(
             intensity_only=intensity_only,

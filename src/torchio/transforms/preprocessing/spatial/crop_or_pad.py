@@ -1,7 +1,7 @@
+from __future__ import annotations
+
 import warnings
 from collections.abc import Sequence
-from typing import Optional
-from typing import Union
 
 import numpy as np
 
@@ -76,10 +76,10 @@ class CropOrPad(SpatialTransform):
 
     def __init__(
         self,
-        target_shape: Union[int, TypeTripletInt, None] = None,
-        padding_mode: Union[str, float] = 0,
-        mask_name: Optional[str] = None,
-        labels: Optional[Sequence[int]] = None,
+        target_shape: int | TypeTripletInt | None = None,
+        padding_mode: str | float = 0,
+        mask_name: str | None = None,
+        labels: Sequence[int] | None = None,
         only_crop: bool = False,
         only_pad: bool = False,
         **kwargs,
@@ -173,7 +173,7 @@ class CropOrPad(SpatialTransform):
     def _compute_cropping_padding_from_shapes(
         self,
         source_shape: TypeTripletInt,
-    ) -> tuple[Optional[TypeSixBounds], Optional[TypeSixBounds]]:
+    ) -> tuple[TypeSixBounds | None, TypeSixBounds | None]:
         diff_shape = np.array(self.target_shape) - source_shape
 
         cropping = -np.minimum(diff_shape, 0)
@@ -193,7 +193,7 @@ class CropOrPad(SpatialTransform):
     def _compute_center_crop_or_pad(
         self,
         subject: Subject,
-    ) -> tuple[Optional[TypeSixBounds], Optional[TypeSixBounds]]:
+    ) -> tuple[TypeSixBounds | None, TypeSixBounds | None]:
         source_shape = subject.spatial_shape
         parameters = self._compute_cropping_padding_from_shapes(source_shape)
         padding_params, cropping_params = parameters
@@ -202,7 +202,7 @@ class CropOrPad(SpatialTransform):
     def _compute_mask_center_crop_or_pad(
         self,
         subject: Subject,
-    ) -> tuple[Optional[TypeSixBounds], Optional[TypeSixBounds]]:
+    ) -> tuple[TypeSixBounds | None, TypeSixBounds | None]:
         if self.mask_name not in subject:
             message = (
                 f'Mask name "{self.mask_name}"'

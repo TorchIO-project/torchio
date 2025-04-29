@@ -1,6 +1,6 @@
+from __future__ import annotations
+
 from collections.abc import Generator
-from typing import Optional
-from typing import Union
 
 import numpy as np
 
@@ -62,7 +62,7 @@ class GridSampler(PatchSampler):
         subject: Subject,
         patch_size: TypeSpatialShape,
         patch_overlap: TypeSpatialShape = (0, 0, 0),
-        padding_mode: Union[str, float, None] = None,
+        padding_mode: str | float | None = None,
     ):
         super().__init__(patch_size)
         self.patch_overlap = np.array(to_tuple(patch_overlap, length=3))
@@ -82,9 +82,9 @@ class GridSampler(PatchSampler):
 
     def __call__(
         self,
-        subject: Optional[Subject] = None,
-        num_patches: Optional[int] = None,
-    ) -> Generator[Subject, None, None]:
+        subject: Subject | None = None,
+        num_patches: int | None = None,
+    ) -> Generator[Subject]:
         subject = self.subject if subject is None else subject
         return super().__call__(subject, num_patches=num_patches)
 
@@ -106,7 +106,7 @@ class GridSampler(PatchSampler):
     def _generate_patches(  # type: ignore[override]
         self,
         subject: Subject,
-    ) -> Generator[Subject, None, None]:
+    ) -> Generator[Subject]:
         subject = self._pad(subject)
         sizes = subject.spatial_shape, self.patch_size, self.patch_overlap
         self._parse_sizes(*sizes)  # type: ignore[arg-type]

@@ -1,6 +1,7 @@
+from __future__ import annotations
+
 import warnings
 from collections.abc import Sequence
-from typing import Optional
 
 import torch
 
@@ -51,7 +52,7 @@ class Mask(IntensityTransform):
         self,
         masking_method: TypeMaskingMethod,
         outside_value: float = 0,
-        labels: Optional[Sequence[int]] = None,
+        labels: Sequence[int] | None = None,
         **kwargs,
     ):
         super().__init__(**kwargs)
