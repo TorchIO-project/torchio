@@ -31,7 +31,7 @@ jobs:
           fetch-depth: 0
 
       - name: Install the latest version of uv
-        uses: astral-sh/setup-uv@v5
+        uses: astral-sh/setup-uv@v6
 
       - name: Run check for tox env "${{ matrix.tox_env }}"
         run: uvx --with tox-uv -- tox -e ${{ matrix.tox_env }}
