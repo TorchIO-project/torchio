@@ -32,7 +32,7 @@ jobs:
           fetch-depth: 0
 
       - name: Install the latest version of uv
-        uses: astral-sh/setup-uv@v5
+        uses: astral-sh/setup-uv@v6
 
       - name: Install tox
         run: uv tool install --python ${{ matrix.python }} --with tox-uv tox
@@ -72,7 +72,7 @@ jobs:
           fetch-depth: 0
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v5
+        uses: astral-sh/setup-uv@v6
 
       - name: Test transforms CLI tool
         run: uv run -- tiotr --help
