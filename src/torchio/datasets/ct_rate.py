@@ -84,11 +84,11 @@ class CtRate(SubjectsDataset):
         root: TypePath,
         split: TypeSplit = 'train',
         *,
-        token: Optional[str] = None,
+        token: str | None = None,
         download: bool = False,
-        num_subjects: Optional[int] = None,
+        num_subjects: int | None = None,
         report_key: str = 'report',
-        sizes: Optional[list[int]] = None,
+        sizes: list[int] | None = None,
         **kwargs,
     ):
         self._root_dir = Path(root)
@@ -347,7 +347,7 @@ class CtRate(SubjectsDataset):
                 DataFrame containing metadata for all images associated to that subject.
         """
         subject_id, subject_df = subject_id_and_metadata
-        subject_dict: dict[str, Union[str, ScalarImage]] = {'subject_id': subject_id}
+        subject_dict: dict[str, str | ScalarImage] = {'subject_id': subject_id}
         for _, image_row in subject_df.iterrows():
             image = self._instantiate_image(image_row)
             scan_id = image_row['scan_id']
