@@ -1,22 +1,9 @@
+from importlib import import_module
 from importlib.util import find_spec
 from types import ModuleType
 
 
-def get_pandas() -> ModuleType:
-    _check_package('pandas', 'pandas')
-    import pandas
-
-    return pandas
-
-
-def get_huggingface_hub() -> ModuleType:
-    _check_package('huggingface_hub', 'huggingface')
-    import huggingface_hub
-
-    return huggingface_hub
-
-
-def _check_package(package: str, extra: str) -> None:
+def _check_package(*, package: str, extra: str) -> None:
     if find_spec(package) is None:
         message = (
             f'The `{package}` package is required for this.'
@@ -24,3 +11,16 @@ def _check_package(package: str, extra: str) -> None:
             f' `pip install torchio[{extra}]`.'
         )
         raise ImportError(message)
+
+
+def _check_and_import(package: str, extra: str) -> ModuleType:
+    _check_package(package=package, extra=extra)
+    return import_module(package)
+
+
+def get_pandas() -> ModuleType:
+    return _check_and_import(package='pandas', extra='csv')
+
+
+def get_huggingface_hub() -> ModuleType:
+    return _check_and_import(package='huggingface_hub', extra='huggingface')
