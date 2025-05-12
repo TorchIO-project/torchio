@@ -22,7 +22,7 @@ or `k-space motion artifacts <http://proceedings.mlr.press/v102/shaw19a.html>`_.
 
 TorchIO is part of the official `PyTorch Ecosystem <https://pytorch.org/ecosystem/>`_,
 and was featured at
-the `PyTorch Ecosystem Day 2021 <https://pytorch.org/ecosystem/pted/2021>`_ and
+the `PyTorch Ecosystem Day 2021 <https://pytorch.org/blog/ecosystem_day_2021>`_ and
 the `PyTorch Developer Day 2021 <https://pytorch.org/blog/pytorch-developer-day-2021>`_.
 
 Many groups have used TorchIO for their research.
