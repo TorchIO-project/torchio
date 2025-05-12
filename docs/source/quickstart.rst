@@ -7,13 +7,8 @@ Installation
 The Python package is hosted on the
 `Python Package Index (PyPI) <https://pypi.org/project/torchio/>`_.
 
-To install the latest PyTorch version before installing TorchIO, it is
-recommended to use `light-the-torch <https://github.com/pmeier/light-the-torch>`_::
-
-    $ pip install light-the-torch && ltt install torch
-
 The latest published version of TorchIO can be installed using Pip Installs
-Packages (``pip``)::
+Packages (PIP)::
 
     $ pip install torchio
 
@@ -25,12 +20,15 @@ If you would like to install Matplotlib to use the plotting features, use::
 
     $ pip install torchio[plot]
 
+You can also install TorchIO with Conda::
+
+    $ conda install -c conda-forge torchio
 
 If you are on Windows and have
 `trouble installing TorchIO <https://github.com/TorchIO-project/torchio/issues/343>`_,
 try `installing PyTorch <https://pytorch.org/get-started/locally/>`_ with
-`conda <https://docs.conda.io/en/latest/miniconda.html>`_ before pip-installing
-TorchIO.
+`conda <https://docs.conda.io/en/latest/miniconda.html>`_
+before pip-installing TorchIO.
 
 Hello, World!
 -------------
@@ -50,6 +48,7 @@ in parallel::
         t1=tio.ScalarImage('subject_a.nii.gz'),
         label=tio.LabelMap('subject_a.nii'),
         diagnosis='positive',
+        age=36,
     )
 
     # Image files can be in any format supported by SimpleITK or NiBabel, including DICOM
@@ -57,6 +56,7 @@ in parallel::
         t1=tio.ScalarImage('subject_b_dicom_folder'),
         label=tio.LabelMap('subject_b_seg.nrrd'),
         diagnosis='negative',
+        age=24,
     )
 
     # Images may also be created using PyTorch tensors or NumPy arrays
@@ -65,9 +65,14 @@ in parallel::
         t1=tio.ScalarImage(tensor=tensor_4d),
         label=tio.LabelMap(tensor=(tensor_4d > 0.5)),
         diagnosis='negative',
+        age=19,
     )
 
-    subjects_list = [subject_a, subject_b, subject_c]
+    subjects_list = [
+        subject_a,
+        subject_b,
+        subject_c,
+    ]
 
     # Let's use one preprocessing transform and one augmentation transform
     # This transform will be applied only to scalar images:
