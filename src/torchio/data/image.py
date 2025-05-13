@@ -1,11 +1,11 @@
+from __future__ import annotations
+
 import warnings
 from collections import Counter
 from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
 from typing import Callable
-from typing import Optional
-from typing import Union
 
 import humanize
 import nibabel as nib
@@ -130,10 +130,10 @@ class Image(dict):
 
     def __init__(
         self,
-        path: Union[TypePath, Sequence[TypePath], None] = None,
-        type: Optional[str] = None,  # noqa: A002
-        tensor: Optional[TypeData] = None,
-        affine: Optional[TypeData] = None,
+        path: TypePath | Sequence[TypePath] | None = None,
+        type: str | None = None,  # noqa: A002
+        tensor: TypeData | None = None,
+        affine: TypeData | None = None,
         check_nans: bool = False,  # removed by ITK by default
         reader: Callable = read_image,
         **kwargs: dict[str, Any],
@@ -146,7 +146,7 @@ class Image(dict):
                 'Not specifying the image type is deprecated and will be'
                 ' mandatory in the future. You can probably use'
                 ' tio.ScalarImage or tio.LabelMap instead',
-                DeprecationWarning,
+                FutureWarning,
                 stacklevel=2,
             )
             type = INTENSITY  # noqa: A001
@@ -171,7 +171,7 @@ class Image(dict):
                 ' https://github.com/TorchIO-project/torchio/pull/685 and will be'
                 ' removed in the future'
             )
-            warnings.warn(message, DeprecationWarning, stacklevel=2)
+            warnings.warn(message, FutureWarning, stacklevel=2)
 
         super().__init__(**kwargs)
         self._check_data_loader()
@@ -475,8 +475,8 @@ class Image(dict):
 
     def _parse_path(
         self,
-        path: Optional[Union[TypePath, Sequence[TypePath]]],
-    ) -> Optional[Union[Path, list[Path]]]:
+        path: TypePath | Sequence[TypePath] | None,
+    ) -> Path | list[Path] | None:
         if path is None:
             return None
         elif isinstance(path, dict):
@@ -489,9 +489,9 @@ class Image(dict):
 
     def _parse_tensor(
         self,
-        tensor: Optional[TypeData],
+        tensor: TypeData | None,
         none_ok: bool = True,
-    ) -> Optional[torch.Tensor]:
+    ) -> torch.Tensor | None:
         if tensor is None:
             if none_ok:
                 return None
@@ -520,7 +520,7 @@ class Image(dict):
         return ensure_4d(tensor)
 
     @staticmethod
-    def _parse_affine(affine: Optional[TypeData]) -> np.ndarray:
+    def _parse_affine(affine: TypeData | None) -> np.ndarray:
         if affine is None:
             return np.eye(4)
         if isinstance(affine, torch.Tensor):
@@ -534,7 +534,7 @@ class Image(dict):
         return affine.astype(np.float64)
 
     @staticmethod
-    def _is_paths_sequence(path: Union[TypePath, Sequence[TypePath], None]) -> bool:
+    def _is_paths_sequence(path: TypePath | Sequence[TypePath] | None) -> bool:
         is_not_string = not isinstance(path, str)
         return is_not_string and is_iterable(path)
 
@@ -628,7 +628,7 @@ class Image(dict):
             )
         return tensor, affine
 
-    def save(self, path: TypePath, squeeze: Optional[bool] = None) -> None:
+    def save(self, path: TypePath, squeeze: bool | None = None) -> None:
         """Save image to disk.
 
         Args:
@@ -767,7 +767,7 @@ class Image(dict):
 
             plot_volume(self, **kwargs)
 
-    def show(self, viewer_path: Optional[TypePath] = None) -> None:
+    def show(self, viewer_path: TypePath | None = None) -> None:
         """Open the image using external software.
 
         Args:
@@ -804,8 +804,8 @@ class Image(dict):
 
     def _crop_from_slices(
         self,
-        slices: Union[TypeSlice, tuple[TypeSlice, ...]],
-    ) -> 'Image':
+        slices: TypeSlice | tuple[TypeSlice, ...],
+    ) -> Image:
         from ..transforms import Crop
 
         slices_tuple = to_tuple(slices)  # type: ignore[assignment]

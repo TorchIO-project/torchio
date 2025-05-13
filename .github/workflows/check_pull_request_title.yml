@@ -1,4 +1,4 @@
-name: 'Check PR title'
+name: Check PR title
 
 on:
   pull_request:
@@ -16,6 +16,7 @@ jobs:
       # Echo the user's login
       - name: Echo user login
         run: echo ${{ github.event.pull_request.user.login }}
+
       - uses: naveenk1223/action-pr-title@master
         with:
           # ^                       Start of string

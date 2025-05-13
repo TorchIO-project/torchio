@@ -407,6 +407,9 @@ Thanks goes to all these people ([emoji key](https://allcontributors.org/docs/en
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/RJacobArthrex"><img src="https://avatars.githubusercontent.com/u/144900466?v=4?s=100" width="100px;" alt="Rahul Kurian Jacob"/><br /><sub><b>Rahul Kurian Jacob</b></sub></a><br /><a href="https://github.com/TorchIO-project/torchio/commits?author=RJacobArthrex" title="Documentation">📖</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://ethan.roo.ke"><img src="https://avatars.githubusercontent.com/u/46689793?v=4?s=100" width="100px;" alt="Ethan Rooke"/><br /><sub><b>Ethan Rooke</b></sub></a><br /><a href="https://github.com/TorchIO-project/torchio/commits?author=erooke" title="Documentation">📖</a></td>
     </tr>
+    <tr>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/mrdkucher"><img src="https://avatars.githubusercontent.com/u/13631603?v=4?s=100" width="100px;" alt="David Kucher"/><br /><sub><b>David Kucher</b></sub></a><br /><a href="https://github.com/TorchIO-project/torchio/commits?author=mrdkucher" title="Code">💻</a></td>
+    </tr>
   </tbody>
 </table>
 

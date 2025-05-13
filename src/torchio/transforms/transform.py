@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import copy
 import numbers
 import warnings
@@ -5,7 +7,6 @@ from abc import ABC
 from abc import abstractmethod
 from collections.abc import Sequence
 from contextlib import contextmanager
-from typing import Optional
 from typing import TypeVar
 from typing import Union
 
@@ -31,12 +32,7 @@ from .interpolation import Interpolation
 from .interpolation import get_sitk_interpolator
 
 TypeSixBounds = tuple[int, int, int, int, int, int]
-TypeBounds = Union[
-    int,
-    TypeTripletInt,
-    TypeSixBounds,
-    None,
-]
+TypeBounds = Union[int, TypeTripletInt, TypeSixBounds, None]
 TypeMaskingMethod = Union[str, TypeCallable, TypeBounds, None]
 ANATOMICAL_AXES = (
     'Left',
@@ -99,7 +95,7 @@ class Transform(ABC):
         include: TypeKeys = None,
         exclude: TypeKeys = None,
         keys: TypeKeys = None,
-        keep: Optional[dict[str, str]] = None,
+        keep: dict[str, str] | None = None,
         parse_input: bool = True,
         label_keys: TypeKeys = None,
     ):
@@ -110,7 +106,7 @@ class Transform(ABC):
                 'The "keys" argument is deprecated and will be removed in the'
                 ' future. Use "include" instead'
             )
-            warnings.warn(message, DeprecationWarning, stacklevel=2)
+            warnings.warn(message, FutureWarning, stacklevel=2)
             include = keys
         self.include, self.exclude = self.parse_include_and_exclude_keys(
             include,
@@ -276,11 +272,11 @@ class Transform(ABC):
 
     @staticmethod
     def _parse_range(
-        nums_range: Union[TypeNumber, tuple[TypeNumber, TypeNumber]],
+        nums_range: TypeNumber | tuple[TypeNumber, TypeNumber],
         name: str,
-        min_constraint: Optional[TypeNumber] = None,
-        max_constraint: Optional[TypeNumber] = None,
-        type_constraint: Optional[type] = None,
+        min_constraint: TypeNumber | None = None,
+        max_constraint: TypeNumber | None = None,
+        type_constraint: type | None = None,
     ) -> tuple[TypeNumber, TypeNumber]:
         r"""Adapted from :class:`torchvision.transforms.RandomRotation`.
 
@@ -475,7 +471,7 @@ class Transform(ABC):
         return get_sitk_interpolator(interpolation)
 
     @staticmethod
-    def parse_bounds(bounds_parameters: TypeBounds) -> Optional[TypeSixBounds]:
+    def parse_bounds(bounds_parameters: TypeBounds) -> TypeSixBounds | None:
         if bounds_parameters is None:
             return None
         try:
@@ -520,7 +516,7 @@ class Transform(ABC):
         masking_method: TypeMaskingMethod,
         subject: Subject,
         tensor: torch.Tensor,
-        labels: Optional[Sequence[int]] = None,
+        labels: Sequence[int] | None = None,
     ) -> torch.Tensor:
         if masking_method is None:
             return self.ones(tensor)

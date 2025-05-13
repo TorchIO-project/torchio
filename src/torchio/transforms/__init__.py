@@ -1,5 +1,3 @@
-# noreorder
-
 from .augmentation.composition import Compose
 
 # Augmentation
@@ -23,9 +21,11 @@ from .augmentation.intensity import RandomSwap
 from .augmentation.intensity import Spike
 from .augmentation.intensity import Swap
 from .augmentation.spatial import Affine
+from .augmentation.spatial import AffineElasticDeformation
 from .augmentation.spatial import ElasticDeformation
 from .augmentation.spatial import Flip
 from .augmentation.spatial import RandomAffine
+from .augmentation.spatial import RandomAffineElasticDeformation
 from .augmentation.spatial import RandomAnisotropy
 from .augmentation.spatial import RandomElasticDeformation
 from .augmentation.spatial import RandomFlip
@@ -54,6 +54,7 @@ from .preprocessing import RescaleIntensity
 from .preprocessing import Resize
 from .preprocessing import SequentialLabels
 from .preprocessing import ToCanonical
+from .preprocessing import ToOrientation
 from .preprocessing import ZNormalization
 from .preprocessing.intensity.histogram_standardization import train_histogram
 from .preprocessing.label.label_transform import LabelTransform
@@ -76,6 +77,8 @@ __all__ = [
     'RandomAnisotropy',
     'RandomElasticDeformation',
     'ElasticDeformation',
+    'RandomAffineElasticDeformation',
+    'AffineElasticDeformation',
     'RandomSwap',
     'Swap',
     'RandomBlur',
@@ -99,6 +102,7 @@ __all__ = [
     'Resize',
     'Resample',
     'ToCanonical',
+    'ToOrientation',
     'ZNormalization',
     'HistogramStandardization',
     'RescaleIntensity',

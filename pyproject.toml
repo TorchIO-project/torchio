@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "torchio"
-version = "0.20.6"
+version = "0.20.9"
 description = "Tools for medical image processing with PyTorch"
 readme = {file = "README.md", content-type = "text/markdown"}
 authors = [
@@ -27,7 +27,7 @@ classifiers = [
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
-    "Programming Language :: Python :: Implementation :: CPython",
+    "Programming Language :: Python :: 3.13",
     "Topic :: Scientific/Engineering",
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
     "Topic :: Scientific/Engineering :: Image Processing",
@@ -38,6 +38,7 @@ keywords = ["medical", "image processing", "pytorch", "augmentation", "mri"]
 requires-python = ">=3.9"
 dependencies = [
     "deprecated>=1.2",
+    "einops>=0.3",
     "humanize>=0.1",
     "nibabel>=3",
     "numpy>=1.20",
@@ -106,16 +107,16 @@ types = [
 ]
 test = [
     "coverage==7.6.10",
+    "matplotlib==3.9.4",
     "parameterized==0.9.0",
     "pillow==11.0.0",
     "pytest==8.3.4",
-    "pytest-cov==6.0.0",
     "pytest-sugar==1.0.0",
     "tox-uv==1.20.2",
 ]
 
 [tool.bumpversion]
-current_version = "0.20.6"
+current_version = "0.20.9"
 commit = true
 tag = true
 
@@ -181,3 +182,8 @@ ignore = [
 
 [tool.ruff.lint.isort]
 force-single-line = true
+
+[tool.coverage.run]
+omit = [
+    "**/_remote_module_non_scriptable.py",
+]

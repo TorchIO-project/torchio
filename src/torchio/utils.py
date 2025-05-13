@@ -11,8 +11,6 @@ from collections.abc import Iterable
 from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
-from typing import Optional
-from typing import Union
 
 import numpy as np
 import SimpleITK as sitk
@@ -63,8 +61,8 @@ def to_tuple(
 
 
 def get_stem(
-    path: Union[TypePath, Sequence[TypePath]],
-) -> Union[str, list[str]]:
+    path: TypePath | Sequence[TypePath],
+) -> str | list[str]:
     """Get stem of path or paths.
 
     Example:
@@ -85,7 +83,7 @@ def get_stem(
 def create_dummy_dataset(
     num_images: int,
     size_range: tuple[int, int],
-    directory: Optional[TypePath] = None,
+    directory: TypePath | None = None,
     suffix: str = '.nii.gz',
     force: bool = False,
     verbose: bool = False,
@@ -194,7 +192,7 @@ def get_torchio_cache_dir() -> Path:
 
 def compress(
     input_path: TypePath,
-    output_path: Optional[TypePath] = None,
+    output_path: TypePath | None = None,
 ) -> Path:
     if output_path is None:
         output_path = Path(input_path).with_suffix('.nii.gz')
@@ -346,8 +344,8 @@ def add_images_from_batch(
         subject.add_image(image, name)
 
 
-def guess_external_viewer() -> Optional[Path]:
-    """Guess the path to an executable that can be used to visualize images.
+def guess_external_viewer() -> Path | None:
+    """Guess the path to an executable that could be used to visualize images.
 
     It looks for 1) ITK-SNAP and 2) 3D Slicer.
     """

@@ -4,7 +4,6 @@ import copy
 from collections.abc import Iterable
 from collections.abc import Sequence
 from typing import Callable
-from typing import Optional
 
 from torch.utils.data import Dataset
 
@@ -66,12 +65,12 @@ class SubjectsDataset(Dataset):
     def __init__(
         self,
         subjects: Sequence[Subject],
-        transform: Optional[Callable] = None,
+        transform: Callable | None = None,
         load_getitem: bool = True,
     ):
         self._parse_subjects_list(subjects)
         self._subjects = subjects
-        self._transform: Optional[Callable]
+        self._transform: Callable | None
         self.set_transform(transform)
         self.load_getitem = load_getitem
 
@@ -119,7 +118,7 @@ class SubjectsDataset(Dataset):
         """
         return self._subjects
 
-    def set_transform(self, transform: Optional[Callable]) -> None:
+    def set_transform(self, transform: Callable | None) -> None:
         """Set the :attr:`transform` attribute.
 
         Args:

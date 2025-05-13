@@ -1,6 +1,7 @@
+from __future__ import annotations
+
 import csv
 from pathlib import Path
-from typing import Optional
 
 from ..data import LabelMap
 from ..data import ScalarImage
@@ -46,7 +47,7 @@ class EPISURG(SubjectsDataset):
     def __init__(
         self,
         root: TypePath,
-        transform: Optional[Transform] = None,
+        transform: Transform | None = None,
         download: bool = False,
         **kwargs,
     ):

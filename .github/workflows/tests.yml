@@ -5,6 +5,7 @@ on:
     branches:
       - main
   pull_request:
+  workflow_dispatch:
   schedule:
     - cron: "0 4 * * *"
 
@@ -20,17 +21,8 @@ jobs:
     name: Unit tests
     strategy:
       matrix:
-        os: [
-          ubuntu-latest,
-          macos-latest,
-          windows-latest,
-        ]
-        python: [
-          '3.9',
-          '3.10',
-          '3.11',
-          '3.12',
-        ]
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        python: ["3.9", "3.10", "3.11", "3.12", "3.13"]
       fail-fast: false
 
     runs-on: ${{ matrix.os }}
@@ -44,17 +36,10 @@ jobs:
           fetch-depth: 0
 
       - name: Install the latest version of uv
-        uses: astral-sh/setup-uv@v5
-        with:
-          enable-cache: true
-          cache-dependency-glob: "pyproject.toml"
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Install Python
-        run: uv python install ${{ matrix.python }}
+        uses: astral-sh/setup-uv@v6
 
       - name: Install tox
-        run: uv tool install tox --with tox-uv
+        run: uv tool install --python ${{ matrix.python }} --with tox-uv tox
 
       - name: Add local bin to path on Windows
         if: runner.os == 'Windows'
@@ -72,19 +57,17 @@ jobs:
           else
             tox -e pytest -- -m "not slow"
           fi
-        shell: bash  # this wouldn't work on Powershell
+        shell: bash # this wouldn't work on Powershell
 
       - name: Upload coverage reports to Codecov
-        if: ${{ matrix.os == 'ubuntu-latest' && matrix.python == '3.12' }}
-        uses: codecov/codecov-action@v5.4.0
+        if: ${{ matrix.os == 'ubuntu-latest' && matrix.python == '3.13' }}
+        uses: codecov/codecov-action@v5.4.2
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
   cli:
     name: CLI smoke tests
     runs-on: ubuntu-latest
-    env:
-      PYTHON_VERSION: '3.12'
 
     steps:
       - name: Checkout repository
@@ -92,21 +75,11 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Install the latest version of uv
-        uses: astral-sh/setup-uv@v5
-        with:
-          enable-cache: true
-          cache-dependency-glob: "pyproject.toml"
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Install Python
-        run: uv python install ${{ env.PYTHON_VERSION }}
-
-      - name: Install CLI tools
-        run: uv tool install "torchio@."
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
 
       - name: Test transforms CLI tool
-        run: tiotr --help
+        run: uv run -- tiotr --help
 
       - name: Test info CLI tool
-        run: tiohd --help
+        run: uv run -- tiohd --help

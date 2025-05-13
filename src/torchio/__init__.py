@@ -2,7 +2,7 @@
 
 __author__ = """Fernando Perez-Garcia"""
 __email__ = 'fepegar@gmail.com'
-__version__ = '0.20.6'
+__version__ = '0.20.9'
 
 
 from . import datasets

@@ -1,7 +1,7 @@
+from __future__ import annotations
+
 import warnings
 from collections.abc import Sequence
-from typing import Optional
-from typing import Union
 
 import numpy as np
 
@@ -34,6 +34,10 @@ class CropOrPad(SpatialTransform):
             :attr:`mask_name`.
         labels: If a label map is used to generate the mask, sequence of labels
             to consider.
+        only_crop: If ``True``, padding will not be applied, only cropping will
+            be done. ``only_crop`` and ``only_pad`` cannot both be ``True``.
+        only_pad: If ``True``, cropping will not be applied, only padding will
+            be done. ``only_crop`` and ``only_pad`` cannot both be ``True``.
         **kwargs: See :class:`~torchio.transforms.Transform` for additional
             keyword arguments.
 
@@ -72,10 +76,12 @@ class CropOrPad(SpatialTransform):
 
     def __init__(
         self,
-        target_shape: Union[int, TypeTripletInt, None] = None,
-        padding_mode: Union[str, float] = 0,
-        mask_name: Optional[str] = None,
-        labels: Optional[Sequence[int]] = None,
+        target_shape: int | TypeTripletInt | None = None,
+        padding_mode: str | float = 0,
+        mask_name: str | None = None,
+        labels: Sequence[int] | None = None,
+        only_crop: bool = False,
+        only_pad: bool = False,
         **kwargs,
     ):
         if target_shape is None and mask_name is None:
@@ -110,6 +116,12 @@ class CropOrPad(SpatialTransform):
             self.compute_crop_or_pad = self._compute_mask_center_crop_or_pad
         self.mask_name = mask_name
         self.labels = labels
+
+        if only_pad and only_crop:
+            message = 'only_crop and only_pad cannot both be True'
+            raise ValueError(message)
+        self.only_crop = only_crop
+        self.only_pad = only_pad
 
     @staticmethod
     def _bbox_mask(mask_volume: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
@@ -161,7 +173,7 @@ class CropOrPad(SpatialTransform):
     def _compute_cropping_padding_from_shapes(
         self,
         source_shape: TypeTripletInt,
-    ) -> tuple[Optional[TypeSixBounds], Optional[TypeSixBounds]]:
+    ) -> tuple[TypeSixBounds | None, TypeSixBounds | None]:
         diff_shape = np.array(self.target_shape) - source_shape
 
         cropping = -np.minimum(diff_shape, 0)
@@ -181,7 +193,7 @@ class CropOrPad(SpatialTransform):
     def _compute_center_crop_or_pad(
         self,
         subject: Subject,
-    ) -> tuple[Optional[TypeSixBounds], Optional[TypeSixBounds]]:
+    ) -> tuple[TypeSixBounds | None, TypeSixBounds | None]:
         source_shape = subject.spatial_shape
         parameters = self._compute_cropping_padding_from_shapes(source_shape)
         padding_params, cropping_params = parameters
@@ -190,7 +202,7 @@ class CropOrPad(SpatialTransform):
     def _compute_mask_center_crop_or_pad(
         self,
         subject: Subject,
-    ) -> tuple[Optional[TypeSixBounds], Optional[TypeSixBounds]]:
+    ) -> tuple[TypeSixBounds | None, TypeSixBounds | None]:
         if self.mask_name not in subject:
             message = (
                 f'Mask name "{self.mask_name}"'
@@ -277,10 +289,10 @@ class CropOrPad(SpatialTransform):
         subject.check_consistent_space()
         padding_params, cropping_params = self.compute_crop_or_pad(subject)
         padding_kwargs = {'padding_mode': self.padding_mode}
-        if padding_params is not None:
+        if padding_params is not None and not self.only_crop:
             pad = Pad(padding_params, **self.get_base_args(), **padding_kwargs)
             subject = pad(subject)  # type: ignore[assignment]
-        if cropping_params is not None:
+        if cropping_params is not None and not self.only_pad:
             crop = Crop(cropping_params, **self.get_base_args())
             subject = crop(subject)  # type: ignore[assignment]
         return subject

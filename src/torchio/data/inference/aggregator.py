@@ -1,5 +1,6 @@
+from __future__ import annotations
+
 import warnings
-from typing import Optional
 
 import numpy as np
 import torch
@@ -35,13 +36,13 @@ class GridAggregator:
         subject = sampler.subject
         self.volume_padded = sampler.padding_mode is not None
         self.spatial_shape = subject.spatial_shape
-        self._output_tensor: Optional[torch.Tensor] = None
+        self._output_tensor: torch.Tensor | None = None
         self.patch_overlap = sampler.patch_overlap
         self.patch_size = sampler.patch_size
         self._parse_overlap_mode(overlap_mode)
         self.overlap_mode = overlap_mode
-        self._avgmask_tensor: Optional[torch.Tensor] = None
-        self._hann_window: Optional[torch.Tensor] = None
+        self._avgmask_tensor: torch.Tensor | None = None
+        self._hann_window: torch.Tensor | None = None
 
     @staticmethod
     def _parse_overlap_mode(overlap_mode):
