@@ -362,7 +362,7 @@ def guess_external_viewer() -> Path | None:
         return None
 
 
-def _guess_macos_viewer() -> Optional[Path]:
+def _guess_macos_viewer() -> Path | None:
     def _get_app_path(app_name: str) -> Path:
         app_path = '/Applications/{}.app/Contents/MacOS/{}'
         return Path(app_path.format(2 * (app_name,)))
@@ -375,7 +375,7 @@ def _guess_macos_viewer() -> Optional[Path]:
         return None
 
 
-def _guess_windows_viewer() -> Optional[Path]:
+def _guess_windows_viewer() -> Path | None:
     def _get_app_path(app_dirs: list[Path], bin_name: str) -> Path:
         app_dir = app_dirs[-1]
         app_path = app_dir / bin_name
@@ -398,7 +398,7 @@ def _guess_windows_viewer() -> Optional[Path]:
         return None
 
 
-def _guess_linux_viewer() -> Optional[Path]:
+def _guess_linux_viewer() -> Path | None:
     if (itk_snap_which := shutil.which('itksnap')) is not None:
         return Path(itk_snap_which)
     elif (slicer_which := shutil.which('Slicer')) is not None:
