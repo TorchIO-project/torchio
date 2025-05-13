@@ -107,7 +107,7 @@ class IXI(SubjectsDataset):
         return exists
 
     @staticmethod
-    def _get_subjects_list(root, modalities):
+    def _get_subjects_list(root: Path, modalities: Sequence[str]) -> list[Subject]:
         # The number of files for each modality is not the same
         # E.g. 581 for T1, 578 for T2
         # Let's just use the first modality as reference for now
@@ -137,7 +137,7 @@ class IXI(SubjectsDataset):
             subjects.append(Subject(**images_dict))
         return subjects
 
-    def _download(self, root, modalities):
+    def _download(self, root: Path, modalities: Sequence[str]) -> None:
         """Download the IXI data if it does not exist already."""
         for modality in modalities:
             modality_dir = root / modality
@@ -195,7 +195,7 @@ class IXITiny(SubjectsDataset):
         super().__init__(subjects_list, transform=transform, **kwargs)
 
     @staticmethod
-    def _get_subjects_list(root):
+    def _get_subjects_list(root: Path) -> list[Subject]:
         image_paths = sglob(root / 'image', '*.nii.gz')
         label_paths = sglob(root / 'label', '*.nii.gz')
         if not (image_paths and label_paths):
@@ -214,7 +214,7 @@ class IXITiny(SubjectsDataset):
             subjects.append(Subject(**subject_dict))
         return subjects
 
-    def _download(self, root):
+    def _download(self, root: Path) -> None:
         """Download the tiny IXI data if it doesn't exist already."""
         if root.is_dir():  # assume it's been downloaded
             print('Root directory for IXITiny found:', root)  # noqa: T201
@@ -234,9 +234,9 @@ class IXITiny(SubjectsDataset):
         shutil.rmtree(ixi_tiny_dir)
 
 
-def sglob(directory, pattern):
-    return sorted(Path(directory).glob(pattern))
+def sglob(directory: Path, pattern: str) -> list[Path]:
+    return sorted(directory.glob(pattern))
 
 
-def get_subject_id(path):
+def get_subject_id(path: Path) -> str:
     return '-'.join(path.name.split('-')[:-1])
