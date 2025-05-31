@@ -104,7 +104,7 @@ def plot_volume(
     
     plt.tight_layout()
     if figtitle is not None:
-        plt.suptitle(figtitle, y=0.88, fontsize=15)
+        plt.suptitle(figtitle, y=0.75, fontsize=15)
 
     if output_path is not None and fig is not None:
         fig.savefig(output_path)
