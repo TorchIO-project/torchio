@@ -40,7 +40,7 @@ def plot_volume(
     percentiles=(0.5, 99.5),
     figsize=None,
     figtitle=None,
-    figtitle_y=0.8,
+    figtitle_y=0.75,
     reorient=True,
     indices=None,
 ):
