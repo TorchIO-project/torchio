@@ -40,6 +40,7 @@ def plot_volume(
     percentiles=(0.5, 99.5),
     figsize=None,
     figtitle=None,
+    figtitle_y=0.8,
     reorient=True,
     indices=None,
 ):
@@ -104,7 +105,7 @@ def plot_volume(
     
     plt.tight_layout()
     if figtitle is not None:
-        plt.suptitle(figtitle, y=0.7, fontsize=15)
+        plt.suptitle(figtitle, y=figtitle_y, fontsize=15)
 
     if output_path is not None and fig is not None:
         fig.savefig(output_path)
