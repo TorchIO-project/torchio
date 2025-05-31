@@ -102,7 +102,7 @@ def plot_volume(
     axi_axis.set_ylabel('A')
     axi_axis.invert_xaxis()
     axi_axis.set_title('Axial')
-    
+
     plt.tight_layout()
     if figtitle is not None:
         plt.suptitle(figtitle, y=figtitle_y, fontsize=15)
