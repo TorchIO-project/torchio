@@ -14,7 +14,6 @@ from tqdm.contrib.concurrent import thread_map
 from ..data.dataset import SubjectsDataset
 from ..data.image import ScalarImage
 from ..data.subject import Subject
-from ..external.imports import get_huggingface_hub
 from ..external.imports import get_pandas
 from ..types import TypePath
 
@@ -35,15 +34,15 @@ class CtRate(SubjectsDataset):
     This class provides access to
     `CT-RATE <https://huggingface.co/datasets/ibrahimhamamci/CT-RATE>`_,
     which contains chest CT scans with associated radiology reports and
-    abnormality labels. The dataset can be automatically downloaded from
-    Hugging Face if needed.
+    abnormality labels.
+
+    The dataset must have been downloaded previously.
 
     Args:
-        root: Root directory where the dataset is stored or will be downloaded to.
+        root: Root directory where the dataset has been downloaded.
         split: Dataset split to use, either ``'train'`` or ``'validation'``.
         token: Hugging Face token for accessing gated repositories. Alternatively,
             login using `huggingface-cli login` to cache the token.
-        download: If True, download the dataset if files are not found locally.
         num_subjects: Optional limit on the number of subjects to load (useful for
             testing). If ``None``, all subjects in the split are loaded.
         report_key: Key to use for storing radiology reports in the Subject metadata.
@@ -51,7 +50,7 @@ class CtRate(SubjectsDataset):
         **kwargs: Additional arguments for SubjectsDataset.
 
     Examples:
-        >>> dataset = CtRate('/path/to/data', split='train', download=True)
+        >>> dataset = CtRate('/path/to/data', split='train')
     """
 
     _REPO_ID = 'ibrahimhamamci/CT-RATE'
@@ -84,7 +83,6 @@ class CtRate(SubjectsDataset):
         split: TypeSplit = 'train',
         *,
         token: str | None = None,
-        download: bool = False,
         num_subjects: int | None = None,
         report_key: str = 'report',
         sizes: list[int] | None = None,
@@ -92,7 +90,6 @@ class CtRate(SubjectsDataset):
     ):
         self._root_dir = Path(root)
         self._token = token
-        self._download = download
         self._num_subjects = num_subjects
         self._report_key = report_key
         self._sizes = self._SIZES if sizes is None else sizes
@@ -129,10 +126,7 @@ class CtRate(SubjectsDataset):
         dirname: str,
         filename: str,
     ) -> pd.DataFrame:
-        """Download (if needed) and load a CSV file from the dataset.
-
-        Load a CSV file from the specified directory within the dataset.
-        If the file doesn't exist and download is enabled, download it.
+        """Load a CSV file from the specified directory within the dataset.
 
         Args:
             dirname: Directory name within 'dataset/' where the CSV is located.
@@ -140,8 +134,6 @@ class CtRate(SubjectsDataset):
         """
         subfolder = Path(f'dataset/{dirname}')
         path = Path(self._root_dir, subfolder, filename)
-        if not path.exists():
-            self._download_file_if_needed(path)
         pd = get_pandas()
         table = pd.read_csv(path)
         return table
@@ -254,63 +246,6 @@ class CtRate(SubjectsDataset):
         filename = f'{prefix}_predicted_labels.csv'
         return self._get_csv(dirname, filename)
 
-    def _download_file_if_needed(self, path: Path) -> None:
-        """Download a file if it does not exist locally and ``download`` is enabled.
-
-        Checks if the specified file exists at the given path. If not, and ``download``
-        is enabled, it downloads the file; otherwise, it raises an error.
-
-        Args:
-            path: The local file path to check and potentially download to.
-
-        Raises:
-            FileNotFoundError: If the file doesn't exist and download=False.
-        """
-        if self._download:
-            self._download_file(path)
-        else:
-            raise FileNotFoundError(
-                f'File "{path}" not found.'
-                " Set 'download=True' to download the dataset"
-            )
-
-    def _download_file(self, path: Path) -> None:
-        """Download a file from the Hugging Face repository to the specified path.
-
-        Downloads a single file from the CT-RATE dataset repository on Hugging Face,
-        preserving the directory structure.
-
-        Args:
-            path: The destination path where the file will be saved.
-
-        Raises:
-            RuntimeError: If the repository is gated and no valid token is provided.
-
-        Note:
-            This method requires access to the CT-RATE repository. If the repository
-            is gated, a valid Hugging Face token with appropriate permissions must
-            be provided, or the user must log in using the Hugging Face CLI.
-        """
-        relative_path = path.relative_to(self._root_dir)
-        huggingface_hub = get_huggingface_hub()
-        try:
-            huggingface_hub.hf_hub_download(
-                repo_id=self._REPO_ID,
-                repo_type='dataset',
-                token=self._token,
-                subfolder=str(relative_path.parent),
-                filename=relative_path.name,
-                local_dir=self._root_dir,
-            )
-        except huggingface_hub.errors.GatedRepoError as e:
-            message = (
-                f'The dataset "{self._REPO_ID}" is gated. Visit'
-                f' https://huggingface.co/datasets/{self._REPO_ID}, accept the'
-                ' terms and conditions, and log in or create and pass a token to'
-                ' the `token` argument'
-            )
-            raise RuntimeError(message) from e
-
     def _get_subjects_list(self, metadata: pd.DataFrame) -> list[Subject]:
         """Create a list of Subject instances from the metadata.
 
@@ -359,22 +294,14 @@ class CtRate(SubjectsDataset):
         """Create a ScalarImage object for a specific image.
 
         Processes a row from the metadata DataFrame to create a ScalarImage object,
-        downloading the image if necessary and extracting the radiology report.
 
         Args:
             image_row: A pandas Series representing a row from the metadata DataFrame,
                 containing information about a single image.
-
-        Note:
-            If the image file doesn't exist locally and download is enabled, this
-            method will download the file and fix the metadata.
         """
         image_dict = image_row.to_dict()
         filename = image_dict[self._FILENAME_KEY]
         image_path = self._root_dir / self._get_image_path(filename)
-        if not image_path.exists():
-            self._download_file_if_needed(image_path)
-            self._fix_image(image_path, image_dict)
         report_dict = self._extract_report_dict(image_dict)
         image_dict[self._report_key] = report_dict
         image = ScalarImage(image_path, **image_dict)
@@ -430,7 +357,7 @@ class CtRate(SubjectsDataset):
 
     @staticmethod
     def _fix_image(path: Path, metadata: dict[str, str]) -> None:
-        """Fix the metadata of a downloaded image file.
+        """Fix the spatial metadata of a CT-RATE image file.
 
         The original NIfTI files in the CT-RATE dataset have incorrect spatial
         metadata. This method reads the image, fixes the spacing, origin, and

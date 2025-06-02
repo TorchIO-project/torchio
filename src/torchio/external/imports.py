@@ -20,7 +20,3 @@ def _check_and_import(package: str, extra: str) -> ModuleType:
 
 def get_pandas() -> ModuleType:
     return _check_and_import(package='pandas', extra='csv')
-
-
-def get_huggingface_hub() -> ModuleType:
-    return _check_and_import(package='huggingface_hub', extra='huggingface')
