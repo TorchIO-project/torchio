@@ -57,7 +57,7 @@ class Crop(BoundsTransform):
             
             # Copy all non-image attributes
             for key, value in sample.items():
-                if value not in self.get_images(sample):
+                if key not in sample.get_images_dict(intensity_only=False, include=self.include, exclude=self.exclude).keys():
                     sample_attributes[key] = copy.deepcopy(value)
                 else:
                     sample_attributes[key] = self.crop_image(value, index_ini, index_fin)
