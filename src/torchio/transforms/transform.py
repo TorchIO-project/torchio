@@ -64,7 +64,7 @@ class Transform(ABC):
 
     Args:
         p: Probability that this transform will be applied.
-        copy: Make a shallow copy of the input before applying the transform.
+        copy: Make a deep copy of the input before applying the transform.
         include: Sequence of strings with the names of the only images to which
             the transform will be applied.
             Mandatory if the input is a :class:`dict`.
