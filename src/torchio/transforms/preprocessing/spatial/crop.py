@@ -27,7 +27,7 @@ class Crop(BoundsTransform):
             :math:`w_{ini} = w_{fin} = h_{ini} = h_{fin}
             = d_{ini} = d_{fin} = n`.
         copy: bool, optional
-            This transform overwrites the copy argument of the base transform and 
+            This transform overwrites the copy argument of the base transform and
             copies only the cropped patch, instead of the whole image.
             If ``True``, the cropped image will be copied to a new subject.
             If ``False``, the patch will be cropped in place. Default: ``True``.
@@ -50,22 +50,29 @@ class Crop(BoundsTransform):
         high = self.bounds_parameters[1::2]
         index_ini = low
         index_fin = np.array(sample.spatial_shape) - high
-        
+
         if self.copy_patch:
             # Create a new subject with only the cropped patch
             sample_attributes = {}
-            
+
             # Copy all non-image attributes
             for key, value in sample.items():
-                if key not in sample.get_images_dict(intensity_only=False, include=self.include, exclude=self.exclude).keys():
+                if (
+                    key
+                    not in sample.get_images_dict(
+                        intensity_only=False, include=self.include, exclude=self.exclude
+                    ).keys()
+                ):
                     sample_attributes[key] = copy.deepcopy(value)
                 else:
-                    sample_attributes[key] = self.crop_image(value, index_ini, index_fin)
+                    sample_attributes[key] = self.crop_image(
+                        value, index_ini, index_fin
+                    )
             cropped_sample = type(sample)(**sample_attributes)
-            
+
             # Copy applied transforms history
             cropped_sample.applied_transforms = copy.deepcopy(sample.applied_transforms)
-            
+
             cropped_sample.update_attributes()
             return cropped_sample
         else:
@@ -73,14 +80,14 @@ class Crop(BoundsTransform):
             for image in self.get_images(sample):
                 self.crop_image(image, index_ini, index_fin)
             return sample
-    
+
     def crop_image(self, image: Image, index_ini: tuple, index_fin: tuple) -> None:
         new_origin = nib.affines.apply_affine(image.affine, index_ini)
         new_affine = image.affine.copy()
         new_affine[:3, 3] = new_origin
         i0, j0, k0 = index_ini
         i1, j1, k1 = index_fin
-        
+
         # Crop the image data
         if self.copy_patch:
             # Create a new image with the cropped data
