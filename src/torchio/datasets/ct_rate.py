@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import ast
+import enum
 import multiprocessing
+import shutil
 from pathlib import Path
 from typing import TYPE_CHECKING
 from typing import Literal
@@ -9,6 +11,8 @@ from typing import Union
 
 import numpy as np
 import SimpleITK as sitk
+from tqdm.auto import tqdm
+from tqdm.contrib.concurrent import process_map
 from tqdm.contrib.concurrent import thread_map
 
 from ..data.dataset import SubjectsDataset
@@ -26,6 +30,14 @@ TypeSplit = Union[
     Literal['valid'],
     Literal['validation'],
 ]
+
+TypeParallelism = Literal['thread', 'process', None]
+
+
+class MetadataIndexColumn(str, enum.Enum):
+    SUBJECT_ID = 'subject_id'
+    SCAN_ID = 'scan_id'
+    RECONSTRUCTION_ID = 'reconstruction_id'
 
 
 class CtRate(SubjectsDataset):
@@ -172,9 +184,9 @@ class CtRate(SubjectsDataset):
         metadata = metadata[rows_int.isin(self._sizes)]
 
         index_columns = [
-            'subject_id',
-            'scan_id',
-            'reconstruction_id',
+            MetadataIndexColumn.SUBJECT_ID.value,
+            MetadataIndexColumn.SCAN_ID.value,
+            MetadataIndexColumn.RECONSTRUCTION_ID.value,
         ]
         pattern = r'\w+_(\d+)_(\w+)_(\d+)\.nii\.gz'
         metadata[index_columns] = metadata[self._FILENAME_KEY].str.extract(pattern)
@@ -356,7 +368,7 @@ class CtRate(SubjectsDataset):
         return Path(base_dir, split_dir, level1, level2, filename)
 
     @staticmethod
-    def _fix_image(path: Path, metadata: dict[str, str]) -> None:
+    def _fix_image(image: ScalarImage, out_path: Path, *, force: bool = False) -> None:
         """Fix the spatial metadata of a CT-RATE image file.
 
         The original NIfTI files in the CT-RATE dataset have incorrect spatial
@@ -365,31 +377,115 @@ class CtRate(SubjectsDataset):
         rescaling to convert to Hounsfield units.
 
         Args:
-            path: The path to the image file to fix.
-            metadata: A dictionary containing image metadata including spacing,
-                orientation, and rescale parameters.
+            in_path: The path to the image file to fix.
+            out_path: The path where the fixed image will be saved.
 
         Note:
             This method overwrites the original file with the fixed version.
             The fixed image is stored as INT16 with proper HU values.
         """
         # Adapted from https://huggingface.co/datasets/ibrahimhamamci/CT-RATE/blob/main/download_scripts/fix_metadata.py
-        image = sitk.ReadImage(str(path))
+        if not force and out_path.exists():
+            return
+        spacing_x, spacing_y = map(float, ast.literal_eval(image['XYSpacing']))
+        spacing_z = image['ZSpacing']
+        image_sitk = sitk.ReadImage(str(image.path))
+        image_sitk.SetSpacing((spacing_x, spacing_y, spacing_z))
 
-        spacing_x, spacing_y = map(float, ast.literal_eval(metadata['XYSpacing']))
-        spacing_z = metadata['ZSpacing']
-        image.SetSpacing((spacing_x, spacing_y, spacing_z))
+        image_sitk.SetOrigin(ast.literal_eval(image['ImagePositionPatient']))
 
-        image.SetOrigin(ast.literal_eval(metadata['ImagePositionPatient']))
-
-        orientation = ast.literal_eval(metadata['ImageOrientationPatient'])
+        orientation = ast.literal_eval(image['ImageOrientationPatient'])
         row_cosine, col_cosine = orientation[:3], orientation[3:6]
         z_cosine = np.cross(row_cosine, col_cosine).tolist()
-        image.SetDirection(row_cosine + col_cosine + z_cosine)
+        image_sitk.SetDirection(row_cosine + col_cosine + z_cosine)
 
-        RescaleIntercept = metadata['RescaleIntercept']
-        RescaleSlope = metadata['RescaleSlope']
-        adjusted_hu = image * RescaleSlope + RescaleIntercept
+        RescaleIntercept = image['RescaleIntercept']
+        RescaleSlope = image['RescaleSlope']
+        adjusted_hu = image_sitk * RescaleSlope + RescaleIntercept
         cast_int16 = sitk.Cast(adjusted_hu, sitk.sitkInt16)
 
-        sitk.WriteImage(cast_int16, str(path))
+        out_path.parent.mkdir(parents=True, exist_ok=True)
+        sitk.WriteImage(cast_int16, str(out_path))
+        return cast_int16
+
+    def _copy_not_images(self, out_dir: Path) -> None:
+        """Copy all files from the root directory except the images."""
+        for path in self._root_dir.iterdir():
+            if path.name == "dataset":
+                for subdirectory in path.iterdir():
+                    if subdirectory.name in ['train', 'valid']:
+                        continue
+                    print(f'Copying {subdirectory} to {out_dir / subdirectory.relative_to(self._root_dir)}')
+                    shutil.copytree(
+                        subdirectory,
+                        out_dir / subdirectory.relative_to(self._root_dir),
+                        dirs_exist_ok=True,
+                    )
+            elif path.name.startswith('.'):
+                continue
+            elif path.is_dir():
+                print(f'Copying {path} to {out_dir / path.name}')
+                shutil.copytree(
+                    path,
+                    out_dir / path.name,
+                    dirs_exist_ok=True,
+                )
+            else:
+                print(f'Copying {path} to {out_dir / path.name}')
+                shutil.copy(path, out_dir / path.name)
+
+    def fix_metadata(
+        self,
+        out_dir: str | Path,
+        parallelism: TypeParallelism = None,
+    ) -> CtRate:
+        """Fix the metadata of all images in the dataset.
+
+        Reads each image, applies the correct spatial metadata, and saves the fixed
+        image to the specified output directory.
+
+        Args:
+            out_dir: The directory where the fixed images will be saved.
+        """
+        out_dir = Path(out_dir)
+        out_dir.mkdir(parents=True, exist_ok=True)
+        # self._copy_not_images(out_dir)
+        images = []
+        out_paths = []
+        for subject in self.dry_iter():
+            for image in subject.get_images():
+                out_path = out_dir / image.path.relative_to(self._root_dir)
+                images.append(image)
+                out_paths.append(out_path)
+        if parallelism == 'thread':
+            thread_map(
+                self._fix_image,
+                images,
+                out_paths,
+                max_workers=multiprocessing.cpu_count(),
+                desc='Fixing metadata',
+            )
+        elif parallelism == 'process':
+            process_map(
+                self._fix_image,
+                images,
+                out_paths,
+                max_workers=multiprocessing.cpu_count(),
+                desc='Fixing metadata',
+            )
+        else:
+            zipped = zip(images, out_paths)
+            with tqdm(total=len(images), desc='Fixing metadata') as pbar:
+                for image, out_path in zipped:
+                    pbar.set_description(f'Fixing {image.path.name}')
+                    self._fix_image(image, out_path)
+                    pbar.update(1)
+        new_dataset = CtRate(
+            out_dir,
+            split=self._split,
+            token=self._token,
+            num_subjects=self._num_subjects,
+            report_key=self._report_key,
+            sizes=self._sizes,
+        )
+        return new_dataset
