@@ -411,11 +411,13 @@ class CtRate(SubjectsDataset):
     def _copy_not_images(self, out_dir: Path) -> None:
         """Copy all files from the root directory except the images."""
         for path in self._root_dir.iterdir():
-            if path.name == "dataset":
+            if path.name == 'dataset':
                 for subdirectory in path.iterdir():
                     if subdirectory.name in ['train', 'valid']:
                         continue
-                    print(f'Copying {subdirectory} to {out_dir / subdirectory.relative_to(self._root_dir)}')
+                    print(
+                        f'Copying {subdirectory} to {out_dir / subdirectory.relative_to(self._root_dir)}'
+                    )
                     shutil.copytree(
                         subdirectory,
                         out_dir / subdirectory.relative_to(self._root_dir),
