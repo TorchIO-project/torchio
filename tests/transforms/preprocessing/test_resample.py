@@ -78,6 +78,7 @@ class TestResample(TorchioTestCase):
             transform(self.sample_subject)
 
     def test_2d(self):
+        """Check that image is still 2D after resampling."""
         image = tio.ScalarImage(tensor=torch.rand(1, 2, 3, 1))
         transform = tio.Resample(0.5)
         shape = transform(image).shape
