@@ -102,7 +102,7 @@ class TestResample(TorchioTestCase):
         with pytest.raises(RuntimeError):
             transform(self.sample_subject)
 
-    def test_resample_flip(self):
+    def test_resample_flip_consistent(self):
         image = torch.rand(1, 10, 10, 10)
         resample = tio.Resample(1.35)
         flip = tio.Flip(0)

@@ -66,7 +66,6 @@ class Resize(SpatialTransform):
         resampled = resample(subject)
         assert isinstance(resampled, Subject)
         # Sometimes, the output shape is one voxel too large
-        # Probably because Resample uses np.ceil to compute the shape
         if not resampled.spatial_shape == tuple(shape_out):
             message = (
                 f'Output shape {resampled.spatial_shape}'
