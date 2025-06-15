@@ -50,7 +50,11 @@ class Slicer(Subject):
     """
 
     def __init__(self, name='MRHead'):
-        filenames, url_files = URLS_DICT[name]
+        try:
+            filenames, url_files = URLS_DICT[name]
+        except KeyError as e:
+            message = f'Invalid name "{name}". Valid names are: {", ".join(URLS_DICT)}'
+            raise ValueError(message) from e
         for filename, url_file in zip(filenames, url_files):
             filename = filename.replace('-', '_')
             url = urllib.parse.urljoin(SLICER_URL, url_file)
