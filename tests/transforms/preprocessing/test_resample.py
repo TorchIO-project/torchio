@@ -100,3 +100,14 @@ class TestResample(TorchioTestCase):
         transform = tio.Resample(target)
         with pytest.raises(RuntimeError):
             transform(self.sample_subject)
+
+    def test_resample_flip(self):
+        image = torch.rand(1, 10, 10, 10)
+        resample = tio.Resample(1.35)
+        flip = tio.Flip(0)
+        flipped_and_resampled = resample(flip(image))
+        resampled_and_flipped = flip(resample(image))
+        self.assert_tensor_almost_equal(
+            flipped_and_resampled.data,
+            resampled_and_flipped.data,
+        )
