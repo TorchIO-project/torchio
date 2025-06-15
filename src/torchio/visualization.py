@@ -39,6 +39,8 @@ def plot_volume(
     xlabels=True,
     percentiles=(0.5, 99.5),
     figsize=None,
+    figtitle=None,
+    figtitle_y=0.75,
     reorient=True,
     indices=None,
 ):
@@ -102,6 +104,9 @@ def plot_volume(
     axi_axis.set_title('Axial')
 
     plt.tight_layout()
+    if figtitle is not None:
+        plt.suptitle(figtitle, y=figtitle_y, fontsize=15)
+
     if output_path is not None and fig is not None:
         fig.savefig(output_path)
     if show:
