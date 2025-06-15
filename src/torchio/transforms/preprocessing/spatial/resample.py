@@ -301,7 +301,7 @@ class Resample(SpatialTransform):
         old_origin_lps = np.array(floating_sitk.GetOrigin(), dtype=float)
         center_lps = (old_last_index_lps + old_origin_lps) / 2
         # We use floor to avoid extrapolation by keeping the extent of the
-        # new image the sale or smaller than the original.
+        # new image the same or smaller than the original.
         new_size = np.floor(old_size * old_spacing / new_spacing)
         # We keep singleton dimensions to avoid e.g. making 2D images 3D
         new_size[old_size == 1] = 1
