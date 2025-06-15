@@ -290,18 +290,26 @@ class Resample(SpatialTransform):
         floating_sitk: sitk.Image,
         spacing: TypeTripletFloat,
     ) -> sitk.Image:
-        old_spacing = np.array(floating_sitk.GetSpacing())
-        new_spacing = np.array(spacing)
+        old_spacing = np.array(floating_sitk.GetSpacing(), dtype=float)
+        new_spacing = np.array(spacing, dtype=float)
         old_size = np.array(floating_sitk.GetSize())
-        new_size = old_size * old_spacing / new_spacing
-        new_size = np.ceil(new_size).astype(np.uint16)
-        new_size[old_size == 1] = 1  # keep singleton dimensions
-        new_origin_index = 0.5 * (new_spacing / old_spacing - 1)
-        new_origin_lps = floating_sitk.TransformContinuousIndexToPhysicalPoint(
-            new_origin_index,
+        old_last_index = old_size - 1
+        old_last_index_lps = np.array(
+            floating_sitk.TransformIndexToPhysicalPoint(old_last_index.tolist()),
+            dtype=float,
         )
+        old_origin_lps = np.array(floating_sitk.GetOrigin(), dtype=float)
+        center_lps = (old_last_index_lps + old_origin_lps) / 2
+        # We use floor to avoid extrapolation by keeping the extent of the
+        # new image the same or smaller than the original.
+        new_size = np.floor(old_size * old_spacing / new_spacing)
+        # We keep singleton dimensions to avoid e.g. making 2D images 3D
+        new_size[old_size == 1] = 1
+        direction = np.asarray(floating_sitk.GetDirection(), dtype=float).reshape(3, 3)
+        half_extent = (new_size - 1) / 2 * new_spacing
+        new_origin_lps = (center_lps - direction @ half_extent).tolist()
         reference = sitk.Image(
-            new_size.tolist(),
+            new_size.astype(int).tolist(),
             floating_sitk.GetPixelID(),
             floating_sitk.GetNumberOfComponentsPerPixel(),
         )
