@@ -687,7 +687,11 @@
       "profile": "https://github.com/nicoloesch",
       "contributions": [
         "code",
-        "bug"
+        "bug",
+        "design",
+        "maintenance",
+        "question",
+        "review"
       ]
     },
     {
