@@ -687,7 +687,11 @@
       "profile": "https://github.com/nicoloesch",
       "contributions": [
         "code",
-        "bug"
+        "bug",
+        "design",
+        "maintenance",
+        "question",
+        "review"
       ]
     },
     {
@@ -857,6 +861,15 @@
       "name": "David Kucher",
       "avatar_url": "https://avatars.githubusercontent.com/u/13631603?v=4",
       "profile": "https://github.com/mrdkucher",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "StijnvWijn",
+      "name": "StijnvWijn",
+      "avatar_url": "https://avatars.githubusercontent.com/u/78531113?v=4",
+      "profile": "https://github.com/StijnvWijn",
       "contributions": [
         "code"
       ]
