@@ -83,12 +83,12 @@ dev = [
 ]
 doc = [
     "einops==0.8.0",
-    "furo==2024.8.6",
     "matplotlib==3.9.4",
     "sphinx==7.4.7",
     "sphinx-autobuild==2024.10.3",
     "sphinx-copybutton==0.5.2",
     "sphinx-gallery==0.18.0",
+    "sphinx-immaterial>=0.12.5",
     "sphinxext-opengraph==0.9.1",
 ]
 maintain = [
