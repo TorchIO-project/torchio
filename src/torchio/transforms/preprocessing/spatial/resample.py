@@ -418,6 +418,7 @@ class Resample(SpatialTransform):
             spacing: Array with the spacing of the input image in mm.
         """
         k = downsampling_factor
-        variance = (k**2 - 1**2) * (2 * np.sqrt(2 * np.log(2))) ** (-2)
+        # Equation from top of page 678 of proceedings (4/9 in the PDF)
+        variance = (k**2 - 1) * (2 * np.sqrt(2 * np.log(2))) ** (-2)
         sigma = spacing * np.sqrt(variance)
         return sigma
