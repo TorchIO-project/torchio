@@ -20,6 +20,8 @@ from ....types import TypeTripletFloat
 from ...spatial_transform import SpatialTransform
 
 TypeSpacing = Union[float, tuple[float, float, float]]
+TypeTarget = Union[TypeSpacing, str, Path, Image, None]
+ONE_MILLIMITER_ISOTROPIC = 1
 
 
 class Resample(SpatialTransform):
@@ -50,6 +52,15 @@ class Resample(SpatialTransform):
         label_interpolation: See :ref:`Interpolation`.
         scalars_only: Apply only to instances of :class:`~torchio.ScalarImage`.
             Used internally by :class:`~torchio.transforms.RandomAnisotropy`.
+        antialias: If ``True``, apply a Gaussian smoothing before
+            downsampling, along any dimension that will be downsampled.
+            This is useful to avoid aliasing artifacts when downsampling
+            images. The standard deviation of the Gaussian kernel
+            is computed according to the method described in Cardoso et al.,
+            `Scale factor point spread function matching: beyond aliasing in
+            image resampling
+            <https://link.springer.com/chapter/10.1007/978-3-319-24571-3_81>`_,
+            MICCAI 2015.
         **kwargs: See :class:`~torchio.transforms.Transform` for additional
             keyword arguments.
 
@@ -79,11 +90,12 @@ class Resample(SpatialTransform):
 
     def __init__(
         self,
-        target: TypeSpacing | str | Path | Image | None = 1,
+        target: TypeTarget = ONE_MILLIMITER_ISOTROPIC,
         image_interpolation: str = 'linear',
         label_interpolation: str = 'nearest',
         pre_affine_name: str | None = None,
         scalars_only: bool = False,
+        antialias: bool = False,
         **kwargs,
     ):
         super().__init__(**kwargs)
@@ -96,12 +108,14 @@ class Resample(SpatialTransform):
         )
         self.pre_affine_name = pre_affine_name
         self.scalars_only = scalars_only
+        self.antialias = antialias
         self.args_names = [
             'target',
             'image_interpolation',
             'label_interpolation',
             'pre_affine_name',
             'scalars_only',
+            'antialias',
         ]
 
     @staticmethod
@@ -190,20 +204,92 @@ class Resample(SpatialTransform):
 
             floating_sitk = image.as_sitk(force_3d=True)
 
-            resampler = sitk.ResampleImageFilter()
-            resampler.SetInterpolator(interpolator)
-            self._set_resampler_reference(
-                resampler,
-                self.target,  # type: ignore[arg-type]
+            resampler = self._get_resampler(
+                interpolator,
                 floating_sitk,
                 subject,
+                self.target,
             )
+            if self.antialias and isinstance(image, ScalarImage):
+                downsampling_factor = self._get_downsampling_factor(
+                    floating_sitk,
+                    resampler,
+                )
+                sigmas = self._get_sigmas(
+                    downsampling_factor,
+                    floating_sitk.GetSpacing(),
+                )
+                floating_sitk = self._smooth(floating_sitk, sigmas)
             resampled = resampler.Execute(floating_sitk)
 
             array, affine = sitk_to_nib(resampled)
             image.set_data(torch.as_tensor(array))
             image.affine = affine
         return subject
+
+    @staticmethod
+    def _smooth(
+        image: sitk.Image,
+        sigmas: np.ndarray,
+        epsilon: float = 1e-9,
+    ) -> sitk.Image:
+        """Smooth the image with a Gaussian kernel.
+
+        Args:
+            image: Image to be smoothed.
+            sigmas: Standard deviations of the Gaussian kernel for each
+                dimension. If a value is NaN, no smoothing is applied in that
+                dimension.
+            epsilon: Small value to replace NaN values in sigmas, to avoid
+                division-by-zero errors.
+        """
+
+        sigmas[np.isnan(sigmas)] = epsilon  # no smoothing in that dimension
+        gaussian = sitk.SmoothingRecursiveGaussianImageFilter()
+        gaussian.SetSigma(sigmas.tolist())
+        smoothed = gaussian.Execute(image)
+        return smoothed
+
+    @staticmethod
+    def _get_downsampling_factor(
+        floating: sitk.Image,
+        resampler: sitk.ResampleImageFilter,
+    ) -> np.ndarray:
+        """Get the downsampling factor for each dimension.
+
+        The downsampling factor is the ratio between the output spacing and
+        the input spacing. If the output spacing is smaller than the input
+        spacing, the factor is set to NaN, meaning downsampling is not applied
+        in that dimension.
+
+        Args:
+            floating: The input image to be resampled.
+            resampler: The resampler that will be used to resample the image.
+        """
+        input_spacing = np.array(floating.GetSpacing())
+        output_spacing = np.array(resampler.GetOutputSpacing())
+        factors = output_spacing / input_spacing
+        no_downsampling = factors <= 1
+        factors[no_downsampling] = np.nan
+        return factors
+
+    def _get_resampler(
+        self,
+        interpolator: int,
+        floating: sitk.Image,
+        subject: Subject,
+        target: TypeTarget,
+    ) -> sitk.ResampleImageFilter:
+        """Instantiate a SimpleITK resampler."""
+        resampler = sitk.ResampleImageFilter()
+        resampler.SetInterpolator(interpolator)
+        self._set_resampler_reference(
+            resampler,
+            target,  # type: ignore[arg-type]
+            floating,
+            subject,
+        )
+        return resampler
 
     def _set_resampler_reference(
         self,
@@ -215,7 +301,6 @@ class Resample(SpatialTransform):
         # Target can be:
         # 1) An instance of torchio.Image
         # 2) An instance of pathlib.Path
-        # 3) A string, which could be a path or an image in subject
         # 3) A string, which could be a path or an image in subject
         # 4) A number or sequence of numbers for spacing
         # 5) A tuple of shape, affine
@@ -319,11 +404,18 @@ class Resample(SpatialTransform):
         return reference
 
     @staticmethod
-    def get_sigma(downsampling_factor, spacing):
+    def _get_sigmas(downsampling_factor: np.ndarray, spacing: np.ndarray) -> np.ndarray:
         """Compute optimal standard deviation for Gaussian kernel.
 
-        From Cardoso et al., "Scale factor point spread function
-        matching: beyond aliasing in image resampling", MICCAI 2015
+        From Cardoso et al., `Scale factor point spread function matching:
+        beyond aliasing in image resampling
+        <https://link.springer.com/chapter/10.1007/978-3-319-24571-3_81>`_,
+        MICCAI 2015.
+
+        Args:
+            downsampling_factor: Array with the downsampling factor for each
+                dimension.
+            spacing: Array with the spacing of the input image in mm.
         """
         k = downsampling_factor
         variance = (k**2 - 1**2) * (2 * np.sqrt(2 * np.log(2))) ** (-2)
