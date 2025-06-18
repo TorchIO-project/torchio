@@ -1,18 +1,12 @@
 from __future__ import annotations
 
-import ast
 import enum
 import multiprocessing
-import shutil
 from pathlib import Path
 from typing import TYPE_CHECKING
 from typing import Literal
 from typing import Union
 
-import numpy as np
-import SimpleITK as sitk
-from tqdm.auto import tqdm
-from tqdm.contrib.concurrent import process_map
 from tqdm.contrib.concurrent import thread_map
 
 from ..data.dataset import SubjectsDataset
@@ -43,8 +37,8 @@ class MetadataIndexColumn(str, enum.Enum):
 class CtRate(SubjectsDataset):
     """CT-RATE dataset.
 
-    This class provides access to
-    `CT-RATE <https://huggingface.co/datasets/ibrahimhamamci/CT-RATE>`_,
+    This class helps loading the `CT-RATE dataset
+    <https://huggingface.co/datasets/ibrahimhamamci/CT-RATE>`_,
     which contains chest CT scans with associated radiology reports and
     abnormality labels.
 
@@ -53,12 +47,14 @@ class CtRate(SubjectsDataset):
     Args:
         root: Root directory where the dataset has been downloaded.
         split: Dataset split to use, either ``'train'`` or ``'validation'``.
-        token: Hugging Face token for accessing gated repositories. Alternatively,
-            login using `huggingface-cli login` to cache the token.
         num_subjects: Optional limit on the number of subjects to load (useful for
-            testing). If ``None``, all subjects in the split are loaded.
+            debugging). If ``None``, all subjects in the split are loaded.
         report_key: Key to use for storing radiology reports in the Subject metadata.
-        sizes: List of image sizes (in pixels) to include. Default: [512, 768, 1024].
+        sizes: List of image sizes (in-plane, in voxels) to include.
+        load_fixed: If ``True``, load the files with fixed spatial metadata
+            added in `this pull request
+            <https://huggingface.co/datasets/ibrahimhamamci/CT-RATE/discussions/85>`_.
+            Otherwise, load the original files with incorrect spatial metadata.
         **kwargs: Additional arguments for SubjectsDataset.
 
     Examples:
@@ -88,26 +84,32 @@ class CtRate(SubjectsDataset):
         'Bronchiectasis',
         'Interlobular septal thickening',
     ]
+    REPORT_KEYS = [
+        'ClinicalInformation_EN',
+        'Findings_EN',
+        'Impressions_EN',
+        'Technique_EN',
+    ]
 
     def __init__(
         self,
         root: TypePath,
         split: TypeSplit = 'train',
         *,
-        token: str | None = None,
         num_subjects: int | None = None,
         report_key: str = 'report',
         sizes: list[int] | None = None,
+        load_fixed: bool = True,
         **kwargs,
     ):
         self._root_dir = Path(root)
-        self._token = token
         self._num_subjects = num_subjects
         self._report_key = report_key
         self._sizes = self._SIZES if sizes is None else sizes
 
         self._split = self._parse_split(split)
         self.metadata = self._get_metadata()
+        self._load_fixed = load_fixed
         subjects_list = self._get_subjects_list(self.metadata)
         super().__init__(subjects_list, **kwargs)
 
@@ -313,7 +315,11 @@ class CtRate(SubjectsDataset):
         """
         image_dict = image_row.to_dict()
         filename = image_dict[self._FILENAME_KEY]
-        image_path = self._root_dir / self._get_image_path(filename)
+        relative_image_path = self._get_image_path(
+            filename,
+            load_fixed=self._load_fixed,
+        )
+        image_path = self._root_dir / relative_image_path
         report_dict = self._extract_report_dict(image_dict)
         image_dict[self._report_key] = report_dict
         image = ScalarImage(image_path, **image_dict)
@@ -332,19 +338,13 @@ class CtRate(SubjectsDataset):
         Note:
             This method modifies the input subject_dict by removing the report keys.
         """
-        report_keys = [
-            'ClinicalInformation_EN',
-            'Findings_EN',
-            'Impressions_EN',
-            'Technique_EN',
-        ]
         report_dict = {}
-        for key in report_keys:
+        for key in self.REPORT_KEYS:
             report_dict[key] = subject_dict.pop(key)
         return report_dict
 
     @staticmethod
-    def _get_image_path(filename: str) -> Path:
+    def _get_image_path(filename: str, load_fixed: bool) -> Path:
         """Construct the relative path to an image file within the dataset structure.
 
         Parses the filename to determine the hierarchical directory structure
@@ -363,131 +363,8 @@ class CtRate(SubjectsDataset):
         parts = filename.split('_')
         base_dir = 'dataset'
         split_dir = parts[0]
+        if load_fixed:
+            split_dir = f'{split_dir}_fixed'
         level1 = f'{parts[0]}_{parts[1]}'
         level2 = f'{level1}_{parts[2]}'
         return Path(base_dir, split_dir, level1, level2, filename)
-
-    @staticmethod
-    def _fix_image(image: ScalarImage, out_path: Path, *, force: bool = False) -> None:
-        """Fix the spatial metadata of a CT-RATE image file.
-
-        The original NIfTI files in the CT-RATE dataset have incorrect spatial
-        metadata. This method reads the image, fixes the spacing, origin, and
-        orientation based on the metadata provided in the CSV, and applies the correct
-        rescaling to convert to Hounsfield units.
-
-        Args:
-            in_path: The path to the image file to fix.
-            out_path: The path where the fixed image will be saved.
-
-        Note:
-            This method overwrites the original file with the fixed version.
-            The fixed image is stored as INT16 with proper HU values.
-        """
-        # Adapted from https://huggingface.co/datasets/ibrahimhamamci/CT-RATE/blob/main/download_scripts/fix_metadata.py
-        if not force and out_path.exists():
-            return
-        spacing_x, spacing_y = map(float, ast.literal_eval(image['XYSpacing']))
-        spacing_z = image['ZSpacing']
-        image_sitk = sitk.ReadImage(str(image.path))
-        image_sitk.SetSpacing((spacing_x, spacing_y, spacing_z))
-
-        image_sitk.SetOrigin(ast.literal_eval(image['ImagePositionPatient']))
-
-        orientation = ast.literal_eval(image['ImageOrientationPatient'])
-        row_cosine, col_cosine = orientation[:3], orientation[3:6]
-        z_cosine = np.cross(row_cosine, col_cosine).tolist()
-        image_sitk.SetDirection(row_cosine + col_cosine + z_cosine)
-
-        RescaleIntercept = image['RescaleIntercept']
-        RescaleSlope = image['RescaleSlope']
-        adjusted_hu = image_sitk * RescaleSlope + RescaleIntercept
-        cast_int16 = sitk.Cast(adjusted_hu, sitk.sitkInt16)
-
-        out_path.parent.mkdir(parents=True, exist_ok=True)
-        sitk.WriteImage(cast_int16, str(out_path))
-        return cast_int16
-
-    def _copy_not_images(self, out_dir: Path) -> None:
-        """Copy all files from the root directory except the images."""
-        for path in self._root_dir.iterdir():
-            if path.name == 'dataset':
-                for subdirectory in path.iterdir():
-                    if subdirectory.name in ['train', 'valid']:
-                        continue
-                    print(
-                        f'Copying {subdirectory} to {out_dir / subdirectory.relative_to(self._root_dir)}'
-                    )
-                    shutil.copytree(
-                        subdirectory,
-                        out_dir / subdirectory.relative_to(self._root_dir),
-                        dirs_exist_ok=True,
-                    )
-            elif path.name.startswith('.'):
-                continue
-            elif path.is_dir():
-                print(f'Copying {path} to {out_dir / path.name}')
-                shutil.copytree(
-                    path,
-                    out_dir / path.name,
-                    dirs_exist_ok=True,
-                )
-            else:
-                print(f'Copying {path} to {out_dir / path.name}')
-                shutil.copy(path, out_dir / path.name)
-
-    def fix_metadata(
-        self,
-        out_dir: str | Path,
-        parallelism: TypeParallelism = None,
-    ) -> CtRate:
-        """Fix the metadata of all images in the dataset.
-
-        Reads each image, applies the correct spatial metadata, and saves the fixed
-        image to the specified output directory.
-
-        Args:
-            out_dir: The directory where the fixed images will be saved.
-        """
-        out_dir = Path(out_dir)
-        out_dir.mkdir(parents=True, exist_ok=True)
-        # self._copy_not_images(out_dir)
-        images = []
-        out_paths = []
-        for subject in self.dry_iter():
-            for image in subject.get_images():
-                out_path = out_dir / image.path.relative_to(self._root_dir)
-                images.append(image)
-                out_paths.append(out_path)
-        if parallelism == 'thread':
-            thread_map(
-                self._fix_image,
-                images,
-                out_paths,
-                max_workers=multiprocessing.cpu_count(),
-                desc='Fixing metadata',
-            )
-        elif parallelism == 'process':
-            process_map(
-                self._fix_image,
-                images,
-                out_paths,
-                max_workers=multiprocessing.cpu_count(),
-                desc='Fixing metadata',
-            )
-        else:
-            zipped = zip(images, out_paths)
-            with tqdm(total=len(images), desc='Fixing metadata') as pbar:
-                for image, out_path in zipped:
-                    pbar.set_description(f'Fixing {image.path.name}')
-                    self._fix_image(image, out_path)
-                    pbar.update(1)
-        new_dataset = CtRate(
-            out_dir,
-            split=self._split,
-            token=self._token,
-            num_subjects=self._num_subjects,
-            report_key=self._report_key,
-            sizes=self._sizes,
-        )
-        return new_dataset
