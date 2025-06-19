@@ -459,7 +459,7 @@ def ensure_4d(tensor: TypeData, num_spatial_dims=None) -> torch.Tensor:
     return tensor
 
 
-def check_uint_to_int(array):
+def check_uint_to_int(array: np.ndarray) -> np.ndarray:
     # This is because PyTorch won't take uint16 nor uint32
     if array.dtype == np.uint16:
         return array.astype(np.int32)
