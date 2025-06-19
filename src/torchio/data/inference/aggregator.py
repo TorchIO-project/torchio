@@ -63,8 +63,8 @@ class GridAggregator:
         index_ini, index_fin = location[:3], location[3:]
 
         # If the patch is not at the border, we crop half the overlap
-        crop_ini = half_overlap.copy()
-        crop_fin = half_overlap.copy()
+        crop_ini: np.ndarray = half_overlap.copy()
+        crop_fin: np.ndarray = half_overlap.copy()
 
         # If the volume has been padded, we don't need to worry about cropping
         if self.volume_padded:
@@ -78,9 +78,17 @@ class GridAggregator:
         new_index_fin = index_fin - crop_fin
         new_location = np.hstack((new_index_ini, new_index_fin))
 
-        patch_size = patch.shape[-3:]
+        patch_size = np.asarray(patch.shape[-3:], dtype=int)
+        crop_fin = crop_fin.astype(int)
         i_ini, j_ini, k_ini = crop_ini
         i_fin, j_fin, k_fin = patch_size - crop_fin
+        # Make type checkers happy
+        i_ini = int(i_ini)
+        j_ini = int(j_ini)
+        k_ini = int(k_ini)
+        i_fin = int(i_fin)
+        j_fin = int(j_fin)
+        k_fin = int(k_fin)
         cropped_patch = patch[:, i_ini:i_fin, j_ini:j_fin, k_ini:k_fin]
         return cropped_patch, new_location
 

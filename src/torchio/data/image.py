@@ -135,7 +135,7 @@ class Image(dict):
         tensor: TypeData | None = None,
         affine: TypeData | None = None,
         check_nans: bool = False,  # removed by ITK by default
-        reader: Callable = read_image,
+        reader: Callable[[TypePath], TypeDataAffine] = read_image,
         **kwargs: dict[str, Any],
     ):
         self.check_nans = check_nans
@@ -617,8 +617,8 @@ class Image(dict):
         # Make sure the data type is compatible with PyTorch
         if self.reader is not read_image and isinstance(tensor, np.ndarray):
             tensor = check_uint_to_int(tensor)
-        tensor = self._parse_tensor_shape(tensor)
-        tensor = self._parse_tensor(tensor)
+        tensor = self._parse_tensor_shape(tensor)  # type: ignore[assignment]
+        tensor = self._parse_tensor(tensor)  # type: ignore[assignment]
         affine = self._parse_affine(affine)
         if self.check_nans and torch.isnan(tensor).any():
             warnings.warn(
