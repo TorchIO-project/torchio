@@ -184,7 +184,7 @@ class WeightedSampler(RandomSampler):
         i, j, k = self.get_random_index_ini(probability_map, cdf)
         index_ini = i, j, k
         si, sj, sk = self.patch_size
-        patch_size = si, sj, sk
+        patch_size = int(si), int(sj), int(sk)
         cropped_subject = self.crop(
             subject,
             index_ini,
