@@ -78,6 +78,7 @@ class TestResample(TorchioTestCase):
             transform(self.sample_subject)
 
     def test_2d(self):
+        """Check that image is still 2D after resampling."""
         image = tio.ScalarImage(tensor=torch.rand(1, 2, 3, 1))
         transform = tio.Resample(0.5)
         shape = transform(image).shape
@@ -100,3 +101,14 @@ class TestResample(TorchioTestCase):
         transform = tio.Resample(target)
         with pytest.raises(RuntimeError):
             transform(self.sample_subject)
+
+    def test_resample_flip_consistent(self):
+        image = torch.rand(1, 10, 10, 10)
+        resample = tio.Resample(1.35)
+        flip = tio.Flip(0)
+        flipped_and_resampled = resample(flip(image))
+        resampled_and_flipped = flip(resample(image))
+        self.assert_tensor_almost_equal(
+            flipped_and_resampled.data,
+            resampled_and_flipped.data,
+        )
