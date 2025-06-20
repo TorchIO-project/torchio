@@ -37,11 +37,12 @@ def plot_volume(
     output_path=None,
     show=True,
     xlabels=True,
-    percentiles=(0.5, 99.5),
+    percentiles: tuple[float, float] = (0.5, 99.5),
     figsize=None,
     title=None,
     reorient=True,
     indices=None,
+    **imshow_kwargs,
 ):
     _, plt = import_mpl_plt()
     fig = None
@@ -58,7 +59,6 @@ def plot_volume(
     slice_x = rotate(data[i, :, :], radiological=radiological)
     slice_y = rotate(data[:, j, :], radiological=radiological)
     slice_z = rotate(data[:, :, k], radiological=radiological)
-    kwargs = {}
     is_label = isinstance(image, LabelMap)
     if isinstance(cmap, dict):
         slices = slice_x, slice_y, slice_z
@@ -66,20 +66,21 @@ def plot_volume(
     else:
         if cmap is None:
             cmap = 'cubehelix' if is_label else 'gray'
-        kwargs['cmap'] = cmap
+        imshow_kwargs['cmap'] = cmap
+
     if is_label:
-        kwargs['interpolation'] = 'none'
+        imshow_kwargs['interpolation'] = 'none'
 
     sr, sa, ss = image.spacing
-    kwargs['origin'] = 'lower'
+    imshow_kwargs['origin'] = 'lower'
 
     if percentiles is not None and not is_label:
         p1, p2 = np.percentile(data, percentiles)
-        kwargs['vmin'] = p1
-        kwargs['vmax'] = p2
+        imshow_kwargs['vmin'] = p1
+        imshow_kwargs['vmax'] = p2
 
     sag_aspect = ss / sa
-    sag_axis.imshow(slice_x, aspect=sag_aspect, **kwargs)
+    sag_axis.imshow(slice_x, aspect=sag_aspect, **imshow_kwargs)
     if xlabels:
         sag_axis.set_xlabel('A')
     sag_axis.set_ylabel('S')
@@ -87,7 +88,7 @@ def plot_volume(
     sag_axis.set_title('Sagittal')
 
     cor_aspect = ss / sr
-    cor_axis.imshow(slice_y, aspect=cor_aspect, **kwargs)
+    cor_axis.imshow(slice_y, aspect=cor_aspect, **imshow_kwargs)
     if xlabels:
         cor_axis.set_xlabel('R')
     cor_axis.set_ylabel('S')
@@ -95,7 +96,7 @@ def plot_volume(
     cor_axis.set_title('Coronal')
 
     axi_aspect = sa / sr
-    axi_axis.imshow(slice_z, aspect=axi_aspect, **kwargs)
+    axi_axis.imshow(slice_z, aspect=axi_aspect, **imshow_kwargs)
     if xlabels:
         axi_axis.set_xlabel('R')
     axi_axis.set_ylabel('A')
@@ -120,7 +121,7 @@ def plot_subject(
     output_path=None,
     figsize=None,
     clear_axes=True,
-    **kwargs,
+    **plot_volume_kwargs,
 ):
     _, plt = import_mpl_plt()
     num_images = len(subject)
@@ -152,7 +153,7 @@ def plot_subject(
             show=False,
             cmap=cmap,
             xlabels=last_row,
-            **kwargs,
+            **plot_volume_kwargs,
         )
         for axis, axis_name in zip(image_axes, axes_names):
             axis.set_title(f'{name} ({axis_name})')
