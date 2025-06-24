@@ -52,13 +52,15 @@ class Resample(SpatialTransform):
         label_interpolation: See :ref:`Interpolation`.
         scalars_only: Apply only to instances of :class:`~torchio.ScalarImage`.
             Used internally by :class:`~torchio.transforms.RandomAnisotropy`.
-        antialias: If ``True``, apply a Gaussian smoothing before
-            downsampling, along any dimension that will be downsampled.
-            This is useful to avoid aliasing artifacts when downsampling
-            images. The standard deviation of the Gaussian kernel
-            is computed according to the method described in Cardoso et al.,
-            `Scale factor point spread function matching: beyond aliasing in
-            image resampling
+        antialias: If ``True``, apply Gaussian smoothing before
+            downsampling along any dimension that will be downsampled. For example,
+            if the input image has spacing (0.5, 0.5, 4) and the target
+            spacing is (1, 1, 1), the image will be smoothed along the first two
+            dimensions before resampling. Label maps are not smoothed.
+            The standard deviations of the Gaussian kernels are computed according to
+            the method described in Cardoso et al.,
+            `Scale factor point spread function matching: beyond aliasing in image
+            resampling
             <https://link.springer.com/chapter/10.1007/978-3-319-24571-3_81>`_,
             MICCAI 2015.
         **kwargs: See :class:`~torchio.transforms.Transform` for additional
@@ -67,8 +69,8 @@ class Resample(SpatialTransform):
     Example:
         >>> import torch
         >>> import torchio as tio
-        >>> transform = tio.Resample(1)                     # resample all images to 1mm iso
-        >>> transform = tio.Resample((2, 2, 2))             # resample all images to 2mm iso
+        >>> transform = tio.Resample()                      # resample all images to 1mm isotropic
+        >>> transform = tio.Resample(2)                     # resample all images to 2mm isotropic
         >>> transform = tio.Resample('t1')                  # resample all images to 't1' image space
         >>> # Example: using a precomputed transform to MNI space
         >>> ref_path = tio.datasets.Colin27().t1.path  # this image is in the MNI space, so we can use it as reference/target
@@ -76,6 +78,11 @@ class Resample(SpatialTransform):
         >>> image = tio.ScalarImage(tensor=torch.rand(1, 256, 256, 180), to_mni=affine_matrix)  # 'to_mni' is an arbitrary name
         >>> transform = tio.Resample(colin.t1.path, pre_affine_name='to_mni')  # nearest neighbor interpolation is used for label maps
         >>> transformed = transform(image)  # "image" is now in the MNI space
+
+    .. note::
+        The ``antialias`` option is recommended when large (e.g. > 2×) downsampling
+        factors are expected, particularly for offline (before training) preprocessing,
+        when run times are not a concern.
 
     .. plot::
 
