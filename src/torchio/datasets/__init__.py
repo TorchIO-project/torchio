@@ -1,4 +1,5 @@
 from .bite import BITE3
+from .ct_rate import CtRate
 from .episurg import EPISURG
 from .fpg import FPG
 from .itk_snap import T1T2
@@ -24,6 +25,7 @@ __all__ = [
     'FPG',
     'Slicer',
     'BITE3',
+    'CtRate',
     'IXI',
     'IXITiny',
     'RSNAMICCAI',
