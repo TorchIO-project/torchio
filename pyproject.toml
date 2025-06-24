@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "torchio"
-version = "0.20.11"
+dynamic = ["version"]
 description = "Tools for medical image processing with PyTorch"
 readme = {file = "README.md", content-type = "text/markdown"}
 authors = [
@@ -116,7 +116,6 @@ test = [
 ]
 
 [tool.bumpversion]
-current_version = "0.20.11"
 commit = true
 tag = true
 
@@ -125,10 +124,8 @@ filename = "src/torchio/__init__.py"
 search = "__version__ = '{current_version}'"
 replace = "__version__ = '{new_version}'"
 
-[[tool.bumpversion.files]]
-filename = "pyproject.toml"
-search = 'version = "{current_version}"'
-replace = 'version = "{new_version}"'
+[tool.hatch.version]
+path = "src/torchio/__init__.py"
 
 [tool.mypy]
 pretty = true
