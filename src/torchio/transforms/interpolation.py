@@ -23,7 +23,7 @@ class Interpolation(enum.Enum):
     #: B-Spline of order 3 (cubic) interpolation.
     BSPLINE = 'sitkBSpline'
 
-    #: Same as ``nearest``.
+    #: Same as ``bspline``.
     CUBIC = 'sitkBSpline'
 
     #: Gaussian interpolation. Sigma is set to 0.8 input pixels and alpha is 4
