@@ -91,7 +91,10 @@ class Resample(SpatialTransform):
         subject.remove_image('seg')
         resample = tio.Resample(8)
         t1_resampled = resample(subject.t1)
-        subject.add_image(t1_resampled, 'Downsampled')
+        subject.add_image(t1_resampled, 'Antialias off')
+        resample = tio.Resample(8, antialias=True)
+        t1_resampled_antialias = resample(subject.t1)
+        subject.add_image(t1_resampled_antialias, 'Antialias on')
         subject.plot()
     """
 
