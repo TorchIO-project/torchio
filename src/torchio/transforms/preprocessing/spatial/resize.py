@@ -16,7 +16,7 @@ class Resize(SpatialTransform):
     The field of view remains the same.
 
     .. warning:: In most medical image applications, this transform should not
-        be used as it will deform the physical object by scaling anistropically
+        be used as it will deform the physical object by scaling anisotropically
         along the different dimensions. The solution to change an image size is
         typically applying :class:`~torchio.transforms.Resample` and
         :class:`~torchio.transforms.CropOrPad`.
