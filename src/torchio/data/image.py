@@ -181,6 +181,8 @@ class Image(dict):
         self[STEM] = '' if self.path is None else get_stem(self.path)
         self[TYPE] = type
 
+        self.update_attributes()
+
     def __repr__(self):
         properties = []
         properties.extend(
@@ -232,6 +234,10 @@ class Image(dict):
             **kwargs,
         )
         return new_image
+
+    def update_attributes(self) -> None:
+        # This allows to get images using attribute notation, e.g. image.modality
+        self.__dict__.update(self)
 
     @staticmethod
     def _check_data_loader() -> None:
