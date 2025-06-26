@@ -4,6 +4,7 @@
 import copy
 import sys
 import tempfile
+from pathlib import Path
 
 import nibabel as nib
 import numpy as np
@@ -309,3 +310,20 @@ class TestImage(TorchioTestCase):
 
         with pytest.raises(ValueError):
             image[3::-1]
+
+    def test_verify_path(self):
+        path = Path(self.get_image_path('im_verify'))
+
+        image = tio.ScalarImage(path, verify_path=False)
+        assert image.path == path
+
+        image = tio.ScalarImage(path, verify_path=True)
+        assert image.path == path
+
+        fake_path = 'fake_path.nii'
+
+        image = tio.ScalarImage(path, verify_path=False)
+        assert image.path == path
+
+        with pytest.raises(FileNotFoundError):
+            tio.ScalarImage(fake_path, verify_path=True)

@@ -96,7 +96,11 @@ class Image(dict):
             is saved in a custom format, such as ``.npy`` (see example below).
             If the affine matrix is ``None``, an identity matrix will be used.
         **kwargs: Items that will be added to the image dictionary, e.g.
-            acquisition parameters.
+            acquisition parameters or image ID.
+        verify_path: If ``True``, the path will be checked to see if it exists. If
+            ``False``, the path will not be verified. This is useful when it is
+            expensive to check the path, e.g., when reading a large dataset from a
+            mounted drive.
 
     TorchIO images are `lazy loaders`_, i.e. the data is only loaded from disk
     when needed.
@@ -136,6 +140,7 @@ class Image(dict):
         affine: TypeData | None = None,
         check_nans: bool = False,  # removed by ITK by default
         reader: Callable[[TypePath], TypeDataAffine] = read_image,
+        verify_path: bool = True,
         **kwargs: dict[str, Any],
     ):
         self.check_nans = check_nans
@@ -175,7 +180,7 @@ class Image(dict):
 
         super().__init__(**kwargs)
         self._check_data_loader()
-        self.path = self._parse_path(path)
+        self.path = self._parse_path(path, verify=verify_path)
 
         self[PATH] = '' if self.path is None else str(self.path)
         self[STEM] = '' if self.path is None else get_stem(self.path)
@@ -456,6 +461,8 @@ class Image(dict):
     @staticmethod
     def _parse_single_path(
         path: TypePath,
+        *,
+        verify: bool = True,
     ) -> Path:
         try:
             path = Path(path).expanduser()
@@ -468,6 +475,8 @@ class Image(dict):
         except RuntimeError as err:
             message = f'Conversion to path not possible for variable: {path}'
             raise RuntimeError(message) from err
+        if not verify:
+            return path
 
         if not (path.is_file() or path.is_dir()):  # might be a dir with DICOM
             raise FileNotFoundError(f'File not found: "{path}"')
@@ -476,6 +485,8 @@ class Image(dict):
     def _parse_path(
         self,
         path: TypePath | Sequence[TypePath] | None,
+        *,
+        verify: bool = True,
     ) -> Path | list[Path] | None:
         if path is None:
             return None
@@ -483,9 +494,9 @@ class Image(dict):
             # https://github.com/TorchIO-project/torchio/pull/838
             raise TypeError('The path argument cannot be a dictionary')
         elif self._is_paths_sequence(path):
-            return [self._parse_single_path(p) for p in path]  # type: ignore[union-attr]
+            return [self._parse_single_path(p, verify=verify) for p in path]  # type: ignore[union-attr]
         else:
-            return self._parse_single_path(path)  # type: ignore[arg-type]
+            return self._parse_single_path(path, verify=verify)  # type: ignore[arg-type]
 
     def _parse_tensor(
         self,
