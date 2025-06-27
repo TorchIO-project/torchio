@@ -1,12 +1,12 @@
-from typing import Generator
-from typing import Optional
-from typing import Union
+from __future__ import annotations
+
+from collections.abc import Generator
 
 import numpy as np
 
 from ...data.subject import Subject
-from ...typing import TypeSpatialShape
-from ...typing import TypeTripletInt
+from ...types import TypeSpatialShape
+from ...types import TypeTripletInt
 from ...utils import to_tuple
 from .sampler import PatchSampler
 
@@ -62,7 +62,7 @@ class GridSampler(PatchSampler):
         subject: Subject,
         patch_size: TypeSpatialShape,
         patch_overlap: TypeSpatialShape = (0, 0, 0),
-        padding_mode: Union[str, float, None] = None,
+        padding_mode: str | float | None = None,
     ):
         super().__init__(patch_size)
         self.patch_overlap = np.array(to_tuple(patch_overlap, length=3))
@@ -82,9 +82,9 @@ class GridSampler(PatchSampler):
 
     def __call__(
         self,
-        subject: Optional[Subject] = None,
-        num_patches: Optional[int] = None,
-    ) -> Generator[Subject, None, None]:
+        subject: Subject | None = None,
+        num_patches: int | None = None,
+    ) -> Generator[Subject]:
         subject = self.subject if subject is None else subject
         return super().__call__(subject, num_patches=num_patches)
 
@@ -94,7 +94,7 @@ class GridSampler(PatchSampler):
 
             border = self.patch_overlap // 2
             padding = border.repeat(2)
-            pad = Pad(padding, padding_mode=self.padding_mode)  # type: ignore[arg-type]  # noqa: B950
+            pad = Pad(padding, padding_mode=self.padding_mode)  # type: ignore[arg-type]
             subject = pad(subject)  # type: ignore[assignment]
         return subject
 
@@ -106,11 +106,11 @@ class GridSampler(PatchSampler):
     def _generate_patches(  # type: ignore[override]
         self,
         subject: Subject,
-    ) -> Generator[Subject, None, None]:
+    ) -> Generator[Subject]:
         subject = self._pad(subject)
         sizes = subject.spatial_shape, self.patch_size, self.patch_overlap
         self._parse_sizes(*sizes)  # type: ignore[arg-type]
-        locations = self._get_patches_locations(*sizes)  # type: ignore[arg-type]  # noqa: B950
+        locations = self._get_patches_locations(*sizes)  # type: ignore[arg-type]
         for location in locations:
             index_ini = location[:3]
             yield self.extract_patch(subject, index_ini)

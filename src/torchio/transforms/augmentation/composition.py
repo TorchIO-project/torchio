@@ -1,19 +1,17 @@
 from __future__ import annotations
 
 import warnings
-from typing import Dict
-from typing import Sequence
+from collections.abc import Sequence
 from typing import Union
 
 import numpy as np
 import torch
 
-from . import RandomTransform
-from .. import Transform
 from ...data.subject import Subject
+from ..transform import Transform
+from . import RandomTransform
 
-
-TypeTransformsDict = Union[Dict[Transform, float], Sequence[Transform]]
+TypeTransformsDict = Union[dict[Transform, float], Sequence[Transform]]
 
 
 class Compose(Transform):
@@ -46,6 +44,12 @@ class Compose(Transform):
     def __repr__(self) -> str:
         return f'{self.name}({self.transforms})'
 
+    def get_base_args(self) -> dict:
+        init_args = super().get_base_args()
+        if 'parse_input' in init_args:
+            init_args.pop('parse_input')
+        return init_args
+
     def apply_transform(self, subject: Subject) -> Subject:
         for transform in self.transforms:
             subject = transform(subject)  # type: ignore[assignment]
@@ -68,7 +72,7 @@ class Compose(Transform):
                 message = f'Skipping {transform.name} as it is not invertible'
                 warnings.warn(message, RuntimeWarning, stacklevel=2)
         transforms.reverse()
-        result = Compose(transforms)
+        result = Compose(transforms, **self.get_base_args())
         if not transforms and warn:
             warnings.warn(
                 'No invertible transforms found',
@@ -105,6 +109,12 @@ class OneOf(RandomTransform):
         super().__init__(parse_input=False, **kwargs)
         self.transforms_dict = self._get_transforms_dict(transforms)
 
+    def get_base_args(self) -> dict:
+        init_args = super().get_base_args()
+        if 'parse_input' in init_args:
+            init_args.pop('parse_input')
+        return init_args
+
     def apply_transform(self, subject: Subject) -> Subject:
         weights = torch.Tensor(list(self.transforms_dict.values()))
         index = torch.multinomial(weights, 1)
@@ -116,7 +126,7 @@ class OneOf(RandomTransform):
     def _get_transforms_dict(
         self,
         transforms: TypeTransformsDict,
-    ) -> Dict[Transform, float]:
+    ) -> dict[Transform, float]:
         if isinstance(transforms, dict):
             transforms_dict = dict(transforms)
             self._normalize_probabilities(transforms_dict)
@@ -141,7 +151,7 @@ class OneOf(RandomTransform):
 
     @staticmethod
     def _normalize_probabilities(
-        transforms_dict: Dict[Transform, float],
+        transforms_dict: dict[Transform, float],
     ) -> None:
         probabilities = np.array(list(transforms_dict.values()), dtype=float)
         if np.any(probabilities < 0):

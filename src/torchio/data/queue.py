@@ -1,7 +1,7 @@
+from __future__ import annotations
+
+from collections.abc import Iterator
 from itertools import islice
-from typing import Iterator
-from typing import List
-from typing import Optional
 
 import humanize
 import torch
@@ -9,7 +9,7 @@ from torch.utils.data import DataLoader
 from torch.utils.data import Dataset
 from torch.utils.data import Sampler
 
-from .. import NUM_SAMPLES
+from ..constants import NUM_SAMPLES
 from .dataset import SubjectsDataset
 from .sampler import PatchSampler
 from .subject import Subject
@@ -92,7 +92,7 @@ class Queue(Dataset):
     and the :class:`~torch.utils.data.DataLoader` used to pop batches from the
     queue.
 
-    .. image:: https://raw.githubusercontent.com/fepegar/torchio/main/docs/images/diagram_patches.svg
+    .. image:: https://raw.githubusercontent.com/TorchIO-project/torchio/main/docs/images/diagram_patches.svg
         :alt: Training with patches
 
     This sketch can be used to experiment and understand how the queue works.
@@ -115,7 +115,6 @@ class Queue(Dataset):
 
     >>> import torch
     >>> import torchio as tio
-    >>> from torch.utils.data import DataLoader
     >>> patch_size = 96
     >>> queue_length = 300
     >>> samples_per_volume = 10
@@ -129,7 +128,7 @@ class Queue(Dataset):
     ...     sampler,
     ...     num_workers=4,
     ... )
-    >>> patches_loader = DataLoader(
+    >>> patches_loader = tio.SubjectsLoader(
     ...     patches_queue,
     ...     batch_size=16,
     ...     num_workers=0,  # this must be 0
@@ -168,7 +167,7 @@ class Queue(Dataset):
     ...     num_workers=4,
     ...     subject_sampler=subject_sampler,
     ... )
-    >>> patches_loader = DataLoader(
+    >>> patches_loader = tio.SubjectsLoader(
     ...     patches_queue,
     ...     batch_size=16,
     ...     num_workers=0,  # this must be 0
@@ -181,7 +180,7 @@ class Queue(Dataset):
     ...         inputs = patches_batch['t1'][tio.DATA]  # key 't1' is in subject
     ...         targets = patches_batch['brain'][tio.DATA]  # key 'brain' is in subject
     ...         logits = model(inputs)  # model being an instance of torch.nn.Module
-    """  # noqa: B950
+    """
 
     def __init__(
         self,
@@ -189,7 +188,7 @@ class Queue(Dataset):
         max_length: int,
         samples_per_volume: int,
         sampler: PatchSampler,
-        subject_sampler: Optional[Sampler] = None,
+        subject_sampler: Sampler | None = None,
         num_workers: int = 0,
         shuffle_subjects: bool = True,
         shuffle_patches: bool = True,
@@ -206,12 +205,12 @@ class Queue(Dataset):
         self.num_workers = num_workers
         self.verbose = verbose
         self._subjects_iterable = None
-        self._incomplete_subject: Optional[Subject] = None
+        self._incomplete_subject: Subject | None = None
         self._num_patches_incomplete = 0
         self._num_sampled_subjects = 0
         if start_background:
             self._initialize_subjects_iterable()
-        self.patches_list: List[Subject] = []
+        self.patches_list: list[Subject] = []
 
         if self.shuffle_subjects and self.subject_sampler is not None:
             raise ValueError(
@@ -369,7 +368,7 @@ class Queue(Dataset):
         self._num_sampled_subjects = 0
         return iter(subjects_loader)
 
-    def get_max_memory(self, subject: Optional[Subject] = None) -> int:
+    def get_max_memory(self, subject: Subject | None = None) -> int:
         """Get the maximum RAM occupied by the patches queue in bytes.
 
         Args:
@@ -384,7 +383,7 @@ class Queue(Dataset):
         bytes_per_patch = 4 * voxels_in_patch  # assume float32
         return int(bytes_per_patch * self.max_length)
 
-    def get_max_memory_pretty(self, subject: Optional[Subject] = None) -> str:
+    def get_max_memory_pretty(self, subject: Subject | None = None) -> str:
         """Get human-readable maximum RAM occupied by the patches queue.
 
         Args:

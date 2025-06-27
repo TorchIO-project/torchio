@@ -2,18 +2,18 @@ import urllib.parse
 
 from ...data import LabelMap
 from ...data import ScalarImage
-from ...data.subject import _RawSubjectCopySubject
+from ...data.subject import Subject
 from ...download import download_and_extract_archive
 from ...utils import get_torchio_cache_dir
 
 
-class SubjectITKSNAP(_RawSubjectCopySubject):
+class SubjectITKSNAP(Subject):
     """ITK-SNAP Image Data Downloads.
 
     See `the ITK-SNAP website`_ for more information.
 
     .. _the ITK-SNAP website: http://www.itksnap.org/pmwiki/pmwiki.php?n=Downloads.Data
-    """  # noqa: B950
+    """
 
     url_base = 'https://www.nitrc.org/frs/download.php/'
 

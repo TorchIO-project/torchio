@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 """Tests for Image."""
+
 import copy
 import sys
 import tempfile
@@ -8,6 +9,7 @@ import nibabel as nib
 import numpy as np
 import pytest
 import torch
+
 import torchio as tio
 
 from ..utils import TorchioTestCase
@@ -187,7 +189,7 @@ class TestImage(TorchioTestCase):
             im.data = im.data
 
     def test_no_type(self):
-        with pytest.warns(DeprecationWarning):
+        with pytest.warns(FutureWarning):
             tio.Image(tensor=torch.rand(1, 2, 3, 4))
 
     def test_custom_reader(self):
@@ -233,7 +235,7 @@ class TestImage(TorchioTestCase):
         assert 0 <= counts[1] <= max_n
 
     def test_affine_multipath(self):
-        # https://github.com/fepegar/torchio/issues/762
+        # https://github.com/TorchIO-project/torchio/issues/762
         path1 = self.get_image_path('multi1')
         path2 = self.get_image_path('multi2')
         paths = path1, path2
@@ -241,7 +243,7 @@ class TestImage(TorchioTestCase):
         self.assert_tensor_equal(image.affine, np.eye(4))
 
     def test_bad_numpy_type_reader(self):
-        # https://github.com/fepegar/torchio/issues/764
+        # https://github.com/TorchIO-project/torchio/issues/764
         def numpy_reader(path):
             return np.load(path), np.eye(4)
 
@@ -271,7 +273,7 @@ class TestImage(TorchioTestCase):
             image.unload()
 
     def test_copy_no_data(self):
-        # https://github.com/fepegar/torchio/issues/974
+        # https://github.com/TorchIO-project/torchio/issues/974
         path = self.get_image_path('im_copy')
         my_image = tio.LabelMap(path)
         assert not my_image._loaded
@@ -283,3 +285,27 @@ class TestImage(TorchioTestCase):
         new_image = copy.copy(my_image)
         assert my_image._loaded
         assert new_image._loaded
+
+    def test_slicing(self):
+        path = self.get_image_path('im_slicing')
+        image = tio.ScalarImage(path)
+
+        assert image.shape == (1, 10, 20, 30)
+
+        cropped = image[0]
+        assert cropped.shape == (1, 1, 20, 30)
+
+        cropped = image[:, 2:-3]
+        assert cropped.shape == (1, 10, 15, 30)
+
+        cropped = image[-5:, 5:]
+        assert cropped.shape == (1, 5, 15, 30)
+
+        with pytest.raises(NotImplementedError):
+            image[..., 5]
+
+        with pytest.raises(ValueError):
+            image[0:8:-1]
+
+        with pytest.raises(ValueError):
+            image[3::-1]

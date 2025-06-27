@@ -1,20 +1,18 @@
+from __future__ import annotations
+
 from pathlib import Path
 from typing import Any
-from typing import Dict
-from typing import List
-from typing import Optional
 from typing import Union
-from types import ModuleType
 
-from .. import LabelMap
-from .. import ScalarImage
-from .. import Subject
-from .. import SubjectsDataset
-from ..typing import TypePath
+from ..data import LabelMap
+from ..data import ScalarImage
+from ..data import Subject
+from ..data import SubjectsDataset
+from ..external.imports import get_pandas
+from ..types import TypePath
 from ..utils import normalize_path
 
-
-TypeBoxes = List[Dict[str, Union[str, float, int]]]
+TypeBoxes = list[dict[str, Union[str, float, int]]]
 
 
 class RSNACervicalSpineFracture(SubjectsDataset):
@@ -26,7 +24,7 @@ class RSNACervicalSpineFracture(SubjectsDataset):
     instantiating this class.
 
     .. _RSNA 2022 Cervical Spine Fracture Detection: https://www.kaggle.com/competitions/rsna-2022-cervical-spine-fracture-detection/overview/evaluation
-    """  # noqa: B950
+    """
 
     UID = 'StudyInstanceUID'
 
@@ -45,14 +43,14 @@ class RSNACervicalSpineFracture(SubjectsDataset):
         super().__init__(subjects, **kwargs)
 
     @staticmethod
-    def _get_image_dirs_dict(images_dir: Path) -> Dict[str, Path]:
+    def _get_image_dirs_dict(images_dir: Path) -> dict[str, Path]:
         dirs_dict = {}
         for dicom_dir in sorted(images_dir.iterdir()):
             dirs_dict[dicom_dir.name] = dicom_dir
         return dirs_dict
 
     @staticmethod
-    def _get_segs_paths_dict(segs_dir: Path) -> Dict[str, Path]:
+    def _get_segs_paths_dict(segs_dir: Path) -> dict[str, Path]:
         paths_dict = {}
         for image_path in sorted(segs_dir.iterdir()):
             key = image_path.name.replace('.gz', '').replace('.nii', '')
@@ -63,7 +61,7 @@ class RSNACervicalSpineFracture(SubjectsDataset):
         self,
         add_segmentations: bool,
         add_bounding_boxes: bool,
-    ) -> List[Subject]:
+    ) -> list[Subject]:
         subjects = []
         pd = get_pandas()
         from tqdm.auto import tqdm
@@ -105,7 +103,7 @@ class RSNACervicalSpineFracture(SubjectsDataset):
         return subjects
 
     @staticmethod
-    def _filter_list(iterable: List[Path], target: str):
+    def _filter_list(iterable: list[Path], target: str):
         def _filter(path: Path):
             if path.is_dir():
                 return target == path.name
@@ -123,12 +121,12 @@ class RSNACervicalSpineFracture(SubjectsDataset):
 
     def _get_subject(
         self,
-        csv_row_dict: Dict[str, Union[str, int]],
+        csv_row_dict: dict[str, str | int],
         image_dir: Path,
-        seg_path: Optional[Path],
+        seg_path: Path | None,
         boxes: TypeBoxes,
     ) -> Subject:
-        subject_dict: Dict[str, Any] = {}
+        subject_dict: dict[str, Any] = {}
         subject_dict.update(csv_row_dict)
         subject_dict['ct'] = ScalarImage(image_dir)
         if seg_path is not None:
@@ -136,16 +134,3 @@ class RSNACervicalSpineFracture(SubjectsDataset):
         if boxes:
             subject_dict['boxes'] = boxes
         return Subject(**subject_dict)
-
-
-def get_pandas() -> ModuleType:
-    try:
-        import pandas
-
-        return pandas
-    except ImportError as e:
-        message = (
-            'Pandas is required for this operation.'
-            ' Install pandas with "pip install pandas" and try again'
-        )
-        raise ImportError(message) from e

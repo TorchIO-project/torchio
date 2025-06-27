@@ -71,6 +71,13 @@ Spatial
     :show-inheritance:
 
 
+:class:`RandomAffineElasticDeformation`
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. autoclass:: RandomAffineElasticDeformation
+    :show-inheritance:
+
+
 :class:`RandomAnisotropy`
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 

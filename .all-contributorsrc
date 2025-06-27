@@ -687,7 +687,11 @@
       "profile": "https://github.com/nicoloesch",
       "contributions": [
         "code",
-        "bug"
+        "bug",
+        "design",
+        "maintenance",
+        "question",
+        "review"
       ]
     },
     {
@@ -788,14 +792,104 @@
       "contributions": [
         "doc"
       ]
+    },
+    {
+      "login": "marius-sm",
+      "name": "marius-sm",
+      "avatar_url": "https://avatars.githubusercontent.com/u/40166021?v=4",
+      "profile": "https://github.com/marius-sm",
+      "contributions": [
+        "ideas"
+      ]
+    },
+    {
+      "login": "haarisr",
+      "name": "haarisr",
+      "avatar_url": "https://avatars.githubusercontent.com/u/122410226?v=4",
+      "profile": "https://github.com/haarisr",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "c-winder",
+      "name": "Chris Winder",
+      "avatar_url": "https://avatars.githubusercontent.com/u/50587864?v=4",
+      "profile": "https://github.com/c-winder",
+      "contributions": [
+        "bug"
+      ]
+    },
+    {
+      "login": "rickymwalsh",
+      "name": "Ricky Walsh",
+      "avatar_url": "https://avatars.githubusercontent.com/u/70853488?v=4",
+      "profile": "https://www.linkedin.com/in/ricky-walsh/",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "sravan953",
+      "name": "Keerthi Sravan Ravi",
+      "avatar_url": "https://avatars.githubusercontent.com/u/6049061?v=4",
+      "profile": "https://github.com/sravan953",
+      "contributions": [
+        "bug"
+      ]
+    },
+    {
+      "login": "RJacobArthrex",
+      "name": "Rahul Kurian Jacob",
+      "avatar_url": "https://avatars.githubusercontent.com/u/144900466?v=4",
+      "profile": "https://github.com/RJacobArthrex",
+      "contributions": [
+        "doc"
+      ]
+    },
+    {
+      "login": "erooke",
+      "name": "Ethan Rooke",
+      "avatar_url": "https://avatars.githubusercontent.com/u/46689793?v=4",
+      "profile": "https://ethan.roo.ke",
+      "contributions": [
+        "doc"
+      ]
+    },
+    {
+      "login": "mrdkucher",
+      "name": "David Kucher",
+      "avatar_url": "https://avatars.githubusercontent.com/u/13631603?v=4",
+      "profile": "https://github.com/mrdkucher",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "StijnvWijn",
+      "name": "StijnvWijn",
+      "avatar_url": "https://avatars.githubusercontent.com/u/78531113?v=4",
+      "profile": "https://github.com/StijnvWijn",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "toufiqmusah",
+      "name": "Toufiq",
+      "avatar_url": "https://avatars.githubusercontent.com/u/92761339?v=4",
+      "profile": "http://toufiqmusah.github.io/toufiqmusah/",
+      "contributions": [
+        "code"
+      ]
     }
   ],
   "contributorsPerLine": 7,
   "projectName": "torchio",
-  "projectOwner": "fepegar",
+  "projectOwner": "TorchIO-project",
   "repoType": "github",
   "repoHost": "https://github.com",
   "skipCi": true,
-  "commitConvention": "angular",
+  "commitConvention": "atom",
   "commitType": "docs"
 }

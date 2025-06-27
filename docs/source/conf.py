@@ -12,7 +12,6 @@
 import os
 import sys
 from datetime import date
-from typing import List
 
 sys.path.insert(0, os.path.abspath('../../src'))
 import torchio  # noqa: E402
@@ -55,10 +54,10 @@ extensions = [
 # https://github.com/pytorch/fairseq/blob/adb5b9c71f7ef4fe2f258e0da102d819ab9920ef/docs/conf.py#L131
 intersphinx_mapping = {
     'python': ('https://docs.python.org/3', None),
-    'torch': ('https://pytorch.org/docs/master/', None),
-    'torchvision': ('https://pytorch.org/docs/master/', None),
-    'nibabel': ('https://nipy.org/nibabel/', None),
-    'numpy': ('https://numpy.org/doc/stable/', None),
+    'torch': ('https://pytorch.org/docs/main', None),
+    'torchvision': ('https://pytorch.org/vision/main', None),
+    'nibabel': ('https://nipy.org/nibabel', None),
+    'numpy': ('https://numpy.org/doc/stable', None),
 }
 
 # Add any paths that contain templates here, relative to this directory.
@@ -83,7 +82,7 @@ language = 'en'
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
-exclude_patterns: List[str] = []
+exclude_patterns: list[str] = []
 
 # The name of the Pygments (syntax highlighting) style to use.
 pygments_style = 'friendly'
@@ -109,13 +108,7 @@ html_logo = 'favicon_io/torchio_logo_2048x2048.png'
 # further. For a list of options available for each theme, see the
 # documentation.
 #
-url = 'https://www.journals.elsevier.com/computer-methods-and-programs-in-biomedicine/most-downloaded-articles'  # noqa: B950
-text = 'CMPB'
-html_href = f'<a href="{url}">{text}</a>'
-message = f'TorchIO becomes one of the most downloaded articles from {html_href}!'
-html_theme_options = {
-    'announcement': message,
-}
+html_theme_options = {}
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
@@ -221,13 +214,8 @@ epub_title = project
 epub_exclude_files = ['search.html']
 
 # CopyButton configuration
-copybutton_prompt_text = (
-    r'>>> |\.\.\. |\$ |In \[\d*\]: | {2,5}\.\.\.: | {5,8}: '  # noqa: B950,FS003
-)
+copybutton_prompt_text = r'>>> |\.\.\. |\$ |In \[\d*\]: | {2,5}\.\.\.: | {5,8}: '
 copybutton_prompt_is_regexp = True
-
-# def setup(app):
-#     app.add_js_file('copybutton.js')
 
 
 # -- Extension configuration -------------------------------------------------

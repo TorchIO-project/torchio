@@ -1,22 +1,19 @@
 import warnings
 from numbers import Number
-from typing import Sequence
-from typing import Tuple
 from typing import Union
 
 import numpy as np
 import SimpleITK as sitk
 import torch
 
-from .. import RandomTransform
-from ... import SpatialTransform
 from ....data.image import ScalarImage
 from ....data.io import nib_to_sitk
 from ....data.subject import Subject
-from ....typing import TypeTripletFloat
-from ....typing import TypeTripletInt
+from ....types import TypeTripletFloat
+from ....types import TypeTripletInt
 from ....utils import to_tuple
-
+from ...spatial_transform import SpatialTransform
+from .. import RandomTransform
 
 SPLINE_ORDER = 3
 
@@ -118,12 +115,12 @@ class RandomElasticDeformation(RandomTransform, SpatialTransform):
         .. [#] Technically, :math:`2 \epsilon` should be added to the
             image bounds, where :math:`\epsilon = 2^{-3}` `according to ITK
             source code <https://github.com/InsightSoftwareConsortium/ITK/blob/633f84548311600845d54ab2463d3412194690a8/Modules/Core/Transform/include/itkBSplineTransformInitializer.hxx#L116-L138>`_.
-    """  # noqa: B950
+    """
 
     def __init__(
         self,
-        num_control_points: Union[int, Tuple[int, int, int]] = 7,
-        max_displacement: Union[float, Tuple[float, float, float]] = 7.5,
+        num_control_points: Union[int, TypeTripletInt] = 7,
+        max_displacement: Union[float, TypeTripletFloat] = 7.5,
         locked_borders: int = 2,
         image_interpolation: str = 'linear',
         label_interpolation: str = 'nearest',
@@ -132,9 +129,9 @@ class RandomElasticDeformation(RandomTransform, SpatialTransform):
         super().__init__(**kwargs)
         self._bspline_transformation = None
         self.num_control_points = to_tuple(num_control_points, length=3)
-        _parse_num_control_points(self.num_control_points)  # type: ignore[arg-type]  # noqa: B950
+        _parse_num_control_points(self.num_control_points)  # type: ignore[arg-type]
         self.max_displacement = to_tuple(max_displacement, length=3)
-        _parse_max_displacement(self.max_displacement)  # type: ignore[arg-type]  # noqa: B950
+        _parse_max_displacement(self.max_displacement)  # type: ignore[arg-type]
         self.num_locked_borders = locked_borders
         if locked_borders not in (0, 1, 2):
             raise ValueError('locked_borders must be 0, 1, or 2')
@@ -155,7 +152,7 @@ class RandomElasticDeformation(RandomTransform, SpatialTransform):
     @staticmethod
     def get_params(
         num_control_points: TypeTripletInt,
-        max_displacement: Tuple[float, float, float],
+        max_displacement: tuple[float, float, float],
         num_locked_borders: int,
     ) -> np.ndarray:
         grid_shape = num_control_points
@@ -191,7 +188,7 @@ class RandomElasticDeformation(RandomTransform, SpatialTransform):
             'label_interpolation': self.label_interpolation,
         }
 
-        transform = ElasticDeformation(**self.add_include_exclude(arguments))
+        transform = ElasticDeformation(**self.add_base_args(arguments))
         transformed = transform(subject)
         assert isinstance(transformed, Subject)
         return transformed
@@ -254,7 +251,7 @@ class ElasticDeformation(SpatialTransform):
     @staticmethod
     def parse_free_form_transform(
         transform: sitk.BSplineTransform,
-        max_displacement: Sequence[TypeTripletInt],
+        max_displacement: TypeTripletFloat,
     ) -> None:
         """Issue a warning is possible folding is detected."""
         coefficient_images = transform.GetCoefficientImages()
@@ -331,7 +328,7 @@ def _parse_num_control_points(
 
 
 def _parse_max_displacement(
-    max_displacement: Tuple[float, float, float],
+    max_displacement: tuple[float, float, float],
 ) -> None:
     for axis, number in enumerate(max_displacement):
         if not isinstance(number, Number) or number < 0:

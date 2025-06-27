@@ -1,9 +1,10 @@
 from .bite import BITE3
+from .ct_rate import CtRate
 from .episurg import EPISURG
 from .fpg import FPG
+from .itk_snap import T1T2
 from .itk_snap import AorticValve
 from .itk_snap import BrainTumor
-from .itk_snap import T1T2
 from .ixi import IXI
 from .ixi import IXITiny
 from .medmnist import AdrenalMNIST3D
@@ -20,11 +21,11 @@ from .rsna_miccai import RSNAMICCAI
 from .rsna_spine_fracture import RSNACervicalSpineFracture
 from .slicer import Slicer
 
-
 __all__ = [
     'FPG',
     'Slicer',
     'BITE3',
+    'CtRate',
     'IXI',
     'IXITiny',
     'RSNAMICCAI',

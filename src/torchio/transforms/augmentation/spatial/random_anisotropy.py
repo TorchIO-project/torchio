@@ -1,14 +1,13 @@
 import warnings
-from typing import Tuple
 from typing import Union
 
 import torch
 
-from .. import RandomTransform
 from ....data.subject import Subject
-from ....typing import TypeRangeFloat
+from ....types import TypeRangeFloat
 from ....utils import to_tuple
 from ...preprocessing import Resample
+from .. import RandomTransform
 
 
 class RandomAnisotropy(RandomTransform):
@@ -44,11 +43,11 @@ class RandomAnisotropy(RandomTransform):
         ... )   # Multiply spacing of one of the 3 axes by a factor randomly chosen in [2, 5]
         >>> colin = tio.datasets.Colin27()
         >>> transformed = transform(colin)
-    """  # noqa: B950
+    """
 
     def __init__(
         self,
-        axes: Union[int, Tuple[int, ...]] = (0, 1, 2),
+        axes: Union[int, tuple[int, ...]] = (0, 1, 2),
         downsampling: TypeRangeFloat = (1.5, 5),
         image_interpolation: str = 'linear',
         scalars_only: bool = True,
@@ -67,15 +66,15 @@ class RandomAnisotropy(RandomTransform):
 
     def get_params(
         self,
-        axes: Tuple[int, ...],
-        downsampling_range: Tuple[float, float],
-    ) -> Tuple[int, float]:
+        axes: tuple[int, ...],
+        downsampling_range: tuple[float, float],
+    ) -> tuple[int, float]:
         axis = axes[torch.randint(0, len(axes), (1,))]
         downsampling = self.sample_uniform(*downsampling_range)
         return axis, downsampling
 
     @staticmethod
-    def parse_axes(axes: Union[int, Tuple[int, ...]]):
+    def parse_axes(axes: Union[int, tuple[int, ...]]):
         axes_tuple = to_tuple(axes)
         for axis in axes_tuple:
             is_int = isinstance(axis, int)
@@ -100,23 +99,28 @@ class RandomAnisotropy(RandomTransform):
         target_spacing = list(subject.spacing)
         target_spacing[axis] *= downsampling
 
-        arguments = {
-            'image_interpolation': 'nearest',
-            'scalars_only': self.scalars_only,
-        }
+        downsample_args = self.add_base_args(
+            {
+                'target': tuple(target_spacing),  # for mypy
+                'image_interpolation': 'nearest',
+                'scalars_only': self.scalars_only,
+            }
+        )
 
-        sx, sy, sz = target_spacing  # for mypy
-        downsample = Resample(
-            target=(sx, sy, sz), **self.add_include_exclude(arguments)
-        )
-        downsampled = downsample(subject)
+        # NOTE: If copy=False, the underlying image data will be modified in place.
+        # We have to obtain the target spatial shape and affine before the transform
         image = subject.get_first_image()
-        target = image.spatial_shape, image.affine
-        upsample = Resample(
-            target=target,  # type: ignore[arg-type]
-            image_interpolation=self.image_interpolation,
-            scalars_only=self.scalars_only,
+        upsample_args = self.add_base_args(
+            {
+                'target': (image.spatial_shape, image.affine),
+                'image_interpolation': self.image_interpolation,
+                'scalars_only': self.scalars_only,
+            }
         )
+
+        downsample = Resample(**downsample_args)
+        downsampled = downsample(subject)
+        upsample = Resample(**upsample_args)
         upsampled = upsample(downsampled)
         assert isinstance(upsampled, Subject)
         return upsampled

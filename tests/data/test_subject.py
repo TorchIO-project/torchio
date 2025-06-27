@@ -5,6 +5,7 @@ import tempfile
 import numpy as np
 import pytest
 import torch
+
 import torchio as tio
 
 from ..utils import TorchioTestCase
@@ -40,9 +41,9 @@ class TestSubject(TorchioTestCase):
             a=tio.ScalarImage(tensor=torch.rand(1, 2, 3, 4)),
             b=tio.ScalarImage(tensor=torch.rand(2, 2, 3, 4)),
         )
-        subject.spatial_shape
+        _ = subject.spatial_shape
         with pytest.raises(RuntimeError):
-            subject.shape
+            _ = subject.shape
 
     def test_inconsistent_spatial_shape(self):
         subject = tio.Subject(
@@ -50,7 +51,7 @@ class TestSubject(TorchioTestCase):
             b=tio.ScalarImage(tensor=torch.rand(2, 2, 3, 4)),
         )
         with pytest.raises(RuntimeError):
-            subject.spatial_shape
+            _ = subject.spatial_shape
 
     @pytest.mark.slow
     @pytest.mark.skipif(sys.platform == 'win32', reason='Unstable on Windows')
@@ -72,7 +73,7 @@ class TestSubject(TorchioTestCase):
         subject.plot(show=False)
 
     def test_same_space(self):
-        # https://github.com/fepegar/torchio/issues/381
+        # https://github.com/TorchIO-project/torchio/issues/381
         affine1 = np.array(
             [
                 [
@@ -115,7 +116,7 @@ class TestSubject(TorchioTestCase):
                     -5.54619071e-01,
                     -1.57071802e-02,
                     2.28515778e02,
-                ],  # noqa: B950
+                ],
                 [0.00000000e00, 0.00000000e00, 0.00000000e00, 1.00000000e00],
             ]
         )
@@ -132,7 +133,7 @@ class TestSubject(TorchioTestCase):
         with pytest.raises(KeyError):
             subject['t1']
         with pytest.raises(AttributeError):
-            subject.t1
+            _ = subject.t1
 
     def test_2d(self):
         subject = self.make_2d(self.sample_subject)
@@ -158,9 +159,13 @@ class TestSubject(TorchioTestCase):
 
     def test_copy_subclass(self):
         class DummySubjectSubClass(tio.data.Subject):
-            pass
+            def __init__(self, **kwargs):
+                super().__init__(**kwargs)
 
-        dummy_sub = DummySubjectSubClass(self.sample_subject)
+        dummy_sub = DummySubjectSubClass(
+            attr_1='abcd',
+            attr_2=tio.ScalarImage(tensor=torch.zeros(1, 1, 1, 1)),
+        )
         sub_copy = copy.copy(dummy_sub)
         assert isinstance(sub_copy, tio.data.Subject)
         assert isinstance(sub_copy, DummySubjectSubClass)
@@ -175,3 +180,35 @@ class TestSubject(TorchioTestCase):
         self.sample_subject.unload()
         for image in self.sample_subject.get_images(intensity_only=False):
             assert not image._loaded
+
+    def test_subjects_batch(self):
+        subjects = tio.SubjectsDataset(10 * [self.sample_subject])
+        loader = tio.SubjectsLoader(subjects, batch_size=4)
+        batch = next(iter(loader))
+        assert batch.__class__ is dict
+
+    def test_deep_copy_subject(self):
+        sub_copy = copy.deepcopy(self.sample_subject)
+        assert isinstance(sub_copy, tio.data.Subject)
+
+        new_tensor = torch.ones_like(sub_copy['t1'].data)
+        sub_copy['t1'].set_data(new_tensor)
+        # The data of the original subject should not be modified
+        assert not torch.allclose(sub_copy['t1'].data, self.sample_subject['t1'].data)
+
+    def test_shallow_copy_subject(self):
+        # We are creating a deep copy of the original subject first to not modify the original subject
+        copy_original_subj = copy.deepcopy(self.sample_subject)
+        sub_copy = copy.copy(copy_original_subj)
+        assert isinstance(sub_copy, tio.data.Subject)
+
+        new_tensor = torch.ones_like(sub_copy['t1'].data)
+        sub_copy['t1'].set_data(new_tensor)
+
+        # The data of both copies needs to be the same as we are using a shallow copy
+        assert torch.allclose(sub_copy['t1'].data, copy_original_subj['t1'].data)
+        # The data of the original subject should not be modified
+        assert not torch.allclose(sub_copy['t1'].data, self.sample_subject['t1'].data)
+        assert not torch.allclose(
+            copy_original_subj['t1'].data, self.sample_subject['t1'].data
+        )

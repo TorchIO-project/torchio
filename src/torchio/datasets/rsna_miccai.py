@@ -1,15 +1,12 @@
 import csv
 import warnings
+from collections.abc import Sequence
 from pathlib import Path
-from typing import Dict
-from typing import List
-from typing import Sequence
-from typing import Union
 
-from .. import ScalarImage
-from .. import Subject
-from .. import SubjectsDataset
-from ..typing import TypePath
+from ..data import ScalarImage
+from ..data import Subject
+from ..data import SubjectsDataset
+from ..types import TypePath
 
 
 class RSNAMICCAI(SubjectsDataset):
@@ -50,7 +47,7 @@ class RSNAMICCAI(SubjectsDataset):
 
 
     .. _RSNA-MICCAI Brain Tumor Radiogenomic Classification challenge: https://www.kaggle.com/c/rsna-miccai-brain-tumor-radiogenomic-classification
-    """  # noqa: B950
+    """
 
     id_key = 'BraTS21ID'
     label_key = 'MGMT_value'
@@ -77,7 +74,7 @@ class RSNAMICCAI(SubjectsDataset):
         root_dir: Path,
         train: bool,
         ignore_empty: bool,
-    ) -> List[Subject]:
+    ) -> list[Subject]:
         subjects = []
         if train:
             csv_path = root_dir / 'train_labels.csv'
@@ -105,7 +102,7 @@ class RSNAMICCAI(SubjectsDataset):
                 int(subject_id)
             except ValueError:
                 continue
-            images_dict: Dict[str, Union[str, int, ScalarImage]]
+            images_dict: dict[str, str | int | ScalarImage]
             images_dict = {self.id_key: subject_dir.name}
             if train and labels_dict:
                 images_dict[self.label_key] = labels_dict[subject_id]

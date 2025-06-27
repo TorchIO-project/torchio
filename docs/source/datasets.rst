@@ -15,9 +15,19 @@ GitHub repository:
 
 .. raw:: html
 
-   <a class="github-button" href="https://github.com/fepegar/torchio/discussions" data-icon="octicon-comment-discussion" aria-label="Discuss fepegar/torchio on GitHub">Discuss</a>
+   <a class="github-button" href="https://github.com/TorchIO-project/torchio/discussions" data-icon="octicon-comment-discussion" aria-label="Discuss TorchIO-project/torchio on GitHub">Discuss</a>
    <script async defer src="https://buttons.github.io/buttons.js"></script>
 
+CT-RATE
+-------
+
+.. currentmodule:: torchio.datasets.ct_rate
+
+:class:`CtRate`
+~~~~~~~~~~~~~~~~
+
+.. autoclass:: CtRate
+    :members:
 
 IXI
 ---
@@ -206,7 +216,7 @@ MedMNIST
     from einops import rearrange
     rows, cols = 16, 28
     dataset = tio.datasets.OrganMNIST3D('train')
-    loader = torch.utils.data.DataLoader(dataset, batch_size=rows * cols)
+    loader = tio.SubjectsLoader(dataset, batch_size=rows * cols)
     batch = tio.utils.get_first_item(loader)
     tensor = batch['image'][tio.DATA]
     pattern = '(b1 b2) c x y z -> c x (b1 y) (b2 z)'
@@ -224,7 +234,7 @@ MedMNIST
     from einops import rearrange
     rows, cols = 16, 28
     dataset = tio.datasets.NoduleMNIST3D('train')
-    loader = torch.utils.data.DataLoader(dataset, batch_size=rows * cols)
+    loader = tio.SubjectsLoader(dataset, batch_size=rows * cols)
     batch = tio.utils.get_first_item(loader)
     tensor = batch['image'][tio.DATA]
     pattern = '(b1 b2) c x y z -> c x (b1 y) (b2 z)'
@@ -242,7 +252,7 @@ MedMNIST
     from einops import rearrange
     rows, cols = 16, 28
     dataset = tio.datasets.AdrenalMNIST3D('train')
-    loader = torch.utils.data.DataLoader(dataset, batch_size=rows * cols)
+    loader = tio.SubjectsLoader(dataset, batch_size=rows * cols)
     batch = tio.utils.get_first_item(loader)
     tensor = batch['image'][tio.DATA]
     pattern = '(b1 b2) c x y z -> c x (b1 y) (b2 z)'
@@ -260,7 +270,7 @@ MedMNIST
     from einops import rearrange
     rows, cols = 16, 28
     dataset = tio.datasets.FractureMNIST3D('train')
-    loader = torch.utils.data.DataLoader(dataset, batch_size=rows * cols)
+    loader = tio.SubjectsLoader(dataset, batch_size=rows * cols)
     batch = tio.utils.get_first_item(loader)
     tensor = batch['image'][tio.DATA]
     pattern = '(b1 b2) c x y z -> c x (b1 y) (b2 z)'
@@ -278,7 +288,7 @@ MedMNIST
     from einops import rearrange
     rows, cols = 16, 28
     dataset = tio.datasets.VesselMNIST3D('train')
-    loader = torch.utils.data.DataLoader(dataset, batch_size=rows * cols)
+    loader = tio.SubjectsLoader(dataset, batch_size=rows * cols)
     batch = tio.utils.get_first_item(loader)
     tensor = batch['image'][tio.DATA]
     pattern = '(b1 b2) c x y z -> c x (b1 y) (b2 z)'
@@ -296,7 +306,7 @@ MedMNIST
     from einops import rearrange
     rows, cols = 16, 28
     dataset = tio.datasets.SynapseMNIST3D('train')
-    loader = torch.utils.data.DataLoader(dataset, batch_size=rows * cols)
+    loader = tio.SubjectsLoader(dataset, batch_size=rows * cols)
     batch = tio.utils.get_first_item(loader)
     tensor = batch['image'][tio.DATA]
     pattern = '(b1 b2) c x y z -> c x (b1 y) (b2 z)'

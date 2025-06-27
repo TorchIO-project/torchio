@@ -4,14 +4,14 @@ import random
 import shutil
 import tempfile
 import unittest
+from collections.abc import Sequence
 from pathlib import Path
 from random import shuffle
-from typing import Sequence
-from typing import Set
 
 import numpy as np
 import pytest
 import torch
+
 import torchio as tio
 
 
@@ -142,7 +142,7 @@ class TorchioTestCase(unittest.TestCase):
         )
 
     @staticmethod
-    def get_unique_labels(data: torch.Tensor) -> Set[int]:
+    def get_unique_labels(data: torch.Tensor) -> set[int]:
         labels = data.unique().tolist()
         return set(labels)
 

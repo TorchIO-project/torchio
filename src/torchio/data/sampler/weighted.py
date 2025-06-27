@@ -1,11 +1,12 @@
-from typing import Generator
-from typing import Optional
+from __future__ import annotations
+
+from collections.abc import Generator
 
 import numpy as np
 import torch
 
 from ...constants import MIN_FLOAT_32
-from ...typing import TypeSpatialShape
+from ...types import TypeSpatialShape
 from ..image import Image
 from ..subject import Subject
 from .sampler import RandomSampler
@@ -47,12 +48,12 @@ class WeightedSampler(RandomSampler):
     .. note:: Values of the probability map near the border will be set to 0 as
         the center of the patch cannot be at the border (unless the patch has
         size 1 or 2 along that axis).
-    """  # noqa: B950
+    """
 
     def __init__(
         self,
         patch_size: TypeSpatialShape,
-        probability_map: Optional[str],
+        probability_map: str | None,
     ):
         super().__init__(patch_size)
         self.probability_map_name = probability_map
@@ -61,8 +62,8 @@ class WeightedSampler(RandomSampler):
     def _generate_patches(
         self,
         subject: Subject,
-        num_patches: Optional[int] = None,
-    ) -> Generator[Subject, None, None]:
+        num_patches: int | None = None,
+    ) -> Generator[Subject]:
         probability_map = self.get_probability_map(subject)
         probability_map_array = self.process_probability_map(
             probability_map,
@@ -156,7 +157,7 @@ class WeightedSampler(RandomSampler):
 
         # The call tolist() is very important. Using np.uint16 as negative
         # index will not work because e.g. -np.uint16(2) == 65534
-        crop_i, crop_j, crop_k = crop_fin.tolist()
+        crop_i, crop_j, crop_k = crop_fin.tolist()  # type: ignore[misc]
         if crop_i:
             probability_map[-crop_i:, :, :] = 0
         if crop_j:
@@ -183,7 +184,7 @@ class WeightedSampler(RandomSampler):
         i, j, k = self.get_random_index_ini(probability_map, cdf)
         index_ini = i, j, k
         si, sj, sk = self.patch_size
-        patch_size = si, sj, sk
+        patch_size = int(si), int(sj), int(sk)
         cropped_subject = self.crop(
             subject,
             index_ini,
@@ -225,9 +226,9 @@ class WeightedSampler(RandomSampler):
             >>> histogram  # doctest:+SKIP
             array([[    0,     0,  3479,  3478, 17121,  7023,  3355,  3378,     0],
                    [ 6808,  6804,  6942,  6809,  6946,  6988,  7002,  6826,  7041]])
-        """  # noqa: B950
+        """
         # Get first value larger than random number ensuring the random number
-        # is not exactly 0 (see https://github.com/fepegar/torchio/issues/510)
+        # is not exactly 0 (see https://github.com/TorchIO-project/torchio/issues/510)
         random_number = max(MIN_FLOAT_32, torch.rand(1).item()) * cdf[-1]
 
         random_location_index = np.searchsorted(cdf, random_number)
@@ -242,7 +243,7 @@ class WeightedSampler(RandomSampler):
             message = (
                 'Error retrieving probability in weighted sampler.'
                 ' Please report this issue at'
-                ' https://github.com/fepegar/torchio/issues/new?labels=bug&template=bug_report.md'  # noqa: B950
+                ' https://github.com/TorchIO-project/torchio/issues/new?labels=bug&template=bug_report.md'
             )
             raise RuntimeError(message)
 

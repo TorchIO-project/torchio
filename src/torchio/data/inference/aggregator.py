@@ -1,6 +1,6 @@
+from __future__ import annotations
+
 import warnings
-from typing import Optional
-from typing import Tuple
 
 import numpy as np
 import torch
@@ -25,24 +25,24 @@ class GridAggregator:
             function. See the `grid aggregator tests`_ for a raw visualization
             of the three modes.
 
-    .. _grid aggregator tests: https://github.com/fepegar/torchio/blob/main/tests/data/inference/test_aggregator.py
+    .. _grid aggregator tests: https://github.com/TorchIO-project/torchio/blob/main/tests/data/inference/test_aggregator.py
 
     .. note:: Adapted from NiftyNet. See `this NiftyNet tutorial
         <https://niftynet.readthedocs.io/en/dev/window_sizes.html>`_ for more
         information about patch-based sampling.
-    """  # noqa: B950
+    """
 
     def __init__(self, sampler: GridSampler, overlap_mode: str = 'crop'):
         subject = sampler.subject
         self.volume_padded = sampler.padding_mode is not None
         self.spatial_shape = subject.spatial_shape
-        self._output_tensor: Optional[torch.Tensor] = None
+        self._output_tensor: torch.Tensor | None = None
         self.patch_overlap = sampler.patch_overlap
         self.patch_size = sampler.patch_size
         self._parse_overlap_mode(overlap_mode)
         self.overlap_mode = overlap_mode
-        self._avgmask_tensor: Optional[torch.Tensor] = None
-        self._hann_window: Optional[torch.Tensor] = None
+        self._avgmask_tensor: torch.Tensor | None = None
+        self._hann_window: torch.Tensor | None = None
 
     @staticmethod
     def _parse_overlap_mode(overlap_mode):
@@ -58,13 +58,13 @@ class GridAggregator:
         patch: torch.Tensor,
         location: np.ndarray,
         overlap: np.ndarray,
-    ) -> Tuple[torch.Tensor, np.ndarray]:
+    ) -> tuple[torch.Tensor, np.ndarray]:
         half_overlap = overlap // 2  # overlap is always even in grid sampler
         index_ini, index_fin = location[:3], location[3:]
 
         # If the patch is not at the border, we crop half the overlap
-        crop_ini = half_overlap.copy()
-        crop_fin = half_overlap.copy()
+        crop_ini: np.ndarray = half_overlap.copy()
+        crop_fin: np.ndarray = half_overlap.copy()
 
         # If the volume has been padded, we don't need to worry about cropping
         if self.volume_padded:
@@ -78,9 +78,17 @@ class GridAggregator:
         new_index_fin = index_fin - crop_fin
         new_location = np.hstack((new_index_ini, new_index_fin))
 
-        patch_size = patch.shape[-3:]
+        patch_size = np.asarray(patch.shape[-3:], dtype=int)
+        crop_fin = crop_fin.astype(int)
         i_ini, j_ini, k_ini = crop_ini
         i_fin, j_fin, k_fin = patch_size - crop_fin
+        # Make type checkers happy
+        i_ini = int(i_ini)
+        j_ini = int(j_ini)
+        k_ini = int(k_ini)
+        i_fin = int(i_fin)
+        j_fin = int(j_fin)
+        k_fin = int(k_fin)
         cropped_patch = patch[:, i_ini:i_fin, j_ini:j_fin, k_ini:k_fin]
         return cropped_patch, new_location
 
@@ -105,7 +113,7 @@ class GridAggregator:
         )
 
     @staticmethod
-    def _get_hann_window(patch_size):
+    def _get_hann_window(patch_size) -> torch.Tensor:
         hann_window_3d = torch.as_tensor([1])
         # create a n-dim hann window
         for spatial_dim, size in enumerate(patch_size):
@@ -139,8 +147,8 @@ class GridAggregator:
                 extracted using ``batch[torchio.LOCATION]``.
         """
         batch = batch_tensor.cpu()
-        locations = locations.cpu().numpy()
-        patch_sizes = locations[:, 3:] - locations[:, :3]
+        locations_array = locations.cpu().numpy()
+        patch_sizes = locations_array[:, 3:] - locations_array[:, :3]
         # There should be only one patch size
         assert len(np.unique(patch_sizes, axis=0)) == 1
         input_spatial_shape = tuple(batch.shape[-3:])
@@ -155,7 +163,7 @@ class GridAggregator:
         self._initialize_output_tensor(batch)
         assert isinstance(self._output_tensor, torch.Tensor)
         if self.overlap_mode == 'crop':
-            for patch, location in zip(batch, locations):
+            for patch, location in zip(batch, locations_array):
                 cropped_patch, new_location = self._crop_patch(
                     patch,
                     location,
@@ -212,6 +220,7 @@ class GridAggregator:
                     j_ini:j_fin,
                     k_ini:k_fin,
                 ] += patch
+                assert self._hann_window is not None
                 self._avgmask_tensor[
                     :,
                     i_ini:i_fin,
@@ -233,7 +242,7 @@ class GridAggregator:
             assert isinstance(self._avgmask_tensor, torch.Tensor)  # for mypy
             # true_divide is used instead of / in case the PyTorch version is
             # old and one the operands is int:
-            # https://github.com/fepegar/torchio/issues/526
+            # https://github.com/TorchIO-project/torchio/issues/526
             output = torch.true_divide(
                 self._output_tensor,
                 self._avgmask_tensor,

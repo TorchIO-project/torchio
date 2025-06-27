@@ -1,14 +1,12 @@
-from typing import List
-from typing import Tuple
 from typing import Union
 
 import numpy as np
 import torch
 
-from .. import RandomTransform
-from ... import SpatialTransform
 from ....data.subject import Subject
 from ....utils import to_tuple
+from ...spatial_transform import SpatialTransform
+from .. import RandomTransform
 
 
 class RandomFlip(RandomTransform, SpatialTransform):
@@ -40,7 +38,7 @@ class RandomFlip(RandomTransform, SpatialTransform):
 
     def __init__(
         self,
-        axes: Union[int, Tuple[int, ...]] = 0,
+        axes: Union[int, tuple[int, ...]] = 0,
         flip_probability: float = 0.5,
         **kwargs,
     ):
@@ -55,18 +53,18 @@ class RandomFlip(RandomTransform, SpatialTransform):
             if i not in potential_axes:
                 axes_to_flip_hot[i] = False
         (axes,) = np.where(axes_to_flip_hot)
-        axes = axes.tolist()
-        if not axes:
+        axes_list = axes.tolist()
+        if not axes_list:
             return subject
 
-        arguments = {'axes': axes}
-        transform = Flip(**self.add_include_exclude(arguments))
+        arguments = {'axes': axes_list}
+        transform = Flip(**self.add_base_args(arguments))
         transformed = transform(subject)
         assert isinstance(transformed, Subject)
         return transformed
 
     @staticmethod
-    def get_params(probability: float) -> List[bool]:
+    def get_params(probability: float) -> list[bool]:
         return (probability > torch.rand(3)).tolist()
 
 
@@ -104,7 +102,7 @@ class Flip(SpatialTransform):
         return self
 
 
-def _parse_axes(axes: Union[int, Tuple[int, ...]]):
+def _parse_axes(axes: Union[int, tuple[int, ...]]):
     axes_tuple = to_tuple(axes)
     for axis in axes_tuple:
         is_int = isinstance(axis, int)

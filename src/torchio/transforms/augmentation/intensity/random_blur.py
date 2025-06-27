@@ -1,18 +1,16 @@
 from collections import defaultdict
-from typing import Dict
-from typing import Tuple
 from typing import Union
 
 import numpy as np
 import scipy.ndimage as ndi
 import torch
 
-from .. import RandomTransform
-from ... import IntensityTransform
 from ....data.subject import Subject
-from ....typing import TypeData
-from ....typing import TypeSextetFloat
-from ....typing import TypeTripletFloat
+from ....types import TypeData
+from ....types import TypeSextetFloat
+from ....types import TypeTripletFloat
+from ...intensity_transform import IntensityTransform
+from .. import RandomTransform
 
 
 class RandomBlur(RandomTransform, IntensityTransform):
@@ -34,23 +32,27 @@ class RandomBlur(RandomTransform, IntensityTransform):
             keyword arguments.
     """
 
-    def __init__(self, std: Union[float, Tuple[float, float]] = (0, 2), **kwargs):
+    def __init__(self, std: Union[float, tuple[float, float]] = (0, 2), **kwargs):
         super().__init__(**kwargs)
         self.std_ranges = self.parse_params(std, None, 'std', min_constraint=0)
 
     def apply_transform(self, subject: Subject) -> Subject:
-        arguments: Dict[str, dict] = defaultdict(dict)
-        for name in self.get_images_dict(subject):
-            std = self.get_params(self.std_ranges)
+        images_dict = self.get_images_dict(subject)
+        if not images_dict:
+            return subject
+
+        arguments: dict[str, dict] = defaultdict(dict)
+        for name in images_dict:
+            std = self.get_params(self.std_ranges)  # type: ignore[arg-type]
             arguments['std'][name] = std
-        transform = Blur(**self.add_include_exclude(arguments))
+        transform = Blur(**self.add_base_args(arguments))
         transformed = transform(subject)
         assert isinstance(transformed, Subject)
         return transformed
 
     def get_params(self, std_ranges: TypeSextetFloat) -> TypeTripletFloat:
-        std = self.sample_uniform_sextet(std_ranges)
-        return std
+        sx, sy, sz = self.sample_uniform_sextet(std_ranges)
+        return sx, sy, sz
 
 
 class Blur(IntensityTransform):
@@ -66,7 +68,7 @@ class Blur(IntensityTransform):
 
     def __init__(
         self,
-        std: Union[TypeTripletFloat, Dict[str, TypeTripletFloat]],
+        std: Union[TypeTripletFloat, dict[str, TypeTripletFloat]],
         **kwargs,
     ):
         super().__init__(**kwargs)

@@ -1,25 +1,24 @@
+from __future__ import annotations
+
+from collections.abc import Sequence
 from numbers import Number
-from typing import Optional
-from typing import Sequence
-from typing import Tuple
 from typing import Union
 
 import numpy as np
 import SimpleITK as sitk
 import torch
 
-from .. import RandomTransform
-from ... import SpatialTransform
 from ....constants import INTENSITY
 from ....constants import TYPE
 from ....data.io import nib_to_sitk
 from ....data.subject import Subject
-from ....typing import TypeRangeFloat
-from ....typing import TypeSextetFloat
-from ....typing import TypeTripletFloat
+from ....types import TypeRangeFloat
+from ....types import TypeSextetFloat
+from ....types import TypeTripletFloat
 from ....utils import get_major_sitk_version
 from ....utils import to_tuple
-
+from ...spatial_transform import SpatialTransform
+from .. import RandomTransform
 
 TypeOneToSixFloat = Union[TypeRangeFloat, TypeTripletFloat, TypeSextetFloat]
 
@@ -111,7 +110,7 @@ class RandomAffine(RandomTransform, SpatialTransform):
         ct_transformed = transform(ct)
         subject.add_image(ct_transformed, 'Transformed')
         subject.plot()
-    """  # noqa: B950
+    """
 
     def __init__(
         self,
@@ -120,7 +119,7 @@ class RandomAffine(RandomTransform, SpatialTransform):
         translation: TypeOneToSixFloat = 0,
         isotropic: bool = False,
         center: str = 'image',
-        default_pad_value: Union[str, float] = 'minimum',
+        default_pad_value: str | float = 'minimum',
         image_interpolation: str = 'linear',
         label_interpolation: str = 'nearest',
         check_shape: bool = True,
@@ -145,18 +144,27 @@ class RandomAffine(RandomTransform, SpatialTransform):
         )
         self.check_shape = check_shape
 
+    @staticmethod
     def get_params(
-        self,
         scales: TypeSextetFloat,
         degrees: TypeSextetFloat,
         translation: TypeSextetFloat,
         isotropic: bool,
-    ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
-        scaling_params = self.sample_uniform_sextet(scales)
+    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+        scaling_params = torch.as_tensor(
+            RandomTransform.sample_uniform_sextet(scales),
+            dtype=torch.float64,
+        )
         if isotropic:
             scaling_params.fill_(scaling_params[0])
-        rotation_params = self.sample_uniform_sextet(degrees)
-        translation_params = self.sample_uniform_sextet(translation)
+        rotation_params = torch.as_tensor(
+            RandomTransform.sample_uniform_sextet(degrees),
+            dtype=torch.float64,
+        )
+        translation_params = torch.as_tensor(
+            RandomTransform.sample_uniform_sextet(translation),
+            dtype=torch.float64,
+        )
         return scaling_params, rotation_params, translation_params
 
     def apply_transform(self, subject: Subject) -> Subject:
@@ -167,16 +175,16 @@ class RandomAffine(RandomTransform, SpatialTransform):
             self.isotropic,
         )
         arguments = {
-            'scales': scaling_params.tolist(),
-            'degrees': rotation_params.tolist(),
-            'translation': translation_params.tolist(),
+            'scales': scaling_params,
+            'degrees': rotation_params,
+            'translation': translation_params,
             'center': self.center,
             'default_pad_value': self.default_pad_value,
             'image_interpolation': self.image_interpolation,
             'label_interpolation': self.label_interpolation,
             'check_shape': self.check_shape,
         }
-        transform = Affine(**self.add_include_exclude(arguments))
+        transform = Affine(**self.add_base_args(arguments))
         transformed = transform(subject)
         assert isinstance(transformed, Subject)
         return transformed
@@ -218,7 +226,7 @@ class Affine(SpatialTransform):
         degrees: TypeTripletFloat,
         translation: TypeTripletFloat,
         center: str = 'image',
-        default_pad_value: Union[str, float] = 'minimum',
+        default_pad_value: str | float = 'minimum',
         image_interpolation: str = 'linear',
         label_interpolation: str = 'nearest',
         check_shape: bool = True,
@@ -272,7 +280,7 @@ class Affine(SpatialTransform):
     @staticmethod
     def _get_scaling_transform(
         scaling_params: Sequence[float],
-        center_lps: Optional[TypeTripletFloat] = None,
+        center_lps: TypeTripletFloat | None = None,
     ) -> sitk.ScaleTransform:
         # 1.5 means the objects look 1.5 times larger
         transform = sitk.ScaleTransform(3)
@@ -286,7 +294,7 @@ class Affine(SpatialTransform):
     def _get_rotation_transform(
         degrees: Sequence[float],
         translation: Sequence[float],
-        center_lps: Optional[TypeTripletFloat] = None,
+        center_lps: TypeTripletFloat | None = None,
     ) -> sitk.Euler3DTransform:
         def ras_to_lps(triplet: Sequence[float]):
             return np.array((-1, -1, 1), dtype=float) * np.asarray(triplet)
@@ -295,7 +303,7 @@ class Affine(SpatialTransform):
         radians = np.radians(degrees).tolist()
 
         # SimpleITK uses LPS
-        radians_lps = ras_to_lps(radians)
+        radians_lps = ras_to_lps(radians)  # type: ignore[arg-type]
         translation_lps = ras_to_lps(translation)
 
         transform.SetRotation(*radians_lps)
@@ -341,13 +349,34 @@ class Affine(SpatialTransform):
         # the input space. Intuitively, the passed arguments should take us
         # from the input space to the output space, so we need to invert the
         # transform.
-        # More info at https://github.com/fepegar/torchio/discussions/693
+        # More info at https://github.com/TorchIO-project/torchio/discussions/693
         transform = transform.GetInverse()
 
         if self.invert_transform:
             transform = transform.GetInverse()
 
         return transform
+
+    def get_default_pad_value(
+        self, tensor: torch.Tensor, sitk_image: sitk.Image
+    ) -> float:
+        default_value: float
+        if self.default_pad_value == 'minimum':
+            default_value = tensor.min().item()
+        elif self.default_pad_value == 'mean':
+            default_value = get_borders_mean(
+                sitk_image,
+                filter_otsu=False,
+            )
+        elif self.default_pad_value == 'otsu':
+            default_value = get_borders_mean(
+                sitk_image,
+                filter_otsu=True,
+            )
+        else:
+            assert isinstance(self.default_pad_value, Number)
+            default_value = float(self.default_pad_value)
+        return default_value
 
     def apply_transform(self, subject: Subject) -> Subject:
         if self.check_shape:
@@ -367,21 +396,7 @@ class Affine(SpatialTransform):
                     default_value = 0
                 else:
                     interpolation = self.image_interpolation
-                    if self.default_pad_value == 'minimum':
-                        default_value = tensor.min().item()
-                    elif self.default_pad_value == 'mean':
-                        default_value = get_borders_mean(
-                            sitk_image,
-                            filter_otsu=False,
-                        )
-                    elif self.default_pad_value == 'otsu':
-                        default_value = get_borders_mean(
-                            sitk_image,
-                            filter_otsu=True,
-                        )
-                    else:
-                        assert isinstance(self.default_pad_value, Number)
-                        default_value = float(self.default_pad_value)
+                    default_value = self.get_default_pad_value(tensor, sitk_image)
                 transformed_tensor = self.apply_affine_transform(
                     sitk_image,
                     transform,
@@ -453,7 +468,7 @@ def _parse_scales_isotropic(scales, isotropic):
         raise ValueError(message)
 
 
-def _parse_default_value(value: Union[str, float]) -> Union[str, float]:
+def _parse_default_value(value: str | float) -> str | float:
     if isinstance(value, Number) or value in ('minimum', 'otsu', 'mean'):
         return value
     message = (

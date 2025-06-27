@@ -1,14 +1,12 @@
 from collections import defaultdict
-from typing import Dict
-from typing import Sequence
-from typing import Tuple
+from collections.abc import Sequence
 from typing import Union
 
 import torch
 
-from .. import RandomTransform
-from ... import IntensityTransform
 from ....data.subject import Subject
+from ...intensity_transform import IntensityTransform
+from .. import RandomTransform
 
 
 class RandomNoise(RandomTransform, IntensityTransform):
@@ -35,8 +33,8 @@ class RandomNoise(RandomTransform, IntensityTransform):
 
     def __init__(
         self,
-        mean: Union[float, Tuple[float, float]] = 0,
-        std: Union[float, Tuple[float, float]] = (0, 0.25),
+        mean: Union[float, tuple[float, float]] = 0,
+        std: Union[float, tuple[float, float]] = (0, 0.25),
         **kwargs,
     ):
         super().__init__(**kwargs)
@@ -44,22 +42,26 @@ class RandomNoise(RandomTransform, IntensityTransform):
         self.std_range = self._parse_range(std, 'std', min_constraint=0)
 
     def apply_transform(self, subject: Subject) -> Subject:
-        arguments: Dict[str, dict] = defaultdict(dict)
-        for image_name in self.get_images_dict(subject):
+        images_dict = self.get_images_dict(subject)
+        if not images_dict:
+            return subject
+
+        arguments: dict[str, dict] = defaultdict(dict)
+        for image_name in images_dict:
             mean, std, seed = self.get_params(self.mean_range, self.std_range)
             arguments['mean'][image_name] = mean
             arguments['std'][image_name] = std
             arguments['seed'][image_name] = seed
-        transform = Noise(**self.add_include_exclude(arguments))
+        transform = Noise(**self.add_base_args(arguments))
         transformed = transform(subject)
         assert isinstance(transformed, Subject)
         return transformed
 
     def get_params(
         self,
-        mean_range: Tuple[float, float],
-        std_range: Tuple[float, float],
-    ) -> Tuple[float, float, int]:
+        mean_range: tuple[float, float],
+        std_range: tuple[float, float],
+    ) -> tuple[float, float, int]:
         mean = self.sample_uniform(*mean_range)
         std = self.sample_uniform(*std_range)
         seed = self._get_random_seed()
@@ -83,8 +85,8 @@ class Noise(IntensityTransform):
 
     def __init__(
         self,
-        mean: Union[float, Dict[str, float]],
-        std: Union[float, Dict[str, float]],
+        mean: Union[float, dict[str, float]],
+        std: Union[float, dict[str, float]],
         seed: Union[int, Sequence[int]],
         **kwargs,
     ):
@@ -99,8 +101,8 @@ class Noise(IntensityTransform):
         mean, std, seed = args = self.mean, self.std, self.seed
         for name, image in self.get_images_dict(subject).items():
             if self.arguments_are_dict():
-                values = (arg[name] for arg in args)  # type: ignore[index,call-overload]  # noqa: B950
-                mean, std, seed = values  # type: ignore[assignment]  # noqa: B950
+                values = (arg[name] for arg in args)  # type: ignore[index,call-overload]
+                mean, std, seed = values  # type: ignore[assignment]
             with self._use_seed(seed):
                 assert isinstance(mean, float)
                 assert isinstance(std, float)

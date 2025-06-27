@@ -1,5 +1,6 @@
 import numpy as np
 import pytest
+
 import torchio as tio
 
 from ...utils import TorchioTestCase
@@ -168,7 +169,7 @@ class TestCropOrPad(TorchioTestCase):
             )
 
     def test_2d(self):
-        # https://github.com/fepegar/torchio/issues/434
+        # https://github.com/TorchIO-project/torchio/issues/434
         image = np.random.rand(1, 16, 16, 1)
         mask = np.zeros_like(image, dtype=bool)
         mask[0, 7, 0] = True
@@ -193,7 +194,7 @@ class TestCropOrPad(TorchioTestCase):
         crop_with_mask(self.sample_subject)
 
     def test_persistent_bounds_params(self):
-        # https://github.com/fepegar/torchio/issues/757
+        # https://github.com/TorchIO-project/torchio/issues/757
         shape = (1, 5, 5, 5)
         mask_a = np.zeros(shape)
         mask_a[0, 2, 2, 2] = 1
@@ -211,3 +212,31 @@ class TestCropOrPad(TorchioTestCase):
             shape_a = crop(subject_a).image.shape
             shape_b = crop(subject_b).image.shape
             assert shape_a != shape_b
+
+    def test_only_crop_pad_true(self):
+        with pytest.raises(ValueError):
+            tio.CropOrPad((1, 2, 3), only_crop=True, only_pad=True)
+
+    def test_only_pad_true(self):
+        target_shape = 9, 21, 30
+        orig_shape = self.sample_subject['t1'].spatial_shape
+        expected_shape = tuple(
+            t if t > o else o for o, t in zip(orig_shape, target_shape)
+        )
+        transform = tio.CropOrPad(target_shape, only_pad=True)
+        transformed = transform(self.sample_subject)
+        for key in transformed:
+            result_shape = transformed[key].spatial_shape
+            assert result_shape == expected_shape
+
+    def test_only_crop_true(self):
+        target_shape = 9, 21, 30
+        orig_shape = self.sample_subject['t1'].spatial_shape
+        expected_shape = tuple(
+            t if t < o else o for o, t in zip(orig_shape, target_shape)
+        )
+        transform = tio.CropOrPad(target_shape, only_crop=True)
+        transformed = transform(self.sample_subject)
+        for key in transformed:
+            result_shape = transformed[key].spatial_shape
+            assert result_shape == expected_shape

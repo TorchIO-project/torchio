@@ -2,10 +2,10 @@ import warnings
 
 import numpy as np
 
-from ... import SpatialTransform
 from ....data.subject import Subject
-from ....typing import TypeSpatialShape
+from ....types import TypeSpatialShape
 from ....utils import to_tuple
+from ...spatial_transform import SpatialTransform
 from .crop_or_pad import CropOrPad
 from .resample import Resample
 
@@ -16,7 +16,7 @@ class Resize(SpatialTransform):
     The field of view remains the same.
 
     .. warning:: In most medical image applications, this transform should not
-        be used as it will deform the physical object by scaling anistropically
+        be used as it will deform the physical object by scaling anisotropically
         along the different dimensions. The solution to change an image size is
         typically applying :class:`~torchio.transforms.Resample` and
         :class:`~torchio.transforms.CropOrPad`.
@@ -61,18 +61,18 @@ class Resize(SpatialTransform):
             spacing_out,
             image_interpolation=self.image_interpolation,
             label_interpolation=self.label_interpolation,
+            **self.get_base_args(),
         )
         resampled = resample(subject)
         assert isinstance(resampled, Subject)
         # Sometimes, the output shape is one voxel too large
-        # Probably because Resample uses np.ceil to compute the shape
         if not resampled.spatial_shape == tuple(shape_out):
             message = (
                 f'Output shape {resampled.spatial_shape}'
                 f' != target shape {tuple(shape_out)}. Fixing with CropOrPad'
             )
             warnings.warn(message, RuntimeWarning, stacklevel=2)
-            crop_pad = CropOrPad(shape_out)  # type: ignore[arg-type]
+            crop_pad = CropOrPad(shape_out, **self.get_base_args())  # type: ignore[arg-type]
             resampled = crop_pad(resampled)
         assert isinstance(resampled, Subject)
         return resampled

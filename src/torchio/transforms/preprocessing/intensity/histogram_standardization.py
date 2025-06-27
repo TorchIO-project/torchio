@@ -1,24 +1,24 @@
+from __future__ import annotations
+
+from collections.abc import Iterable
+from collections.abc import Sequence
 from pathlib import Path
 from typing import Callable
-from typing import Dict
-from typing import Optional
-from typing import Sequence
-from typing import Tuple
 from typing import Union
 
-import torch
 import numpy as np
+import torch
 from tqdm.auto import tqdm
 
 from ....data.io import read_image
 from ....data.subject import Subject
-from ....typing import TypePath
+from ....types import TypePath
 from .normalization_transform import NormalizationTransform
 from .normalization_transform import TypeMaskingMethod
 
 DEFAULT_CUTOFF = 0.01, 0.99
 STANDARD_RANGE = 0, 100
-TypeLandmarks = Union[TypePath, Dict[str, Union[TypePath, np.ndarray]]]
+TypeLandmarks = Union[TypePath, dict[str, Union[TypePath, np.ndarray]]]
 
 
 class HistogramStandardization(NormalizationTransform):
@@ -50,7 +50,7 @@ class HistogramStandardization(NormalizationTransform):
         >>> transform = tio.HistogramStandardization(landmarks)
         >>> torch.save(landmarks, 'path_to_landmarks.pth')
         >>> transform = tio.HistogramStandardization('path_to_landmarks.pth')
-    """  # noqa: B950
+    """
 
     def __init__(
         self,
@@ -64,7 +64,7 @@ class HistogramStandardization(NormalizationTransform):
         self.args_names = ['landmarks', 'masking_method']
 
     @staticmethod
-    def _parse_landmarks(landmarks: TypeLandmarks) -> Dict[str, np.ndarray]:
+    def _parse_landmarks(landmarks: TypeLandmarks) -> dict[str, np.ndarray]:
         if isinstance(landmarks, (str, Path)):
             path = Path(landmarks)
             if path.suffix not in ('.pt', '.pth'):
@@ -103,10 +103,12 @@ class HistogramStandardization(NormalizationTransform):
     def train(
         cls,
         images_paths: Sequence[TypePath],
-        cutoff: Optional[Tuple[float, float]] = None,
-        mask_path: Optional[Union[Sequence[TypePath], TypePath]] = None,
-        masking_function: Optional[Callable] = None,
-        output_path: Optional[TypePath] = None,
+        cutoff: tuple[float, float] | None = None,
+        mask_path: Sequence[TypePath] | TypePath | None = None,
+        masking_function: Callable | None = None,
+        output_path: TypePath | None = None,
+        *,
+        progress: bool = True,
     ) -> np.ndarray:
         """Extract average histogram landmarks from images used for training.
 
@@ -115,7 +117,7 @@ class HistogramStandardization(NormalizationTransform):
             cutoff: Optional minimum and maximum quantile values,
                 respectively, that are used to select a range of intensity of
                 interest. Equivalent to :math:`pc_1` and :math:`pc_2` in
-                `Nyúl and Udupa's paper <http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.204.102&rep=rep1&type=pdf>`_.
+                `Nyúl and Udupa's paper <https://pubmed.ncbi.nlm.nih.gov/10571928/>`_.
             mask_path: Path (or list of paths) to a binary image that will be
                 used to select the voxels use to compute the stats during
                 histogram training. If ``None``, all voxels in the image will
@@ -158,12 +160,12 @@ class HistogramStandardization(NormalizationTransform):
             ... }
             >>>
             >>> transform = HistogramStandardization(landmarks_dict)
-        """  # noqa: B950
+        """
         is_masks_list = isinstance(mask_path, Sequence)
-        if is_masks_list and len(mask_path) != len(images_paths):  # type: ignore[arg-type]  # noqa: B950
+        if is_masks_list and len(mask_path) != len(images_paths):  # type: ignore[arg-type]
             message = (
-                f'Different number of images ({len(images_paths)})'  # type: ignore[arg-type]  # noqa: B950
-                f' and mask ({len(mask_path)}) paths found'  # type: ignore[arg-type]  # noqa: B950
+                f'Different number of images ({len(images_paths)})'  # type: ignore[arg-type]
+                f' and mask ({len(mask_path)}) paths found'  # type: ignore[arg-type]
             )
             raise ValueError(message)
         quantiles_cutoff = DEFAULT_CUTOFF if cutoff is None else cutoff
@@ -171,7 +173,9 @@ class HistogramStandardization(NormalizationTransform):
         percentiles_database = []
         a, b = percentiles_cutoff  # for mypy
         percentiles = _get_percentiles((a, b))
-        for i, image_file_path in enumerate(tqdm(images_paths)):
+        iterable: Iterable[TypePath]
+        iterable = tqdm(images_paths) if progress else images_paths  # type: ignore[assignment]
+        for i, image_file_path in enumerate(iterable):
             tensor, _ = read_image(image_file_path)
             if masking_function is not None:
                 mask = masking_function(tensor)
@@ -236,7 +240,7 @@ def _get_average_mapping(percentiles_database: np.ndarray) -> np.ndarray:
     return final_map
 
 
-def _get_percentiles(percentiles_cutoff: Tuple[float, float]) -> np.ndarray:
+def _get_percentiles(percentiles_cutoff: tuple[float, float]) -> np.ndarray:
     quartiles = np.arange(25, 100, 25).tolist()
     deciles = np.arange(10, 100, 10).tolist()
     all_percentiles = list(percentiles_cutoff) + quartiles + deciles
@@ -247,8 +251,8 @@ def _get_percentiles(percentiles_cutoff: Tuple[float, float]) -> np.ndarray:
 def _normalize(
     tensor: torch.Tensor,
     landmarks: np.ndarray,
-    mask: Optional[np.ndarray],
-    cutoff: Optional[Tuple[float, float]] = None,
+    mask: np.ndarray | None,
+    cutoff: tuple[float, float] | None = None,
     epsilon: float = 1e-5,
 ) -> torch.Tensor:
     cutoff_ = DEFAULT_CUTOFF if cutoff is None else cutoff

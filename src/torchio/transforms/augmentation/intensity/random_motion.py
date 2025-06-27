@@ -1,20 +1,17 @@
 from collections import defaultdict
-from typing import Dict
-from typing import List
-from typing import Sequence
-from typing import Tuple
+from collections.abc import Sequence
 from typing import Union
 
 import numpy as np
 import SimpleITK as sitk
 import torch
 
-from .. import RandomTransform
-from ... import FourierTransform
-from ... import IntensityTransform
 from ....data.io import nib_to_sitk
 from ....data.subject import Subject
-from ....typing import TypeTripletFloat
+from ....types import TypeTripletFloat
+from ...fourier import FourierTransform
+from ...intensity_transform import IntensityTransform
+from .. import RandomTransform
 
 
 class RandomMotion(RandomTransform, IntensityTransform, FourierTransform):
@@ -52,8 +49,8 @@ class RandomMotion(RandomTransform, IntensityTransform, FourierTransform):
 
     def __init__(
         self,
-        degrees: Union[float, Tuple[float, float]] = 10,
-        translation: Union[float, Tuple[float, float]] = 10,  # in mm
+        degrees: Union[float, tuple[float, float]] = 10,
+        translation: Union[float, tuple[float, float]] = 10,  # in mm
         num_transforms: int = 2,
         image_interpolation: str = 'linear',
         **kwargs,
@@ -73,8 +70,12 @@ class RandomMotion(RandomTransform, IntensityTransform, FourierTransform):
         )
 
     def apply_transform(self, subject: Subject) -> Subject:
-        arguments: Dict[str, dict] = defaultdict(dict)
-        for name, image in self.get_images_dict(subject).items():
+        images_dict = self.get_images_dict(subject)
+        if not images_dict:
+            return subject
+
+        arguments: dict[str, dict] = defaultdict(dict)
+        for name, image in images_dict.items():
             params = self.get_params(
                 self.degrees_range,
                 self.translation_range,
@@ -86,19 +87,19 @@ class RandomMotion(RandomTransform, IntensityTransform, FourierTransform):
             arguments['degrees'][name] = degrees_params
             arguments['translation'][name] = translation_params
             arguments['image_interpolation'][name] = self.image_interpolation
-        transform = Motion(**self.add_include_exclude(arguments))
+        transform = Motion(**self.add_base_args(arguments))
         transformed = transform(subject)
         assert isinstance(transformed, Subject)
         return transformed
 
     def get_params(
         self,
-        degrees_range: Tuple[float, float],
-        translation_range: Tuple[float, float],
+        degrees_range: tuple[float, float],
+        translation_range: tuple[float, float],
         num_transforms: int,
         perturbation: float = 0.3,
         is_2d: bool = False,
-    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+    ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         # If perturbation is 0, time intervals between movements are constant
         degrees_params = self.get_params_array(
             degrees_range,
@@ -120,7 +121,7 @@ class RandomMotion(RandomTransform, IntensityTransform, FourierTransform):
         return times_params, degrees_params, translation_params
 
     @staticmethod
-    def get_params_array(nums_range: Tuple[float, float], num_transforms: int):
+    def get_params_array(nums_range: tuple[float, float], num_transforms: int):
         tensor = torch.FloatTensor(num_transforms, 3).uniform_(*nums_range)
         return tensor.numpy()
 
@@ -144,12 +145,10 @@ class Motion(IntensityTransform, FourierTransform):
 
     def __init__(
         self,
-        degrees: Union[TypeTripletFloat, Dict[str, TypeTripletFloat]],
-        translation: Union[TypeTripletFloat, Dict[str, TypeTripletFloat]],
-        times: Union[Sequence[float], Dict[str, Sequence[float]]],
-        image_interpolation: Union[
-            Sequence[str], Dict[str, Sequence[str]]
-        ],  # noqa: B950
+        degrees: Union[TypeTripletFloat, dict[str, TypeTripletFloat]],
+        translation: Union[TypeTripletFloat, dict[str, TypeTripletFloat]],
+        times: Union[Sequence[float], dict[str, Sequence[float]]],
+        image_interpolation: Union[Sequence[str], dict[str, Sequence[str]]],
         **kwargs,
     ):
         super().__init__(**kwargs)
@@ -208,7 +207,7 @@ class Motion(IntensityTransform, FourierTransform):
         degrees_params: np.ndarray,
         translation_params: np.ndarray,
         image: sitk.Image,
-    ) -> List[sitk.Euler3DTransform]:
+    ) -> list[sitk.Euler3DTransform]:
         center_ijk = np.array(image.GetSize()) / 2
         center_lps = image.TransformContinuousIndexToPhysicalPoint(center_ijk)
         identity = np.eye(4)
@@ -245,7 +244,7 @@ class Motion(IntensityTransform, FourierTransform):
         image: sitk.Image,
         transforms: Sequence[sitk.Euler3DTransform],
         interpolation: str,
-    ) -> List[sitk.Image]:
+    ) -> list[sitk.Image]:
         floating = reference = image
         default_value = np.float64(sitk.GetArrayViewFromImage(image).min())
         transforms = transforms[1:]  # first is identity
@@ -263,7 +262,7 @@ class Motion(IntensityTransform, FourierTransform):
         return images
 
     @staticmethod
-    def sort_spectra(spectra: List[torch.Tensor], times: np.ndarray):
+    def sort_spectra(spectra: list[torch.Tensor], times: np.ndarray):
         """Use original spectrum to fill the center of k-space."""
         num_spectra = len(spectra)
         if np.any(times > 0.5):
@@ -288,7 +287,8 @@ class Motion(IntensityTransform, FourierTransform):
         self.sort_spectra(spectra, times)
         result_spectrum = torch.empty_like(spectra[0])
         last_index = result_spectrum.shape[2]
-        indices = (last_index * times).astype(int).tolist()
+        indices_array = (last_index * times).astype(int)
+        indices: list[int] = indices_array.tolist()  # type: ignore[assignment]
         indices.append(last_index)
         ini = 0
         for spectrum, fin in zip(spectra, indices):

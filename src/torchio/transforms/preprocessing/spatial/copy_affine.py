@@ -1,7 +1,7 @@
 import copy
 
-from ... import SpatialTransform
 from ....data.subject import Subject
+from ...spatial_transform import SpatialTransform
 
 
 class CopyAffine(SpatialTransform):
@@ -54,13 +54,13 @@ class CopyAffine(SpatialTransform):
 
     .. note:: For more information, see some related discussions on GitHub:
 
-        * https://github.com/fepegar/torchio/issues/354
-        * https://github.com/fepegar/torchio/discussions/489
-        * https://github.com/fepegar/torchio/pull/584
-        * https://github.com/fepegar/torchio/issues/430
-        * https://github.com/fepegar/torchio/issues/382
-        * https://github.com/fepegar/torchio/pull/592
-    """  # noqa: B950
+        * https://github.com/TorchIO-project/torchio/issues/354
+        * https://github.com/TorchIO-project/torchio/discussions/489
+        * https://github.com/TorchIO-project/torchio/pull/584
+        * https://github.com/TorchIO-project/torchio/issues/430
+        * https://github.com/TorchIO-project/torchio/issues/382
+        * https://github.com/TorchIO-project/torchio/pull/592
+    """
 
     def __init__(self, target: str, **kwargs):
         super().__init__(**kwargs)
@@ -80,7 +80,7 @@ class CopyAffine(SpatialTransform):
             if image is reference:
                 continue
             # We load the image to avoid complications
-            # https://github.com/fepegar/torchio/issues/1071#issuecomment-1511814720
+            # https://github.com/TorchIO-project/torchio/issues/1071#issuecomment-1511814720
             image.load()
             image.affine = affine
         return subject

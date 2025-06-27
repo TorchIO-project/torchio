@@ -1,6 +1,5 @@
 import warnings
 from numbers import Number
-from typing import Dict
 from typing import Union
 
 import nibabel as nib
@@ -40,7 +39,7 @@ class Pad(BoundsTransform):
         :class:`~torchio.transforms.CropOrPad` instead.
 
     .. _NumPy docs: https://numpy.org/doc/stable/reference/generated/numpy.pad.html
-    """  # noqa: B950
+    """
 
     PADDING_MODES = (
         'empty',
@@ -91,7 +90,7 @@ class Pad(BoundsTransform):
             new_origin = nib.affines.apply_affine(image.affine, -np.array(low))
             new_affine = image.affine.copy()
             new_affine[:3, 3] = new_origin
-            kwargs: Dict[str, Union[str, float]]
+            kwargs: dict[str, Union[str, float]]
             if isinstance(self.padding_mode, Number):
                 kwargs = {
                     'mode': 'constant',
@@ -101,7 +100,7 @@ class Pad(BoundsTransform):
                 kwargs = {'mode': self.padding_mode}
             pad_params = self.bounds_parameters
             paddings = (0, 0), pad_params[:2], pad_params[2:4], pad_params[4:]
-            padded = np.pad(image.data, paddings, **kwargs)  # type: ignore[call-overload]  # noqa: B950
+            padded = np.pad(image.data, paddings, **kwargs)  # type: ignore[call-overload]
             image.set_data(torch.as_tensor(padded))
             image.affine = new_affine
         return subject

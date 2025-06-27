@@ -4,17 +4,18 @@ I will remove all this once verbosity is reduced. More info:
 https://github.com/pytorch/vision/issues/2830
 """
 
+from __future__ import annotations
+
 import gzip
 import hashlib
 import os
 import tarfile
 import urllib
 import zipfile
-from typing import Optional
 
 from torch.hub import tqdm
 
-from .typing import TypePath
+from .types import TypePath
 
 
 def calculate_md5(fpath, chunk_size=1024 * 1024):
@@ -53,9 +54,9 @@ def gen_bar_updater():
 def download_and_extract_archive(
     url: str,
     download_root: TypePath,
-    extract_root: Optional[TypePath] = None,
-    filename: Optional[TypePath] = None,
-    md5: Optional[str] = None,
+    extract_root: TypePath | None = None,
+    filename: TypePath | None = None,
+    md5: str | None = None,
     remove_finished: bool = False,
 ) -> None:
     download_root = os.path.expanduser(download_root)
@@ -124,8 +125,8 @@ def extract_archive(from_path, to_path=None, remove_finished=False):
 def download_url(
     url: str,
     root: TypePath,
-    filename: Optional[TypePath] = None,
-    md5: Optional[str] = None,
+    filename: TypePath | None = None,
+    md5: str | None = None,
 ) -> None:
     """Download a file from a url and place it in root.
 

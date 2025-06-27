@@ -1,11 +1,13 @@
+from __future__ import annotations
+
 import warnings
-from typing import Optional
 
 import numpy as np
 import torch
 
+from ....data.image import Image
 from ....data.subject import Subject
-from ....typing import TypeDoubleFloat
+from ....types import TypeDoubleFloat
 from .normalization_transform import NormalizationTransform
 from .normalization_transform import TypeMaskingMethod
 
@@ -41,14 +43,14 @@ class RescaleIntensity(NormalizationTransform):
 
     .. _this scikit-image example: https://scikit-image.org/docs/dev/auto_examples/color_exposure/plot_equalize.html#sphx-glr-auto-examples-color-exposure-plot-equalize-py
     .. _nn-UNet paper: https://arxiv.org/abs/1809.10486
-    """  # noqa: B950
+    """
 
     def __init__(
         self,
         out_min_max: TypeDoubleFloat = (0, 1),
         percentiles: TypeDoubleFloat = (0, 100),
         masking_method: TypeMaskingMethod = None,
-        in_min_max: Optional[TypeDoubleFloat] = None,
+        in_min_max: TypeDoubleFloat | None = None,
         **kwargs,
     ):
         super().__init__(masking_method=masking_method, **kwargs)
@@ -84,7 +86,7 @@ class RescaleIntensity(NormalizationTransform):
         image_name: str,
         mask: torch.Tensor,
     ) -> None:
-        image = subject[image_name]
+        image: Image = subject[image_name]
         image.set_data(self.rescale(image.data, mask, image_name))
 
     def rescale(
@@ -95,8 +97,8 @@ class RescaleIntensity(NormalizationTransform):
     ) -> torch.Tensor:
         # The tensor is cloned as in-place operations will be used
         array = tensor.clone().float().numpy()
-        mask = mask.numpy()
-        if not mask.any():
+        mask_array = mask.numpy()
+        if not mask_array.any():
             message = (
                 f'Rescaling image "{image_name}" not possible'
                 ' because the mask to compute the statistics is empty'
@@ -104,7 +106,7 @@ class RescaleIntensity(NormalizationTransform):
             warnings.warn(message, RuntimeWarning, stacklevel=2)
             return tensor
 
-        values = array[mask]
+        values = array[mask_array]
         cutoff = np.percentile(values, self.percentiles)
         np.clip(array, *cutoff, out=array)  # type: ignore[call-overload]
 

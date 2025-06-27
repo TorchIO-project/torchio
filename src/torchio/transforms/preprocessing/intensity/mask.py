@@ -1,13 +1,14 @@
+from __future__ import annotations
+
 import warnings
-from typing import Optional
-from typing import Sequence
+from collections.abc import Sequence
 
 import torch
 
-from ... import IntensityTransform
 from ....data.image import ScalarImage
 from ....data.subject import Subject
 from ....transforms.transform import TypeMaskingMethod
+from ...intensity_transform import IntensityTransform
 
 
 class Mask(IntensityTransform):
@@ -45,13 +46,13 @@ class Mask(IntensityTransform):
         masked = mask(subject)
         subject.add_image(masked.t1, 'Masked')
         subject.plot()
-    """  # noqa: B950
+    """
 
     def __init__(
         self,
         masking_method: TypeMaskingMethod,
         outside_value: float = 0,
-        labels: Optional[Sequence[int]] = None,
+        labels: Sequence[int] | None = None,
         **kwargs,
     ):
         super().__init__(**kwargs)

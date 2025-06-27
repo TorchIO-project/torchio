@@ -1,5 +1,6 @@
 import pytest
 import torch
+
 import torchio as tio
 
 from ...utils import TorchioTestCase
@@ -35,5 +36,5 @@ class TestRandomBiasField(TorchioTestCase):
             tio.RandomBiasField(order='wrong')
 
     def test_small_image(self):
-        # https://github.com/fepegar/torchio/issues/300
+        # https://github.com/TorchIO-project/torchio/issues/300
         tio.RandomBiasField()(torch.rand(1, 2, 3, 4))
