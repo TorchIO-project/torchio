@@ -52,7 +52,7 @@ class Crop(BoundsTransform):
         low = self.bounds_parameters[::2]
         high = self.bounds_parameters[1::2]
         index_ini = low
-        index_fin = np.array(subject.spatial_shape) - high
+        index_fin = np.asarray(subject.spatial_shape, dtype=int) - high
 
         if self._copy_patch:
             # Create a clean new subject to copy the images into
@@ -79,7 +79,7 @@ class Crop(BoundsTransform):
                     cropped_subject[key] = self._crop_image(
                         value,
                         index_ini,
-                        index_fin,
+                        index_fin,  # type: ignore[arg-type]
                         copy_patch=self._copy_patch,
                     )
 
@@ -92,7 +92,7 @@ class Crop(BoundsTransform):
                 self._crop_image(
                     image,
                     index_ini,
-                    index_fin,
+                    index_fin,  # type: ignore[arg-type]
                     copy_patch=self._copy_patch,
                 )
             return subject
