@@ -90,6 +90,8 @@ types = [
     "pandas-stubs==2.2.2.240807",
     "pillow==11.0.0",
     "pip==25.0.1",
+    "types-deprecated==1.2.15.20250304",
+    "types-tqdm==4.67.0.20250516",
 ]
 test = [
     "coverage==7.6.10",
