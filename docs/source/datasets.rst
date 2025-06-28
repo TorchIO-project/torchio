@@ -92,8 +92,8 @@ MNI
 .. plot::
 
     import torchio as tio
-    subject = tio.datasets.Colin27(figsize=(9, 9))
-    subject.plot()
+    subject = tio.datasets.Colin27()
+    subject.plot(figsize=(9, 9))
 
 
 :class:`Pediatric`
@@ -140,7 +140,7 @@ ITK-SNAP
 .. plot::
 
     import torchio as tio
-    tio.datasets.BrainTumor(figsize=(16, 9)).plot()
+    tio.datasets.BrainTumor().plot(figsize=(16, 9))
 
 
 :class:`T1T2`
