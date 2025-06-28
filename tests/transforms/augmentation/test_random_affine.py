@@ -201,6 +201,10 @@ class TestRandomAffine(TorchioTestCase):
         has_affine_value = (s_affine['label'].tensor == 123).any()
         assert has_affine_value, "Direct Affine class should respect default_pad_label"
 
+    def test_wrong_default_pad_label(self):
+        with pytest.raises(ValueError):
+            tio.RandomAffine(default_pad_label='minimum')
+
     def test_no_inverse(self):
         tensor = torch.zeros((1, 2, 2, 2))
         tensor[0, 1, 1, 1] = 1  # most RAS voxel
