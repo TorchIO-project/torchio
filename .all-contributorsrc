@@ -882,6 +882,15 @@
       "contributions": [
         "code"
       ]
+    },
+    {
+      "login": "bcrobo",
+      "name": "bcrobo",
+      "avatar_url": "https://avatars.githubusercontent.com/u/28488814?v=4",
+      "profile": "https://github.com/bcrobo",
+      "contributions": [
+        "bug"
+      ]
     }
   ],
   "contributorsPerLine": 7,
