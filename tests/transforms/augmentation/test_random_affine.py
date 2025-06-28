@@ -164,42 +164,44 @@ class TestRandomAffine(TorchioTestCase):
         # Create a simple label map
         label_data = torch.full((1, 2, 2, 2), 1, dtype=torch.float32)
         s = tio.Subject(label=tio.LabelMap(tensor=label_data))
-        
+
         # Test 1: default_pad_label should be respected
         aff = tio.RandomAffine(
-            p=1,
-            translation=(-10, 10, -10, 10, -10, 10),
-            default_pad_label=250
+            p=1, translation=(-10, 10, -10, 10, -10, 10), default_pad_label=250
         )
         s_aug = aff.apply_transform(s)
-        
+
         # Should contain the specified pad value for labels
         has_expected_value = (s_aug['label'].tensor == 250).any()
-        assert has_expected_value, "default_pad_label=250 should be respected for LABEL images"
-        
+        assert has_expected_value, (
+            'default_pad_label=250 should be respected for LABEL images'
+        )
+
         # Test 2: backward compatibility - default_pad_value should still be ignored for labels
         aff_old = tio.RandomAffine(
             p=1,
             translation=(-10, 10, -10, 10, -10, 10),
-            default_pad_value=250  # This should be ignored for labels
+            default_pad_value=250,  # This should be ignored for labels
         )
         s_aug_old = aff_old.apply_transform(s)
-        
+
         # Should still use 0 (default for labels), not the default_pad_value
         non_one_values = s_aug_old['label'].tensor[s_aug_old['label'].tensor != 1]
         all_zeros = (non_one_values == 0).all() if len(non_one_values) > 0 else True
-        assert all_zeros, "default_pad_value should still be ignored for LABEL images (backward compatibility)"
-        
+        assert all_zeros, (
+            'default_pad_value should still be ignored for LABEL images (backward compatibility)'
+        )
+
         # Test 3: Test direct Affine class with default_pad_label
         affine_transform = tio.Affine(
             scales=(1, 1, 1),
             degrees=(0, 0, 0),
             translation=(5, 0, 0),
-            default_pad_label=123
+            default_pad_label=123,
         )
         s_affine = affine_transform.apply_transform(s)
         has_affine_value = (s_affine['label'].tensor == 123).any()
-        assert has_affine_value, "Direct Affine class should respect default_pad_label"
+        assert has_affine_value, 'Direct Affine class should respect default_pad_label'
 
     def test_wrong_default_pad_label(self):
         with pytest.raises(ValueError):
