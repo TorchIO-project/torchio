@@ -58,7 +58,8 @@ class CtRate(SubjectsDataset):
         **kwargs: Additional arguments for SubjectsDataset.
 
     Examples:
-        >>> dataset = CtRate('/path/to/data', split='train')
+        >>> from torchio.datasets import CtRate
+        >>> dataset = CtRate('/path/to/CT-RATE', sizes=[512])
     """
 
     _REPO_ID = 'ibrahimhamamci/CT-RATE'
