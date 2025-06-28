@@ -162,35 +162,35 @@ class TestRandomAffine(TorchioTestCase):
     def test_default_pad_label_parameter(self):
         # Test for issue #1304: Using default_pad_value if image is of type LABEL
         # Create a simple label map
-        label_data = torch.full((1, 2, 2, 2), 1, dtype=torch.float32)
-        s = tio.Subject(label=tio.LabelMap(tensor=label_data))
+        label_data = torch.full((1, 2, 2, 2), 1, dtype=torch.int32)
+        subject = tio.Subject(label=tio.LabelMap(tensor=label_data))
 
         # Test 1: default_pad_label should be respected
-        aff = tio.RandomAffine(
-            p=1, translation=(-10, 10, -10, 10, -10, 10), default_pad_label=250
+        transform = tio.RandomAffine(
+            p=1,
+            translation=(10, 10),
+            default_pad_label=250,
         )
-        s_aug = aff.apply_transform(s)
+        transformed_subject = transform(subject)
 
         # Should contain the specified pad value for labels
-        has_expected_value = (s_aug['label'].tensor == 250).any()
-        assert has_expected_value, (
-            'default_pad_label=250 should be respected for LABEL images'
-        )
+        message = 'default_pad_label=250 should be respected for LABEL images'
+        has_expected_value = (transformed_subject['label'].tensor == 250).any()
+        assert has_expected_value, message
 
         # Test 2: backward compatibility - default_pad_value should still be ignored for labels
+        message = 'default_pad_value should still be ignored for LABEL images (backward compatibility)'
         aff_old = tio.RandomAffine(
             p=1,
             translation=(-10, 10, -10, 10, -10, 10),
             default_pad_value=250,  # This should be ignored for labels
         )
-        s_aug_old = aff_old.apply_transform(s)
+        s_aug_old = aff_old.apply_transform(subject)
 
         # Should still use 0 (default for labels), not the default_pad_value
-        non_one_values = s_aug_old['label'].tensor[s_aug_old['label'].tensor != 1]
+        non_one_values = s_aug_old['label'].data[s_aug_old['label'].data != 1]
         all_zeros = (non_one_values == 0).all() if len(non_one_values) > 0 else True
-        assert all_zeros, (
-            'default_pad_value should still be ignored for LABEL images (backward compatibility)'
-        )
+        assert all_zeros, message
 
         # Test 3: Test direct Affine class with default_pad_label
         affine_transform = tio.Affine(

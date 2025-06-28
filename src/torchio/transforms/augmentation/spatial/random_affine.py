@@ -87,7 +87,7 @@ class RandomAffine(RandomTransform, SpatialTransform):
             This parameter applies to intensity images only.
         default_pad_label: As the label map is rotated, some values near the
             borders will be undefined. This numeric value will be used to fill
-            those undefined regions. This parameter applies to label maps only and defaults to 0.
+            those undefined regions. This parameter applies to label maps only.
         image_interpolation: See :ref:`Interpolation`.
         label_interpolation: See :ref:`Interpolation`.
         check_shape: If ``True`` an error will be raised if the images are in
@@ -142,9 +142,10 @@ class RandomAffine(RandomTransform, SpatialTransform):
         self.center = center
         self.default_pad_value = _parse_default_value(default_pad_value)
         if not isinstance(default_pad_label, (int, float)):
-            raise ValueError(
-                f'default_pad_label must be a number, not {default_pad_label!r}'
+            message = (
+                f'default_pad_label must be a number, but it is "{default_pad_label}"'
             )
+            raise ValueError(message)
         self.default_pad_label = float(default_pad_label)
         self.image_interpolation = self.parse_interpolation(
             image_interpolation,
@@ -225,7 +226,7 @@ class Affine(SpatialTransform):
             This parameter applies to intensity images only.
         default_pad_label: As the label map is rotated, some values near the
             borders will be undefined. This numeric value will be used to fill
-            those undefined regions. This parameter applies to label maps only and defaults to 0.
+            those undefined regions. This parameter applies to label maps only.
         image_interpolation: See :ref:`Interpolation`.
         label_interpolation: See :ref:`Interpolation`.
         check_shape: If ``True`` an error will be raised if the images are in
@@ -275,9 +276,10 @@ class Affine(SpatialTransform):
         self.use_image_center = center == 'image'
         self.default_pad_value = _parse_default_value(default_pad_value)
         if not isinstance(default_pad_label, (int, float)):
-            raise ValueError(
-                f'default_pad_label must be a number, not {default_pad_label!r}'
+            message = (
+                f'default_pad_label must be a number, but it is "{default_pad_label}"'
             )
+            raise ValueError(message)
         self.default_pad_label = float(default_pad_label)
         self.image_interpolation = self.parse_interpolation(
             image_interpolation,
