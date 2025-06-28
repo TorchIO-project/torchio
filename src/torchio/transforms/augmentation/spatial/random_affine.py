@@ -84,6 +84,10 @@ class RandomAffine(RandomTransform, SpatialTransform):
             border that lie under an
             `Otsu threshold <https://ieeexplore.ieee.org/document/4310076>`_.
             If it is a number, that value will be used.
+            This parameter applies to intensity images only.
+        default_pad_label: As the label map is rotated, some values near the
+            borders will be undefined. This numeric value will be used to fill
+            those undefined regions. This parameter applies to label maps only.
         image_interpolation: See :ref:`Interpolation`.
         label_interpolation: See :ref:`Interpolation`.
         check_shape: If ``True`` an error will be raised if the images are in
@@ -120,6 +124,7 @@ class RandomAffine(RandomTransform, SpatialTransform):
         isotropic: bool = False,
         center: str = 'image',
         default_pad_value: str | float = 'minimum',
+        default_pad_label: int | float = 0,
         image_interpolation: str = 'linear',
         label_interpolation: str = 'nearest',
         check_shape: bool = True,
@@ -136,6 +141,11 @@ class RandomAffine(RandomTransform, SpatialTransform):
             raise ValueError(message)
         self.center = center
         self.default_pad_value = _parse_default_value(default_pad_value)
+        if not isinstance(default_pad_label, (int, float)):
+            message = 'default_pad_label must be a number, '
+            message += f'but it is "{default_pad_label}"'
+            raise ValueError(message)
+        self.default_pad_label = float(default_pad_label)
         self.image_interpolation = self.parse_interpolation(
             image_interpolation,
         )
@@ -180,6 +190,7 @@ class RandomAffine(RandomTransform, SpatialTransform):
             'translation': translation_params,
             'center': self.center,
             'default_pad_value': self.default_pad_value,
+            'default_pad_label': self.default_pad_label,
             'image_interpolation': self.image_interpolation,
             'label_interpolation': self.label_interpolation,
             'check_shape': self.check_shape,
@@ -211,6 +222,10 @@ class Affine(SpatialTransform):
             border that lie under an
             `Otsu threshold <https://ieeexplore.ieee.org/document/4310076>`_.
             If it is a number, that value will be used.
+            This parameter applies to intensity images only.
+        default_pad_label: As the label map is rotated, some values near the
+            borders will be undefined. This numeric value will be used to fill
+            those undefined regions. This parameter applies to label maps only.
         image_interpolation: See :ref:`Interpolation`.
         label_interpolation: See :ref:`Interpolation`.
         check_shape: If ``True`` an error will be raised if the images are in
@@ -227,6 +242,7 @@ class Affine(SpatialTransform):
         translation: TypeTripletFloat,
         center: str = 'image',
         default_pad_value: str | float = 'minimum',
+        default_pad_label: int | float = 0,
         image_interpolation: str = 'linear',
         label_interpolation: str = 'nearest',
         check_shape: bool = True,
@@ -258,6 +274,11 @@ class Affine(SpatialTransform):
         self.center = center
         self.use_image_center = center == 'image'
         self.default_pad_value = _parse_default_value(default_pad_value)
+        if not isinstance(default_pad_label, (int, float)):
+            message = 'default_pad_label must be a number, '
+            message += f'but it is "{default_pad_label}"'
+            raise ValueError(message)
+        self.default_pad_label = float(default_pad_label)
         self.image_interpolation = self.parse_interpolation(
             image_interpolation,
         )
@@ -272,6 +293,7 @@ class Affine(SpatialTransform):
             'translation',
             'center',
             'default_pad_value',
+            'default_pad_label',
             'image_interpolation',
             'label_interpolation',
             'check_shape',
@@ -393,7 +415,7 @@ class Affine(SpatialTransform):
                 )
                 if image[TYPE] != INTENSITY:
                     interpolation = self.label_interpolation
-                    default_value = 0
+                    default_value = self.default_pad_label
                 else:
                     interpolation = self.image_interpolation
                     default_value = self.get_default_pad_value(tensor, sitk_image)
