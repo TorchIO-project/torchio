@@ -20,6 +20,7 @@ from .mni import Sheep
 from .rsna_miccai import RSNAMICCAI
 from .rsna_spine_fracture import RSNACervicalSpineFracture
 from .slicer import Slicer
+from .zone_plate import ZonePlate
 
 __all__ = [
     'FPG',
@@ -44,4 +45,5 @@ __all__ = [
     'FractureMNIST3D',
     'VesselMNIST3D',
     'SynapseMNIST3D',
+    'ZonePlate',
 ]
