@@ -162,12 +162,11 @@ class TestRandomAffine(TorchioTestCase):
     def test_default_pad_label_parameter(self):
         # Test for issue #1304: Using default_pad_value if image is of type LABEL
         # Create a simple label map
-        label_data = torch.full((1, 2, 2, 2), 1, dtype=torch.int32)
+        label_data = torch.ones((1, 2, 2, 2))
         subject = tio.Subject(label=tio.LabelMap(tensor=label_data))
 
         # Test 1: default_pad_label should be respected
         transform = tio.RandomAffine(
-            p=1,
             translation=(10, 10),
             default_pad_label=250,
         )
@@ -181,7 +180,6 @@ class TestRandomAffine(TorchioTestCase):
         # Test 2: backward compatibility - default_pad_value should still be ignored for labels
         message = 'default_pad_value should still be ignored for LABEL images (backward compatibility)'
         aff_old = tio.RandomAffine(
-            p=1,
             translation=(-10, 10, -10, 10, -10, 10),
             default_pad_value=250,  # This should be ignored for labels
         )
@@ -199,7 +197,7 @@ class TestRandomAffine(TorchioTestCase):
             translation=(5, 0, 0),
             default_pad_label=123,
         )
-        s_affine = affine_transform.apply_transform(s)
+        s_affine = affine_transform.apply_transform(subject)
         has_affine_value = (s_affine['label'].tensor == 123).any()
         assert has_affine_value, 'Direct Affine class should respect default_pad_label'
 

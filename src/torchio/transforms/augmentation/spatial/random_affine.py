@@ -142,9 +142,8 @@ class RandomAffine(RandomTransform, SpatialTransform):
         self.center = center
         self.default_pad_value = _parse_default_value(default_pad_value)
         if not isinstance(default_pad_label, (int, float)):
-            message = (
-                f'default_pad_label must be a number, but it is "{default_pad_label}"'
-            )
+            message = 'default_pad_label must be a number, '
+            message += f'but it is "{default_pad_label}"'
             raise ValueError(message)
         self.default_pad_label = float(default_pad_label)
         self.image_interpolation = self.parse_interpolation(
@@ -276,9 +275,8 @@ class Affine(SpatialTransform):
         self.use_image_center = center == 'image'
         self.default_pad_value = _parse_default_value(default_pad_value)
         if not isinstance(default_pad_label, (int, float)):
-            message = (
-                f'default_pad_label must be a number, but it is "{default_pad_label}"'
-            )
+            message = 'default_pad_label must be a number, '
+            message += f'but it is "{default_pad_label}"'
             raise ValueError(message)
         self.default_pad_label = float(default_pad_label)
         self.image_interpolation = self.parse_interpolation(
