@@ -322,8 +322,8 @@ class TestImage(TorchioTestCase):
 
         fake_path = 'fake_path.nii'
 
-        image = tio.ScalarImage(path, verify_path=False)
-        assert image.path == path
+        image = tio.ScalarImage(fake_path, verify_path=False)
+        assert image.path == fake_path
 
         with pytest.raises(FileNotFoundError):
             tio.ScalarImage(fake_path, verify_path=True)
