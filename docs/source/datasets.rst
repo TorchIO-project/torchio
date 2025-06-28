@@ -93,7 +93,7 @@ MNI
 
     import torchio as tio
     subject = tio.datasets.Colin27()
-    subject.plot()
+    subject.plot(figsize=(9, 9))
 
 
 :class:`Pediatric`
@@ -104,7 +104,7 @@ MNI
 
     import torchio as tio
     subject = tio.datasets.Pediatric((4.5, 8.5))
-    subject.plot()
+    subject.plot(figsize=(14, 9))
 
 
 :class:`Sheep`
@@ -140,7 +140,7 @@ ITK-SNAP
 .. plot::
 
     import torchio as tio
-    tio.datasets.BrainTumor().plot()
+    tio.datasets.BrainTumor().plot(figsize=(16, 9))
 
 
 :class:`T1T2`
@@ -162,7 +162,7 @@ ITK-SNAP
 
     import torchio as tio
     subject = tio.datasets.AorticValve()
-    subject.plot()
+    subject.plot(figsize=(12, 9))
 
 
 3D Slicer
@@ -198,7 +198,7 @@ FPG
 
     import torchio as tio
     subject = tio.datasets.FPG(load_all=True)
-    subject.plot()
+    subject.plot(figsize=(16, 9))
 
 
 MedMNIST
@@ -313,3 +313,17 @@ MedMNIST
     tensor = rearrange(tensor, pattern, b1=rows, b2=cols)
     sx = tensor.shape[1]
     plt.imshow(tensor[0, sx // 2], cmap='gray')
+
+ZonePlate
+---------
+
+.. currentmodule:: torchio.datasets.zone_plate
+
+
+.. autoclass:: ZonePlate
+
+.. plot::
+
+    from torchio.datasets import ZonePlate
+    zone_plate = ZonePlate(size=201)
+    zone_plate.plot(interpolation='bicubic')
