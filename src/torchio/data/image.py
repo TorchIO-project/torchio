@@ -458,17 +458,25 @@ class Image(dict):
         bounds_x, bounds_y, bounds_z = array.T.tolist()  # type: ignore[misc]
         return bounds_x, bounds_y, bounds_z  # type: ignore[return-value]
 
-    @staticmethod
     def _parse_single_path(
+        self,
         path: TypePath,
         *,
         verify: bool = True,
     ) -> Path:
+        if isinstance(path, (torch.Tensor, np.ndarray)):
+            class_name = self.__class__.__name__
+            message = (
+                'Expected type str or Path but found a tensor/array. Instead of'
+                f' {class_name}(your_tensor),'
+                f' use {class_name}(tensor=your_tensor).'
+            )
+            raise TypeError(message)
         try:
             path = Path(path).expanduser()
         except TypeError as err:
             message = (
-                f'Expected type str or Path but found {path} with type'
+                f'Expected type str or Path but found an object with type'
                 f' {type(path)} instead'
             )
             raise TypeError(message) from err
