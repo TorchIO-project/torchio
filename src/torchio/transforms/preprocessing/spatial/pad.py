@@ -2,9 +2,9 @@ import warnings
 from numbers import Number
 from typing import Union
 
-import nibabel as nib
 import numpy as np
 import torch
+from nibabel.affines import apply_affine
 
 from ....data.image import LabelMap
 from ....data.subject import Subject
@@ -87,20 +87,26 @@ class Pad(BoundsTransform):
                     'Padding mode "mean" might create non-integer values in label maps'
                 )
                 warnings.warn(message, RuntimeWarning, stacklevel=2)
-            new_origin = nib.affines.apply_affine(image.affine, -np.array(low))
+            new_origin = apply_affine(image.affine, -np.array(low))
             new_affine = image.affine.copy()
             new_affine[:3, 3] = new_origin
-            kwargs: dict[str, Union[str, float]]
+            mode = 'constant'
             if isinstance(self.padding_mode, Number):
-                kwargs = {
-                    'mode': 'constant',
-                    'constant_values': self.padding_mode,
-                }
+                constant = self.padding_mode
+            elif self.padding_mode == 'maximum':
+                constant = image.data.max()
+            elif self.padding_mode == 'mean':
+                constant = image.data.float().mean()
+            elif self.padding_mode == 'median':
+                constant = torch.quantile(image.data, 0.5)
+            elif self.padding_mode == 'minimum':
+                constant = image.data.min()
             else:
-                kwargs = {'mode': self.padding_mode}
+                constant = None
+                mode = self.padding_mode
             pad_params = self.bounds_parameters
             paddings = (0, 0), pad_params[:2], pad_params[2:4], pad_params[4:]
-            padded = np.pad(image.data, paddings, **kwargs)  # type: ignore[call-overload]
+            padded = np.pad(image.data, paddings, mode=mode, constant_values=constant)  # type: ignore[call-overload]
             image.set_data(torch.as_tensor(padded))
             image.affine = new_affine
         return subject
