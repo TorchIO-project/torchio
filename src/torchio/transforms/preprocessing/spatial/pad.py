@@ -31,7 +31,10 @@ class Pad(BoundsTransform):
             :math:`w_{ini} = w_{fin} = h_{ini} = h_{fin} =
             d_{ini} = d_{fin} = n`.
         padding_mode: See possible modes in `NumPy docs`_. If it is a number,
-            the mode will be set to ``'constant'``.
+            the mode will be set to ``'constant'``. If it is ``'mean'``,
+            ``'maximum'``, ``'median'`` or ``'minimum'``, the statistic will be
+            computed from the whole volume, unlike in NumPy, which computes it
+            along the padded axis.
         **kwargs: See :class:`~torchio.transforms.Transform` for additional
             keyword arguments.
 
