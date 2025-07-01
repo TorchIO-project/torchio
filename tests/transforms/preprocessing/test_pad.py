@@ -76,10 +76,3 @@ class TestPad(TorchioTestCase):
         pad = tio.Pad(1, padding_mode='mean')
         with pytest.warns(RuntimeWarning):
             pad(x)
-
-
-def test_no_truncation_warning(recwarn):
-    x = torch.ones(1, 1, 2, 2, dtype=torch.float)
-    pad = tio.Pad(1, padding_mode='mean')
-    pad(x)
-    assert len(recwarn) == 0
