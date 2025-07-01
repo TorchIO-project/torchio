@@ -40,3 +40,26 @@ class TestPad(TorchioTestCase):
     def test_padding_mean_label_map(self):
         with self.assertWarns(RuntimeWarning):
             tio.Pad(1, padding_mode='mean')(self.sample_subject.label)
+
+    def test_padding_modes_global(self):
+        x = torch.ones(1, 1, 2, 2, dtype=torch.int)
+        x[..., 0, 0] = 0
+        # The image should look like this:
+        # 0 1
+        # 1 1
+
+        add_bottom_row = 0, 0, 0, 1, 0, 0
+        with_zeros = tio.Pad(add_bottom_row)(x)
+        assert with_zeros[0, 0, 2].tolist() == [0, 0]
+
+        with_minimum = tio.Pad(add_bottom_row, padding_mode='minimum')(x)
+        assert with_minimum[0, 0, 2].tolist() == [0, 0]
+
+        with_maximum = tio.Pad(add_bottom_row, padding_mode='maximum')(x)
+        assert with_maximum[0, 0, 2].tolist() == [1, 1]
+
+        with_mean = tio.Pad(add_bottom_row, padding_mode='mean')(x)
+        assert with_mean[0, 0, 2].tolist() == [1.5, 1.5]
+
+        with_median = tio.Pad(add_bottom_row, padding_mode='median')(x)
+        assert with_median[0, 0, 2].tolist() == [1, 1]
