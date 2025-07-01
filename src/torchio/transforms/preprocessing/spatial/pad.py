@@ -6,7 +6,7 @@ import numpy as np
 import torch
 from nibabel.affines import apply_affine
 
-from ....data.image import LabelMap
+from ....data.image import Image
 from ....data.subject import Subject
 from .bounds_transform import BoundsTransform
 from .bounds_transform import TypeBounds
@@ -81,20 +81,31 @@ class Pad(BoundsTransform):
             )
             raise KeyError(message)
 
+    def _check_truncation(self, image: Image, mode: str | float) -> None:
+        if mode not in ('mean', 'median'):
+            return
+        if torch.is_floating_point(image.data):
+            return
+        message = (
+            f'The constant value computed for padding mode "{mode}" might '
+            ' be truncated in the output, as the input image is not'
+            'floating point. Consider converting the image to a floating'
+            ' point type before applying this transform.'
+        )
+        warnings.warn(message, RuntimeWarning, stacklevel=2)
+
     def apply_transform(self, subject: Subject) -> Subject:
         assert self.bounds_parameters is not None
         low = self.bounds_parameters[::2]
         for image in self.get_images(subject):
-            if isinstance(image, LabelMap) and self.padding_mode == 'mean':
-                message = (
-                    'Padding mode "mean" might create non-integer values in label maps'
-                )
-                warnings.warn(message, RuntimeWarning, stacklevel=2)
+            self._check_truncation(image, self.padding_mode)
             new_origin = apply_affine(image.affine, -np.array(low))
             new_affine = image.affine.copy()
             new_affine[:3, 3] = new_origin
+
             mode: str | float = 'constant'
             constant: torch.Tensor | float | None = None
+            kwargs: dict[str, str | float | torch.Tensor] = {}
             if isinstance(self.padding_mode, Number):
                 constant = self.padding_mode  # type: ignore[assignment]
             elif self.padding_mode == 'maximum':
@@ -108,9 +119,14 @@ class Pad(BoundsTransform):
             else:
                 constant = None
                 mode = self.padding_mode
+
+            if constant is not None:
+                kwargs['constant_values'] = constant
+            kwargs['mode'] = mode
+
             pad_params = self.bounds_parameters
             paddings = (0, 0), pad_params[:2], pad_params[2:4], pad_params[4:]
-            padded = np.pad(image.data, paddings, mode=mode, constant_values=constant)  # type: ignore[call-overload]
+            padded = np.pad(image.data, paddings, **kwargs)  # type: ignore[call-overload]
             image.set_data(torch.as_tensor(padded))
             image.affine = new_affine
         return subject

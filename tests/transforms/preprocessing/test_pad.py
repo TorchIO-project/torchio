@@ -1,3 +1,4 @@
+import pytest
 import SimpleITK as sitk
 import torch
 
@@ -69,3 +70,16 @@ class TestPad(TorchioTestCase):
         x = x.float()
         with_mean = tio.Pad(add_bottom_row, padding_mode='mean')(x)
         assert with_mean[0, 0, 2].tolist() == [0.75, 0.75]
+
+    def test_truncation_warning(self):
+        x = torch.ones(1, 1, 2, 2, dtype=torch.int)
+        pad = tio.Pad(1, padding_mode='mean')
+        with pytest.warns(RuntimeWarning):
+            pad(x)
+
+
+def test_no_truncation_warning(recwarn):
+    x = torch.ones(1, 1, 2, 2, dtype=torch.float)
+    pad = tio.Pad(1, padding_mode='mean')
+    pad(x)
+    assert len(recwarn) == 0
