@@ -81,7 +81,7 @@ class Pad(BoundsTransform):
             )
             raise KeyError(message)
 
-    def _check_truncation(self, image: Image, mode: str | float) -> None:
+    def _check_truncation(self, image: Image, mode: Union[str, float]) -> None:
         if mode not in ('mean', 'median'):
             return
         if torch.is_floating_point(image.data):
