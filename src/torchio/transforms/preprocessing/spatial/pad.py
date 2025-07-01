@@ -90,15 +90,16 @@ class Pad(BoundsTransform):
             new_origin = apply_affine(image.affine, -np.array(low))
             new_affine = image.affine.copy()
             new_affine[:3, 3] = new_origin
-            mode = 'constant'
+            mode: str | float = 'constant'
+            constant: torch.Tensor | float | None = None
             if isinstance(self.padding_mode, Number):
-                constant = self.padding_mode
+                constant = self.padding_mode  # type: ignore[assignment]
             elif self.padding_mode == 'maximum':
                 constant = image.data.max()
             elif self.padding_mode == 'mean':
                 constant = image.data.float().mean()
             elif self.padding_mode == 'median':
-                constant = torch.quantile(image.data, 0.5)
+                constant = torch.quantile(image.data.float(), 0.5)
             elif self.padding_mode == 'minimum':
                 constant = image.data.min()
             else:

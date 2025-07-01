@@ -58,8 +58,14 @@ class TestPad(TorchioTestCase):
         with_maximum = tio.Pad(add_bottom_row, padding_mode='maximum')(x)
         assert with_maximum[0, 0, 2].tolist() == [1, 1]
 
-        with_mean = tio.Pad(add_bottom_row, padding_mode='mean')(x)
-        assert with_mean[0, 0, 2].tolist() == [1.5, 1.5]
-
         with_median = tio.Pad(add_bottom_row, padding_mode='median')(x)
         assert with_median[0, 0, 2].tolist() == [1, 1]
+
+        # This is a special case: as we instantiated the tensor with integers,
+        # the mean (3/4) will be trucated to 0.
+        with_mean = tio.Pad(add_bottom_row, padding_mode='mean')(x)
+        assert with_mean[0, 0, 2].tolist() == [0, 0]
+        # So let's test with floats too
+        x = x.float()
+        with_mean = tio.Pad(add_bottom_row, padding_mode='mean')(x)
+        assert with_mean[0, 0, 2].tolist() == [0.75, 0.75]
