@@ -2,11 +2,11 @@ import warnings
 from numbers import Number
 from typing import Union
 
-import nibabel as nib
 import numpy as np
 import torch
+from nibabel.affines import apply_affine
 
-from ....data.image import LabelMap
+from ....data.image import Image
 from ....data.subject import Subject
 from .bounds_transform import BoundsTransform
 from .bounds_transform import TypeBounds
@@ -31,7 +31,10 @@ class Pad(BoundsTransform):
             :math:`w_{ini} = w_{fin} = h_{ini} = h_{fin} =
             d_{ini} = d_{fin} = n`.
         padding_mode: See possible modes in `NumPy docs`_. If it is a number,
-            the mode will be set to ``'constant'``.
+            the mode will be set to ``'constant'``. If it is ``'mean'``,
+            ``'maximum'``, ``'median'`` or ``'minimum'``, the statistic will be
+            computed from the whole volume, unlike in NumPy, which computes it
+            along the padded axis.
         **kwargs: See :class:`~torchio.transforms.Transform` for additional
             keyword arguments.
 
@@ -78,26 +81,49 @@ class Pad(BoundsTransform):
             )
             raise KeyError(message)
 
+    def _check_truncation(self, image: Image, mode: Union[str, float]) -> None:
+        if mode not in ('mean', 'median'):
+            return
+        if torch.is_floating_point(image.data):
+            return
+        message = (
+            f'The constant value computed for padding mode "{mode}" might '
+            ' be truncated in the output, as the input image is not'
+            'floating point. Consider converting the image to a floating'
+            ' point type before applying this transform.'
+        )
+        warnings.warn(message, RuntimeWarning, stacklevel=2)
+
     def apply_transform(self, subject: Subject) -> Subject:
         assert self.bounds_parameters is not None
         low = self.bounds_parameters[::2]
         for image in self.get_images(subject):
-            if isinstance(image, LabelMap) and self.padding_mode == 'mean':
-                message = (
-                    'Padding mode "mean" might create non-integer values in label maps'
-                )
-                warnings.warn(message, RuntimeWarning, stacklevel=2)
-            new_origin = nib.affines.apply_affine(image.affine, -np.array(low))
+            self._check_truncation(image, self.padding_mode)
+            new_origin = apply_affine(image.affine, -np.array(low))
             new_affine = image.affine.copy()
             new_affine[:3, 3] = new_origin
-            kwargs: dict[str, Union[str, float]]
+
+            mode: str | float = 'constant'
+            constant: torch.Tensor | float | None = None
+            kwargs: dict[str, str | float | torch.Tensor] = {}
             if isinstance(self.padding_mode, Number):
-                kwargs = {
-                    'mode': 'constant',
-                    'constant_values': self.padding_mode,
-                }
+                constant = self.padding_mode  # type: ignore[assignment]
+            elif self.padding_mode == 'maximum':
+                constant = image.data.max()
+            elif self.padding_mode == 'mean':
+                constant = image.data.float().mean()
+            elif self.padding_mode == 'median':
+                constant = torch.quantile(image.data.float(), 0.5)
+            elif self.padding_mode == 'minimum':
+                constant = image.data.min()
             else:
-                kwargs = {'mode': self.padding_mode}
+                constant = None
+                mode = self.padding_mode
+
+            if constant is not None:
+                kwargs['constant_values'] = constant
+            kwargs['mode'] = mode
+
             pad_params = self.bounds_parameters
             paddings = (0, 0), pad_params[:2], pad_params[2:4], pad_params[4:]
             padded = np.pad(image.data, paddings, **kwargs)  # type: ignore[call-overload]
