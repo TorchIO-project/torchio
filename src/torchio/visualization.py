@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 import warnings
+from typing import TYPE_CHECKING
 
 import numpy as np
 import torch
@@ -9,6 +12,9 @@ from .data.subject import Subject
 from .transforms.preprocessing.intensity.rescale import RescaleIntensity
 from .transforms.preprocessing.spatial.to_canonical import ToCanonical
 from .types import TypePath
+
+if TYPE_CHECKING:
+    from matplotlib.colors import ListedColormap
 
 
 def import_mpl_plt():
@@ -26,6 +32,17 @@ def rotate(image, radiological=True, n=-1):
     if radiological:
         image = np.fliplr(image)
     return image
+
+
+def _create_categorical_colormap(data: torch.Tensor) -> ListedColormap:
+    from .external.imports import get_distinctipy
+
+    mpl, _ = import_mpl_plt()
+    distinctipy = get_distinctipy()
+    num_classes = int(data.max())
+    distinct_colors = distinctipy.get_colors(num_classes, pastel_factor=0.5, rng=0)
+    colors = [(0, 0, 0), *distinct_colors]  # prepend black
+    return mpl.colors.ListedColormap(colors)
 
 
 def plot_volume(
@@ -65,7 +82,7 @@ def plot_volume(
         slice_x, slice_y, slice_z = color_labels(slices, cmap)
     else:
         if cmap is None:
-            cmap = 'cubehelix' if is_label else 'gray'
+            cmap = _create_categorical_colormap(data) if is_label else 'gray'
         imshow_kwargs['cmap'] = cmap
 
     if is_label:
