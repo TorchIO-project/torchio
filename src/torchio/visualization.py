@@ -35,12 +35,16 @@ def rotate(image, radiological=True, n=-1):
 
 
 def _create_categorical_colormap(data: torch.Tensor) -> ListedColormap:
-    from .external.imports import get_distinctipy
-
-    mpl, _ = import_mpl_plt()
-    distinctipy = get_distinctipy()
     num_classes = int(data.max())
-    distinct_colors = distinctipy.get_colors(num_classes, rng=0)
+    mpl, _ = import_mpl_plt()
+
+    if num_classes == 1:  # just do white
+        distinct_colors = [(1, 1, 1)]
+    else:
+        from .external.imports import get_distinctipy
+
+        distinctipy = get_distinctipy()
+        distinct_colors = distinctipy.get_colors(num_classes, rng=0)
     colors = [(0, 0, 0), *distinct_colors]  # prepend black
     return mpl.colors.ListedColormap(colors)
 
