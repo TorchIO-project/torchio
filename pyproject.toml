@@ -49,7 +49,7 @@ dependencies = [
 
 [project.optional-dependencies]
 csv = ["pandas>=1"]
-plot = ["matplotlib>=3.4"]
+plot = ["distinctipy>=1.3.4", "matplotlib>=3.4"]
 
 [project.scripts]
 tiohd = "torchio.cli.print_info:app"

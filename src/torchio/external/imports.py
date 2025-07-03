@@ -20,3 +20,7 @@ def _check_and_import(package: str, extra: str) -> ModuleType:
 
 def get_pandas() -> ModuleType:
     return _check_and_import(package='pandas', extra='csv')
+
+
+def get_distinctipy() -> ModuleType:
+    return _check_and_import(package='distinctipy', extra='plot')
