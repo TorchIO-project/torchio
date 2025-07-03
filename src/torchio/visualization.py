@@ -40,7 +40,7 @@ def _create_categorical_colormap(data: torch.Tensor) -> ListedColormap:
     mpl, _ = import_mpl_plt()
     distinctipy = get_distinctipy()
     num_classes = int(data.max())
-    distinct_colors = distinctipy.get_colors(num_classes, pastel_factor=0.5, rng=0)
+    distinct_colors = distinctipy.get_colors(num_classes, rng=0)
     colors = [(0, 0, 0), *distinct_colors]  # prepend black
     return mpl.colors.ListedColormap(colors)
 
