@@ -92,8 +92,10 @@ MNI
 .. plot::
 
     import torchio as tio
-    subject = tio.datasets.Colin27()
+    subject = tio.datasets.Colin27(version=1998)
     subject.plot(figsize=(9, 9))
+    subject = tio.datasets.Colin27(version=2008)
+    subject.plot(figsize=(12, 9))
 
 
 :class:`Pediatric`
