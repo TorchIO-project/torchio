@@ -1,12 +1,12 @@
 [build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
+requires = ["uv_build>=0.7.19,<0.8.0"]
+build-backend = "uv_build"
 
 [project]
 name = "torchio"
 version = "0.20.17"
 description = "Tools for medical image processing with PyTorch"
-readme = { file = "README.md", content-type = "text/markdown" }
+readme = "README.md"
 authors = [{ name = "TorchIO contributors" }]
 maintainers = [{ name = "Fernando Perez-Garcia", email = "fepegar@gmail.com" }]
 classifiers = [
