@@ -33,7 +33,6 @@ from ..types import TypeTripletFloat
 from ..types import TypeTripletInt
 from ..utils import get_stem
 from ..utils import guess_external_viewer
-from ..utils import in_torch_loader
 from ..utils import is_iterable
 from ..utils import to_tuple
 from .io import check_uint_to_int
@@ -179,7 +178,6 @@ class Image(dict):
             warnings.warn(message, FutureWarning, stacklevel=2)
 
         super().__init__(**kwargs)
-        self._check_data_loader()
         self.path = self._parse_path(path, verify=verify_path)
 
         self[PATH] = '' if self.path is None else str(self.path)
@@ -237,20 +235,6 @@ class Image(dict):
             **kwargs,
         )
         return new_image
-
-    @staticmethod
-    def _check_data_loader() -> None:
-        if torch.__version__ >= '2.3' and in_torch_loader():
-            message = (
-                'Using TorchIO images without a torchio.SubjectsLoader in PyTorch >='
-                ' 2.3 might have unexpected consequences, e.g., the collated batches'
-                ' will be instances of torchio.Subject with 5D images. Replace'
-                ' your PyTorch DataLoader with a torchio.SubjectsLoader so that'
-                ' the collated batch becomes a dictionary, as expected. See'
-                ' https://github.com/TorchIO-project/torchio/issues/1179 for more'
-                ' context about this issue.'
-            )
-            warnings.warn(message, stacklevel=1)
 
     @property
     def data(self) -> torch.Tensor:
