@@ -55,6 +55,9 @@ class CtRate(SubjectsDataset):
             added in `this pull request
             <https://huggingface.co/datasets/ibrahimhamamci/CT-RATE/discussions/85>`_.
             Otherwise, load the original files with incorrect spatial metadata.
+        verify_paths: If ``True``, verify that the paths to the images exist
+            during instantiation of the dataset. This might be slow for large that are
+            not stored locally.
         **kwargs: Additional arguments for SubjectsDataset.
 
     Examples:
@@ -101,6 +104,7 @@ class CtRate(SubjectsDataset):
         report_key: str = 'report',
         sizes: list[int] | None = None,
         load_fixed: bool = True,
+        verify_paths: bool = False,
         **kwargs,
     ):
         self._root_dir = Path(root)
@@ -111,6 +115,7 @@ class CtRate(SubjectsDataset):
         self._split = self._parse_split(split)
         self.metadata = self._get_metadata()
         self._load_fixed = load_fixed
+        self._verify_paths = verify_paths
         subjects_list = self._get_subjects_list(self.metadata)
         super().__init__(subjects_list, **kwargs)
 
@@ -323,7 +328,7 @@ class CtRate(SubjectsDataset):
         image_path = self._root_dir / relative_image_path
         report_dict = self._extract_report_dict(image_dict)
         image_dict[self._report_key] = report_dict
-        image = ScalarImage(image_path, **image_dict)
+        image = ScalarImage(image_path, verify_path=self._verify_paths, **image_dict)
         return image
 
     def _extract_report_dict(self, subject_dict: dict[str, str]) -> dict[str, str]:
