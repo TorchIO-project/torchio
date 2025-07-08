@@ -67,6 +67,7 @@ class ToOrientation(SpatialTransform):
             raise ValueError(message)
 
         self.orientation = orientation
+        self.args_names = ['orientation']
 
     def apply_transform(self, subject: Subject) -> Subject:
         for image in subject.get_images(intensity_only=False):

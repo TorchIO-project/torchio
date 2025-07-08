@@ -122,6 +122,14 @@ class CropOrPad(SpatialTransform):
             raise ValueError(message)
         self.only_crop = only_crop
         self.only_pad = only_pad
+        self.args_names = [
+            'target_shape',
+            'padding_mode',
+            'mask_name',
+            'labels',
+            'only_crop',
+            'only_pad',
+        ]
 
     @staticmethod
     def _bbox_mask(mask_volume: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
