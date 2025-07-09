@@ -33,7 +33,14 @@ def main(
         '-l/-s',
         help='Use torchio.LabelMap to instantiate the image.',
     ),
-):
+    load: bool = typer.Option(  # noqa: B008
+        False,
+        help=(
+            'Load the image from disk so that information about data type and memory '
+            'can be displayed. Slower, especially for large images.'
+        ),
+    ),
+) -> None:
     """Print information about an image and, optionally, show it.
 
     Example:
@@ -44,7 +51,8 @@ def main(
 
     class_ = tio.LabelMap if label else tio.ScalarImage
     image = class_(input_path)
-    image.load()
+    if load:
+        image.load()
     print(image)  # noqa: T201
     if plot:
         image.plot()
