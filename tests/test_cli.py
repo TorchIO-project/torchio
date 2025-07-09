@@ -36,7 +36,7 @@ class TestCLI(TorchioTestCase):
 
     def test_cli_hd(self):
         image = str(self.get_image_path('cli'))
-        args = [image]
+        args = [image, '--load']
         result = runner.invoke(print_info.app, args)
         assert result.exit_code == 0
         assert (
