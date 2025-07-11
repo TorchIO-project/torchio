@@ -1,26 +1,43 @@
 from importlib import import_module
 from importlib.util import find_spec
+from shutil import which
 from types import ModuleType
 
 
-def _check_package(*, package: str, extra: str) -> None:
-    if find_spec(package) is None:
+def _check_module(*, module: str, extra: str, package: str | None = None) -> None:
+    if find_spec(module) is None:
+        name = module if package is None else package
         message = (
-            f'The `{package}` package is required for this.'
+            f'The `{name}` package is required for this.'
             f' Install TorchIO with the `{extra}` extra:'
             f' `pip install torchio[{extra}]`.'
         )
         raise ImportError(message)
 
 
-def _check_and_import(package: str, extra: str) -> ModuleType:
-    _check_package(package=package, extra=extra)
-    return import_module(package)
+def _check_and_import(module: str, extra: str, **kwargs) -> ModuleType:
+    _check_module(module=module, extra=extra, **kwargs)
+    return import_module(module)
 
 
 def get_pandas() -> ModuleType:
-    return _check_and_import(package='pandas', extra='csv')
+    return _check_and_import(module='pandas', extra='csv')
 
 
 def get_distinctipy() -> ModuleType:
-    return _check_and_import(package='distinctipy', extra='plot')
+    return _check_and_import(module='distinctipy', extra='plot')
+
+
+def get_ffmpeg() -> ModuleType:
+    ffmpeg = _check_and_import(module='ffmpeg', extra='video', package='ffmpeg-python')
+    _check_executable('ffmpeg')
+    return ffmpeg
+
+
+def _check_executable(executable: str) -> None:
+    if which(executable) is None:
+        message = (
+            f'The `{executable}` executable is required for this. Install it from your'
+            ' package manager or download it from the official website.'
+        )
+        raise FileNotFoundError(message)

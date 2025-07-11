@@ -742,6 +742,29 @@ class Image(dict):
             reverse=reverse,
         )
 
+    def to_video(
+        self,
+        output_path: TypePath,
+        duration: float | None = None,
+        frame_rate: float | None = None,
+    ) -> None:
+        """Save a video of the image.
+
+        Args:
+            axis: Spatial axis (0, 1 or 2).
+            duration: Duration of the full video in seconds.
+            frame_rate: Number of frames per second.
+            output_path: Path to the output video file.
+        """
+        from ..visualization import make_video  # avoid circular import
+
+        make_video(
+            self.data,
+            output_path,
+            duration=duration,
+            frame_rate=frame_rate,
+        )
+
     def get_center(self, lps: bool = False) -> TypeTripletFloat:
         """Get image center in RAS+ or LPS+ coordinates.
 

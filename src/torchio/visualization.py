@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import warnings
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 import numpy as np
@@ -9,6 +10,7 @@ import torch
 from .data.image import Image
 from .data.image import LabelMap
 from .data.subject import Subject
+from .external.imports import get_ffmpeg
 from .transforms.preprocessing.intensity.rescale import RescaleIntensity
 from .transforms.preprocessing.spatial.to_canonical import ToCanonical
 from .types import TypePath
@@ -282,3 +284,56 @@ def make_gif(
         duration=frame_duration_ms,
         loop=loop,
     )
+
+
+def make_video(
+    tensor: torch.Tensor,
+    output_path: TypePath,
+    duration: float | None = None,
+    frame_rate: float | None = None,
+) -> None:
+    """Encode a 3D array into an MP4 video."""
+    ffmpeg = get_ffmpeg()
+
+    if duration is None and frame_rate is None:
+        message = 'Either duration or frame_rate must be provided.'
+        raise ValueError(message)
+    if duration is not None and frame_rate is not None:
+        message = 'Provide either duration or frame_rate, not both.'
+        raise ValueError(message)
+    frames = tensor.numpy()[0].T
+    num_frames = len(frames)
+    if duration is not None:
+        frame_rate = num_frames / duration
+
+    output_path = Path(output_path)
+    if output_path.suffix.lower() != '.mp4':
+        message = 'Only .mp4 files are supported for video output.'
+        raise ValueError(message)
+
+    first = frames[0]
+    height, width = first.shape
+
+    process = (
+        ffmpeg.input(
+            'pipe:',
+            format='rawvideo',
+            pix_fmt='gray',
+            s=f'{width}x{height}',
+            framerate=frame_rate,
+        )
+        .output(
+            str(output_path),
+            vcodec='libx264',
+            pix_fmt='yuv420p',
+        )
+        .overwrite_output()
+        .run_async(pipe_stdin=True)
+    )
+
+    for array in frames:
+        buffer = array.tobytes()
+        process.stdin.write(buffer)
+
+    process.stdin.close()
+    process.wait()
