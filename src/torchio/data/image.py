@@ -750,6 +750,8 @@ class Image(dict):
     ) -> None:
         """Save a video of the image.
 
+        TODO: add usage example, with recommended transforms (rescale, LPS, etc.)
+
         Args:
             axis: Spatial axis (0, 1 or 2).
             duration: Duration of the full video in seconds.
