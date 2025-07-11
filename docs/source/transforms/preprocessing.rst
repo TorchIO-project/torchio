@@ -69,14 +69,14 @@ Spatial
 .. currentmodule:: torchio.transforms
 
 :class:`CropOrPad`
-~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~
 
 .. autoclass:: CropOrPad
     :show-inheritance:
     :members: _get_six_bounds_parameters
 
 :class:`ToOrientation`
-~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~
 
 .. autoclass:: ToOrientation
     :show-inheritance:
@@ -110,7 +110,7 @@ Spatial
 
 
 :class:`CopyAffine`
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~
 
 .. autoclass:: CopyAffine
     :show-inheritance:
@@ -135,14 +135,14 @@ Label
 
 
 :class:`RemapLabels`
-~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~
 
 .. autoclass:: RemapLabels
     :show-inheritance:
 
 
 :class:`RemoveLabels`
-~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~
 
 .. autoclass:: RemoveLabels
     :show-inheritance:
