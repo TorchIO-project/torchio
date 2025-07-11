@@ -301,6 +301,9 @@ def make_video(
     if duration is not None and frame_rate is not None:
         message = 'Provide either duration or frame_rate, not both.'
         raise ValueError(message)
+    if len(tensor) > 1:
+        message = 'Only single-channel tensors are supported for video output for now.'
+        raise ValueError(message)
     frames = tensor.numpy()[0].T
     num_frames = len(frames)
     if duration is not None:
