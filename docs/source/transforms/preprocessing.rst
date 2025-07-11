@@ -46,6 +46,13 @@ Intensity
     :show-inheritance:
 
 
+:class:`To`
+~~~~~~~~~~~
+
+.. autoclass:: To
+    :show-inheritance:
+
+
 .. currentmodule:: torchio.transforms.preprocessing.intensity
 
 
@@ -53,13 +60,6 @@ Intensity
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. autoclass:: NormalizationTransform
-    :show-inheritance:
-
-
-:class:`To`
-~~~~~~~~~~~
-
-.. autoclass:: To
     :show-inheritance:
 
 
