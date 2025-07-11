@@ -31,11 +31,13 @@ class To(IntensityTransform):
     def __init__(
         self,
         target: str | torch.dtype | torch.device,
-        to_kwargs: dict[str, Any],
+        to_kwargs: dict[str, Any] | None = None,
         **kwargs,
     ):
         super().__init__(**kwargs)
         self.target = target
+        if to_kwargs is None:
+            to_kwargs = {}
         self.to_kwargs = to_kwargs
         self.args_names = ['target', 'to_kwargs']
 
