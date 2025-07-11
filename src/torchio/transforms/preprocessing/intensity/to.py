@@ -12,6 +12,8 @@ from ...intensity_transform import IntensityTransform
 class To(IntensityTransform):
     """Convert the image tensor data type and/or device.
 
+    This transform is a thin wrapper around :func:`torch.Tensor.to`.
+
     Args:
         target: First argument to :func:`torch.Tensor.to`.
         to_kwargs: Additional keyword arguments to pass to :func:`torch.Tensor.to`.
@@ -25,7 +27,6 @@ class To(IntensityTransform):
         >>> ct_rescaled = rescale(ct_clamped)
         >>> to_uint8 = tio.To(torch.uint8)
         >>> ct_uint8 = to_uint8(ct_rescaled)
-
     """
 
     def __init__(
