@@ -53,6 +53,7 @@ from .preprocessing import Resample
 from .preprocessing import RescaleIntensity
 from .preprocessing import Resize
 from .preprocessing import SequentialLabels
+from .preprocessing import To
 from .preprocessing import ToCanonical
 from .preprocessing import ToOrientation
 from .preprocessing import ZNormalization
@@ -101,6 +102,7 @@ __all__ = [
     'Crop',
     'Resize',
     'Resample',
+    'To',
     'ToCanonical',
     'ToOrientation',
     'ZNormalization',
