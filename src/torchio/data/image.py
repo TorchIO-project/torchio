@@ -742,29 +742,41 @@ class Image(dict):
             reverse=reverse,
         )
 
+    def to_ras(self) -> Image:
+        if self.orientation != tuple('RAS'):
+            from ..transforms.preprocessing.spatial.to_canonical import ToCanonical
+
+            return ToCanonical()(self)
+        return self
+
     def to_video(
         self,
         output_path: TypePath,
-        duration: float | None = None,
-        frame_rate: float | None = None,
+        frame_rate: float | None = 15,
+        seconds: float | None = None,
+        direction: str = 'I',
+        verbosity: str = 'error',
     ) -> None:
-        """Save a video of the image.
-
-        TODO: add usage example, with recommended transforms (rescale, LPS, etc.)
+        """Create a video showing all image slices along a specified direction.
 
         Args:
-            axis: Spatial axis (0, 1 or 2).
-            duration: Duration of the full video in seconds.
-            frame_rate: Number of frames per second.
             output_path: Path to the output video file.
+            frame_rate: Number of frames per second (FPS).
+            seconds: Target duration of the full video.
+            direction:
+            verbosity:
+
+        .. note:: Only ``frame_rate`` or ``seconds`` may (and must) be specified.
         """
         from ..visualization import make_video  # avoid circular import
 
         make_video(
-            self.data,
+            self.to_ras(),
             output_path,
-            duration=duration,
             frame_rate=frame_rate,
+            seconds=seconds,
+            direction=direction,
+            verbosity=verbosity,
         )
 
     def get_center(self, lps: bool = False) -> TypeTripletFloat:
