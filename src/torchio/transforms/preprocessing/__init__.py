@@ -2,6 +2,7 @@ from .intensity.clamp import Clamp
 from .intensity.histogram_standardization import HistogramStandardization
 from .intensity.mask import Mask
 from .intensity.rescale import RescaleIntensity
+from .intensity.to import To
 from .intensity.z_normalization import ZNormalization
 from .label.contour import Contour
 from .label.keep_largest_component import KeepLargestComponent
@@ -31,6 +32,7 @@ __all__ = [
     'EnsureShapeMultiple',
     'Mask',
     'RescaleIntensity',
+    'To',
     'Clamp',
     'ZNormalization',
     'HistogramStandardization',
