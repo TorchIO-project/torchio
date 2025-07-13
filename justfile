@@ -43,14 +43,6 @@ bump-python:
     new_version_string = f"{old_version.major}.{old_version.minor + 1}"
     python_version_path.write_text(new_version_string + "\n")
 
-    docs_config_path = Path(".readthedocs.yml")
-    docs_config = docs_config_path.read_text()
-    docs_config = docs_config.replace(
-        f'python: "{old_version_string}"',
-        f'python: "{new_version_string}"',
-    )
-    docs_config_path.write_text(docs_config)
-
     tests_workflow_path = Path(".github/workflows/tests.yml")
     tests_workflow = tests_workflow_path.read_text()
     tests_workflow = tests_workflow.replace(

@@ -58,10 +58,10 @@ tiotr = "torchio.cli.apply_transform:app"
 torchio-transform = "torchio.cli.apply_transform:app"
 
 [project.urls]
-Homepage = "http://torchio.rtfd.io"
+Homepage = "https://torchio-project.github.io/torchio"
 Source = "https://github.com/TorchIO-project/torchio"
 "Issue tracker" = "https://github.com/TorchIO-project/torchio/issues"
-Documentation = "http://torchio.rtfd.io"
+Documentation = "https://torchio-project.github.io/torchio"
 "Release notes" = "https://github.com/TorchIO-project/torchio/releases"
 
 [dependency-groups]
