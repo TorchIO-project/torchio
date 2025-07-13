@@ -24,4 +24,4 @@ class ToCanonical(ToOrientation):
     """
 
     def __init__(self, **kwargs):
-        super().__init__('RAS', **kwargs)
+        super().__init__(orientation='RAS', **kwargs)

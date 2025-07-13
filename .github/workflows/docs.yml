@@ -26,9 +26,24 @@ jobs:
       - name: Install just
         uses: extractions/setup-just@v3
 
-      - name: Build docs
-        run: just build-docs
+      - name: Restore TorchIO cached data
+        id: cache-torchio-data-restore
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.cache/torchio
+          key: ${{ runner.os }}-torchio-data
 
+      - name: Build docs
+        run: just build-docs && ls ~/.cache/torchio
+
+      - name: Save TorchIO cached data
+        id: cache-torchio-data-save
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/torchio
+          key: ${{ steps.cache-torchio-data-restore.outputs.cache-primary-key }}
+
+      # Uploade to smokeshow if not on main branch
       - name: Upload docs to smokeshow
         if: github.ref != 'refs/heads/main'
         run: |
@@ -36,6 +51,7 @@ jobs:
           rm ./docs/build/html/_images/*.png
           uvx smokeshow upload ./docs/build/html
 
+      # Upload to GitHub Pages if on main branch
       - name: Upload artifacts using actions/upload-pages-artifact
         if: github.ref == 'refs/heads/main'
         id: deployment
