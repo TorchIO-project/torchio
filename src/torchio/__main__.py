@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import importlib
 import sys
 from pathlib import Path
@@ -45,7 +47,7 @@ def main(
                 ' files in the directory.'
             ),
         ),
-    ] = None,
+    ],
     # output_path,
     # overwrite,
     flatten: Annotated[
@@ -54,8 +56,11 @@ def main(
     ] = None,
     recursive: Annotated[
         bool,
-        typer.Option(),
-    ] = None,
+        typer.Option(
+            '--recursive/--no-recursive',
+            '-r/-R',
+        ),
+    ] = False,
     transform: Annotated[
         str,
         typer.Option(),
