@@ -23,6 +23,9 @@ jobs:
       - name: Install the latest version of uv
         uses: astral-sh/setup-uv@v6
 
+      - name: Install dependencies
+        run: uv sync --group doc
+
       - name: Install just
         uses: extractions/setup-just@v3
 
@@ -34,9 +37,10 @@ jobs:
           key: ${{ runner.os }}-torchio-data
 
       - name: Build docs
-        run: just build-docs && ls ~/.cache/torchio
+        run: just build-docs
 
       - name: Save TorchIO cached data
+        if: steps.cache-torchio-data-restore.outputs.cache-hit != 'true'
         id: cache-torchio-data-save
         uses: actions/cache@v4
         with:

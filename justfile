@@ -153,7 +153,7 @@ docs_cmd := "uv run --group doc --directory docs"
 
 [positional-arguments]
 build-docs *args='':
-    {{docs_cmd}} -- sphinx-build -M html source build
+    {{docs_cmd}} -- sphinx-build -M html source build "$@"
 
 [positional-arguments]
 serve-docs *args='':
