@@ -1,0 +1,66 @@
+name: Build and deploy documentation
+
+on:
+  push:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: docs-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  FORCE_COLOR: 1
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install the latest version of uv
+        uses: astral-sh/setup-uv@v6
+
+      - name: Install just
+        uses: extractions/setup-just@v3
+
+      - name: Build docs
+        run: just build-docs
+
+      - name: Upload docs to smokeshow
+        if: github.ref != 'refs/heads/main'
+        run: |
+          rm ./docs/build/html/_images/*.gif
+          rm ./docs/build/html/_images/*.png
+          uvx smokeshow upload ./docs/build/html
+
+      - name: Upload artifacts using actions/upload-pages-artifact
+        if: github.ref == 'refs/heads/main'
+        id: deployment
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./docs/build/html
+
+  deploy:
+    if: github.ref == 'refs/heads/main'
+
+    needs: build
+
+    # Grant GITHUB_TOKEN the permissions required to make a Pages deployment
+    permissions:
+      pages: write # to deploy to Pages
+      id-token: write # to verify the deployment originates from an appropriate source
+
+    runs-on: ubuntu-latest
+
+    # Deploy to the github-pages environment
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
