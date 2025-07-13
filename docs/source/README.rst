@@ -81,8 +81,8 @@ If you found a bug or have a feature request, please open an issue:
    :target: https://github.com/TorchIO-project/torchio/blob/main/tutorials/README.md
    :alt: Google Colab notebooks
 
-.. |Docs-status| image:: https://img.shields.io/readthedocs/torchio?label=Docs&logo=Read%20the%20Docs
-   :target: https://torchio.rtfd.io/?badge=latest
+.. |Docs-status| image:: https://github.com/TorchIO-project/torchio/actions/workflows/docs.yml/badge.svg
+   :target: https://github.com/TorchIO-project/torchio/actions/workflows/docs.yml
    :alt: Documentation status
 
 .. |Tests-status| image:: https://github.com/TorchIO-project/torchio/actions/workflows/tests.yml/badge.svg
