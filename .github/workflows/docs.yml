@@ -1,4 +1,4 @@
-name: Build and deploy documentation
+name: Documentation
 
 on:
   push:
@@ -57,14 +57,14 @@ jobs:
 
       # Upload to GitHub Pages if on main branch
       - name: Upload artifacts using actions/upload-pages-artifact
-        # if: github.ref == 'refs/heads/main'
+        if: github.ref == 'refs/heads/main'
         id: deployment
         uses: actions/upload-pages-artifact@v3
         with:
           path: ./docs/build/html
 
   deploy:
-    # if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main'
 
     needs: build
 
