@@ -358,8 +358,8 @@ def make_video(
         )
         warnings.warn(message, RuntimeWarning, stacklevel=2)
         spacing_iso = min(spacing_h, spacing_w)
-        target = spacing_f, spacing_iso, spacing_iso
-        image = Resample(target)(image)  # type: ignore[assignment]
+        target_spacing = spacing_f, spacing_iso, spacing_iso
+        image = Resample(target_spacing)(image)  # type: ignore[assignment]
 
     # Check that height and width are multiples of 2 for H.265 encoding
     num_frames, height, width = image.spatial_shape
