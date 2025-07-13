@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import warnings
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 import numpy as np
@@ -8,9 +9,15 @@ import torch
 
 from .data.image import Image
 from .data.image import LabelMap
+from .data.image import ScalarImage
 from .data.subject import Subject
+from .external.imports import get_ffmpeg
 from .transforms.preprocessing.intensity.rescale import RescaleIntensity
+from .transforms.preprocessing.intensity.to import To
+from .transforms.preprocessing.spatial.ensure_shape_multiple import EnsureShapeMultiple
+from .transforms.preprocessing.spatial.resample import Resample
 from .transforms.preprocessing.spatial.to_canonical import ToCanonical
+from .transforms.preprocessing.spatial.to_orientation import ToOrientation
 from .types import TypePath
 
 if TYPE_CHECKING:
@@ -282,3 +289,122 @@ def make_gif(
         duration=frame_duration_ms,
         loop=loop,
     )
+
+
+def make_video(
+    image: ScalarImage,
+    output_path: TypePath,
+    seconds: float | None = None,
+    frame_rate: float | None = None,
+    direction: str = 'I',
+    verbosity: str = 'error',
+) -> None:
+    ffmpeg = get_ffmpeg()
+
+    if seconds is None and frame_rate is None:
+        message = 'Either seconds or frame_rate must be provided.'
+        raise ValueError(message)
+    if seconds is not None and frame_rate is not None:
+        message = 'Provide either seconds or frame_rate, not both.'
+        raise ValueError(message)
+    if image.num_channels > 1:
+        message = 'Only single-channel tensors are supported for video output for now.'
+        raise ValueError(message)
+    tmin, tmax = image.data.min(), image.data.max()
+    if tmin < 0 or tmax > 255:
+        message = (
+            'The tensor must be in the range [0, 256) for video output.'
+            ' The image data will be rescaled to this range.'
+        )
+        warnings.warn(message, RuntimeWarning, stacklevel=2)
+        image = RescaleIntensity((0, 255))(image)
+    if image.data.dtype != torch.uint8:
+        message = (
+            'Only uint8 tensors are supported for video output. The image data'
+            ' will be cast to uint8.'
+        )
+        warnings.warn(message, RuntimeWarning, stacklevel=2)
+        image = To(torch.uint8)(image)
+
+    # Reorient so the output looks like in typical visualization software
+    direction = direction.upper()
+    if direction == 'I':  # axial top to bottom
+        target = 'IPL'
+    elif direction == 'S':  # axial bottom to top
+        target = 'SPL'
+    elif direction == 'A':  # coronal back to front
+        target = 'AIL'
+    elif direction == 'P':  # coronal front to back
+        target = 'PIL'
+    elif direction == 'R':  # sagittal left to right
+        target = 'RIP'
+    elif direction == 'L':  # sagittal right to left
+        target = 'LIP'
+    else:
+        message = (
+            'Direction must be one of "I", "S", "P", "A", "R" or "L".'
+            f' Got {direction!r}.'
+        )
+        raise ValueError(message)
+    image = ToOrientation(target)(image)
+
+    # Check isotropy
+    spacing_f, spacing_h, spacing_w = image.spacing
+    if spacing_h != spacing_w:
+        message = (
+            'The height and width spacings should be the same video output.'
+            f' Got {spacing_h:.2f} and {spacing_w:.2f}.'
+            f' Resampling both to {spacing_f:.2f}.'
+        )
+        warnings.warn(message, RuntimeWarning, stacklevel=2)
+        spacing_iso = min(spacing_h, spacing_w)
+        target_spacing = spacing_f, spacing_iso, spacing_iso
+        image = Resample(target_spacing)(image)  # type: ignore[assignment]
+
+    # Check that height and width are multiples of 2 for H.265 encoding
+    num_frames, height, width = image.spatial_shape
+    if height % 2 != 0 or width % 2 != 0:
+        message = (
+            f'The height ({height}) and width ({width}) must be even.'
+            ' The image will be cropped to the nearest even number.'
+        )
+        warnings.warn(message, RuntimeWarning, stacklevel=2)
+        image = EnsureShapeMultiple((1, 2, 2), method='crop')(image)
+
+    if seconds is not None:
+        frame_rate = num_frames / seconds
+
+    output_path = Path(output_path)
+    if output_path.suffix.lower() != '.mp4':
+        message = 'Only .mp4 files are supported for video output.'
+        raise NotImplementedError(message)
+
+    frames = image.numpy()[0]
+    first = frames[0]
+    height, width = first.shape
+
+    process = (
+        ffmpeg.input(
+            'pipe:',
+            format='rawvideo',
+            pix_fmt='gray',
+            s=f'{width}x{height}',
+            framerate=frame_rate,
+        )
+        .output(
+            str(output_path),
+            vcodec='libx265',
+            pix_fmt='yuv420p',
+            loglevel=verbosity,
+            **{'x265-params': f'log-level={verbosity}'},
+        )
+        .overwrite_output()
+        .run_async(pipe_stdin=True)
+    )
+
+    for array in frames:
+        buffer = array.tobytes()
+        process.stdin.write(buffer)
+
+    process.stdin.close()
+    process.wait()

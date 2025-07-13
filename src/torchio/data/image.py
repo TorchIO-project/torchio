@@ -742,6 +742,13 @@ class Image(dict):
             reverse=reverse,
         )
 
+    def to_ras(self) -> Image:
+        if self.orientation != tuple('RAS'):
+            from ..transforms.preprocessing.spatial.to_canonical import ToCanonical
+
+            return ToCanonical()(self)
+        return self
+
     def get_center(self, lps: bool = False) -> TypeTripletFloat:
         """Get image center in RAS+ or LPS+ coordinates.
 
@@ -879,6 +886,36 @@ class ScalarImage(Image):
 
         x = self.data.flatten().numpy()
         plot_histogram(x, **kwargs)
+
+    def to_video(
+        self,
+        output_path: TypePath,
+        frame_rate: float | None = 15,
+        seconds: float | None = None,
+        direction: str = 'I',
+        verbosity: str = 'error',
+    ) -> None:
+        """Create a video showing all image slices along a specified direction.
+
+        Args:
+            output_path: Path to the output video file.
+            frame_rate: Number of frames per second (FPS).
+            seconds: Target duration of the full video.
+            direction:
+            verbosity:
+
+        .. note:: Only ``frame_rate`` or ``seconds`` may (and must) be specified.
+        """
+        from ..visualization import make_video  # avoid circular import
+
+        make_video(
+            self.to_ras(),  # type: ignore[arg-type]
+            output_path,
+            frame_rate=frame_rate,
+            seconds=seconds,
+            direction=direction,
+            verbosity=verbosity,
+        )
 
 
 class LabelMap(Image):
