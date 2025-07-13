@@ -41,6 +41,7 @@ structure.
 
 
 .. autoclass:: ScalarImage
+    :members:
 
 .. autoclass:: LabelMap
 

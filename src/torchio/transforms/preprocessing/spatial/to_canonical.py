@@ -22,6 +22,3 @@ class ToCanonical(ToOrientation):
 
     .. _NiBabel docs about image orientation: https://nipy.org/nibabel/image_orientation.html
     """
-
-    def __init__(self, **kwargs):
-        super().__init__('RAS', **kwargs)
