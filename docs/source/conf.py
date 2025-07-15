@@ -234,10 +234,8 @@ autodoc_default_options = {
     'show-inheritance': True,
 }
 
-# 1. The base URL of your new site
+# Redirect to custom domain
 html_baseurl = 'https://www.torchio.org/'
-
-# 2. Tell Sphinx to dump extra <head> tags verbatim
 html_extrahead = [
     # the trailing slash on pagename is handled automatically
     '<link rel="canonical" href="{base}{{{{ pathto(pagename, 1) }}}}{{{{ pagename }}}}.html" />'.format(
