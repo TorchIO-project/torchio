@@ -9,31 +9,39 @@ def _pca(
     data: torch.Tensor,
     num_components: int = 6,
     whiten: bool = True,
-    vmin: float = -2.3,
-    vmax: float = 2.3,
+    clip_range: tuple[float, float] | None = (-2.3, 2.3),
+    normalize: bool = True,
+    make_skewness_positive: bool = True,
+    **pca_kwargs,
 ) -> torch.Tensor:
     # Adapted from https://github.com/facebookresearch/capi/blob/main/eval_visualizations.py
-
+    # 2.3 is roughly 2σ for a standard-normal variable, 99% of values map inside [0,1].
     sklearn = get_sklearn()
     PCA = sklearn.decomposition.PCA
 
     _, size_x, size_y, size_z = data.shape
     X = rearrange(data, 'c x y z -> (x y z) c')
-    pca = PCA(n_components=num_components, whiten=whiten)
-    projected: np.ndarray = pca.fit_transform(X)
-    projected /= projected[:, 0].std()
-    for i in range(num_components):
-        numerator = np.mean(np.power(projected[:, i], 3))
-        denominator = np.power(np.mean(np.power(projected[:, i], 2)), 1.5)
-        skew = numerator / denominator
-        if skew < 0:
-            projected[:, i] *= -1
+    pca = PCA(n_components=num_components, whiten=whiten, **pca_kwargs)
+    projected: np.ndarray = pca.fit_transform(X).T
+    if normalize:
+        projected /= projected[0].std()
+    if make_skewness_positive:
+        for component in projected:
+            third_cumulant = np.mean(component**3)
+            second_cumulant = np.mean(component**2)
+            skewness = third_cumulant / second_cumulant ** (3 / 2)
+            if skewness < 0:
+                component *= -1
     grid: np.ndarray = rearrange(
-        projected,
+        projected.T,
         '(x y z) c -> c x y z',
         x=size_x,
         y=size_y,
         z=size_z,
     )
+    if clip_range is not None:
+        vmin, vmax = clip_range
+    else:
+        vmin, vmax = grid.min(), grid.max()
     grid = (grid - vmin) / (vmax - vmin)
     return torch.from_numpy(grid.clip(0, 1))

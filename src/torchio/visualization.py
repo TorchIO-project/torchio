@@ -34,7 +34,7 @@ def import_mpl_plt():
     return mpl, plt
 
 
-def rotate(image, radiological=True, n=-1):
+def rotate(image: np.ndarray, *, radiological: bool = True, n: int = -1) -> np.ndarray:
     # Rotate for visualization purposes
     image = np.rot90(image, n, axes=(0, 1))
     if radiological:
@@ -93,13 +93,14 @@ def plot_volume(
     else:
         data = image.data[np.newaxis, channel]
     data = rearrange(data, 'c x y z -> x y z c')
+    data_numpy: np.ndarray = data.cpu().numpy()
 
     if indices is None:
-        indices = np.array(data.shape[:3]) // 2
+        indices = np.array(data_numpy.shape[:3]) // 2
     i, j, k = indices
-    slice_x = rotate(data[i, :, :], radiological=radiological)
-    slice_y = rotate(data[:, j, :], radiological=radiological)
-    slice_z = rotate(data[:, :, k], radiological=radiological)
+    slice_x = rotate(data_numpy[i, :, :], radiological=radiological)
+    slice_y = rotate(data_numpy[:, j, :], radiological=radiological)
+    slice_z = rotate(data_numpy[:, :, k], radiological=radiological)
 
     if isinstance(cmap, dict):
         slices = slice_x, slice_y, slice_z
@@ -118,8 +119,15 @@ def plot_volume(
     sr, sa, ss = image.spacing
     imshow_kwargs['origin'] = 'lower'
 
-    if percentiles is not None and not is_label:
-        p1, p2 = np.percentile(data, percentiles)
+    if not is_label:
+        displayed_data = np.concatenate(
+            [
+                slice_x.flatten(),
+                slice_y.flatten(),
+                slice_z.flatten(),
+            ]
+        )
+        p1, p2 = np.percentile(displayed_data, percentiles)
         imshow_kwargs['vmin'] = p1
         imshow_kwargs['vmax'] = p2
 
