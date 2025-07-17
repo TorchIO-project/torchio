@@ -2,7 +2,10 @@ import numpy as np
 import torch
 from einops import rearrange
 
+from ....data.image import Image
+from ....data.image import ScalarImage
 from ....external.imports import get_sklearn
+from ....visualization import build_image_from_input_and_output
 
 
 def _pca(
@@ -45,3 +48,13 @@ def _pca(
         vmin, vmax = grid.min(), grid.max()
     grid = (grid - vmin) / (vmax - vmin)
     return torch.from_numpy(grid.clip(0, 1))
+
+
+def build_pca_image(
+    embeddings: torch.Tensor, image: Image, keep_components: int | None = 3
+) -> ScalarImage:
+    pca = _pca(embeddings)
+    if keep_components is not None:
+        pca = pca[:keep_components]
+    pca_image = build_image_from_input_and_output(pca, image)
+    return pca_image
