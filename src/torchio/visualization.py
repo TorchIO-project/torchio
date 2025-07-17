@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 import torch
+from einops import rearrange
 
 from .data.image import Image
 from .data.image import LabelMap
@@ -35,7 +36,7 @@ def import_mpl_plt():
 
 def rotate(image, radiological=True, n=-1):
     # Rotate for visualization purposes
-    image = np.rot90(image, n)
+    image = np.rot90(image, n, axes=(0, 1))
     if radiological:
         image = np.fliplr(image)
     return image
@@ -59,17 +60,18 @@ def _create_categorical_colormap(data: torch.Tensor) -> ListedColormap:
 def plot_volume(
     image: Image,
     radiological=True,
-    channel=-1,  # default to foreground for binary maps
+    channel=None,
     axes=None,
     cmap=None,
     output_path=None,
     show=True,
     xlabels=True,
-    percentiles: tuple[float, float] = (0.5, 99.5),
+    percentiles: tuple[float, float] = (0, 100),
     figsize=None,
     title=None,
     reorient=True,
     indices=None,
+    rgb=True,
     **imshow_kwargs,
 ):
     _, plt = import_mpl_plt()
@@ -80,14 +82,25 @@ def plot_volume(
 
     if reorient:
         image = ToCanonical()(image)  # type: ignore[assignment]
-    data = image.data[channel]
+
+    is_label = isinstance(image, LabelMap)
+    if is_label:  # probabilistic label map
+        data = image.data[np.newaxis, -1]
+    elif rgb and image.num_channels == 3:
+        data = image.data  # keep image as it is
+    elif channel is None:
+        data = image.data[0:1]  # just use the first channel
+    else:
+        data = image.data[np.newaxis, channel]
+    data = rearrange(data, 'c x y z -> x y z c')
+
     if indices is None:
-        indices = np.array(data.shape) // 2
+        indices = np.array(data.shape[:3]) // 2
     i, j, k = indices
     slice_x = rotate(data[i, :, :], radiological=radiological)
     slice_y = rotate(data[:, j, :], radiological=radiological)
     slice_z = rotate(data[:, :, k], radiological=radiological)
-    is_label = isinstance(image, LabelMap)
+
     if isinstance(cmap, dict):
         slices = slice_x, slice_y, slice_z
         slice_x, slice_y, slice_z = color_labels(slices, cmap)
@@ -98,6 +111,9 @@ def plot_volume(
 
     if is_label:
         imshow_kwargs['interpolation'] = 'none'
+    else:
+        if 'interpolation' not in imshow_kwargs:
+            imshow_kwargs['interpolation'] = 'bicubic'
 
     sr, sa, ss = image.spacing
     imshow_kwargs['origin'] = 'lower'
@@ -108,7 +124,11 @@ def plot_volume(
         imshow_kwargs['vmax'] = p2
 
     sag_aspect = ss / sa
-    sag_axis.imshow(slice_x, aspect=sag_aspect, **imshow_kwargs)
+    sag_axis.imshow(
+        slice_x,
+        aspect=sag_aspect,
+        **imshow_kwargs,
+    )
     if xlabels:
         sag_axis.set_xlabel('A')
     sag_axis.set_ylabel('S')
@@ -116,7 +136,11 @@ def plot_volume(
     sag_axis.set_title('Sagittal')
 
     cor_aspect = ss / sr
-    cor_axis.imshow(slice_y, aspect=cor_aspect, **imshow_kwargs)
+    cor_axis.imshow(
+        slice_y,
+        aspect=cor_aspect,
+        **imshow_kwargs,
+    )
     if xlabels:
         cor_axis.set_xlabel('R')
     cor_axis.set_ylabel('S')
@@ -124,7 +148,11 @@ def plot_volume(
     cor_axis.set_title('Coronal')
 
     axi_aspect = sa / sr
-    axi_axis.imshow(slice_z, aspect=axi_aspect, **imshow_kwargs)
+    axi_axis.imshow(
+        slice_z,
+        aspect=axi_aspect,
+        **imshow_kwargs,
+    )
     if xlabels:
         axi_axis.set_xlabel('R')
     axi_axis.set_ylabel('A')
@@ -223,15 +251,15 @@ def plot_histogram(x: np.ndarray, show=True, **kwargs) -> None:
 
 def color_labels(arrays, cmap_dict):
     results = []
-    for array in arrays:
-        si, sj = array.shape
+    for slice_array in arrays:
+        si, sj, _ = slice_array.shape
         rgb = np.zeros((si, sj, 3), dtype=np.uint8)
         for label, color in cmap_dict.items():
             if isinstance(color, str):
                 mpl, _ = import_mpl_plt()
                 color = mpl.colors.to_rgb(color)
                 color = [255 * n for n in color]
-            rgb[array == label] = color
+            rgb[slice_array[..., 0] == label] = color
         results.append(rgb)
     return results
 
