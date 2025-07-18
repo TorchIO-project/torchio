@@ -86,7 +86,7 @@ class Flip(SpatialTransform):
     def __init__(self, axes, **kwargs):
         super().__init__(**kwargs)
         self.axes = _parse_axes(axes)
-        self.args_names = ('axes',)
+        self.args_names = ['axes']
 
     def apply_transform(self, subject: Subject) -> Subject:
         axes = _ensure_axes_indices(subject, self.axes)
@@ -94,8 +94,7 @@ class Flip(SpatialTransform):
             _flip_image(image, axes)
         return subject
 
-    @staticmethod
-    def is_invertible():
+    def is_invertible(self):
         return True
 
     def inverse(self):
