@@ -1,4 +1,4 @@
-from ..data.image import Image
+from ..data.image import ScalarImage
 from ..data.subject import Subject
 from .transform import Transform
 
@@ -6,21 +6,21 @@ from .transform import Transform
 class IntensityTransform(Transform):
     """Transform that modifies voxel intensities only."""
 
-    def get_images_dict(self, subject: Subject) -> dict[str, Image]:
+    def get_images_dict(self, subject: Subject) -> dict[str, ScalarImage]:
         images_dict = subject.get_images_dict(
             intensity_only=True,
             include=self.include,
             exclude=self.exclude,
         )
-        return images_dict
+        return images_dict  # type: ignore[return-value]
 
-    def get_images(self, subject: Subject) -> list[Image]:
+    def get_images(self, subject: Subject) -> list[ScalarImage]:
         images = subject.get_images(
             intensity_only=True,
             include=self.include,
             exclude=self.exclude,
         )
-        return images
+        return images  # type: ignore[return-value]
 
     def arguments_are_dict(self) -> bool:
         """Check if main arguments are dict.

@@ -36,6 +36,10 @@ def get_ffmpeg() -> ModuleType:
     return ffmpeg
 
 
+def get_sklearn() -> ModuleType:
+    return _check_and_import(module='sklearn', extra='sklearn', package='scikit-learn')
+
+
 def _check_executable(executable: str) -> None:
     if which(executable) is None:
         message = (
