@@ -12,7 +12,7 @@ class IntensityTransform(Transform):
             include=self.include,
             exclude=self.exclude,
         )
-        return images_dict
+        return images_dict  # type: ignore[return-value]
 
     def get_images(self, subject: Subject) -> list[ScalarImage]:
         images = subject.get_images(
@@ -20,7 +20,7 @@ class IntensityTransform(Transform):
             include=self.include,
             exclude=self.exclude,
         )
-        return images
+        return images  # type: ignore[return-value]
 
     def arguments_are_dict(self) -> bool:
         """Check if main arguments are dict.
