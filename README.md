@@ -1,6 +1,6 @@
 <!-- markdownlint-disable -->
 <p align="center">
-  <a href="https://torchio-project.github.io/torchio/">
+  <a href="https://docs.torchio.org/">
     <img src="https://raw.githubusercontent.com/TorchIO-project/torchio/main/docs/source/favicon_io/for_readme_2000x462.png" alt="TorchIO logo">
   </a>
 </p>
@@ -94,13 +94,13 @@ at [OpenAI](https://openai.com/) ([link](https://jack-clark.net/2020/03/17/)).
 ---
 
 <p align="center">
-  <a href="https://torchio-project.github.io/torchio/transforms/augmentation.html">
+  <a href="https://docs.torchio.org/transforms/augmentation.html">
     <img style="width: 600px; overflow: hidden;" src="https://raw.githubusercontent.com/TorchIO-project/torchio/main/docs/images/fpg_progressive.gif" alt="Progressive artifacts">
   </a>
 </p>
 
 <p align="center">
-  <a href="https://torchio-project.github.io/torchio/transforms/augmentation.html">
+  <a href="https://docs.torchio.org/transforms/augmentation.html">
     <img style="width: 360px; height: 360px; overflow: hidden;" src="https://raw.githubusercontent.com/TorchIO-project/torchio/main/docs/images/augmentation.gif" alt="Augmentation">
   </a>
 </p>
@@ -111,93 +111,93 @@ at [OpenAI](https://openai.com/) ([link](https://jack-clark.net/2020/03/17/)).
     <tr>
         <td align="center">Original</td>
         <td align="center">
-            <a href="https://torchio-project.github.io/torchio/transforms/augmentation.html#randomblur">Random blur</a>
+            <a href="https://docs.torchio.org/transforms/augmentation.html#randomblur">Random blur</a>
         </td>
     </tr>
     <tr>
         <td align="center"><img src="https://raw.githubusercontent.com/TorchIO-project/torchio/main/docs/images/gifs_readme/1_Lambda_mri.png" alt="Original"></td>
         <td align="center">
-            <a href="https://torchio-project.github.io/torchio/transforms/augmentation.html#randomblur">
+            <a href="https://docs.torchio.org/transforms/augmentation.html#randomblur">
                 <img src="https://raw.githubusercontent.com/TorchIO-project/torchio/main/docs/images/gifs_readme/2_RandomBlur_mri.gif" alt="Random blur">
             </a>
         </td>
     </tr>
     <tr>
         <td align="center">
-            <a href="https://torchio-project.github.io/torchio/transforms/augmentation.html#randomflip">Random flip</a>
+            <a href="https://docs.torchio.org/transforms/augmentation.html#randomflip">Random flip</a>
         </td>
         <td align="center">
-            <a href="https://torchio-project.github.io/torchio/transforms/augmentation.html#randomnoise">Random noise</a>
+            <a href="https://docs.torchio.org/transforms/augmentation.html#randomnoise">Random noise</a>
         </td>
     </tr>
     <tr>
         <td align="center">
-            <a href="https://torchio-project.github.io/torchio/transforms/augmentation.html#randomflip">
+            <a href="https://docs.torchio.org/transforms/augmentation.html#randomflip">
                 <img src="https://raw.githubusercontent.com/TorchIO-project/torchio/main/docs/images/gifs_readme/3_RandomFlip_mri.gif" alt="Random flip">
             </a>
         </td>
         <td align="center">
-            <a href="https://torchio-project.github.io/torchio/transforms/augmentation.html#randomnoise">
+            <a href="https://docs.torchio.org/transforms/augmentation.html#randomnoise">
                 <img src="https://raw.githubusercontent.com/TorchIO-project/torchio/main/docs/images/gifs_readme/4_Compose_mri.gif" alt="Random noise">
             </a>
         </td>
     </tr>
     <tr>
         <td align="center">
-            <a href="https://torchio-project.github.io/torchio/transforms/augmentation.html#randomaffine">Random affine transformation</a>
+            <a href="https://docs.torchio.org/transforms/augmentation.html#randomaffine">Random affine transformation</a>
         </td>
         <td align="center">
-            <a href="https://torchio-project.github.io/torchio/transforms/augmentation.html#randomelasticdeformation">Random elastic transformation</a>
+            <a href="https://docs.torchio.org/transforms/augmentation.html#randomelasticdeformation">Random elastic transformation</a>
         </td>
     </tr>
     <tr>
         <td align="center">
-            <a href="https://torchio-project.github.io/torchio/transforms/augmentation.html#randomaffine">
+            <a href="https://docs.torchio.org/transforms/augmentation.html#randomaffine">
                 <img src="https://raw.githubusercontent.com/TorchIO-project/torchio/main/docs/images/gifs_readme/5_RandomAffine_mri.gif" alt="Random affine transformation">
             </a>
         </td>
         <td align="center">
-            <a href="https://torchio-project.github.io/torchio/transforms/augmentation.html#randomelasticdeformation">
+            <a href="https://docs.torchio.org/transforms/augmentation.html#randomelasticdeformation">
                 <img src="https://raw.githubusercontent.com/TorchIO-project/torchio/main/docs/images/gifs_readme/6_RandomElasticDeformation_mri.gif" alt="Random elastic transformation">
             </a>
         </td>
     </tr>
     <tr>
         <td align="center">
-            <a href="https://torchio-project.github.io/torchio/transforms/augmentation.html#randombiasfield">Random bias field artifact</a>
+            <a href="https://docs.torchio.org/transforms/augmentation.html#randombiasfield">Random bias field artifact</a>
         </td>
         <td align="center">
-            <a href="https://torchio-project.github.io/torchio/transforms/augmentation.html#randommotion">Random motion artifact</a>
+            <a href="https://docs.torchio.org/transforms/augmentation.html#randommotion">Random motion artifact</a>
         </td>
     </tr>
     <tr>
         <td align="center">
-            <a href="https://torchio-project.github.io/torchio/transforms/augmentation.html#randombiasfield">
+            <a href="https://docs.torchio.org/transforms/augmentation.html#randombiasfield">
                 <img src="https://raw.githubusercontent.com/TorchIO-project/torchio/main/docs/images/gifs_readme/7_RandomBiasField_mri.gif" alt="Random bias field artifact">
             </a>
         </td>
         <td align="center">
-            <a href="https://torchio-project.github.io/torchio/transforms/augmentation.html#randommotion">
+            <a href="https://docs.torchio.org/transforms/augmentation.html#randommotion">
                 <img src="https://raw.githubusercontent.com/TorchIO-project/torchio/main/docs/images/gifs_readme/8_RandomMotion_mri.gif" alt="Random motion artifact">
             </a>
         </td>
     </tr>
     <tr>
         <td align="center">
-            <a href="https://torchio-project.github.io/torchio/transforms/augmentation.html#randomspike">Random spike artifact</a>
+            <a href="https://docs.torchio.org/transforms/augmentation.html#randomspike">Random spike artifact</a>
         </td>
         <td align="center">
-            <a href="https://torchio-project.github.io/torchio/transforms/augmentation.html#randomghosting">Random ghosting artifact</a>
+            <a href="https://docs.torchio.org/transforms/augmentation.html#randomghosting">Random ghosting artifact</a>
         </td>
     </tr>
     <tr>
         <td align="center">
-            <a href="https://torchio-project.github.io/torchio/transforms/augmentation.html#randomspike">
+            <a href="https://docs.torchio.org/transforms/augmentation.html#randomspike">
                 <img src="https://raw.githubusercontent.com/TorchIO-project/torchio/main/docs/images/gifs_readme/9_RandomSpike_mri.gif" alt="Random spike artifact">
             </a>
         </td>
         <td align="center">
-            <a href="https://torchio-project.github.io/torchio/transforms/augmentation.html#randomghosting">
+            <a href="https://docs.torchio.org/transforms/augmentation.html#randomghosting">
                 <img src="https://raw.githubusercontent.com/TorchIO-project/torchio/main/docs/images/gifs_readme/10_RandomGhosting_mri.gif" alt="Random ghosting artifact">
             </a>
         </td>
@@ -207,13 +207,13 @@ at [OpenAI](https://openai.com/) ([link](https://jack-clark.net/2020/03/17/)).
 ---
 
 <p align="center">
-  <a href="https://torchio-project.github.io/torchio/patches/patch_training.html#queue">
+  <a href="https://docs.torchio.org/patches/patch_training.html#queue">
     <img style="width: 640px; height: 360px; overflow: hidden;" src="https://raw.githubusercontent.com/TorchIO-project/torchio/main/docs/images/queue.gif" alt="Queue">
   </a>
 </p>
 
-([Queue](https://torchio-project.github.io/torchio/patches/patch_training.html#queue)
-for [patch-based training](https://torchio-project.github.io/torchio/patches/index.html))
+([Queue](https://docs.torchio.org/patches/patch_training.html#queue)
+for [patch-based training](https://docs.torchio.org/patches/index.html))
 
 <!-- markdownlint-restore -->
 
@@ -265,16 +265,16 @@ This project is supported by the following institutions:
 
 ## Getting started
 
-See [Getting started](https://torchio-project.github.io/torchio/quickstart.html) for
-[installation](https://torchio-project.github.io/torchio/quickstart.html#installation)
+See [Getting started](https://docs.torchio.org/quickstart.html) for
+[installation](https://docs.torchio.org/quickstart.html#installation)
 instructions
-and a [Hello, World!](https://torchio-project.github.io/torchio/quickstart.html#hello-world)
+and a [Hello, World!](https://docs.torchio.org/quickstart.html#hello-world)
 example.
 
 Longer usage examples can be found in the
 [tutorials](https://github.com/TorchIO-project/torchio/blob/main/tutorials/README.md).
 
-Read the [documentation](https://torchio-project.github.io/torchio/) for more information.
+Read the [documentation](https://docs.torchio.org/) for more information.
 
 Please
 [create an issue](https://github.com/TorchIO-project/torchio/issues/new/choose)
