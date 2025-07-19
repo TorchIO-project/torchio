@@ -61,10 +61,10 @@ tiotr = "torchio.cli.apply_transform:app"
 torchio-transform = "torchio.cli.apply_transform:app"
 
 [project.urls]
-Homepage = "https://torchio-project.github.io/torchio"
+Homepage = "https://torchio.org"
 Source = "https://github.com/TorchIO-project/torchio"
 "Issue tracker" = "https://github.com/TorchIO-project/torchio/issues"
-Documentation = "https://torchio-project.github.io/torchio"
+Documentation = "https://docs.torchio.org"
 "Release notes" = "https://github.com/TorchIO-project/torchio/releases"
 
 [dependency-groups]
