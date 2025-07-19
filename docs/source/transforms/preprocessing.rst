@@ -68,6 +68,7 @@ Spatial
 
 .. currentmodule:: torchio.transforms
 
+
 :class:`CropOrPad`
 ~~~~~~~~~~~~~~~~~~
 
@@ -75,16 +76,25 @@ Spatial
     :show-inheritance:
     :members: _get_six_bounds_parameters
 
+
 :class:`ToOrientation`
 ~~~~~~~~~~~~~~~~~~~~~~
 
 .. autoclass:: ToOrientation
     :show-inheritance:
 
+
 :class:`ToCanonical`
 ~~~~~~~~~~~~~~~~~~~~
 
 .. autoclass:: ToCanonical
+    :show-inheritance:
+
+
+:class:`Transpose`
+~~~~~~~~~~~~~~~~~~
+
+.. autoclass:: Transpose
     :show-inheritance:
 
 
