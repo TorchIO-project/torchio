@@ -56,6 +56,7 @@ from .preprocessing import SequentialLabels
 from .preprocessing import To
 from .preprocessing import ToCanonical
 from .preprocessing import ToOrientation
+from .preprocessing import Transpose
 from .preprocessing import ZNormalization
 from .preprocessing.intensity.histogram_standardization import train_histogram
 from .preprocessing.label.label_transform import LabelTransform
@@ -105,6 +106,7 @@ __all__ = [
     'To',
     'ToCanonical',
     'ToOrientation',
+    'Transpose',
     'ZNormalization',
     'HistogramStandardization',
     'RescaleIntensity',

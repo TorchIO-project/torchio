@@ -71,7 +71,7 @@ class ToOrientation(SpatialTransform):
 
     def apply_transform(self, subject: Subject) -> Subject:
         for image in subject.get_images(intensity_only=False):
-            current_orientation = ''.join(nib.aff2axcodes(image.affine))
+            current_orientation = ''.join(nib.orientations.aff2axcodes(image.affine))
 
             # If the image is already in the target orientation, skip it
             if current_orientation == self.orientation:
@@ -80,7 +80,7 @@ class ToOrientation(SpatialTransform):
             # NIfTI images should have channels in 5th dimension
             array = rearrange(image.numpy(), 'C W H D -> W H D 1 C')
 
-            nii = nib.Nifti1Image(array, image.affine)
+            nii = nib.nifti1.Nifti1Image(array, image.affine)
 
             # Compute transform from current orientation to target orientation
             current_orientation = orientations.io_orientation(nii.affine)

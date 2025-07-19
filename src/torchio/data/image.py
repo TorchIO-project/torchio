@@ -190,7 +190,7 @@ class Image(dict):
             [
                 f'shape: {self.shape}',
                 f'spacing: {self.get_spacing_string()}',
-                f'orientation: {"".join(self.orientation)}+',
+                f'orientation: {self.orientation_str}+',
             ]
         )
         if self._loaded:
@@ -253,6 +253,7 @@ class Image(dict):
             tensor: 4D tensor with dimensions :math:`(C, W, H, D)`.
         """
         self[DATA] = self._parse_tensor(tensor, none_ok=False)
+        self._loaded = True
 
     @property
     def tensor(self) -> torch.Tensor:
@@ -324,7 +325,12 @@ class Image(dict):
     @property
     def orientation(self) -> tuple[str, str, str]:
         """Orientation codes."""
-        return nib.aff2axcodes(self.affine)
+        return nib.orientations.aff2axcodes(self.affine)
+
+    @property
+    def orientation_str(self) -> str:
+        """Orientation as a string."""
+        return ''.join(self.orientation)
 
     @property
     def direction(self) -> TypeDirection3D:
@@ -339,7 +345,7 @@ class Image(dict):
         """Voxel spacing in mm."""
         _, spacing = get_rotation_and_spacing_from_affine(self.affine)
         sx, sy, sz = spacing
-        return sx, sy, sz
+        return float(sx), float(sy), float(sz)
 
     @property
     def origin(self) -> tuple[float, float, float]:
@@ -743,7 +749,7 @@ class Image(dict):
         )
 
     def to_ras(self) -> Image:
-        if self.orientation != tuple('RAS'):
+        if self.orientation_str != 'RAS':
             from ..transforms.preprocessing.spatial.to_canonical import ToCanonical
 
             return ToCanonical()(self)
