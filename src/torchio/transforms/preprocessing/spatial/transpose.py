@@ -15,6 +15,7 @@ class Transpose(SpatialTransform):
     >>> transpose = tio.Transpose()
     >>> transposed = transpose(image)
     >>> transposed
+    ScalarImage(shape: (1, 176, 256, 256); spacing: (1.00, 1.00, 1.00); orientation: RIP+; dtype: torch.IntTensor; memory: 44.0 MiB)
     """
 
     def apply_transform(self, subject: Subject) -> Subject:
