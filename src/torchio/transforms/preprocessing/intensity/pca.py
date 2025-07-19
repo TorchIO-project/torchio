@@ -40,7 +40,7 @@ class PCA(IntensityTransform):
     >>> ct
     ScalarImage(shape: (1, 240, 480, 480); spacing: (1.50, 0.75, 0.75); orientation: SLP+; dtype: torch.FloatTensor; memory: 210.9 MiB)
     >>> embedding_tensor = model(ct.data[None])[0]  # `model` is some pre-trained neural network
-    >>> embedding_image = ToReference(ct)(embedding_tensor)
+    >>> embedding_image = ToReferenceSpace(ct)(embedding_tensor)
     >>> embedding_image
     ScalarImage(shape: (512, 24, 24, 24); spacing: (15.00, 15.00, 15.00); orientation: SLP+; dtype: torch.FloatTensor; memory: 27.0 MiB)
     >>> pca = tio.PCA()(embedding_image)

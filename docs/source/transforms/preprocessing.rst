@@ -46,6 +46,13 @@ Intensity
     :show-inheritance:
 
 
+:class:`PCA`
+~~~~~~~~~~~~
+
+.. autoclass:: PCA
+    :show-inheritance:
+
+
 :class:`To`
 ~~~~~~~~~~~
 
@@ -95,6 +102,13 @@ Spatial
 ~~~~~~~~~~~~~~~~~~
 
 .. autoclass:: Transpose
+    :show-inheritance:
+
+
+:class:`ToReferenceSpace`
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autoclass:: ToReferenceSpace
     :show-inheritance:
 
 

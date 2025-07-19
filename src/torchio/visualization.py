@@ -444,18 +444,3 @@ def make_video(
 
     process.stdin.close()
     process.wait()
-
-
-def build_image_from_input_and_output(
-    embeddings: torch.Tensor,
-    input_image: Image,
-) -> ScalarImage:
-    input_shape = np.array(input_image.spatial_shape)
-    output_shape = np.array(embeddings.shape[-3:])
-    downsampling_factor = input_shape / output_shape
-    input_spacing = np.array(input_image.spacing)
-    output_spacing = input_spacing * downsampling_factor
-    downsample = Resample(output_spacing, image_interpolation='nearest')
-    reference = downsample(input_image)
-    result = ScalarImage(tensor=embeddings, affine=reference.affine)
-    return result
