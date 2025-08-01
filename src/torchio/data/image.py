@@ -121,8 +121,8 @@ class Image(dict):
         >>> image = tio.ScalarImage('t1.npy', reader=numpy_reader)
 
     .. _lazy loaders: https://en.wikipedia.org/wiki/Lazy_loading
-    .. _preprocessing: https://torchio-project.github.io/torchio/transforms/preprocessing.html#intensity
-    .. _augmentation: https://torchio-project.github.io/torchio/transforms/augmentation.html#intensity
+    .. _preprocessing: https://docs.torchio.org/transforms/preprocessing.html#intensity
+    .. _augmentation: https://docs.torchio.org/transforms/augmentation.html#intensity
     .. _NiBabel docs: https://nipy.org/nibabel/image_orientation.html
     .. _NiBabel docs on coordinates: https://nipy.org/nibabel/coordinate_systems.html#the-affine-matrix-as-a-transformation-between-spaces
     .. _3D Slicer wiki: https://www.slicer.org/wiki/Coordinate_systems

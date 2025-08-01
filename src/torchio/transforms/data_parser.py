@@ -75,7 +75,7 @@ class DataParser:
                     'If the input is a dictionary, a value for "include" must'
                     ' be specified when instantiating the transform. See the'
                     ' docs for Transform:'
-                    ' https://torchio-project.github.io/torchio/transforms/transforms.html#torchio.transforms.Transform'
+                    ' https://docs.torchio.org/transforms/transforms.html#torchio.transforms.Transform'
                 )
                 raise RuntimeError(message)
             subject = self._get_subject_from_dict(
