@@ -64,6 +64,13 @@ class PCA(IntensityTransform):
         **kwargs,
     ):
         super().__init__(**kwargs)
+        if keep_components is not None and keep_components > num_components:
+            msg = (
+                'The number of components to keep cannot be greater than the number of'
+                f' components to compute. Got keep_components={keep_components} and'
+                f' num_components={num_components}.'
+            )
+            raise ValueError(msg)
         self.num_components = num_components
         self.keep_components = keep_components
         self.whiten = whiten
