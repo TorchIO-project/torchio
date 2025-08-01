@@ -59,7 +59,7 @@ class CropOrPad(SpatialTransform):
 
     .. warning:: If :attr:`target_shape` is ``None``, subjects in the dataset
         will probably have different shapes. This is probably fine if you are
-        using `patch-based training <https://torchio-project.github.io/torchio/patches/index.html>`_.
+        using `patch-based training <https://docs.torchio.org/patches/index.html>`_.
         If you are using full volumes for training and a batch size larger than
         one, an error will be raised by the :class:`~torch.utils.data.DataLoader`
         while trying to collate the batches.
