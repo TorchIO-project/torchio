@@ -20,8 +20,6 @@ class PCA(IntensityTransform):
 
     Args:
         num_components: Number of components to compute.
-        keep_components: Number of components to keep in the output image.
-            If ``None``, all components are kept.
         whiten: If ``True``, the components are normalized to have unit variance.
         normalize: If ``True``, all components are divided by the standard
             deviation of the first component.
@@ -52,9 +50,8 @@ class PCA(IntensityTransform):
 
     def __init__(
         self,
-        num_components: int = 6,
+        num_components: int = 3,
         *,
-        keep_components: int | None = 3,
         whiten: bool = True,
         normalize: bool = True,
         make_skewness_positive: bool = True,
@@ -64,15 +61,7 @@ class PCA(IntensityTransform):
         **kwargs,
     ):
         super().__init__(**kwargs)
-        if keep_components is not None and keep_components > num_components:
-            msg = (
-                'The number of components to keep cannot be greater than the number of'
-                f' components to compute. Got keep_components={keep_components} and'
-                f' num_components={num_components}.'
-            )
-            raise ValueError(msg)
         self.num_components = num_components
-        self.keep_components = keep_components
         self.whiten = whiten
         self.normalize = normalize
         self.make_skewness_positive = make_skewness_positive
@@ -81,7 +70,6 @@ class PCA(IntensityTransform):
         self.pca_kwargs = pca_kwargs
         self.args_names = [
             'num_components',
-            'keep_components',
             'whiten',
             'normalize',
             'make_skewness_positive',
@@ -96,7 +84,6 @@ class PCA(IntensityTransform):
             pca_image = _compute_pca(
                 image,
                 num_components=self.num_components,
-                keep_components=self.keep_components,
                 whiten=self.whiten,
                 normalize=self.normalize,
                 make_skewness_positive=self.make_skewness_positive,
@@ -111,7 +98,6 @@ class PCA(IntensityTransform):
 def _compute_pca(
     embeddings: ScalarImage,
     num_components: int,
-    keep_components: int | None,
     whiten: bool,
     normalize: bool,
     make_skewness_positive: bool,
@@ -152,6 +138,4 @@ def _compute_pca(
     grid = (grid - vmin) / (vmax - vmin)
     if clip:
         grid = np.clip(grid, 0, 1)
-    if keep_components is not None:
-        grid = grid[:keep_components]
     return ScalarImage(tensor=grid, affine=embeddings.affine)
