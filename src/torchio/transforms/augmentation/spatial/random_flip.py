@@ -127,6 +127,6 @@ def _flip_image(image, axes):
     spatial_axes = np.array(axes, int) + 1
     data = image.numpy()
     data = np.flip(data, axis=spatial_axes)
-    data = data.copy()  # remove negative strides
+    data = np.ascontiguousarray(data)  # remove negative strides
     data = torch.as_tensor(data)
     image.set_data(data)
