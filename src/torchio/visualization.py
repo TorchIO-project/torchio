@@ -4,9 +4,11 @@ import warnings
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+import ipywidgets
 import numpy as np
 import torch
 from einops import rearrange
+from ipywidgets import fixed
 
 from .data.image import Image
 from .data.image import LabelMap
@@ -173,6 +175,37 @@ def plot_volume(
     if show:
         plt.show()
     return fig
+
+
+def _plot_volume(image: Image, **kwargs):
+    def get_widget(size, description):
+        widget = ipywidgets.IntSlider(
+            min=0,
+            max=size - 1,
+            step=1,
+            value=size // 2,
+            continuous_update=False,
+            description=description,
+        )
+        return widget
+
+    shape = array.shape[:3]
+    names = 'Sagittal L-R', 'Coronal P-A', 'Axial I-S'
+    widget_sag, widget_cor, widget_axi = (
+        get_widget(s, n) for (s, n) in zip(shape, names)
+    )
+    ui = ipywidgets.HBox([widget_sag, widget_cor, widget_axi])
+    args_dict = {
+        'array': fixed(array),
+        'idx_sag': widget_sag,
+        'idx_cor': widget_cor,
+        'idx_axi': widget_axi,
+        'return_figure': fixed(True),
+    }
+    kwargs = {key: fixed(value) for (key, value) in kwargs.items()}
+    args_dict.update(kwargs)
+    out = ipywidgets.interactive_output(plot_volume, args_dict)
+    display(ui, out)
 
 
 def plot_subject(
