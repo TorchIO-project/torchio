@@ -594,7 +594,7 @@ class Image(dict):
                     f'Files shape do not match, found {tensor.shape}'
                     f'and {new_tensor.shape}'
                 )
-                RuntimeError(message)
+                raise RuntimeError(message)
             tensors.append(new_tensor)
         tensor = torch.cat(tensors)
         self.set_data(tensor)
