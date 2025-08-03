@@ -1,4 +1,5 @@
 import nibabel as nib
+import numpy as np
 import torch
 from einops import rearrange
 from nibabel import orientations
@@ -96,11 +97,14 @@ class ToOrientation(SpatialTransform):
 
             # Calculate the new affine matrix reflecting the reorientation
             reoriented_affine = nii.affine @ orientations.inv_ornt_aff(
-                transform, nii.shape
+                transform,
+                nii.shape,
             )
 
             # Update the image data and affine
-            image.set_data(torch.from_numpy(reoriented_array.copy()))
+            reoriented_array = np.ascontiguousarray(reoriented_array)
+            tensor = torch.from_numpy(reoriented_array)
+            image.set_data(tensor)
             image.affine = reoriented_affine
 
         return subject
