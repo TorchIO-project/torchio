@@ -78,7 +78,6 @@ def plot_volume(
     fig = None
     if axes is None:
         fig, axes = plt.subplots(1, 3, figsize=figsize)
-    sag_axis, cor_axis, axi_axis = axes
 
     if reorient:
         image = ToCanonical()(image)  # type: ignore[assignment]
@@ -116,7 +115,6 @@ def plot_volume(
         if 'interpolation' not in imshow_kwargs:
             imshow_kwargs['interpolation'] = 'bicubic'
 
-    sr, sa, ss = image.spacing
     imshow_kwargs['origin'] = 'lower'
 
     if not is_label:
@@ -131,41 +129,40 @@ def plot_volume(
         imshow_kwargs['vmin'] = p1
         imshow_kwargs['vmax'] = p2
 
-    sag_aspect = ss / sa
-    sag_axis.imshow(
-        slice_x,
-        aspect=sag_aspect,
-        **imshow_kwargs,
-    )
-    if xlabels:
-        sag_axis.set_xlabel('A')
-    sag_axis.set_ylabel('S')
-    sag_axis.invert_xaxis()
-    sag_axis.set_title('Sagittal')
+    spacing_r, spacing_a, spacing_s = image.spacing
+    sag_axis, cor_axis, axi_axis = axes
+    slices_dict = {
+        'Sagittal': {
+            'aspect': spacing_s / spacing_a,
+            'slice': slice_x,
+            'xlabel': 'A',
+            'ylabel': 'S',
+            'axis': sag_axis,
+        },
+        'Coronal': {
+            'aspect': spacing_s / spacing_r,
+            'slice': slice_y,
+            'xlabel': 'R',
+            'ylabel': 'S',
+            'axis': cor_axis,
+        },
+        'Axial': {
+            'aspect': spacing_a / spacing_r,
+            'slice': slice_z,
+            'xlabel': 'R',
+            'ylabel': 'A',
+            'axis': axi_axis,
+        },
+    }
 
-    cor_aspect = ss / sr
-    cor_axis.imshow(
-        slice_y,
-        aspect=cor_aspect,
-        **imshow_kwargs,
-    )
-    if xlabels:
-        cor_axis.set_xlabel('R')
-    cor_axis.set_ylabel('S')
-    cor_axis.invert_xaxis()
-    cor_axis.set_title('Coronal')
-
-    axi_aspect = sa / sr
-    axi_axis.imshow(
-        slice_z,
-        aspect=axi_aspect,
-        **imshow_kwargs,
-    )
-    if xlabels:
-        axi_axis.set_xlabel('R')
-    axi_axis.set_ylabel('A')
-    axi_axis.invert_xaxis()
-    axi_axis.set_title('Axial')
+    for title, info in slices_dict.items():
+        axis = info['axis']
+        axis.imshow(info['slice'], aspect=info['aspect'], **imshow_kwargs)
+        if xlabels:
+            axis.set_xlabel(info['xlabel'])
+        axis.set_ylabel(info['ylabel'])
+        axis.invert_xaxis()
+        axis.set_title(title)
 
     plt.tight_layout()
     if title is not None:
