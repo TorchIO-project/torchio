@@ -4,7 +4,7 @@ build-backend = "uv_build"
 
 [project]
 name = "torchio"
-version = "0.20.19"
+version = "0.20.20"
 description = "Tools for medical image processing with PyTorch"
 readme = "README.md"
 authors = [{ name = "TorchIO contributors" }]
@@ -109,7 +109,7 @@ test = [
 ]
 
 [tool.bumpversion]
-current_version = "0.20.19"
+current_version = "0.20.20"
 commit = true
 tag = true
 
