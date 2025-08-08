@@ -411,6 +411,7 @@ Thanks goes to all these people ([emoji key](https://allcontributors.org/docs/en
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/StijnvWijn"><img src="https://avatars.githubusercontent.com/u/78531113?v=4?s=100" width="100px;" alt="StijnvWijn"/><br /><sub><b>StijnvWijn</b></sub></a><br /><a href="https://github.com/TorchIO-project/torchio/commits?author=StijnvWijn" title="Code">💻</a></td>
       <td align="center" valign="top" width="14.28%"><a href="http://toufiqmusah.github.io/toufiqmusah/"><img src="https://avatars.githubusercontent.com/u/92761339?v=4?s=100" width="100px;" alt="Toufiq"/><br /><sub><b>Toufiq</b></sub></a><br /><a href="https://github.com/TorchIO-project/torchio/commits?author=toufiqmusah" title="Code">💻</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/bcrobo"><img src="https://avatars.githubusercontent.com/u/28488814?v=4?s=100" width="100px;" alt="bcrobo"/><br /><sub><b>bcrobo</b></sub></a><br /><a href="https://github.com/TorchIO-project/torchio/issues?q=author%3Abcrobo" title="Bug reports">🐛</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/emmanuel-ferdman"><img src="https://avatars.githubusercontent.com/u/35470921?v=4?s=100" width="100px;" alt="Emmanuel Ferdman"/><br /><sub><b>Emmanuel Ferdman</b></sub></a><br /><a href="https://github.com/TorchIO-project/torchio/issues?q=author%3Aemmanuel-ferdman" title="Bug reports">🐛</a></td>
     </tr>
   </tbody>
 </table>
