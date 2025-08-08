@@ -140,6 +140,14 @@ class TestImage(TorchioTestCase):
         assert image.height == image.shape[height_idx]
         assert image.width == image.shape[width_idx]
 
+    def test_different_shape(self):
+        path_1 = self.get_image_path('im_shape1', shape=(5, 5, 5))
+        path_2 = self.get_image_path('im_shape2', shape=(7, 5, 5))
+
+        image = tio.ScalarImage([path_1, path_2])
+        with pytest.raises(RuntimeError):
+            image.load()
+
     @pytest.mark.slow
     @pytest.mark.skipif(sys.platform == 'win32', reason='Unstable on Windows')
     def test_plot(self):
