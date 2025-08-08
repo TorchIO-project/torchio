@@ -3,6 +3,7 @@ from __future__ import annotations
 import warnings
 from pathlib import Path
 from typing import TYPE_CHECKING
+from typing import Any
 
 import numpy as np
 import torch
@@ -24,6 +25,7 @@ from .types import TypePath
 if TYPE_CHECKING:
     from matplotlib.colors import BoundaryNorm
     from matplotlib.colors import ListedColormap
+    from matplotlib.figure import Figure
 
 
 def import_mpl_plt():
@@ -80,10 +82,11 @@ def plot_volume(
     reorient=True,
     indices=None,
     rgb=True,
+    savefig_kwargs: dict[str, Any] | None = None,
     **imshow_kwargs,
-):
+) -> Figure | None:
     _, plt = import_mpl_plt()
-    fig = None
+    fig: Figure | None = None
     if axes is None:
         fig, axes = plt.subplots(1, 3, figsize=figsize)
 
@@ -182,7 +185,9 @@ def plot_volume(
         plt.suptitle(title)
 
     if output_path is not None and fig is not None:
-        fig.savefig(output_path)
+        if savefig_kwargs is None:
+            savefig_kwargs = {}
+        fig.savefig(output_path, **savefig_kwargs)
     if show:
         plt.show()
     return fig
