@@ -22,6 +22,7 @@ from .transforms.preprocessing.spatial.to_orientation import ToOrientation
 from .types import TypePath
 
 if TYPE_CHECKING:
+    from matplotlib.colors import BoundaryNorm
     from matplotlib.colors import ListedColormap
 
 
@@ -42,19 +43,26 @@ def rotate(image: np.ndarray, *, radiological: bool = True, n: int = -1) -> np.n
     return image
 
 
-def _create_categorical_colormap(data: torch.Tensor) -> ListedColormap:
+def _create_categorical_colormap(
+    data: torch.Tensor,
+) -> tuple[ListedColormap, BoundaryNorm]:
     num_classes = int(data.max())
     mpl, _ = import_mpl_plt()
 
-    if num_classes == 1:  # just do white
-        distinct_colors = [(1, 1, 1)]
-    else:
+    colors = [
+        (0, 0, 0),  # black for background
+        (1, 1, 1),  # white for class 1
+    ]
+    if num_classes > 1:
         from .external.imports import get_distinctipy
 
         distinctipy = get_distinctipy()
-        distinct_colors = distinctipy.get_colors(num_classes, rng=0)
-    colors = [(0, 0, 0), *distinct_colors]  # prepend black
-    return mpl.colors.ListedColormap(colors)
+        distinct_colors = distinctipy.get_colors(num_classes - 1, rng=0)
+        colors.extend(distinct_colors)
+    boundaries = np.arange(-0.5, num_classes + 1.5, 1)
+    colormap = mpl.colors.ListedColormap(colors)
+    boundary_norm = mpl.colors.BoundaryNorm(boundaries, ncolors=colormap.N)
+    return colormap, boundary_norm
 
 
 def plot_volume(
@@ -105,9 +113,14 @@ def plot_volume(
         slices = slice_x, slice_y, slice_z
         slice_x, slice_y, slice_z = color_labels(slices, cmap)
     else:
+        boundary_norm = None
         if cmap is None:
-            cmap = _create_categorical_colormap(data) if is_label else 'gray'
+            if is_label:
+                cmap, boundary_norm = _create_categorical_colormap(data)
+            else:
+                cmap = 'gray'
         imshow_kwargs['cmap'] = cmap
+        imshow_kwargs['norm'] = boundary_norm
 
     if is_label:
         imshow_kwargs['interpolation'] = 'none'
@@ -155,14 +168,14 @@ def plot_volume(
         },
     }
 
-    for title, info in slices_dict.items():
+    for axis_title, info in slices_dict.items():
         axis = info['axis']
         axis.imshow(info['slice'], aspect=info['aspect'], **imshow_kwargs)
         if xlabels:
             axis.set_xlabel(info['xlabel'])
         axis.set_ylabel(info['ylabel'])
         axis.invert_xaxis()
-        axis.set_title(title)
+        axis.set_title(axis_title)
 
     plt.tight_layout()
     if title is not None:
