@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import warnings
+from itertools import cycle
 from pathlib import Path
 from typing import TYPE_CHECKING
 from typing import Any
@@ -47,7 +48,7 @@ def rotate(image: np.ndarray, *, radiological: bool = True, n: int = -1) -> np.n
 
 def _create_categorical_colormap(
     data: torch.Tensor,
-    cmap_name: str = 'glasbey_light',
+    cmap_name: str = 'glasbey_category10',
 ) -> tuple[ListedColormap, BoundaryNorm]:
     num_classes = int(data.max())
     mpl, _ = import_mpl_plt()
@@ -61,7 +62,8 @@ def _create_categorical_colormap(
 
         colorcet = get_colorcet()
         cmap = getattr(colorcet.cm, cmap_name)
-        distinct_colors = cmap.colors[: num_classes - 1]
+        color_cycle = cycle(cmap.colors)
+        distinct_colors = [next(color_cycle) for _ in range(num_classes - 1)]
         colors.extend(distinct_colors)
     boundaries = np.arange(-0.5, num_classes + 1.5, 1)
     colormap = mpl.colors.ListedColormap(colors)
