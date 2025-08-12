@@ -26,8 +26,8 @@ def get_pandas() -> ModuleType:
     return _check_and_import(module='pandas', extra='csv')
 
 
-def get_distinctipy() -> ModuleType:
-    return _check_and_import(module='distinctipy', extra='plot')
+def get_colorcet() -> ModuleType:
+    return _check_and_import(module='colorcet', extra='plot')
 
 
 def get_ffmpeg() -> ModuleType:

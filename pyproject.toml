@@ -49,7 +49,7 @@ dependencies = [
 
 [project.optional-dependencies]
 csv = ["pandas>=1"]
-plot = ["distinctipy>=1.3.4", "matplotlib>=3.4"]
+plot = ["colorcet", "matplotlib>=3.4"]
 video = ["ffmpeg-python>=0.2.0"]
 sklearn = [
     "scikit-learn>=1.6.1",
