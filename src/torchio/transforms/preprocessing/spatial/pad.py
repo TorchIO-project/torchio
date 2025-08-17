@@ -87,10 +87,10 @@ class Pad(BoundsTransform):
         if torch.is_floating_point(image.data):
             return
         message = (
-            f'The constant value computed for padding mode "{mode}" might '
-            ' be truncated in the output, as the input image is not'
-            'floating point. Consider converting the image to a floating'
-            ' point type before applying this transform.'
+            f'The constant value computed for padding mode "{mode}" might be truncated '
+            ' in the output, as the data type of the input image is not float.'
+            ' Consider converting the image to a floating point type'
+            ' before applying this transform.'
         )
         warnings.warn(message, RuntimeWarning, stacklevel=2)
 
