@@ -24,14 +24,16 @@ TypeSextetInt = tuple[int, int, int, int, int, int]
 
 TypeDoubleFloat = tuple[float, float]
 TypeTripletFloat = tuple[float, float, float]
+TypeQuartetFloat = tuple[float, float, float, float]
 TypeSextetFloat = tuple[float, float, float, float, float, float]
 
 TypeTuple = Union[int, TypeTripletInt]
 TypeRangeInt = Union[int, TypeDoubletInt]
+TypeSpacing = Union[float, TypeTripletFloat]
 TypeSpatialShape = Union[int, TypeTripletInt]
-TypeRangeFloat = Union[float, tuple[float, float]]
+TypeRangeFloat = Union[float, TypeDoubleFloat]
 TypeCallable = Callable[[torch.Tensor], torch.Tensor]
-TypeDirection2D = tuple[float, float, float, float]
+TypeDirection2D = TypeQuartetFloat
 TypeDirection3D = tuple[
     float,
     float,

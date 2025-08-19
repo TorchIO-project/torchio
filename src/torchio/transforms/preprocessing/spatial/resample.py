@@ -16,10 +16,10 @@ from ....data.io import get_sitk_metadata_from_ras_affine
 from ....data.io import sitk_to_nib
 from ....data.subject import Subject
 from ....types import TypePath
+from ....types import TypeSpacing
 from ....types import TypeTripletFloat
 from ...spatial_transform import SpatialTransform
 
-TypeSpacing = Union[float, tuple[float, float, float]]
 TypeTarget = Union[TypeSpacing, str, Path, Image, None]
 ONE_MILLIMITER_ISOTROPIC = 1
 
