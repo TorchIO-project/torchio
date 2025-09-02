@@ -360,6 +360,10 @@ class Subject(dict):
         )
         return list(images_dict.values())
 
+    def get_image(self, image_name: str) -> Image:
+        """Get a single image by its name."""
+        return self.get_images_dict(intensity_only=False)[image_name]
+
     def get_first_image(self) -> Image:
         return self.get_images(intensity_only=False)[0]
 
