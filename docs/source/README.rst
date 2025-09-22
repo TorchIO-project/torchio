@@ -4,7 +4,7 @@ TorchIO
 
 |PyPI-downloads| |PyPI-version| |Conda-version| |Google-Colab-notebook|
 |Docs-status| |Tests-status| |Ruff|
-|Coverage-codecov| |Code-Quality| |Code-Maintainability| |pre-commit|
+|Coverage-codecov| |Code-Quality| |pre-commit|
 |YouTube|
 
 
@@ -108,10 +108,6 @@ If you found a bug or have a feature request, please open an issue:
 .. |All-Contributors| image:: https://img.shields.io/github/all-contributors/TorchIO-project/torchio?color=ee8449&style=flat-square
    :target: https://github.com/TorchIO-project/torchio#contributors
    :alt: All contributors
-
-.. |Code-Maintainability| image:: https://api.codeclimate.com/v1/badges/518673e49a472dd5714d/maintainability
-   :target: https://codeclimate.com/github/TorchIO-project/torchio
-   :alt: Maintainability
 
 .. |pre-commit| image:: https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white
    :target: https://github.com/pre-commit/pre-commit
