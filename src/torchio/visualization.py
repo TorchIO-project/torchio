@@ -146,8 +146,10 @@ def plot_volume(
             ]
         )
         p1, p2 = np.percentile(displayed_data, percentiles)
-        imshow_kwargs['vmin'] = p1
-        imshow_kwargs['vmax'] = p2
+        if 'vmin' not in imshow_kwargs:
+            imshow_kwargs['vmin'] = p1
+        if 'vmax' not in imshow_kwargs:
+            imshow_kwargs['vmax'] = p2
 
     spacing_r, spacing_a, spacing_s = image.spacing
     sag_axis, cor_axis, axi_axis = axes
