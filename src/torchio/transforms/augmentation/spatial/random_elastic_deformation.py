@@ -119,8 +119,8 @@ class RandomElasticDeformation(RandomTransform, SpatialTransform):
 
     def __init__(
         self,
-        num_control_points: Union[int, TypeTripletInt] = 7,
-        max_displacement: Union[float, TypeTripletFloat] = 7.5,
+        num_control_points: int | TypeTripletInt = 7,
+        max_displacement: float | TypeTripletFloat = 7.5,
         locked_borders: int = 2,
         image_interpolation: str = 'linear',
         label_interpolation: str = 'nearest',

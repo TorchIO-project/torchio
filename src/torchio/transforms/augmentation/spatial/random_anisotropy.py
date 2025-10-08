@@ -47,7 +47,7 @@ class RandomAnisotropy(RandomTransform):
 
     def __init__(
         self,
-        axes: Union[int, tuple[int, ...]] = (0, 1, 2),
+        axes: int | tuple[int, ...] = (0, 1, 2),
         downsampling: TypeRangeFloat = (1.5, 5),
         image_interpolation: str = 'linear',
         scalars_only: bool = True,
@@ -74,7 +74,7 @@ class RandomAnisotropy(RandomTransform):
         return axis, downsampling
 
     @staticmethod
-    def parse_axes(axes: Union[int, tuple[int, ...]]):
+    def parse_axes(axes: int | tuple[int, ...]):
         axes_tuple = to_tuple(axes)
         for axis in axes_tuple:
             is_int = isinstance(axis, int)

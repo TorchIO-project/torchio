@@ -36,7 +36,7 @@ class RandomBiasField(RandomTransform, IntensityTransform):
 
     def __init__(
         self,
-        coefficients: Union[float, tuple[float, float]] = 0.5,
+        coefficients: float | tuple[float, float] = 0.5,
         order: int = 3,
         **kwargs,
     ):
@@ -89,8 +89,8 @@ class BiasField(IntensityTransform):
 
     def __init__(
         self,
-        coefficients: Union[list[float], dict[str, list[float]]],
-        order: Union[int, dict[str, int]],
+        coefficients: list[float] | dict[str, list[float]],
+        order: int | dict[str, int],
         **kwargs,
     ):
         super().__init__(**kwargs)

@@ -3,7 +3,7 @@ from __future__ import annotations
 import copy
 from collections.abc import Iterable
 from collections.abc import Sequence
-from typing import Callable
+from collections.abc import Callable
 
 from torch.utils.data import Dataset
 

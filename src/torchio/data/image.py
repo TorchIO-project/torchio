@@ -5,7 +5,7 @@ from collections import Counter
 from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
-from typing import Callable
+from collections.abc import Callable
 
 import humanize
 import nibabel as nib

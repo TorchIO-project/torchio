@@ -49,8 +49,8 @@ class RandomMotion(RandomTransform, IntensityTransform, FourierTransform):
 
     def __init__(
         self,
-        degrees: Union[float, tuple[float, float]] = 10,
-        translation: Union[float, tuple[float, float]] = 10,  # in mm
+        degrees: float | tuple[float, float] = 10,
+        translation: float | tuple[float, float] = 10,  # in mm
         num_transforms: int = 2,
         image_interpolation: str = 'linear',
         **kwargs,
@@ -145,10 +145,10 @@ class Motion(IntensityTransform, FourierTransform):
 
     def __init__(
         self,
-        degrees: Union[TypeTripletFloat, dict[str, TypeTripletFloat]],
-        translation: Union[TypeTripletFloat, dict[str, TypeTripletFloat]],
-        times: Union[Sequence[float], dict[str, Sequence[float]]],
-        image_interpolation: Union[Sequence[str], dict[str, Sequence[str]]],
+        degrees: TypeTripletFloat | dict[str, TypeTripletFloat],
+        translation: TypeTripletFloat | dict[str, TypeTripletFloat],
+        times: Sequence[float] | dict[str, Sequence[float]],
+        image_interpolation: Sequence[str] | dict[str, Sequence[str]],
         **kwargs,
     ):
         super().__init__(**kwargs)

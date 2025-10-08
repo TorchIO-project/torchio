@@ -42,8 +42,8 @@ class RandomSpike(RandomTransform, IntensityTransform, FourierTransform):
 
     def __init__(
         self,
-        num_spikes: Union[int, tuple[int, int]] = 1,
-        intensity: Union[float, tuple[float, float]] = (1, 3),
+        num_spikes: int | tuple[int, int] = 1,
+        intensity: float | tuple[float, float] = (1, 3),
         **kwargs,
     ):
         super().__init__(**kwargs)
@@ -109,8 +109,8 @@ class Spike(IntensityTransform, FourierTransform):
 
     def __init__(
         self,
-        spikes_positions: Union[np.ndarray, dict[str, np.ndarray]],
-        intensity: Union[float, dict[str, float]],
+        spikes_positions: np.ndarray | dict[str, np.ndarray],
+        intensity: float | dict[str, float],
         **kwargs,
     ):
         super().__init__(**kwargs)

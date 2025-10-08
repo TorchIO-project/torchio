@@ -33,8 +33,8 @@ class RandomNoise(RandomTransform, IntensityTransform):
 
     def __init__(
         self,
-        mean: Union[float, tuple[float, float]] = 0,
-        std: Union[float, tuple[float, float]] = (0, 0.25),
+        mean: float | tuple[float, float] = 0,
+        std: float | tuple[float, float] = (0, 0.25),
         **kwargs,
     ):
         super().__init__(**kwargs)
@@ -85,9 +85,9 @@ class Noise(IntensityTransform):
 
     def __init__(
         self,
-        mean: Union[float, dict[str, float]],
-        std: Union[float, dict[str, float]],
-        seed: Union[int, Sequence[int]],
+        mean: float | dict[str, float],
+        std: float | dict[str, float],
+        seed: int | Sequence[int],
         **kwargs,
     ):
         super().__init__(**kwargs)
