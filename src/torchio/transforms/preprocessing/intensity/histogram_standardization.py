@@ -1,9 +1,9 @@
 from __future__ import annotations
 
+from collections.abc import Callable
 from collections.abc import Iterable
 from collections.abc import Sequence
 from pathlib import Path
-from collections.abc import Callable
 from typing import Union
 
 import numpy as np

@@ -42,7 +42,7 @@ class MedMNIST(SubjectsDataset):
         images = npz_file[f'{split}_images']
         labels = npz_file[f'{split}_labels']
         subjects = []
-        for image, label in zip(images, labels):
+        for image, label in zip(images, labels, strict=True):
             image = ScalarImage(tensor=image[np.newaxis])
             subject = Subject(image=image, labels=torch.from_numpy(label))
             subjects.append(subject)

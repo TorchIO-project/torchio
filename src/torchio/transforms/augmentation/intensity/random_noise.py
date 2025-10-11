@@ -1,6 +1,5 @@
 from collections import defaultdict
 from collections.abc import Sequence
-from typing import Union
 
 import torch
 

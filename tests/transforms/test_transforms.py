@@ -305,7 +305,7 @@ class TestTransform(TorchioTestCase):
         inverse = transformed.apply_inverse_transform()
         images1 = subject.get_images(intensity_only=False)
         images2 = inverse.get_images(intensity_only=False)
-        for image1, image2 in zip(images1, images2):
+        for image1, image2 in zip(images1, images2, strict=True):
             assert image1.shape == image2.shape
 
     def test_bad_bounds_mask(self):

@@ -205,7 +205,7 @@ class IXITiny(SubjectsDataset):
             raise FileNotFoundError(message)
 
         subjects = []
-        for image_path, label_path in zip(image_paths, label_paths):
+        for image_path, label_path in zip(image_paths, label_paths, strict=True):
             subject_id = get_subject_id(image_path)
             subject_dict = {}
             subject_dict['image'] = ScalarImage(image_path)

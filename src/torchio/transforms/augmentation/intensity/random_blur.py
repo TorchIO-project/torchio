@@ -1,5 +1,4 @@
 from collections import defaultdict
-from typing import Union
 
 import numpy as np
 import scipy.ndimage as ndi
@@ -85,7 +84,7 @@ class Blur(IntensityTransform):
             stds_channels: np.ndarray
             stds_channels = np.tile(stds, repets)  # type: ignore[arg-type]
             transformed_tensors = []
-            for std, channel in zip(stds_channels, image.data):
+            for std, channel in zip(stds_channels, image.data, strict=True):
                 transformed_tensor = blur(
                     channel,
                     image.spacing,
