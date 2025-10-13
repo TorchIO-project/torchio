@@ -20,7 +20,7 @@ clean:
 
 setup: install_uv
     uv sync --all-extras --all-groups
-    uv run pre-commit install
+    uv run prek install
 
 bump part="patch":
     uv run bump-my-version bump {{part}} --verbose

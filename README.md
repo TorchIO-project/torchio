@@ -58,9 +58,6 @@ at [OpenAI](https://openai.com/) ([link](https://jack-clark.net/2020/03/17/)).
             <a href="https://scrutinizer-ci.com/g/TorchIO-project/torchio/?branch=main">
                 <img src="https://img.shields.io/scrutinizer/g/TorchIO-project/torchio.svg?label=Code%20quality&logo=scrutinizer" alt="Code quality">
             </a>
-            <a href="https://github.com/pre-commit/pre-commit">
-                <img src="https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white" alt="pre-commit">
-            </a>
         </td>
     </tr>
     <tr>
