@@ -51,9 +51,7 @@ dependencies = [
 csv = ["pandas>=1"]
 plot = ["colorcet", "matplotlib>=3.4"]
 video = ["ffmpeg-python>=0.2.0"]
-sklearn = [
-    "scikit-learn>=1.6.1",
-]
+sklearn = ["scikit-learn>=1.6.1"]
 
 [project.scripts]
 tiohd = "torchio.cli.print_info:app"
@@ -75,7 +73,7 @@ dev = [
     { include-group = "test" },
     "ipykernel",
     "ipywidgets",
-    "pre-commit-uv",
+    "prek",
 ]
 doc = [
     "distinctipy",
