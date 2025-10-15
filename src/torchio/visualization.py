@@ -207,7 +207,7 @@ def plot_subject(
     figsize=None,
     clear_axes=True,
     **plot_volume_kwargs,
-):
+) -> Figure:
     _, plt = import_mpl_plt()
     num_images = len(subject)
     many_images = num_images > 2
@@ -247,6 +247,7 @@ def plot_subject(
         fig.savefig(output_path)
     if show:
         plt.show()
+    return fig
 
 
 def get_num_bins(x: np.ndarray) -> int:

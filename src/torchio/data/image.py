@@ -4,6 +4,7 @@ import warnings
 from collections import Counter
 from collections.abc import Sequence
 from pathlib import Path
+from typing import TYPE_CHECKING
 from typing import Any
 from typing import Callable
 
@@ -45,6 +46,9 @@ from .io import read_image
 from .io import read_shape
 from .io import sitk_to_nib
 from .io import write_image
+
+if TYPE_CHECKING:
+    from matplotlib.figure import Figure
 
 PROTECTED_KEYS = DATA, AFFINE, TYPE, PATH, STEM
 TypeBound = tuple[float, float]
@@ -774,14 +778,14 @@ class Image(dict):
     def set_check_nans(self, check_nans: bool) -> None:
         self.check_nans = check_nans
 
-    def plot(self, **kwargs) -> None:
+    def plot(self, **kwargs) -> Figure | None:
         """Plot image."""
         if self.is_2d():
             self.as_pil().show()
         else:
             from ..visualization import plot_volume  # avoid circular import
 
-            plot_volume(self, **kwargs)
+            return plot_volume(self, **kwargs)
 
     def show(self, viewer_path: TypePath | None = None) -> None:
         """Open the image using external software.
