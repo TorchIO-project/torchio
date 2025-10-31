@@ -134,7 +134,7 @@ class Gamma(IntensityTransform):
             gammas = to_tuple(gamma, length=len(image.data))
             transformed_tensors = []
             image.set_data(image.data.float())
-            for gamma, tensor in zip(gammas, image.data):
+            for gamma, tensor in zip(gammas, image.data, strict=True):
                 if self.invert_transform:
                     correction = power(tensor, 1 - gamma)
                     transformed_tensor = tensor * correction

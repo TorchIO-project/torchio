@@ -77,7 +77,7 @@ class PatchSampler:
         crop_ini = index_ini_array.tolist()
         crop_fin = (shape - index_fin).tolist()
         start = ()
-        cropping = sum(zip(crop_ini, crop_fin), start)  # type: ignore[arg-type]
+        cropping = sum(zip(crop_ini, crop_fin, strict=True), start)  # type: ignore[arg-type]
         return Crop(cropping)  # type: ignore[arg-type]
 
     def __call__(

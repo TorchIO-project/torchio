@@ -163,7 +163,7 @@ class GridAggregator:
         self._initialize_output_tensor(batch)
         assert isinstance(self._output_tensor, torch.Tensor)
         if self.overlap_mode == 'crop':
-            for patch, location in zip(batch, locations_array):
+            for patch, location in zip(batch, locations_array, strict=True):
                 cropped_patch, new_location = self._crop_patch(
                     patch,
                     location,
@@ -179,7 +179,7 @@ class GridAggregator:
         elif self.overlap_mode == 'average':
             self._initialize_avgmask_tensor(batch)
             assert isinstance(self._avgmask_tensor, torch.Tensor)
-            for patch, location in zip(batch, locations):
+            for patch, location in zip(batch, locations, strict=True):
                 i_ini, j_ini, k_ini, i_fin, j_fin, k_fin = location
                 self._output_tensor[
                     :,
@@ -210,7 +210,7 @@ class GridAggregator:
             if self._avgmask_tensor.dtype != torch.float32:
                 self._avgmask_tensor = self._avgmask_tensor.float()
 
-            for patch, location in zip(batch, locations):
+            for patch, location in zip(batch, locations, strict=True):
                 i_ini, j_ini, k_ini, i_fin, j_fin, k_fin = location
 
                 patch = patch * self._hann_window

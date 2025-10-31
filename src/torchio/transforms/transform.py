@@ -266,7 +266,7 @@ class Transform(ABC):
                     f' 6, not {len(params)}'
                 )
                 raise ValueError(message)
-            for param_range in zip(params[::2], params[1::2]):
+            for param_range in zip(params[::2], params[1::2], strict=True):
                 self._parse_range(param_range, name, **kwargs)
         return tuple(params)
 

@@ -330,7 +330,7 @@ def add_images_from_batch(
         from . import ScalarImage
 
         class_ = ScalarImage
-    for subject, data in zip(subjects, tensor):
+    for subject, data in zip(subjects, tensor, strict=True):
         one_image = subject.get_first_image()
         kwargs = {'tensor': data, 'affine': one_image.affine}
         if 'filename' in one_image:

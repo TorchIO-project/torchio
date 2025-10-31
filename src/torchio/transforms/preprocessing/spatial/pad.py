@@ -1,6 +1,5 @@
 import warnings
 from numbers import Number
-from typing import Union
 
 import numpy as np
 import torch
@@ -61,7 +60,7 @@ class Pad(BoundsTransform):
     def __init__(
         self,
         padding: TypeBounds,
-        padding_mode: Union[str, float] = 0,
+        padding_mode: str | float = 0,
         **kwargs,
     ):
         super().__init__(padding, **kwargs)
@@ -81,7 +80,7 @@ class Pad(BoundsTransform):
             )
             raise KeyError(message)
 
-    def _check_truncation(self, image: Image, mode: Union[str, float]) -> None:
+    def _check_truncation(self, image: Image, mode: str | float) -> None:
         if mode not in ('mean', 'median'):
             return
         if torch.is_floating_point(image.data):

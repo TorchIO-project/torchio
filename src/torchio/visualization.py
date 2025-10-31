@@ -240,7 +240,7 @@ def plot_subject(
             xlabels=last_row,
             **plot_volume_kwargs,
         )
-        for axis, axis_name in zip(image_axes, axes_names):
+        for axis, axis_name in zip(image_axes, axes_names, strict=True):
             axis.set_title(f'{name} ({axis_name})')
     plt.tight_layout()
     if output_path is not None:

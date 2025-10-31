@@ -73,7 +73,7 @@ bump-python:
     )
     pyproject_path.write_text(pyproject_text)
 
-deprecate-python:
+deprecate-python-in-files:
     #!/usr/bin/env -S uv run --script
     # /// script
     # dependencies = [
@@ -121,10 +121,14 @@ deprecate-python:
     )
     tests_workflow_path.write_text(tests_workflow)
 
+quality_cmd := "uv run --group quality"
+
+deprecate-python: deprecate-python-in-files
+    uv run pre-commit run --all-files pyupgrade
+    {{quality_cmd}} -- ruff check --fix src docs tests
+
 push:
     git push && git push --tags
-
-quality_cmd := "uv run --group quality"
 
 types:
     {{quality_cmd}} -- tox -e types

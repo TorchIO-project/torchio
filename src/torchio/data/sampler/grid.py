@@ -159,7 +159,7 @@ class GridSampler(PatchSampler):
         #  [3, 8],
         #  [5, 10]]
         indices = []
-        zipped = zip(image_size, patch_size, patch_overlap)
+        zipped = zip(image_size, patch_size, patch_overlap, strict=True)
         for im_size_dim, patch_size_dim, patch_overlap_dim in zipped:
             end = im_size_dim + 1 - patch_size_dim
             step = patch_size_dim - patch_overlap_dim

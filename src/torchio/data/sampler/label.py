@@ -124,7 +124,7 @@ class LabelSampler(WeightedSampler):
         probability_map = torch.zeros_like(label_map)
         label_probs = torch.Tensor(list(label_probabilities_dict.values()))
         normalized_probs = label_probs / label_probs.sum()
-        iterable = zip(label_probabilities_dict, normalized_probs)
+        iterable = zip(label_probabilities_dict, normalized_probs, strict=True)
         for label, label_probability in iterable:
             if multichannel:
                 mask = label_map[label]

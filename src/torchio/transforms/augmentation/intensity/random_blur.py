@@ -1,5 +1,4 @@
 from collections import defaultdict
-from typing import Union
 
 import numpy as np
 import scipy.ndimage as ndi
@@ -32,7 +31,7 @@ class RandomBlur(RandomTransform, IntensityTransform):
             keyword arguments.
     """
 
-    def __init__(self, std: Union[float, tuple[float, float]] = (0, 2), **kwargs):
+    def __init__(self, std: float | tuple[float, float] = (0, 2), **kwargs):
         super().__init__(**kwargs)
         self.std_ranges = self.parse_params(std, None, 'std', min_constraint=0)
 
@@ -68,7 +67,7 @@ class Blur(IntensityTransform):
 
     def __init__(
         self,
-        std: Union[TypeTripletFloat, dict[str, TypeTripletFloat]],
+        std: TypeTripletFloat | dict[str, TypeTripletFloat],
         **kwargs,
     ):
         super().__init__(**kwargs)
@@ -85,7 +84,7 @@ class Blur(IntensityTransform):
             stds_channels: np.ndarray
             stds_channels = np.tile(stds, repets)  # type: ignore[arg-type]
             transformed_tensors = []
-            for std, channel in zip(stds_channels, image.data):
+            for std, channel in zip(stds_channels, image.data, strict=True):
                 transformed_tensor = blur(
                     channel,
                     image.spacing,

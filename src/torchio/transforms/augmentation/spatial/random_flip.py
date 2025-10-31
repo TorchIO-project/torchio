@@ -1,5 +1,3 @@
-from typing import Union
-
 import numpy as np
 import torch
 
@@ -38,7 +36,7 @@ class RandomFlip(RandomTransform, SpatialTransform):
 
     def __init__(
         self,
-        axes: Union[int, tuple[int, ...]] = 0,
+        axes: int | tuple[int, ...] = 0,
         flip_probability: float = 0.5,
         **kwargs,
     ):
@@ -101,7 +99,7 @@ class Flip(SpatialTransform):
         return self
 
 
-def _parse_axes(axes: Union[int, tuple[int, ...]]):
+def _parse_axes(axes: int | tuple[int, ...]):
     axes_tuple = to_tuple(axes)
     for axis in axes_tuple:
         is_int = isinstance(axis, int)
