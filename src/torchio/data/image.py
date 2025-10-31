@@ -2,10 +2,10 @@ from __future__ import annotations
 
 import warnings
 from collections import Counter
+from collections.abc import Callable
 from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
-from typing import Callable
 
 import humanize
 import nibabel as nib
@@ -424,7 +424,7 @@ class Image(dict):
         labels = 'LRPAISTBDV'
         first = labels[::2]
         last = labels[1::2]
-        flip_dict = dict(zip(first + last, last + first))
+        flip_dict = dict(zip(first + last, last + first, strict=True))
         axis = axis[0].upper()
         flipped_axis = flip_dict.get(axis)
         if flipped_axis is None:

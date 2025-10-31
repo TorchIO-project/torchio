@@ -1,6 +1,5 @@
 from collections import defaultdict
 from collections.abc import Sequence
-from typing import Union
 
 import numpy as np
 import SimpleITK as sitk
@@ -49,8 +48,8 @@ class RandomMotion(RandomTransform, IntensityTransform, FourierTransform):
 
     def __init__(
         self,
-        degrees: Union[float, tuple[float, float]] = 10,
-        translation: Union[float, tuple[float, float]] = 10,  # in mm
+        degrees: float | tuple[float, float] = 10,
+        translation: float | tuple[float, float] = 10,  # in mm
         num_transforms: int = 2,
         image_interpolation: str = 'linear',
         **kwargs,
@@ -145,10 +144,10 @@ class Motion(IntensityTransform, FourierTransform):
 
     def __init__(
         self,
-        degrees: Union[TypeTripletFloat, dict[str, TypeTripletFloat]],
-        translation: Union[TypeTripletFloat, dict[str, TypeTripletFloat]],
-        times: Union[Sequence[float], dict[str, Sequence[float]]],
-        image_interpolation: Union[Sequence[str], dict[str, Sequence[str]]],
+        degrees: TypeTripletFloat | dict[str, TypeTripletFloat],
+        translation: TypeTripletFloat | dict[str, TypeTripletFloat],
+        times: Sequence[float] | dict[str, Sequence[float]],
+        image_interpolation: Sequence[str] | dict[str, Sequence[str]],
         **kwargs,
     ):
         super().__init__(**kwargs)
@@ -212,7 +211,8 @@ class Motion(IntensityTransform, FourierTransform):
         center_lps = image.TransformContinuousIndexToPhysicalPoint(center_ijk)
         identity = np.eye(4)
         matrices = [identity]
-        for degrees, translation in zip(degrees_params, translation_params):
+        zipped = zip(degrees_params, translation_params, strict=True)
+        for degrees, translation in zipped:
             radians = np.radians(degrees).tolist()
             motion = sitk.Euler3DTransform()
             motion.SetCenter(center_lps)
@@ -291,7 +291,7 @@ class Motion(IntensityTransform, FourierTransform):
         indices: list[int] = indices_array.tolist()  # type: ignore[assignment]
         indices.append(last_index)
         ini = 0
-        for spectrum, fin in zip(spectra, indices):
+        for spectrum, fin in zip(spectra, indices, strict=True):
             result_spectrum[..., ini:fin] = spectrum[..., ini:fin]
             ini = fin
         result_image = self.inv_fourier_transform(result_spectrum).real.float()

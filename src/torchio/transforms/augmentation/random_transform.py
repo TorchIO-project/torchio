@@ -47,7 +47,7 @@ class RandomTransform(Transform):
     @staticmethod
     def sample_uniform_sextet(params: TypeSextetFloat) -> TypeTripletFloat:
         results = []
-        for a, b in zip(params[::2], params[1::2]):
+        for a, b in zip(params[::2], params[1::2], strict=True):
             results.append(RandomTransform.sample_uniform(a, b))
         sx, sy, sz = results
         return sx, sy, sz

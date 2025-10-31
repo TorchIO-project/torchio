@@ -27,8 +27,10 @@ class TestAggregator(TorchioTestCase):
             (1, 1): 6,
         }
         for batch in loader:
-            iterable = zip(batch[tio.LOCATION], batch[image_name][tio.DATA])
-            for location, data in iterable:
+            location = batch[tio.LOCATION]
+            data = batch[image_name][tio.DATA]
+            locations_and_channels = zip(location, data, strict=True)
+            for location, data in locations_and_channels:
                 coords_2d = tuple(location[1:3].tolist())
                 data *= values_dict[coords_2d]
             batch_data = batch[image_name][tio.DATA]

@@ -55,7 +55,7 @@ class Slicer(Subject):
         except KeyError as e:
             message = f'Invalid name "{name}". Valid names are: {", ".join(URLS_DICT)}'
             raise ValueError(message) from e
-        for filename, url_file in zip(filenames, url_files):
+        for filename, url_file in zip(filenames, url_files, strict=True):
             filename = filename.replace('-', '_')
             url = urllib.parse.urljoin(SLICER_URL, url_file)
             download_root = get_torchio_cache_dir() / 'slicer'

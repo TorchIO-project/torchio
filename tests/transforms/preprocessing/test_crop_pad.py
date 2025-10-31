@@ -128,7 +128,11 @@ class TestCropOrPad(TorchioTestCase):
         mask[0, 4:6, 9:11, 14:16] = 1
         transformed_center = transform_center(self.sample_subject)
         transformed_mask = transform_mask(self.sample_subject)
-        zipped = zip(transformed_center.values(), transformed_mask.values())
+        zipped = zip(
+            transformed_center.values(),
+            transformed_mask.values(),
+            strict=True,
+        )
         for image_center, image_mask in zipped:
             self.assert_tensor_equal(
                 image_center.data,
@@ -149,13 +153,17 @@ class TestCropOrPad(TorchioTestCase):
             target_shape,
             mask_name='label',
         )
-        mask = self.sample_subject['label'].data
+        mask = self.sample_subject['label'][tio.DATA]
         mask *= 0
         mask[0, 0, 0, 0] = 1
         mask[0, -1, -1, -1] = 1
         transformed_center = transform_center(self.sample_subject)
         transformed_mask = transform_mask(self.sample_subject)
-        zipped = zip(transformed_center.values(), transformed_mask.values())
+        zipped = zip(
+            transformed_center.values(),
+            transformed_mask.values(),
+            strict=True,
+        )
         for image_center, image_mask in zipped:
             self.assert_tensor_equal(
                 image_center.data,
@@ -221,7 +229,7 @@ class TestCropOrPad(TorchioTestCase):
         target_shape = 9, 21, 30
         orig_shape = self.sample_subject['t1'].spatial_shape
         expected_shape = tuple(
-            t if t > o else o for o, t in zip(orig_shape, target_shape)
+            t if t > o else o for o, t in zip(orig_shape, target_shape, strict=True)
         )
         transform = tio.CropOrPad(target_shape, only_pad=True)
         transformed = transform(self.sample_subject)
@@ -233,7 +241,7 @@ class TestCropOrPad(TorchioTestCase):
         target_shape = 9, 21, 30
         orig_shape = self.sample_subject['t1'].spatial_shape
         expected_shape = tuple(
-            t if t < o else o for o, t in zip(orig_shape, target_shape)
+            t if t < o else o for o, t in zip(orig_shape, target_shape, strict=True)
         )
         transform = tio.CropOrPad(target_shape, only_crop=True)
         transformed = transform(self.sample_subject)
