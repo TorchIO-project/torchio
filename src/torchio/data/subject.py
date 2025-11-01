@@ -14,6 +14,8 @@ from ..utils import get_subclasses
 from .image import Image
 
 if TYPE_CHECKING:
+    from matplotlib.figure import Figure
+
     from ..transforms import Compose
     from ..transforms import Transform
 
@@ -415,7 +417,7 @@ class Subject(dict):
         del self[image_name]
         delattr(self, image_name)
 
-    def plot(self, **kwargs) -> None:
+    def plot(self, **kwargs) -> Figure:
         """Plot images using matplotlib.
 
         Args:
@@ -424,4 +426,4 @@ class Subject(dict):
         """
         from ..visualization import plot_subject  # avoid circular import
 
-        plot_subject(self, **kwargs)
+        return plot_subject(self, **kwargs)
