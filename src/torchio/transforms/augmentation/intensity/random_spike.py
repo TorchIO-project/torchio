@@ -14,7 +14,7 @@ class RandomSpike(RandomTransform, IntensityTransform, FourierTransform):
     r"""Add random MRI spike artifacts.
 
     Also known as `Herringbone artifact
-    <https://radiopaedia.org/articles/herringbone-artifact?lang=gb>`_,
+    <https://radiopaedia.org/articles/herringbone-artifact>`_,
     crisscross artifact or corduroy artifact, it creates stripes in different
     directions in image space due to spikes in k-space.
 
