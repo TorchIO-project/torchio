@@ -901,6 +901,15 @@
       "contributions": [
         "bug"
       ]
+    },
+    {
+      "login": "AndersDHenriksen",
+      "name": "Anders Dahl Henriksen",
+      "avatar_url": "https://avatars.githubusercontent.com/u/14275017?v=4",
+      "profile": "https://github.com/AndersDHenriksen",
+      "contributions": [
+        "maintenance"
+      ]
     }
   ],
   "contributorsPerLine": 7,
