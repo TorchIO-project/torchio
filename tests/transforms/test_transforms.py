@@ -255,7 +255,7 @@ class TestTransform(TorchioTestCase):
 
     def test_min_constraint(self):
         transform = tio.RandomNoise()
-        assert transform._parse_range(3, 'name', min_constraint=0) == (0,3)
+        assert transform._parse_range(3, 'name', min_constraint=0) == (0, 3)
 
     def test_bad_over_max(self):
         transform = tio.RandomNoise()
