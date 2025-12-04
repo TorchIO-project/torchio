@@ -58,6 +58,8 @@ from .preprocessing.intensity.histogram_standardization import train_histogram
 from .preprocessing.label.label_transform import LabelTransform
 from .spatial_transform import SpatialTransform
 from .transform import Transform
+from .augmentation.intensity import RandomBiasFieldDenoise
+
 
 __all__ = [
     'Transform',
@@ -120,4 +122,5 @@ __all__ = [
     'RemoveLabels',
     'SequentialLabels',
     'KeepLargestComponent',
+    'RandomBiasFieldDenoise',
 ]
