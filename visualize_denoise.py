@@ -23,12 +23,12 @@ denoised_image = denoised_3d[:, :, slice_idx]
 fig, axes = plt.subplots(1, 2, figsize=(10, 5))
 
 axes[0].imshow(image, cmap='gray')
-axes[0].set_title("Original")
-axes[0].axis("off")
+axes[0].set_title('Original')
+axes[0].axis('off')
 
 axes[1].imshow(denoised_image, cmap='gray')
-axes[1].set_title("After Denoise")
-axes[1].axis("off")
+axes[1].set_title('After Denoise')
+axes[1].axis('off')
 
 plt.tight_layout()
 plt.show()
