@@ -8,6 +8,7 @@ from .augmentation.intensity import LabelsToImage
 from .augmentation.intensity import Motion
 from .augmentation.intensity import Noise
 from .augmentation.intensity import RandomBiasField
+from .augmentation.intensity import RandomBiasFieldDenoise
 from .augmentation.intensity import RandomBlur
 from .augmentation.intensity import RandomGamma
 from .augmentation.intensity import RandomGhosting
@@ -58,8 +59,6 @@ from .preprocessing.intensity.histogram_standardization import train_histogram
 from .preprocessing.label.label_transform import LabelTransform
 from .spatial_transform import SpatialTransform
 from .transform import Transform
-from .augmentation.intensity import RandomBiasFieldDenoise
-
 
 __all__ = [
     'Transform',

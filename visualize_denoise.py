@@ -1,7 +1,7 @@
-import torchio as tio
 import matplotlib.pyplot as plt
 
-# ---- Load example MRI ----
+import torchio as tio
+
 subject = tio.datasets.Colin27()
 
 # Get full 3D volume

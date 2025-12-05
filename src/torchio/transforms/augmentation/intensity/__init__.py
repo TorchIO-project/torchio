@@ -1,5 +1,6 @@
 from .random_bias_field import BiasField
 from .random_bias_field import RandomBiasField
+from .random_biasfield_denoise import RandomBiasFieldDenoise
 from .random_blur import Blur
 from .random_blur import RandomBlur
 from .random_gamma import Gamma
@@ -16,8 +17,6 @@ from .random_spike import RandomSpike
 from .random_spike import Spike
 from .random_swap import RandomSwap
 from .random_swap import Swap
-from .random_biasfield_denoise import RandomBiasFieldDenoise
-
 
 __all__ = [
     'RandomSwap',

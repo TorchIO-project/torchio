@@ -1,7 +1,10 @@
-import torch
-from ...transform import Transform
 from torchio.data.subject import Subject
 
+<<<<<<< HEAD
+=======
+from ...transform import Transform
+
+>>>>>>> e8e8035 (Apply Ruff autofix and sort imports)
 
 class RandomBiasFieldDenoise(Transform):
     """
