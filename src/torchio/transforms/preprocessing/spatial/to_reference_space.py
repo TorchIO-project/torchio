@@ -49,6 +49,5 @@ def build_image_from_reference(tensor: torch.Tensor, reference: Image) -> Image:
     output_spacing = input_spacing * downsampling_factor
     downsample = Resample(output_spacing, image_interpolation='nearest')
     reference = downsample(reference)
-    class_ = reference.__class__
-    result = class_(tensor=tensor, affine=reference.affine)
+    result = reference.new_like(tensor=tensor, affine=reference.affine)
     return result
