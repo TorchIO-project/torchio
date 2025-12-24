@@ -319,14 +319,14 @@ class CtRate(SubjectsDataset):
             image_row: A pandas Series representing a row from the metadata DataFrame,
                 containing information about a single image.
         """
-        image_dict = image_row.to_dict()
-        filename = image_dict[self._FILENAME_KEY]
+        image_dict: dict[str, str | dict[str, str]] = image_row.to_dict()  # type: ignore[assignment]
+        filename: str = image_dict[self._FILENAME_KEY]  # type: ignore[assignment]
         relative_image_path = self._get_image_path(
             filename,
             load_fixed=self._load_fixed,
         )
         image_path = self._root_dir / relative_image_path
-        report_dict = self._extract_report_dict(image_dict)
+        report_dict = self._extract_report_dict(image_dict)  # type: ignore[arg-type]
         image_dict[self._report_key] = report_dict
         image = ScalarImage(image_path, verify_path=self._verify_paths, **image_dict)
         return image

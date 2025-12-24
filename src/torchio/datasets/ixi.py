@@ -107,7 +107,7 @@ class IXI(SubjectsDataset):
         return exists
 
     @staticmethod
-    def _get_subjects_list(root, modalities):
+    def _get_subjects_list(root: Path, modalities: Sequence[str]) -> list[Subject]:
         # The number of files for each modality is not the same
         # E.g. 581 for T1, 578 for T2
         # Let's just use the first modality as reference for now
@@ -134,7 +134,7 @@ class IXI(SubjectsDataset):
                 skip_subject = False
             if skip_subject:
                 continue
-            subjects.append(Subject(**images_dict))
+            subjects.append(Subject(**images_dict))  # type: ignore[arg-type]
         return subjects
 
     def _download(self, root, modalities):

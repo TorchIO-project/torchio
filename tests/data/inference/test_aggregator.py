@@ -142,3 +142,40 @@ class TestAggregator(TorchioTestCase):
             inference_batch = torch.stack(patches)
             with pytest.raises(RuntimeError):
                 aggregator.add_batch(inference_batch, batch[tio.LOCATION])
+
+    def test_downsampling_model(self):
+        # This might be useful to compute image embeddings using a sliding window
+        downsampling_factor = 4  # e.g. patch size in a ViT
+        embedding_dim = 5
+        net_input_size = 20
+        image_size = 40
+
+        def network(x):
+            down = x[
+                ...,
+                ::downsampling_factor,
+                ::downsampling_factor,
+                ::downsampling_factor,
+            ]
+            embeddings = torch.cat(embedding_dim * [down], dim=1)
+            return embeddings
+
+        tensor = torch.ones(1, image_size, image_size, image_size)
+        image_name = 'img'
+        subject = tio.Subject({image_name: tio.ScalarImage(tensor=tensor)})
+        sampler = tio.data.GridSampler(
+            subject,
+            patch_size=net_input_size,
+        )
+        aggregator = tio.data.GridAggregator(
+            sampler,
+            downsampling_factor=downsampling_factor,
+        )
+        loader = tio.SubjectsLoader(sampler, batch_size=3)
+        for batch in loader:
+            input_batch = batch[image_name][tio.DATA]
+            embeddings = network(input_batch)
+            aggregator.add_batch(embeddings, batch[tio.LOCATION])
+        output = aggregator.get_output_tensor()
+        expected_shape = (embedding_dim,) + (image_size // downsampling_factor,) * 3
+        self.assertEqual(output.shape, expected_shape)
