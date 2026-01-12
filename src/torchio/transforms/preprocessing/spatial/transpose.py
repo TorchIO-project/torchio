@@ -34,7 +34,7 @@ class Transpose(SpatialTransform):
             transposed = transform(image)
             new_image = image.new_like(tensor=transposed.data, affine=transposed.affine)
             subject[image_name] = new_image
-        
+
         # Update attributes to sync dictionary changes with attribute access
         subject.update_attributes()
         return subject

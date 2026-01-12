@@ -240,7 +240,7 @@ class Resample(SpatialTransform):
             array, affine = sitk_to_nib(resampled)
             new_image = image.new_like(tensor=torch.as_tensor(array), affine=affine)
             subject[image_name] = new_image
-        
+
         # Update attributes to sync dictionary changes with attribute access
         subject.update_attributes()
         return subject
