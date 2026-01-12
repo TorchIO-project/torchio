@@ -22,13 +22,21 @@ class Transpose(SpatialTransform):
     """
 
     def apply_transform(self, subject: Subject) -> Subject:
-        for image in self.get_images(subject):
+        images_dict = subject.get_images_dict(
+            intensity_only=False,
+            include=self.include,
+            exclude=self.exclude,
+        )
+        for image_name, image in images_dict.items():
             old_orientation = image.orientation_str
             new_orientation = old_orientation[::-1]
             transform = ToOrientation(new_orientation)
             transposed = transform(image)
-            image.set_data(transposed.data)
-            image.affine = transposed.affine
+            new_image = image.new_like(tensor=transposed.data, affine=transposed.affine)
+            subject[image_name] = new_image
+        
+        # Update attributes to sync dictionary changes with attribute access
+        subject.update_attributes()
         return subject
 
     def is_invertible(self):

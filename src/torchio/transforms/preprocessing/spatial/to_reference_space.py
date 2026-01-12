@@ -29,10 +29,17 @@ class ToReferenceSpace(SpatialTransform):
         self.reference = reference
 
     def apply_transform(self, subject: Subject) -> Subject:
-        for image in self.get_images(subject):
+        images_dict = subject.get_images_dict(
+            intensity_only=False,
+            include=self.include,
+            exclude=self.exclude,
+        )
+        for image_name, image in images_dict.items():
             new_image = build_image_from_reference(image.data, self.reference)
-            image.set_data(new_image.data)
-            image.affine = new_image.affine
+            subject[image_name] = new_image
+        
+        # Update attributes to sync dictionary changes with attribute access
+        subject.update_attributes()
         return subject
 
     @staticmethod

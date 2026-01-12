@@ -71,7 +71,8 @@ class ToOrientation(SpatialTransform):
         self.args_names = ['orientation']
 
     def apply_transform(self, subject: Subject) -> Subject:
-        for image in subject.get_images(intensity_only=False):
+        images_dict = subject.get_images_dict(intensity_only=False)
+        for image_name, image in images_dict.items():
             current_orientation = ''.join(nib.orientations.aff2axcodes(image.affine))
 
             # If the image is already in the target orientation, skip it
@@ -104,7 +105,9 @@ class ToOrientation(SpatialTransform):
             # Update the image data and affine
             reoriented_array = np.ascontiguousarray(reoriented_array)
             tensor = torch.from_numpy(reoriented_array)
-            image.set_data(tensor)
-            image.affine = reoriented_affine
+            new_image = image.new_like(tensor=tensor, affine=reoriented_affine)
+            subject[image_name] = new_image
 
+        # Update attributes to sync dictionary changes with attribute access
+        subject.update_attributes()
         return subject

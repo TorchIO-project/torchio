@@ -822,13 +822,23 @@ class Image(dict):
         if affine is None:
             affine = self.affine
         
-        return type(self)(
-            tensor=tensor,
-            affine=affine,
-            type=self.type,
-            check_nans=self.check_nans,
-            reader=self.reader,
-        )
+        # First, try the standard constructor approach
+        try:
+            return type(self)(
+                tensor=tensor,
+                affine=affine,
+                type=self.type,
+                check_nans=self.check_nans,
+                reader=self.reader,
+            )
+        except TypeError:
+            # If the standard constructor fails (e.g., custom subclass with additional required args),
+            # fall back to a copy-based approach
+            import copy
+            new_image = copy.deepcopy(self)
+            new_image.set_data(tensor)
+            new_image.affine = affine
+            return new_image
 
     def plot(self, **kwargs) -> None:
         """Plot image."""
