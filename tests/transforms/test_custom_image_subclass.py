@@ -1,7 +1,8 @@
 """Tests for custom Image subclasses with transforms."""
 
-import torch
 import pytest
+import torch
+
 import torchio as tio
 
 
@@ -135,11 +136,6 @@ class TestCustomImageSubclass:
     
     def test_to_reference_space_with_custom_image(self, history_image):
         """Test that ToReferenceSpace works with custom images."""
-        # Create a reference image
-        reference_tensor = torch.rand(1, 20, 20, 20)
-        reference_affine = torch.eye(4)
-        reference = tio.ScalarImage(tensor=reference_tensor, affine=reference_affine)
-        
         # Create embedding tensor (smaller than reference)
         embedding_tensor = torch.rand(1, 10, 10, 10)
         

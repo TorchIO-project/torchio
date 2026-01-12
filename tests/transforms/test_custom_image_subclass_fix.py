@@ -1,7 +1,8 @@
 """Tests for custom Image subclass support in spatial transforms."""
 
-import torch
 import pytest
+import torch
+
 import torchio as tio
 
 
