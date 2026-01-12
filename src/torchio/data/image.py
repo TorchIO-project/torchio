@@ -821,7 +821,7 @@ class Image(dict):
         """
         if affine is None:
             affine = self.affine
-        
+
         # First, try the standard constructor approach
         try:
             return type(self)(
@@ -835,6 +835,7 @@ class Image(dict):
             # If the standard constructor fails (e.g., custom subclass with additional required args),
             # fall back to a copy-based approach
             import copy
+
             new_image = copy.deepcopy(self)
             new_image.set_data(tensor)
             new_image.affine = affine

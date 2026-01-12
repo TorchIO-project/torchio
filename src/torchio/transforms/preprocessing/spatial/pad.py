@@ -131,10 +131,12 @@ class Pad(BoundsTransform):
             pad_params = self.bounds_parameters
             paddings = (0, 0), pad_params[:2], pad_params[2:4], pad_params[4:]
             padded = np.pad(image.data, paddings, **kwargs)  # type: ignore[call-overload]
-            new_image = image.new_like(tensor=torch.as_tensor(padded), affine=new_affine)
+            new_image = image.new_like(
+                tensor=torch.as_tensor(padded), affine=new_affine
+            )
             # Replace the image in the subject with the new padded image
             subject[image_name] = new_image
-        
+
         # Update attributes to sync dictionary changes with attribute access
         subject.update_attributes()
         return subject

@@ -37,7 +37,7 @@ class ToReferenceSpace(SpatialTransform):
         for image_name, image in images_dict.items():
             new_image = build_image_from_reference(image.data, self.reference)
             subject[image_name] = new_image
-        
+
         # Update attributes to sync dictionary changes with attribute access
         subject.update_attributes()
         return subject
