@@ -24,6 +24,12 @@ class GridAggregator:
             in the overlapping areas will be weighted with a Hann window
             function. See the `grid aggregator tests`_ for a raw visualization
             of the three modes.
+        downsampling_factor: Factor by which the output volume is expected to
+            be smaller than the input volume in each spatial dimension. This is
+            useful when the model downsamples the input (e.g., with strided
+            convolutions or pooling layers). Currently, only a single integer
+            is supported, which applies the same downsampling factor to all
+            spatial dimensions.
 
     .. _grid aggregator tests: https://github.com/TorchIO-project/torchio/blob/main/tests/data/inference/test_aggregator.py
 
@@ -32,7 +38,12 @@ class GridAggregator:
         information about patch-based sampling.
     """
 
-    def __init__(self, sampler: GridSampler, overlap_mode: str = 'crop'):
+    def __init__(
+        self,
+        sampler: GridSampler,
+        overlap_mode: str = 'crop',
+        downsampling_factor: int = 1,  # TODO: support one per dimension
+    ):
         subject = sampler.subject
         self.volume_padded = sampler.padding_mode is not None
         self.spatial_shape = subject.spatial_shape
@@ -43,6 +54,9 @@ class GridAggregator:
         self.overlap_mode = overlap_mode
         self._avgmask_tensor: torch.Tensor | None = None
         self._hann_window: torch.Tensor | None = None
+        self._downsampling_factor = downsampling_factor
+        shape_array = np.array(subject.spatial_shape) // self._downsampling_factor
+        self.spatial_shape = tuple(shape_array.tolist())
 
     @staticmethod
     def _parse_overlap_mode(overlap_mode):
@@ -137,7 +151,7 @@ class GridAggregator:
         batch_tensor: torch.Tensor,
         locations: torch.Tensor,
     ) -> None:
-        """Add batch processed by a CNN to the output prediction volume.
+        """Add batch processed by a network to the output prediction volume.
 
         Args:
             batch_tensor: 5D tensor, typically the output of a convolutional
@@ -147,12 +161,13 @@ class GridAggregator:
                 extracted using ``batch[torchio.LOCATION]``.
         """
         batch = batch_tensor.cpu()
-        locations_array = locations.cpu().numpy()
-        patch_sizes = locations_array[:, 3:] - locations_array[:, :3]
+        locations_array = locations.cpu().numpy() // self._downsampling_factor
+        target_shapes = locations_array[:, 3:] - locations_array[:, :3]
         # There should be only one patch size
-        assert len(np.unique(patch_sizes, axis=0)) == 1
+        assert len(np.unique(target_shapes, axis=0)) == 1
         input_spatial_shape = tuple(batch.shape[-3:])
-        target_spatial_shape = tuple(patch_sizes[0])
+        target_spatial_shape_array = target_shapes[0]
+        target_spatial_shape = tuple(target_spatial_shape_array.tolist())
         if input_spatial_shape != target_spatial_shape:
             message = (
                 f'The shape of the input batch, {input_spatial_shape},'
