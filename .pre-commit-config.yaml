@@ -15,7 +15,7 @@ repos:
       - id: trailing-whitespace        # Trims trailing whitespace
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.13.3
+    rev: v0.14.10
     hooks:
       - id: ruff
       - id: ruff-format
@@ -32,7 +32,7 @@ repos:
       - id: rst-inline-touching-normal        # detect mistake of inline code touching normal text in rst
 
   - repo: https://github.com/asottile/pyupgrade
-    rev: v3.20.0
+    rev: v3.21.2
     hooks:
       - id: pyupgrade
         args: ['--py310-plus']
