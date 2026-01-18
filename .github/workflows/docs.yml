@@ -31,7 +31,7 @@ jobs:
 
       - name: Restore TorchIO cached data
         id: cache-torchio-data-restore
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v5
         with:
           path: ~/.cache/torchio
           key: ${{ runner.os }}-torchio-data
@@ -42,7 +42,7 @@ jobs:
       - name: Save TorchIO cached data
         if: steps.cache-torchio-data-restore.outputs.cache-hit != 'true'
         id: cache-torchio-data-save
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~/.cache/torchio
           key: ${{ steps.cache-torchio-data-restore.outputs.cache-primary-key }}
