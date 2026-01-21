@@ -41,7 +41,7 @@ class RandomSpike(RandomTransform, IntensityTransform, FourierTransform):
 
     def __init__(
         self,
-        num_spikes: int | tuple[int, int] = 1,
+        num_spikes: int | tuple[int, int] = (1, 1),
         intensity: float | tuple[float, float] = (1, 3),
         **kwargs,
     ):

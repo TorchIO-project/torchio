@@ -331,7 +331,7 @@ class Transform(ABC):
                         f'If {name} is a single number, it must be of'
                         f' type {type_constraint}, not {nums_range}',
                     )
-            min_range = -nums_range if min_constraint is None else nums_range
+            min_range = -nums_range if min_constraint is None else min_constraint
             return (min_range, nums_range)
 
         try:
