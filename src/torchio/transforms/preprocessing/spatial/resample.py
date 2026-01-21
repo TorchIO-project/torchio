@@ -180,7 +180,12 @@ class Resample(SpatialTransform):
             assert self.pre_affine_name is not None  # for mypy
             self.check_affine_key_presence(self.pre_affine_name, subject)
 
-        for image in self.get_images(subject):
+        images_dict = subject.get_images_dict(
+            intensity_only=False,
+            include=self.include,
+            exclude=self.exclude,
+        )
+        for image_name, image in images_dict.items():
             # If the current image is the reference, don't resample it
             if self.target is image:
                 continue
@@ -233,8 +238,11 @@ class Resample(SpatialTransform):
             resampled = resampler.Execute(floating_sitk)
 
             array, affine = sitk_to_nib(resampled)
-            image.set_data(torch.as_tensor(array))
-            image.affine = affine
+            new_image = image.new_like(tensor=torch.as_tensor(array), affine=affine)
+            subject[image_name] = new_image
+
+        # Update attributes to sync dictionary changes with attribute access
+        subject.update_attributes()
         return subject
 
     @staticmethod

@@ -774,6 +774,73 @@ class Image(dict):
     def set_check_nans(self, check_nans: bool) -> None:
         self.check_nans = check_nans
 
+    def new_like(self, tensor: TypeData, affine: TypeData | None = None) -> Image:
+        """Create a new image of the same type with new tensor data.
+
+        This method creates a new image instance of the same class as the current
+        image, preserving essential attributes like type, check_nans, and reader.
+        This is particularly useful for transforms that need to create new images
+        while maintaining compatibility with custom Image subclasses.
+
+        Args:
+            tensor: 4D tensor with dimensions :math:`(C, W, H, D)` for the new image.
+            affine: :math:`4 \\times 4` matrix to convert voxel coordinates to world
+                coordinates. If ``None``, uses the current image's affine matrix.
+
+        Returns:
+            A new image instance of the same type as the current image.
+
+        Example:
+            >>> import torch
+            >>> import torchio as tio
+            >>> # Standard usage
+            >>> image = tio.ScalarImage('path/to/image.nii.gz')
+            >>> new_tensor = torch.rand(1, 64, 64, 64)
+            >>> new_image = image.new_like(tensor=new_tensor)
+            >>> isinstance(new_image, tio.ScalarImage)
+            True
+
+            >>> # Custom subclass usage
+            >>> class CustomImage(tio.ScalarImage):
+            ...     def __init__(self, tensor, affine, metadata, **kwargs):
+            ...         super().__init__(tensor=tensor, affine=affine, **kwargs)
+            ...         self.metadata = metadata
+            ...
+            ...     def new_like(self, tensor, affine=None):
+            ...         return type(self)(
+            ...             tensor=tensor,
+            ...             affine=affine if affine is not None else self.affine,
+            ...             metadata=self.metadata,  # Preserve custom attribute
+            ...             check_nans=self.check_nans,
+            ...             reader=self.reader,
+            ...         )
+            >>> custom = CustomImage(torch.rand(1, 32, 32, 32), torch.eye(4), {'id': 123})
+            >>> new_custom = custom.new_like(torch.rand(1, 16, 16, 16))
+            >>> new_custom.metadata['id']
+            123
+        """
+        if affine is None:
+            affine = self.affine
+
+        # First, try the standard constructor approach
+        try:
+            return type(self)(
+                tensor=tensor,
+                affine=affine,
+                type=self.type,
+                check_nans=self.check_nans,
+                reader=self.reader,
+            )
+        except TypeError:
+            # If the standard constructor fails (e.g., custom subclass with additional required args),
+            # fall back to a copy-based approach
+            import copy
+
+            new_image = copy.deepcopy(self)
+            new_image.set_data(tensor)
+            new_image.affine = affine
+            return new_image
+
     def plot(self, **kwargs) -> None:
         """Plot image."""
         if self.is_2d():
