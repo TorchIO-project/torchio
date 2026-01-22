@@ -211,6 +211,15 @@ class Image(dict):
         return string
 
     def _repr_html_(self):
+        """Return HTML representation of the image for Jupyter notebooks.
+
+        Generates an embedded base64-encoded PNG image using matplotlib.
+        If matplotlib is not installed, falls back to text representation.
+
+        Returns:
+            HTML string with embedded image, or text representation if
+            matplotlib is unavailable.
+        """
         try:
             from matplotlib import pyplot as plt
             from matplotlib.figure import Figure
