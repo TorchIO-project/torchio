@@ -210,7 +210,7 @@ class Image(dict):
         string = f'{self.__class__.__name__}({properties})'
         return string
 
-    def _repr_html_(self):
+    def _repr_html_(self) -> str:
         """Return HTML representation of the image for Jupyter notebooks.
 
         Generates an embedded base64-encoded PNG image using matplotlib.
@@ -233,7 +233,9 @@ class Image(dict):
             show=False,
             savefig_kwargs={'bbox_inches': 'tight'},
         )
-        assert isinstance(fig, Figure)
+        if not isinstance(fig, Figure):
+            message = f'Expected Figure, got {type(fig)}'
+            raise TypeError(message)
         plt.close(fig)
         buffer.seek(0)
 
