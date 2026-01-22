@@ -806,6 +806,7 @@ class Image(dict):
         """Plot image."""
         if self.is_2d():
             self.as_pil().show()
+            return None
         else:
             from ..visualization import plot_volume  # avoid circular import
 
@@ -813,6 +814,7 @@ class Image(dict):
             if return_fig:
                 assert figure is not None
                 return figure
+            return None
 
     def show(self, viewer_path: TypePath | None = None) -> None:
         """Open the image using external software.
