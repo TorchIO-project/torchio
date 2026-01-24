@@ -210,16 +210,7 @@ class Image(dict):
         string = f'{self.__class__.__name__}({properties})'
         return string
 
-    def _repr_html_(self) -> str:
-        """Return HTML representation of the image for Jupyter notebooks.
-
-        Generates an embedded base64-encoded PNG image using matplotlib.
-        If matplotlib is not installed, falls back to text representation.
-
-        Returns:
-            HTML string with embedded image, or text representation if
-            matplotlib is unavailable.
-        """
+    def _repr_html_(self):
         try:
             from matplotlib import pyplot as plt
             from matplotlib.figure import Figure
@@ -233,9 +224,7 @@ class Image(dict):
             show=False,
             savefig_kwargs={'bbox_inches': 'tight'},
         )
-        if not isinstance(fig, Figure):
-            message = f'Expected Figure, got {type(fig)}'
-            raise TypeError(message)
+        assert isinstance(fig, Figure)
         plt.close(fig)
         buffer.seek(0)
 
@@ -817,7 +806,6 @@ class Image(dict):
         """Plot image."""
         if self.is_2d():
             self.as_pil().show()
-            return None
         else:
             from ..visualization import plot_volume  # avoid circular import
 
@@ -825,7 +813,6 @@ class Image(dict):
             if return_fig:
                 assert figure is not None
                 return figure
-            return None
 
     def show(self, viewer_path: TypePath | None = None) -> None:
         """Open the image using external software.
