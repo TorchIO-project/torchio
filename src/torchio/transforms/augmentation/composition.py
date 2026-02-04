@@ -81,6 +81,16 @@ class Compose(Transform):
             )
         return result
 
+    def to_hydra_config(self) -> dict:
+        """Return a dictionary representation of the transform for Hydra instantiation."""
+        target = self._get_name_with_module()
+        transform_dict = {'_target_': target}
+        transform_dict['transforms'] = []
+        transform_dict.update(self._get_reproducing_arguments())
+        for transform in self.transforms:
+            transform_dict['transforms'].append(transform.to_hydra_config())
+        return transform_dict
+
 
 class OneOf(RandomTransform):
     """Apply only one of the given transforms.
