@@ -596,3 +596,22 @@ class Transform(ABC):
         mask = torch.zeros_like(tensor, dtype=torch.bool)
         mask[:, i0:i1, j0:j1, k0:k1] = True
         return mask
+
+    def _get_name_with_module(self) -> str:
+        """Return the name of the transform including its module."""
+        return f'{self.__class__.__module__}.{self.__class__.__name__}'
+
+    @staticmethod
+    def _tuples_to_lists(obj):
+        if isinstance(obj, (tuple, list)):
+            return [Transform._tuples_to_lists(x) for x in obj]
+        if isinstance(obj, dict):
+            return {k: Transform._tuples_to_lists(v) for k, v in obj.items()}
+        return obj
+
+    def to_hydra_config(self) -> dict:
+        """Return a dictionary representation of the transform for Hydra instantiation."""
+        target = self._get_name_with_module()
+        transform_dict = {'_target_': target}
+        transform_dict.update(self._get_reproducing_arguments())
+        return self._tuples_to_lists(transform_dict)

@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import warnings
 from collections.abc import Sequence
+from typing import Any
+from typing import TypeAlias
 from typing import Union
 
 import numpy as np
@@ -11,7 +13,9 @@ from ...data.subject import Subject
 from ..transform import Transform
 from . import RandomTransform
 
-TypeTransformsDict = Union[dict[Transform, float], Sequence[Transform]]
+TypeTransformsDict: TypeAlias = Union[dict[Transform, float], Sequence[Transform]]
+HydraConfig: TypeAlias = dict[str, Any]
+HydraConfigDict: TypeAlias = dict[str, HydraConfig]
 
 
 class Compose(Transform):
@@ -80,6 +84,15 @@ class Compose(Transform):
                 stacklevel=2,
             )
         return result
+
+    def to_hydra_config(self) -> HydraConfig:
+        """Return a dictionary representation of the transform for Hydra instantiation."""
+        transform_dict: HydraConfig = {'_target_': self._get_name_with_module()}
+        transform_dict['transforms'] = []
+        transform_dict.update(self._get_reproducing_arguments())
+        for transform in self.transforms:
+            transform_dict['transforms'].append(transform.to_hydra_config())
+        return self._tuples_to_lists(transform_dict)
 
 
 class OneOf(RandomTransform):
