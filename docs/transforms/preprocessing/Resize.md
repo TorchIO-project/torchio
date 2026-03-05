@@ -1,0 +1,3 @@
+# Resize
+
+::: torchio.transforms.Resize

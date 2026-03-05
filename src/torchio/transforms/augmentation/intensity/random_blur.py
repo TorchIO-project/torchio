@@ -16,18 +16,18 @@ class RandomBlur(RandomTransform, IntensityTransform):
     r"""Blur an image using a random-sized Gaussian filter.
 
     Args:
-        std: Tuple :math:`(a_1, b_1, a_2, b_2, a_3, b_3)` representing the
+        std: Tuple $(a_1, b_1, a_2, b_2, a_3, b_3)$ representing the
             ranges (in mm) of the standard deviations
-            :math:`(\sigma_1, \sigma_2, \sigma_3)` of the Gaussian kernels used
+            $(\sigma_1, \sigma_2, \sigma_3)$ of the Gaussian kernels used
             to blur the image along each axis, where
-            :math:`\sigma_i \sim \mathcal{U}(a_i, b_i)`.
-            If two values :math:`(a, b)` are provided,
-            then :math:`\sigma_i \sim \mathcal{U}(a, b)`.
-            If only one value :math:`x` is provided,
-            then :math:`\sigma_i \sim \mathcal{U}(0, x)`.
-            If three values :math:`(x_1, x_2, x_3)` are provided,
-            then :math:`\sigma_i \sim \mathcal{U}(0, x_i)`.
-        **kwargs: See :class:`~torchio.transforms.Transform` for additional
+            $\sigma_i \sim \mathcal{U}(a_i, b_i)$.
+            If two values $(a, b)$ are provided,
+            then $\sigma_i \sim \mathcal{U}(a, b)$.
+            If only one value $x$ is provided,
+            then $\sigma_i \sim \mathcal{U}(0, x)$.
+            If three values $(x_1, x_2, x_3)$ are provided,
+            then $\sigma_i \sim \mathcal{U}(0, x_i)$.
+        **kwargs: See [`Transform`][torchio.transforms.Transform] for additional
             keyword arguments.
     """
 
@@ -58,10 +58,10 @@ class Blur(IntensityTransform):
     r"""Blur an image using a Gaussian filter.
 
     Args:
-        std: Tuple :math:`(\sigma_1, \sigma_2, \sigma_3)` representing the
+        std: Tuple $(\sigma_1, \sigma_2, \sigma_3)$ representing the
             the standard deviations (in mm) of the Gaussian kernels used to
             blur the image along each axis.
-        **kwargs: See :class:`~torchio.transforms.Transform` for additional
+        **kwargs: See [`Transform`][torchio.transforms.Transform] for additional
             keyword arguments.
     """
 

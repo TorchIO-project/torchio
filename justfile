@@ -145,12 +145,10 @@ test:
 add-remote remote:
     git remote add {{remote}} git@github.com:{{remote}}/torchio.git
 
-docs_cmd := "uv run --group doc --directory docs"
+docs_cmd := "uv run --group doc"
 
-[positional-arguments]
-build-docs *args='':
-    {{docs_cmd}} -- sphinx-build -M html source build
+build-docs:
+    PYTHONPATH=docs uv run --group doc -- zensical build
 
-[positional-arguments]
-serve-docs *args='':
-    {{docs_cmd}} -- sphinx-autobuild source build "$@"
+serve-docs:
+    PYTHONPATH=docs uv run --group doc -- zensical serve

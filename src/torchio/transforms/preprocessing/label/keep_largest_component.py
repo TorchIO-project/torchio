@@ -8,14 +8,14 @@ class KeepLargestComponent(LabelTransform):
     r"""Keep only the largest connected component in a binary label map.
 
     Args:
-        **kwargs: See :class:`~torchio.transforms.Transform` for additional
+        **kwargs: See [`Transform`][torchio.transforms.Transform] for additional
             keyword arguments.
 
-    .. note:: For now, this transform only works for binary images, i.e., label
+    Note:
+        For now, this transform only works for binary images, i.e., label
         maps with a background and a foreground class. If you are interested in
-        extending this transform, please `open a new issue`_.
+        extending this transform, please [open a new issue](https://github.com/TorchIO-project/torchio/issues/new?assignees=&labels=enhancement&template=feature_request.md&title=Improve%20KeepLargestComponent%20transform).
 
-    .. _open a new issue: https://github.com/TorchIO-project/torchio/issues/new?assignees=&labels=enhancement&template=feature_request.md&title=Improve%20KeepLargestComponent%20transform
     """
 
     def apply_transform(self, subject: Subject) -> Subject:

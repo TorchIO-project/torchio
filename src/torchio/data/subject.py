@@ -25,8 +25,7 @@ class Subject(dict):
         *args: If provided, a dictionary of items.
         **kwargs: Items that will be added to the subject sample.
 
-    Example:
-
+    Examples:
         >>> import torchio as tio
         >>> # One way:
         >>> subject = tio.Subject(
@@ -99,8 +98,7 @@ class Subject(dict):
 
         Consistency of shapes across images in the subject is checked first.
 
-        Example:
-
+        Examples:
             >>> import torchio as tio
             >>> colin = tio.datasets.Colin27()
             >>> colin.shape
@@ -116,8 +114,7 @@ class Subject(dict):
         Consistency of spatial shapes across images in the subject is checked
         first.
 
-        Example:
-
+        Examples:
             >>> import torchio as tio
             >>> colin = tio.datasets.Colin27()
             >>> colin.spatial_shape
@@ -132,8 +129,7 @@ class Subject(dict):
 
         Consistency of spacings across images in the subject is checked first.
 
-        Example:
-
+        Examples:
             >>> import torchio as tio
             >>> colin = tio.datasets.Slicer()
             >>> colin.spacing
@@ -194,8 +190,8 @@ class Subject(dict):
 
         Args:
             warn: Issue a warning if some transforms are not invertible.
-            ignore_intensity: If ``True``, all instances of
-                :class:`~torchio.transforms.intensity_transform.IntensityTransform`
+            ignore_intensity: If `True`, all instances of
+                [`IntensityTransform`][torchio.transforms.intensity_transform.IntensityTransform]
                 will be ignored.
             image_interpolation: Modify interpolation for scalar images inside
                 transforms that perform resampling.
@@ -212,7 +208,7 @@ class Subject(dict):
 
         Args:
             **kwargs: Keyword arguments passed on to
-                :meth:`~torchio.data.subject.Subject.get_inverse_transform`.
+                [`get_inverse_transform()`][torchio.data.subject.Subject.get_inverse_transform].
         """
         inverse_transform = self.get_inverse_transform(**kwargs)
         transformed: Subject
@@ -234,10 +230,10 @@ class Subject(dict):
 
         Args:
             attribute: Name of the image attribute to check
-            relative_tolerance: Relative tolerance for :func:`numpy.allclose()`
-            absolute_tolerance: Absolute tolerance for :func:`numpy.allclose()`
+            relative_tolerance: Relative tolerance for `numpy.allclose()()`
+            absolute_tolerance: Absolute tolerance for `numpy.allclose()()`
 
-        Example:
+        Examples:
             >>> import numpy as np
             >>> import torch
             >>> import torchio as tio
@@ -251,14 +247,15 @@ class Subject(dict):
             ... )
             >>> subject.check_consistent_attribute('spacing')  # no error as tolerances are > 0
 
-        .. note:: To check that all values for a specific attribute are close
-            between all images in the subject, :func:`numpy.allclose()` is used.
-            This function returns ``True`` if
-            :math:`|a_i - b_i| \leq t_{abs} + t_{rel} * |b_i|`, where
-            :math:`a_i` and :math:`b_i` are the :math:`i`-th element of the same
+        Note:
+            To check that all values for a specific attribute are close
+            between all images in the subject, `numpy.allclose()()` is used.
+            This function returns `True` if
+            $|a_i - b_i| \leq t_{abs} + t_{rel} * |b_i|$, where
+            $a_i$ and $b_i$ are the $i$-th element of the same
             attribute of two images being compared,
-            :math:`t_{abs}` is the ``absolute_tolerance`` and
-            :math:`t_{rel}` is the ``relative_tolerance``.
+            $t_{abs}$ is the `absolute_tolerance` and
+            $t_{rel}$ is the `relative_tolerance`.
         """
         message = (
             f'More than one value for "{attribute}" found in subject images:\n{{}}'
@@ -420,7 +417,7 @@ class Subject(dict):
 
         Args:
             **kwargs: Keyword arguments that will be passed on to
-                :meth:`~torchio.Image.plot`.
+                [`plot()`][torchio.Image.plot].
         """
         from ..visualization import plot_subject  # avoid circular import
 

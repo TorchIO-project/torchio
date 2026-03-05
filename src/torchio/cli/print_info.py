@@ -43,7 +43,7 @@ def main(
 ) -> None:
     """Print information about an image and, optionally, show it.
 
-    Example:
+    Examples:
     $ tiohd input.nii.gz
     """
     # Imports are placed here so that the tool loads faster if not being run

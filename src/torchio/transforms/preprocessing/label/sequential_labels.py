@@ -8,12 +8,11 @@ from .remap_labels import RemapLabels
 class SequentialLabels(LabelTransform):
     r"""Remap labels in a label map so they become consecutive.
 
-    For example, if a label map has labels ``(0, 3, 5)``, then this will apply
-    a :class:`~torchio.RemapLabels` transform with ``remapping={3: 1, 5: 2}``,
-    and therefore the output image will have labels ``(0, 1, 2)``.
+    For example, if a label map has labels `(0, 3, 5)`, then this will apply
+    a [`RemapLabels`][torchio.RemapLabels] transform with `remapping={3: 1, 5: 2}`,
+    and therefore the output image will have labels `(0, 1, 2)`.
 
-    Example:
-
+    Examples:
         >>> import torch
         >>> import torchio as tio
         >>> def get_image(*labels):
@@ -29,16 +28,16 @@ class SequentialLabels(LabelTransform):
         >>> transform(img_without_bg).data
         tensor([[[[0, 1, 2]]]])
 
-    .. note::
-        This transformation is always `fully invertible <invertibility>`_.
+    Note:
+        This transformation is always [fully invertible ](invertibility).
 
-    .. warning::
-        The background is typically represented with the label ``0``. There
+    Warning:
+        The background is typically represented with the label `0`. There
         will be zeros in the output image even if they are none in the input.
 
     Args:
-        masking_method: See :class:`~torchio.transforms.RemapLabels`.
-        **kwargs: See :class:`~torchio.transforms.Transform` for additional
+        masking_method: See [`RemapLabels`][torchio.transforms.RemapLabels].
+        **kwargs: See [`Transform`][torchio.transforms.Transform] for additional
             keyword arguments.
     """
 

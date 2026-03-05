@@ -14,8 +14,8 @@ from ..types import TypePath
 
 class EPISURG(SubjectsDataset):
     """
-    `EPISURG <https://doi.org/10.5522/04/9996158.v1>`_ is a clinical dataset of
-    :math:`T_1`-weighted MRI from 430 epileptic patients who underwent
+    [EPISURG ](https://doi.org/10.5522/04/9996158.v1) is a clinical dataset of
+    $T_1$-weighted MRI from 430 epileptic patients who underwent
     resective brain surgery at the National Hospital of Neurology and
     Neurosurgery (Queen Square, London, United Kingdom) between 1990 and 2018.
 
@@ -26,18 +26,19 @@ class EPISURG(SubjectsDataset):
     subsets of EPISURG.
 
     If you use this dataset for your research, you agree with the *Data use
-    agreement* presented at the EPISURG entry on the `UCL Research Data
-    Repository <https://doi.org/10.5522/04/9996158.v1>`_ and you must cite the
+    agreement* presented at the EPISURG entry on the [UCL Research Data
+    Repository ](https://doi.org/10.5522/04/9996158.v1) and you must cite the
     corresponding publications.
 
     Args:
         root: Root directory to which the dataset will be downloaded.
         transform: An instance of
-            :class:`~torchio.transforms.transform.Transform`.
-        download: If set to ``True``, will download the data into :attr:`root`.
+            [`Transform`][torchio.transforms.transform.Transform].
+        download: If set to `True`, will download the data into `root`.
 
-    .. warning:: The size of this dataset is multiple GB.
-        If you set :attr:`download` to ``True``, it will take some time
+    Warning:
+        The size of this dataset is multiple GB.
+        If you set `download` to `True`, it will take some time
         to be downloaded if it is not already present.
     """
 

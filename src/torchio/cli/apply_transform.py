@@ -60,7 +60,7 @@ def main(
 ):
     """Apply transform to an image.
 
-    Example:
+    Examples:
     $ tiotr input.nrrd RandomMotion output.nii "degrees=(-5,15) num_transforms=3" -v
     """
     # Imports are placed here so that the tool loads faster if not being run

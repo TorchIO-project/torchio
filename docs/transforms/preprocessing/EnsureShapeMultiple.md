@@ -1,0 +1,3 @@
+# EnsureShapeMultiple
+
+::: torchio.transforms.EnsureShapeMultiple

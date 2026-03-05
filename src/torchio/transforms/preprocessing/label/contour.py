@@ -7,7 +7,7 @@ class Contour(LabelTransform):
     r"""Keep only the borders of each connected component in a binary image.
 
     Args:
-        **kwargs: See :class:`~torchio.transforms.Transform` for additional
+        **kwargs: See [`Transform`][torchio.transforms.Transform] for additional
             keyword arguments.
     """
 

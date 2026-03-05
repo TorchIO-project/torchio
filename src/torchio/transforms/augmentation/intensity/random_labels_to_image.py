@@ -17,86 +17,62 @@ from .. import RandomTransform
 class RandomLabelsToImage(RandomTransform, IntensityTransform):
     r"""Randomly generate an image from a segmentation.
 
-    Based on the work by Billot et al.: `A Learning Strategy for Contrast-agnostic MRI Segmentation`_
-    and `Partial Volume Segmentation of Brain MRI Scans of any Resolution and Contrast`_.
+    Based on the work by Billot et al.: [A Learning Strategy for Contrast-agnostic MRI Segmentation](http://proceedings.mlr.press/v121/billot20a.html)
+    and [Partial Volume Segmentation of Brain MRI Scans of any Resolution and Contrast](https://link.springer.com/chapter/10.1007/978-3-030-59728-3_18).
 
-    .. _A Learning Strategy for Contrast-agnostic MRI Segmentation: http://proceedings.mlr.press/v121/billot20a.html
 
-    .. _Partial Volume Segmentation of Brain MRI Scans of any Resolution and Contrast: https://link.springer.com/chapter/10.1007/978-3-030-59728-3_18
 
-    .. plot::
-
-        import torch
-        import torchio as tio
-        torch.manual_seed(42)
-        colin = tio.datasets.Colin27(2008)
-        label_map = colin.cls
-        colin.remove_image('t1')
-        colin.remove_image('t2')
-        colin.remove_image('pd')
-        downsample = tio.Resample(1)
-        blurring_transform = tio.RandomBlur(std=0.6)
-        create_synthetic_image = tio.RandomLabelsToImage(
-            image_key='synthetic',
-            ignore_background=True,
-        )
-        transform = tio.Compose((
-            downsample,
-            create_synthetic_image,
-            blurring_transform,
-        ))
-        colin_synth = transform(colin)
-        colin_synth.plot()
 
     Args:
         label_key: String designating the label map in the subject
             that will be used to generate the new image.
         used_labels: Sequence of integers designating the labels used
             to generate the new image. If categorical encoding is used,
-            :attr:`label_channels` refers to the values of the
+            `label_channels` refers to the values of the
             categorical encoding. If one hot encoding or partial-volume
-            label maps are used, :attr:`label_channels` refers to the
+            label maps are used, `label_channels` refers to the
             channels of the label maps.
             Default uses all labels. Missing voxels will be filled with zero
             or with voxels from an already existing volume,
-            see :attr:`image_key`.
+            see `image_key`.
         image_key: String designating the key to which the new volume will be
             saved. If this key corresponds to an already existing volume,
             missing voxels will be filled with the corresponding values
             in the original volume.
         mean: Sequence of means for each label.
-            For each value :math:`v`, if a tuple :math:`(a, b)` is
-            provided then :math:`v \sim \mathcal{U}(a, b)`.
-            If ``None``, :attr:`default_mean` range will be used for every
+            For each value $v$, if a tuple $(a, b)$ is
+            provided then $v \sim \mathcal{U}(a, b)$.
+            If `None`, `default_mean` range will be used for every
             label.
-            If not ``None`` and :attr:`label_channels` is not ``None``,
-            :attr:`mean` and :attr:`label_channels` must have the
+            If not `None` and `label_channels` is not `None`,
+            `mean` and `label_channels` must have the
             same length.
         std: Sequence of standard deviations for each label.
-            For each value :math:`v`, if a tuple :math:`(a, b)` is
-            provided then :math:`v \sim \mathcal{U}(a, b)`.
-            If ``None``, :attr:`default_std` range will be used for every
+            For each value $v$, if a tuple $(a, b)$ is
+            provided then $v \sim \mathcal{U}(a, b)$.
+            If `None`, `default_std` range will be used for every
             label.
-            If not ``None`` and :attr:`label_channels` is not ``None``,
-            :attr:`std` and :attr:`label_channels` must have the
+            If not `None` and `label_channels` is not `None`,
+            `std` and `label_channels` must have the
             same length.
         default_mean: Default mean range.
         default_std: Default standard deviation range.
-        discretize: If ``True``, partial-volume label maps will be discretized.
+        discretize: If `True`, partial-volume label maps will be discretized.
             Does not have any effects if not using partial-volume label maps.
             Discretization is done taking the class of the highest value per
             voxel in the different partial-volume label maps using
-            :func:`torch.argmax()` on the channel dimension (i.e. 0).
-        ignore_background: If ``True``, input voxels labeled as ``0`` will not
+            `torch.argmax()()` on the channel dimension (i.e. 0).
+        ignore_background: If `True`, input voxels labeled as `0` will not
             be modified.
-        **kwargs: See :class:`~torchio.transforms.Transform` for additional
+        **kwargs: See [`Transform`][torchio.transforms.Transform] for additional
             keyword arguments.
 
-    .. tip:: It is recommended to blur the new images in order to simulate
+    Tip:
+        It is recommended to blur the new images in order to simulate
         partial volume effects at the borders of the synthetic structures. See
-        :class:`~torchio.transforms.augmentation.intensity.random_blur.RandomBlur`.
+        [`RandomBlur`][torchio.transforms.augmentation.intensity.random_blur.RandomBlur].
 
-    Example:
+    Examples:
         >>> import torchio as tio
         >>> subject = tio.datasets.ICBM2009CNonlinearSymmetric()
         >>> # Using the default parameters
@@ -123,7 +99,9 @@ class RandomLabelsToImage(RandomTransform, IntensityTransform):
         >>> transform = tio.Compose([rescale_transform, simulation_transform])
         >>> transformed = transform(subject)  # subject's key 't1' has been replaced with the simulated image
 
-    .. seealso:: :class:`~torchio.transforms.preprocessing.label.remap_labels.RemapLabels`.
+    !!! note "See also"
+        [`RemapLabels`][torchio.transforms.preprocessing.label.remap_labels.RemapLabels].
+
     """
 
     def __init__(
@@ -295,38 +273,39 @@ class LabelsToImage(IntensityTransform):
             that will be used to generate the new image.
         used_labels: Sequence of integers designating the labels used
             to generate the new image. If categorical encoding is used,
-            :attr:`label_channels` refers to the values of the
+            `label_channels` refers to the values of the
             categorical encoding. If one hot encoding or partial-volume
-            label maps are used, :attr:`label_channels` refers to the
+            label maps are used, `label_channels` refers to the
             channels of the label maps.
             Default uses all labels. Missing voxels will be filled with zero
             or with voxels from an already existing volume,
-            see :attr:`image_key`.
+            see `image_key`.
         image_key: String designating the key to which the new volume will be
             saved. If this key corresponds to an already existing volume,
             missing voxels will be filled with the corresponding values
             in the original volume.
         mean: Sequence of means for each label.
-            If not ``None`` and :attr:`label_channels` is not ``None``,
-            :attr:`mean` and :attr:`label_channels` must have the
+            If not `None` and `label_channels` is not `None`,
+            `mean` and `label_channels` must have the
             same length.
         std: Sequence of standard deviations for each label.
-            If not ``None`` and :attr:`label_channels` is not ``None``,
-            :attr:`std` and :attr:`label_channels` must have the
+            If not `None` and `label_channels` is not `None`,
+            `std` and `label_channels` must have the
             same length.
-        discretize: If ``True``, partial-volume label maps will be discretized.
+        discretize: If `True`, partial-volume label maps will be discretized.
             Does not have any effects if not using partial-volume label maps.
             Discretization is done taking the class of the highest value per
             voxel in the different partial-volume label maps using
-            :func:`torch.argmax()` on the channel dimension (i.e. 0).
-        ignore_background: If ``True``, input voxels labeled as ``0`` will not
+            `torch.argmax()()` on the channel dimension (i.e. 0).
+        ignore_background: If `True`, input voxels labeled as `0` will not
             be modified.
-        **kwargs: See :class:`~torchio.transforms.Transform` for additional
+        **kwargs: See [`Transform`][torchio.transforms.Transform] for additional
             keyword arguments.
 
-    .. note:: It is recommended to blur the new images to make the result more
+    Note:
+        It is recommended to blur the new images to make the result more
         realistic. See
-        :class:`~torchio.transforms.augmentation.RandomBlur`.
+        [`RandomBlur`][torchio.transforms.augmentation.RandomBlur].
     """
 
     def __init__(

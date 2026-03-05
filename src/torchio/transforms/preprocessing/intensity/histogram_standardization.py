@@ -24,23 +24,23 @@ TypeLandmarks = Union[TypePath, dict[str, Union[TypePath, np.ndarray]]]
 class HistogramStandardization(NormalizationTransform):
     """Perform histogram standardization of intensity values.
 
-    Implementation of `New variants of a method of MRI scale
-    standardization <https://ieeexplore.ieee.org/document/836373>`_.
+    Implementation of [New variants of a method of MRI scale
+    standardization ](https://ieeexplore.ieee.org/document/836373).
 
-    See example in :func:`torchio.transforms.HistogramStandardization.train`.
+    See example in `torchio.transforms.HistogramStandardization.train()`.
 
     Args:
-        landmarks: Dictionary (or path to a PyTorch file with ``.pt`` or ``.pth``
+        landmarks: Dictionary (or path to a PyTorch file with `.pt` or `.pth`
             extension in which a dictionary has been saved) whose keys are
             image names in the subject and values are NumPy arrays or paths to
             NumPy arrays defining the landmarks after training with
-            :meth:`torchio.transforms.HistogramStandardization.train`.
+            `torchio.transforms.HistogramStandardization.train()`.
         masking_method: See
-            :class:`~torchio.transforms.preprocessing.intensity.NormalizationTransform`.
-        **kwargs: See :class:`~torchio.transforms.Transform` for additional
+            [`NormalizationTransform`][torchio.transforms.preprocessing.intensity.NormalizationTransform].
+        **kwargs: See [`Transform`][torchio.transforms.Transform] for additional
             keyword arguments.
 
-    Example:
+    Examples:
         >>> import torch
         >>> import torchio as tio
         >>> landmarks = {
@@ -116,19 +116,18 @@ class HistogramStandardization(NormalizationTransform):
             images_paths: List of image paths used to train.
             cutoff: Optional minimum and maximum quantile values,
                 respectively, that are used to select a range of intensity of
-                interest. Equivalent to :math:`pc_1` and :math:`pc_2` in
-                `Nyúl and Udupa's paper <https://pubmed.ncbi.nlm.nih.gov/10571928/>`_.
+                interest. Equivalent to $pc_1$ and $pc_2$ in
+                [Nyúl and Udupa's paper ](https://pubmed.ncbi.nlm.nih.gov/10571928/).
             mask_path: Path (or list of paths) to a binary image that will be
                 used to select the voxels use to compute the stats during
-                histogram training. If ``None``, all voxels in the image will
+                histogram training. If `None`, all voxels in the image will
                 be used.
             masking_function: Function used to extract voxels used for
                 histogram training.
-            output_path: Optional file path with extension ``.txt`` or
-                ``.npy``, where the landmarks will be saved.
+            output_path: Optional file path with extension `.txt` or
+                `.npy`, where the landmarks will be saved.
 
-        Example:
-
+        Examples:
             >>> import torch
             >>> import numpy as np
             >>> from pathlib import Path

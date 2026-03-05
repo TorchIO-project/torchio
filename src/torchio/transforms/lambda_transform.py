@@ -15,14 +15,14 @@ class Lambda(Transform):
 
     Args:
         function: Callable that receives and returns a 4D
-            :class:`torch.Tensor`.
+            [`torch.Tensor`][torch.Tensor].
         types_to_apply: List of strings corresponding to the image types to
-            which this transform should be applied. If ``None``, the transform
+            which this transform should be applied. If `None`, the transform
             will be applied to all images in the subject.
-        **kwargs: See :class:`~torchio.transforms.Transform` for additional
+        **kwargs: See [`Transform`][torchio.transforms.Transform] for additional
             keyword arguments.
 
-    Example:
+    Examples:
         >>> import torchio as tio
         >>> invert_intensity = tio.Lambda(lambda x: -x, types_to_apply=[tio.INTENSITY])
         >>> invert_mask = tio.Lambda(lambda x: 1 - x, types_to_apply=[tio.LABEL])

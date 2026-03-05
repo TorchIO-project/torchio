@@ -13,24 +13,25 @@ class RandomFlip(RandomTransform, SpatialTransform):
     Args:
         axes: Index or tuple of indices of the spatial dimensions along which
             the image might be flipped. If they are integers, they must be in
-            ``(0, 1, 2)``. Anatomical labels may also be used, such as
-            ``'Left'``, ``'Right'``, ``'Anterior'``, ``'Posterior'``,
-            ``'Inferior'``, ``'Superior'``, ``'Height'`` and ``'Width'``,
-            ``'AP'`` (antero-posterior), ``'lr'`` (lateral), ``'w'`` (width) or
-            ``'i'`` (inferior). Only the first letter of the string will be
-            used. If the image is 2D, ``'Height'`` and ``'Width'`` may be
+            `(0, 1, 2)`. Anatomical labels may also be used, such as
+            `'Left'`, `'Right'`, `'Anterior'`, `'Posterior'`,
+            `'Inferior'`, `'Superior'`, `'Height'` and `'Width'`,
+            `'AP'` (antero-posterior), `'lr'` (lateral), `'w'` (width) or
+            `'i'` (inferior). Only the first letter of the string will be
+            used. If the image is 2D, `'Height'` and `'Width'` may be
             used.
         flip_probability: Probability that the image will be flipped. This is
             computed on a per-axis basis.
-        **kwargs: See :class:`~torchio.transforms.Transform` for additional
+        **kwargs: See [`Transform`][torchio.transforms.Transform] for additional
             keyword arguments.
 
-    Example:
+    Examples:
         >>> import torchio as tio
         >>> fpg = tio.datasets.FPG()
         >>> flip = tio.RandomFlip(axes=('LR',))  # flip along lateral axis only
 
-    .. tip:: It is handy to specify the axes as anatomical labels when the
+    Tip:
+        It is handy to specify the axes as anatomical labels when the
         image orientation is not known.
     """
 
@@ -72,12 +73,13 @@ class Flip(SpatialTransform):
     Args:
         axes: Index or tuple of indices of the spatial dimensions along which
             the image will be flipped. See
-            :class:`~torchio.transforms.augmentation.spatial.random_flip.RandomFlip`
+            [`RandomFlip`][torchio.transforms.augmentation.spatial.random_flip.RandomFlip]
             for more information.
-        **kwargs: See :class:`~torchio.transforms.Transform` for additional
+        **kwargs: See [`Transform`][torchio.transforms.Transform] for additional
             keyword arguments.
 
-    .. tip:: It is handy to specify the axes as anatomical labels when the
+    Tip:
+        It is handy to specify the axes as anatomical labels when the
         image orientation is not known.
     """
 

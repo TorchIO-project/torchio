@@ -13,18 +13,17 @@ from .mni import SubjectMNI
 class ICBM2009CNonlinearSymmetric(SubjectMNI):
     r"""ICBM template.
 
-    More information can be found in the `website
-    <http://www.bic.mni.mcgill.ca/ServicesAtlases/ICBM152NLin2009>`_.
+    More information can be found in the [website
+    ](http://www.bic.mni.mcgill.ca/ServicesAtlases/ICBM152NLin2009).
 
-    .. image:: http://www.bic.mni.mcgill.ca/uploads/ServicesAtlases/mni_icbm152_sym_09c_small.jpg
-        :alt: ICBM 2009c Nonlinear Symmetric
+    ![ICBM 2009c Nonlinear Symmetric](http://www.bic.mni.mcgill.ca/uploads/ServicesAtlases/mni_icbm152_sym_09c_small.jpg)
 
     Args:
-        load_4d_tissues: If ``True``, the tissue probability maps will be loaded
+        load_4d_tissues: If `True`, the tissue probability maps will be loaded
             together into a 4D image. Otherwise, they will be loaded into
             independent images.
 
-    Example:
+    Examples:
         >>> import torchio as tio
         >>> icbm = tio.datasets.ICBM2009CNonlinearSymmetric()
         >>> icbm

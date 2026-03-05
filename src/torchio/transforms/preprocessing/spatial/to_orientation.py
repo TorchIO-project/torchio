@@ -18,25 +18,24 @@ class ToOrientation(SpatialTransform):
 
     Common orientation codes include:
 
-    - ``'RAS'`` (neurological convention):
+    - `'RAS'` (neurological convention):
         - The first axis goes from Left to Right (R).
         - The second axis goes from Posterior to Anterior (A).
         - The third axis goes from Inferior to Superior (S).
-    - ``'LAS'`` (radiological convention):
+    - `'LAS'` (radiological convention):
         - The first axis goes from Right to Left (L).
         - The second axis goes from Posterior to Anterior (A).
         - The third axis goes from Inferior to Superior (S).
 
-    See `NiBabel docs about image orientation`_ for more information.
+    See [NiBabel docs about image orientation](https://nipy.org/nibabel/image_orientation.html) for more information.
 
     Args:
-        orientation: A three-letter orientation code. Examples: ``'RAS'``,
-            ``'LAS'``, ``'LPS'``, ``'PLS'``, ``'SLP'``. The code must contain
+        orientation: A three-letter orientation code. Examples: `'RAS'`,
+            `'LAS'`, `'LPS'`, `'PLS'`, `'SLP'`. The code must contain
             one character for each axis direction: R or L, A or P, and S or I.
-        **kwargs: See :class:`~torchio.transforms.Transform` for additional
+        **kwargs: See [`Transform`][torchio.transforms.Transform] for additional
             keyword arguments.
 
-    .. _NiBabel docs about image orientation: https://nipy.org/nibabel/image_orientation.html
     """
 
     def __init__(self, orientation: str = 'RAS', **kwargs):

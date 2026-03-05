@@ -11,14 +11,14 @@ class ToCanonical(ToOrientation):
     2. Second voxel axis goes from posterior to Anterior
     3. Third voxel axis goes from inferior to Superior
 
-    See `NiBabel docs about image orientation`_ for more information.
+    See [NiBabel docs about image orientation](https://nipy.org/nibabel/image_orientation.html) for more information.
 
     Args:
-        **kwargs: See :class:`~torchio.transforms.Transform` for additional
+        **kwargs: See [`Transform`][torchio.transforms.Transform] for additional
             keyword arguments.
 
-    .. note:: The reorientation is performed using
-        :meth:`~torchio.transforms.preprocessing.to_orientation.ToOrientation`.
+    Note:
+        The reorientation is performed using
+        [`ToOrientation()`][torchio.transforms.preprocessing.to_orientation.ToOrientation].
 
-    .. _NiBabel docs about image orientation: https://nipy.org/nibabel/image_orientation.html
     """

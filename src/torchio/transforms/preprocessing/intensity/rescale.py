@@ -16,24 +16,24 @@ class RescaleIntensity(NormalizationTransform):
     """Rescale intensity values to a certain range.
 
     Args:
-        out_min_max: Range :math:`(n_{min}, n_{max})` of output intensities.
-            If only one value :math:`d` is provided,
-            :math:`(n_{min}, n_{max}) = (-d, d)`.
+        out_min_max: Range $(n_{min}, n_{max})$ of output intensities.
+            If only one value $d$ is provided,
+            $(n_{min}, n_{max}) = (-d, d)$.
         percentiles: Percentile values of the input image that will be mapped
-            to :math:`(n_{min}, n_{max})`. They can be used for contrast
-            stretching, as in `this scikit-image example`_. For example,
-            Isensee et al. use ``(0.5, 99.5)`` in their `nn-UNet paper`_.
-            If only one value :math:`d` is provided,
-            :math:`(n_{min}, n_{max}) = (0, d)`.
+            to $(n_{min}, n_{max})$. They can be used for contrast
+            stretching, as in [this scikit-image example](https://scikit-image.org/docs/dev/auto_examples/color_exposure/plot_equalize.html#sphx-glr-auto-examples-color-exposure-plot-equalize-py). For example,
+            Isensee et al. use `(0.5, 99.5)` in their [nn-UNet paper](https://arxiv.org/abs/1809.10486).
+            If only one value $d$ is provided,
+            $(n_{min}, n_{max}) = (0, d)$.
         masking_method: See
-            :class:`~torchio.transforms.preprocessing.intensity.NormalizationTransform`.
-        in_min_max: Range :math:`(m_{min}, m_{max})` of input intensities that
-            will be mapped to :math:`(n_{min}, n_{max})`. If ``None``, the
+            [`NormalizationTransform`][torchio.transforms.preprocessing.intensity.NormalizationTransform].
+        in_min_max: Range $(m_{min}, m_{max})$ of input intensities that
+            will be mapped to $(n_{min}, n_{max})$. If `None`, the
             minimum and maximum input intensities will be used.
-        **kwargs: See :class:`~torchio.transforms.Transform` for additional
+        **kwargs: See [`Transform`][torchio.transforms.Transform] for additional
             keyword arguments.
 
-    Example:
+    Examples:
         >>> import torchio as tio
         >>> ct = tio.ScalarImage('ct_scan.nii.gz')
         >>> ct_air, ct_bone = -1000, 1000
@@ -41,8 +41,6 @@ class RescaleIntensity(NormalizationTransform):
         ...     out_min_max=(-1, 1), in_min_max=(ct_air, ct_bone))
         >>> ct_normalized = rescale(ct)
 
-    .. _this scikit-image example: https://scikit-image.org/docs/dev/auto_examples/color_exposure/plot_equalize.html#sphx-glr-auto-examples-color-exposure-plot-equalize-py
-    .. _nn-UNet paper: https://arxiv.org/abs/1809.10486
     """
 
     def __init__(

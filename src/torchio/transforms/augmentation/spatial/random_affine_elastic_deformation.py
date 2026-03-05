@@ -20,18 +20,18 @@ class RandomAffineElasticDeformation(RandomTransform, SpatialTransform):
     r"""Apply a RandomAffine and RandomElasticDeformation simultaneously.
 
     Optimization to use only a single SimpleITK resampling. For additional details on
-    the transformations, see :class:`~torchio.transforms.RandomAffine`
-    and :class:`~torchio.transforms.RandomElasticDeformation`
+    the transformations, see [`RandomAffine`][torchio.transforms.RandomAffine]
+    and [`RandomElasticDeformation`][torchio.transforms.RandomElasticDeformation]
 
     Args:
         affine_first: Apply affine before elastic deformation.
-        affine_kwargs: See :class:`~torchio.transforms.RandomAffine` for kwargs.
-        elastic_kwargs: See :class:`~torchio.transforms.RandomElasticDeformation`
+        affine_kwargs: See [`RandomAffine`][torchio.transforms.RandomAffine] for kwargs.
+        elastic_kwargs: See [`RandomElasticDeformation`][torchio.transforms.RandomElasticDeformation]
             for kwargs.
-        **kwargs: See :class:`~torchio.transforms.Transform` for additional
+        **kwargs: See [`Transform`][torchio.transforms.Transform] for additional
             keyword arguments.
 
-    Example:
+    Examples:
         >>> import torchio as tio
         >>> image = tio.datasets.Colin27().t1
         >>> affine_kwargs = {'scales': (0.9, 1.2), 'degrees': 15}
@@ -42,16 +42,6 @@ class RandomAffineElasticDeformation(RandomTransform, SpatialTransform):
         ... )
         >>> transformed = transform(image)
 
-    .. plot::
-
-        import torchio as tio
-        subject = tio.datasets.Slicer('CTChest')
-        ct = subject.CT_chest
-        elastic_kwargs = {'max_displacement': (17, 12, 2)}
-        transform = tio.RandomAffineElasticDeformation(elastic_kwargs=elastic_kwargs)
-        ct_transformed = transform(ct)
-        subject.add_image(ct_transformed, 'Transformed')
-        subject.plot()
     """
 
     def __init__(
@@ -126,15 +116,15 @@ class AffineElasticDeformation(SpatialTransform):
     r"""Apply an Affine and ElasticDeformation simultaneously.
 
     Optimization to use only a single SimpleITK resampling. For additional details
-    on the transformations, see :class:`~torchio.transforms.augmentation.Affine`
-    and :class:`~torchio.transforms.augmentation.ElasticDeformation`
+    on the transformations, see [`Affine`][torchio.transforms.augmentation.Affine]
+    and [`ElasticDeformation`][torchio.transforms.augmentation.ElasticDeformation]
 
     Args:
         affine_first: Apply affine before elastic deformation.
-        affine_kwargs: See :class:`~torchio.transforms.augmentation.RandomAffine` for kwargs.
+        affine_kwargs: See [`RandomAffine`][torchio.transforms.augmentation.RandomAffine] for kwargs.
         elastic_kwargs: See
-            :class:`~torchio.transforms.augmentation.RandomElasticDeformation` for kwargs.
-        **kwargs: See :class:`~torchio.transforms.Transform` for additional
+            [`RandomElasticDeformation`][torchio.transforms.augmentation.RandomElasticDeformation] for kwargs.
+        **kwargs: See [`Transform`][torchio.transforms.Transform] for additional
             keyword arguments.
     """
 
