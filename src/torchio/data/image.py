@@ -512,7 +512,7 @@ class Image(dict):
         if ndim != 4:
             raise ValueError(f'Input tensor must be 4D, but it is {ndim}D')
         if tensor.dtype == torch.bool:
-            tensor = tensor.to(torch.uint8)
+            tensor = tensor.to(torch.uint8)  # type: ignore[union-attr]
         if self.check_nans and torch.isnan(tensor).any():
             warnings.warn('NaNs found in tensor', RuntimeWarning, stacklevel=2)
         return tensor

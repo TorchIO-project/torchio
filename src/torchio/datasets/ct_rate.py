@@ -280,7 +280,7 @@ class CtRate(SubjectsDataset):
         num_subjects = df_no_index['subject_id'].nunique()
         iterable = df_no_index.groupby('subject_id')
         subjects = thread_map(
-            self._get_subject,
+            self._get_subject,  # type: ignore[arg-type]
             iterable,
             max_workers=multiprocessing.cpu_count(),
             total=num_subjects,

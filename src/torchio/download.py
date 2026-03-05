@@ -11,6 +11,8 @@ import hashlib
 import os
 import tarfile
 import urllib
+import urllib.error
+import urllib.request
 import zipfile
 
 from torch.hub import tqdm
