@@ -182,5 +182,3 @@ generic = true
 
 [project.markdown_extensions.pymdownx.tabbed]
 alternate_style = true
-
-[project.markdown_extensions.plot_directive]

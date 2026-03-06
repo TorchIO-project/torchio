@@ -147,8 +147,12 @@ add-remote remote:
 
 docs_cmd := "uv run --group doc"
 
+# Generate/update plot images from ```python plot blocks in docs
+generate-plots:
+    uv run --group doc -- python docs/plot_directive.py
+
 build-docs:
-    PYTHONPATH=docs uv run --group doc -- zensical build
+    uv run --group doc -- zensical build
 
 serve-docs:
-    PYTHONPATH=docs uv run --group doc -- zensical serve
+    uv run --group doc -- zensical serve

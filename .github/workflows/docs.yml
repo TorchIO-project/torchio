@@ -36,6 +36,9 @@ jobs:
           path: ~/.cache/torchio
           key: ${{ runner.os }}-torchio-data
 
+      - name: Generate plots
+        run: just generate-plots
+
       - name: Build docs
         run: just build-docs
 
