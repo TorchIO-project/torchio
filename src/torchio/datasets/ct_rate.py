@@ -16,6 +16,8 @@ from ..external.imports import get_pandas
 from ..types import TypePath
 
 if TYPE_CHECKING:
+    from collections.abc import Hashable
+
     import pandas as pd
 
 
@@ -289,7 +291,7 @@ class CtRate(SubjectsDataset):
 
     def _get_subject(
         self,
-        subject_id_and_metadata: tuple[str, pd.DataFrame],
+        subject_id_and_metadata: tuple[Hashable, pd.DataFrame],
     ) -> Subject:
         """Create a Subject instance for a specific subject.
 
@@ -301,7 +303,7 @@ class CtRate(SubjectsDataset):
                 DataFrame containing metadata for all images associated to that subject.
         """
         subject_id, subject_df = subject_id_and_metadata
-        subject_dict: dict[str, str | ScalarImage] = {'subject_id': subject_id}
+        subject_dict: dict[str, str | ScalarImage] = {'subject_id': str(subject_id)}
         for _, image_row in subject_df.iterrows():
             image = self._instantiate_image(image_row)
             scan_id = image_row['scan_id']
