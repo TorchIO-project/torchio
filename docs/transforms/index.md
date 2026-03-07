@@ -37,6 +37,7 @@ All transforms inherit from [`Transform`][torchio.transforms.Transform]:
 ::: torchio.transforms.Transform
     options:
       members:
+        - apply_transform
         - __call__
 
 ## Composability

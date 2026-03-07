@@ -163,6 +163,8 @@ inventories = [
   "https://docs.python.org/3/objects.inv",
   "https://pytorch.org/docs/stable/objects.inv",
   "https://numpy.org/doc/stable/objects.inv",
+  "https://simpleitk.readthedocs.io/en/master/objects.inv",
+  "https://nipy.org/nibabel/objects.inv",
 ]
 paths = ["src"]
 

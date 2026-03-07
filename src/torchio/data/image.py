@@ -69,7 +69,8 @@ class Image(dict):
 
     Args:
         path: Path to a file or sequence of paths to files that can be read by
-            [SimpleITK][SimpleITK] or [nibabel][nibabel], or to a directory containing
+            [SimpleITK](https://simpleitk.org/doxygen/latest/html/namespaceitk_1_1simple.html)
+            or [nibabel][nibabel], or to a directory containing
             DICOM files. If `tensor` is given, the data in
             `path` will not be read.
             If a sequence of paths is given, data
@@ -84,7 +85,7 @@ class Image(dict):
             all types, and nearest neighbor interpolation is always used to
             resample images with type `torchio.LABEL`.
             The type `torchio.SAMPLING_MAP` may be used with instances of
-            [`WeightedSampler`][torchio.data.sampler.weighted.WeightedSampler].
+            [`WeightedSampler`](../../patches/training/#torchio.data.WeightedSampler).
         tensor: If `path` is not given, `tensor` must be a 4D
             [`torch.Tensor`][torch.Tensor] or NumPy array with dimensions
             $(C, W, H, D)$.

@@ -33,16 +33,16 @@ class Queue(Dataset):
     The sampled patches are then stored in a buffer or *queue* until
     the next training iteration, at which point they are loaded onto the GPU
     for inference.
-    For this, TorchIO provides the [`Queue`][torchio.data.Queue] class, which
+    For this, TorchIO provides the [`Queue`](#torchio.data.Queue) class, which
     also inherits from the PyTorch [`Dataset`][torch.utils.data.Dataset].
     In this queueing system,
     samplers behave as generators that yield patches from random locations
-    in volumes contained in the [`SubjectsDataset`][torchio.data.SubjectsDataset].
+    in volumes contained in the [`SubjectsDataset`](../../data/dataset/#torchio.data.SubjectsDataset).
 
     The end of a training epoch is defined as the moment after which patches
     from all subjects have been used for training.
     At the beginning of each training epoch,
-    the subjects list in the [`SubjectsDataset`][torchio.data.SubjectsDataset] is shuffled,
+    the subjects list in the [`SubjectsDataset`](../../data/dataset/#torchio.data.SubjectsDataset) is shuffled,
     as is typically done in machine learning pipelines to increase variance
     of training instances during model optimization.
     A PyTorch loader queries the datasets copied in each process,
@@ -51,14 +51,14 @@ class Queue(Dataset):
     and the queue is shuffled once it has reached a specified maximum length so
     that batches are composed of patches from different subjects.
     The internal data loader continues querying the
-    [`SubjectsDataset`][torchio.data.SubjectsDataset] using multiprocessing.
+    [`SubjectsDataset`](../../data/dataset/#torchio.data.SubjectsDataset) using multiprocessing.
     The patches list, when emptied, is refilled with new patches.
     A second data loader, external to the queue,
     may be used to collate batches of patches stored in the queue,
     which are passed to the neural network.
 
     Args:
-        subjects_dataset: Instance of [`SubjectsDataset`][torchio.data.SubjectsDataset].
+        subjects_dataset: Instance of [`SubjectsDataset`](../../data/dataset/#torchio.data.SubjectsDataset).
         max_length: Maximum number of patches that can be stored in the queue.
             Using a large number means that the queue needs to be filled less
             often, but more CPU memory is needed to store the patches.
@@ -67,7 +67,7 @@ class Queue(Dataset):
             will be used instead of `samples_per_volume`.
             A small number of patches ensures a large variability in the queue,
             but training will be slower.
-        sampler: A subclass of [`PatchSampler`][torchio.data.sampler.PatchSampler] used
+        sampler: A subclass of [`PatchSampler`](#torchio.data.PatchSampler) used
             to extract patches from the volumes.
         subject_sampler: Sampler to get subjects from the dataset.
             It should be an instance of
@@ -87,8 +87,8 @@ class Queue(Dataset):
         verbose: If `True`, some debugging messages will be printed.
 
     This diagram represents the connection between
-    a [`SubjectsDataset`][torchio.data.SubjectsDataset],
-    a [`Queue`][torchio.data.Queue]
+    a [`SubjectsDataset`](../../data/dataset/#torchio.data.SubjectsDataset),
+    a [`Queue`](#torchio.data.Queue)
     and the [`DataLoader`][torch.utils.data.DataLoader] used to pop batches from the
     queue.
 

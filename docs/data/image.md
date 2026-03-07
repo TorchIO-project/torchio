@@ -34,14 +34,8 @@ structure.
 
 ![Data structures](../images/data_structures.png)
 
-## `ScalarImage`
-
 ::: torchio.ScalarImage
 
-## `LabelMap`
-
 ::: torchio.LabelMap
-
-## `Image`
 
 ::: torchio.Image
