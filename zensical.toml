@@ -95,7 +95,6 @@ nav = [
   ] },
   { Datasets = "datasets.md" },
   { Interfaces = [
-    "interfaces/index.md",
     "interfaces/cli.md",
     "interfaces/slicer.md",
   ] },
