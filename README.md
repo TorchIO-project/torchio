@@ -250,7 +250,7 @@ BibTeX entry:
 }
 ```
 
-This project is supported by the following institutions:
+This project was originally supported by the following institutions:
 
 - [Engineering and Physical Sciences Research Council (EPSRC) & UK Research and Innovation (UKRI)](https://epsrc.ukri.org/)
 - [EPSRC Centre for Doctoral Training in Intelligent, Integrated Imaging In Healthcare (i4health)](https://www.ucl.ac.uk/intelligent-imaging-healthcare/) (University College London)
