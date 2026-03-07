@@ -61,7 +61,7 @@ class RandomLabelsToImage(RandomTransform, IntensityTransform):
             Does not have any effects if not using partial-volume label maps.
             Discretization is done taking the class of the highest value per
             voxel in the different partial-volume label maps using
-            `torch.argmax()()` on the channel dimension (i.e. 0).
+            `torch.argmax()` on the channel dimension (i.e. 0).
         ignore_background: If `True`, input voxels labeled as `0` will not
             be modified.
         **kwargs: See [`Transform`][torchio.transforms.Transform] for additional
@@ -296,7 +296,7 @@ class LabelsToImage(IntensityTransform):
             Does not have any effects if not using partial-volume label maps.
             Discretization is done taking the class of the highest value per
             voxel in the different partial-volume label maps using
-            `torch.argmax()()` on the channel dimension (i.e. 0).
+            `torch.argmax()` on the channel dimension (i.e. 0).
         ignore_background: If `True`, input voxels labeled as `0` will not
             be modified.
         **kwargs: See [`Transform`][torchio.transforms.Transform] for additional

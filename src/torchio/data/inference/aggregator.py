@@ -155,7 +155,7 @@ class GridAggregator:
 
         Args:
             batch_tensor: 5D tensor, typically the output of a convolutional
-                neural network, e.g. `batch[`'image'`][torchio.DATA]`.
+                neural network, e.g. `batch['image'][torchio.DATA]`.
             locations: 2D tensor with shape $(B, 6)$ representing the
                 patch indices in the original image. They are typically
                 extracted using `batch[torchio.LOCATION]`.

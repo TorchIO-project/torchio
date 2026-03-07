@@ -8,7 +8,7 @@ class OneHot(LabelTransform):
     r"""Reencode label maps using one-hot encoding.
 
     Args:
-        num_classes: See `~torch.nn.functional.one_hot()`.
+        num_classes: See [`torch.nn.functional.one_hot`][torch.nn.functional.one_hot].
         **kwargs: See [`Transform`][torchio.transforms.Transform] for additional
             keyword arguments.
     """

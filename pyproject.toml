@@ -97,7 +97,7 @@ test = [
     "matplotlib",
     "parameterized",
     "pillow",
-    "pytest",
+    "pytest>=9",
     "pytest-sugar",
     "tox-uv",
 ]

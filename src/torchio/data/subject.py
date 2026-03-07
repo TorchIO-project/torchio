@@ -230,8 +230,8 @@ class Subject(dict):
 
         Args:
             attribute: Name of the image attribute to check
-            relative_tolerance: Relative tolerance for `numpy.allclose()()`
-            absolute_tolerance: Absolute tolerance for `numpy.allclose()()`
+            relative_tolerance: Relative tolerance for `numpy.allclose()`
+            absolute_tolerance: Absolute tolerance for `numpy.allclose()`
 
         Examples:
             >>> import numpy as np
@@ -249,7 +249,7 @@ class Subject(dict):
 
         Note:
             To check that all values for a specific attribute are close
-            between all images in the subject, `numpy.allclose()()` is used.
+            between all images in the subject, `numpy.allclose()` is used.
             This function returns `True` if
             $|a_i - b_i| \leq t_{abs} + t_{rel} * |b_i|$, where
             $a_i$ and $b_i$ are the $i$-th element of the same

@@ -26,7 +26,7 @@ class PCA(IntensityTransform):
         make_skewness_positive: If `True`, the skewness of each component is
             made positive by multiplying the component by -1 if its skewness is
             negative.
-        values_range: If not `None`, these values are linearly mappped to
+        values_range: If not `None`, these values are linearly mapped to
             $[0, 1]$.
         clip: If `True`, the output values are clipped to $[0, 1]$.
         pca_kwargs: Additional keyword arguments to pass to
