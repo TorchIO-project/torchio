@@ -440,3 +440,4 @@ class Subject(dict):
         figure = plot_subject(self, **kwargs)
         if return_fig:
             return figure
+        return None
