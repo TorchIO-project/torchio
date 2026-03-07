@@ -31,14 +31,6 @@ Colin27(Keys: ('t1', 'head', 'brain'); images: 3)
 >>> output_tensor = aggregator.get_output_tensor()
 ```
 
-## Grid sampler
-
-### `GridSampler`
-
 ::: torchio.data.GridSampler
-
-## Grid aggregator
-
-### `GridAggregator`
 
 ::: torchio.data.GridAggregator

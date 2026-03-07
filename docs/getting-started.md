@@ -49,8 +49,8 @@ The Python package is hosted on the
 ## Hello, World!
 
 This example shows the basic usage of TorchIO, where an instance of
-`SubjectsDataset` is passed to
-a PyTorch `SubjectsLoader` to generate training batches
+[`SubjectsDataset`](data/dataset.md#torchio.data.SubjectsDataset) is passed to
+a PyTorch [`SubjectsLoader`](data/loader.md#torchio.data.SubjectsLoader) to generate training batches
 of 3D images that are loaded, preprocessed and augmented on the fly,
 in parallel:
 

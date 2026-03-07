@@ -54,7 +54,7 @@ class Transform(ABC):
     [`torchio.Image`][torchio.Image],
     [`numpy.ndarray`][numpy.ndarray],
     [`torch.Tensor`][torch.Tensor],
-    [SimpleITK.Image][SimpleITK.Image],
+    [`SimpleITK.Image`](https://simpleitk.org/doxygen/latest/html/classitk_1_1simple_1_1Image.html),
     or [`dict`][dict] containing 4D tensors as values.
 
     All subclasses must overwrite
@@ -221,6 +221,14 @@ class Transform(ABC):
 
     @abstractmethod
     def apply_transform(self, subject: Subject) -> Subject:
+        """Apply the transform to a parsed subject.
+
+        Args:
+            subject: Subject to be modified by the transform.
+
+        Returns:
+            The transformed subject.
+        """
         raise NotImplementedError
 
     def add_transform_to_subject_history(self, subject):

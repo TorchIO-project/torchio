@@ -13,10 +13,10 @@ class GridAggregator:
     r"""Aggregate patches for dense inference.
 
     This class is typically used to build a volume made of patches after
-    inference of batches extracted by a [`GridSampler`][torchio.data.GridSampler].
+    inference of batches extracted by a [`GridSampler`](#torchio.data.GridSampler).
 
     Args:
-        sampler: Instance of [`GridSampler`][torchio.data.GridSampler] used to
+        sampler: Instance of [`GridSampler`](#torchio.data.GridSampler) used to
             extract the patches.
         overlap_mode: If `'crop'`, the overlapping predictions will be
             cropped. If `'average'`, the predictions in the overlapping areas
