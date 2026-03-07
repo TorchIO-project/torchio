@@ -94,6 +94,15 @@ nav = [
     ] },
   ] },
   { Datasets = "datasets.md" },
+  { Examples = [
+    "examples/index.md",
+    "examples/plot_colin27.md",
+    "examples/plot_include_exclude.md",
+    "examples/plot_custom_z_spacing.md",
+    "examples/plot_3d_to_2d.md",
+    "examples/plot_history.md",
+    "examples/plot_video.md",
+  ] },
   { Interfaces = [
     "interfaces/cli.md",
     "interfaces/slicer.md",
@@ -180,3 +189,5 @@ generic = true
 
 [project.markdown_extensions.pymdownx.tabbed]
 alternate_style = true
+
+[project.markdown_extensions.md_in_html]

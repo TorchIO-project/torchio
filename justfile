@@ -151,6 +151,10 @@ docs_cmd := "uv run --group doc"
 generate-plots:
     uv run --group doc -- python docs/plot_directive.py
 
+# Generate examples gallery pages from Python scripts in docs/examples
+generate-gallery:
+    uv run --group doc -- python docs/gallery.py
+
 build-docs:
     uv run --group doc -- zensical build
 

@@ -39,6 +39,9 @@ jobs:
       - name: Generate plots
         run: just generate-plots
 
+      - name: Generate examples gallery
+        run: just generate-gallery
+
       - name: Build docs
         run: just build-docs
 
