@@ -1,17 +1,19 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
+from typing import TypeVar
 
 import torch
 
 from ....data.image import LabelMap
 from ....data.image import ScalarImage
 from ....data.subject import Subject
-from ....types import TypeData
 from ....types import TypeRangeFloat
 from ....utils import check_sequence
 from ...intensity_transform import IntensityTransform
 from .. import RandomTransform
+
+GaussianParameterT = TypeVar('GaussianParameterT')
 
 
 class RandomLabelsToImage(RandomTransform, IntensityTransform):
@@ -119,8 +121,10 @@ class RandomLabelsToImage(RandomTransform, IntensityTransform):
     ):
         super().__init__(**kwargs)
         self.label_key = _parse_label_key(label_key)
-        self.used_labels = _parse_used_labels(used_labels)  # type: ignore[arg-type]
-        self.mean, self.std = self.parse_mean_and_std(mean, std)  # type: ignore[arg-type,assignment]
+        self.used_labels = _parse_used_labels(used_labels)
+        self.mean_ranges: list[tuple[float, float]] | None
+        self.std_ranges: list[tuple[float, float]] | None
+        self.mean_ranges, self.std_ranges = self.parse_mean_and_std(mean, std)
         self.default_mean = self.parse_gaussian_parameter(
             default_mean,
             'default_mean',
@@ -135,9 +139,9 @@ class RandomLabelsToImage(RandomTransform, IntensityTransform):
 
     def parse_mean_and_std(
         self,
-        mean: Sequence[TypeRangeFloat],
-        std: Sequence[TypeRangeFloat],
-    ) -> tuple[list[TypeRangeFloat], list[TypeRangeFloat]]:
+        mean: Sequence[TypeRangeFloat] | None,
+        std: Sequence[TypeRangeFloat] | None,
+    ) -> tuple[list[tuple[float, float]] | None, list[tuple[float, float]] | None]:
         if mean is not None:
             mean = self.parse_gaussian_parameters(mean, 'mean')
         if std is not None:
@@ -153,9 +157,9 @@ class RandomLabelsToImage(RandomTransform, IntensityTransform):
         self,
         params: Sequence[TypeRangeFloat],
         name: str,
-    ) -> list[TypeRangeFloat]:
+    ) -> list[tuple[float, float]]:
         check_sequence(params, name)
-        params = [
+        parsed_params: list[tuple[float, float]] = [
             self.parse_gaussian_parameter(p, f'{name}[{i}]')
             for i, p in enumerate(params)
         ]
@@ -164,8 +168,8 @@ class RandomLabelsToImage(RandomTransform, IntensityTransform):
                 f'If both "{name}" and "used_labels" are defined, '
                 'they must have the same length'
             )
-            assert len(params) == len(self.used_labels), message
-        return params
+            assert len(parsed_params) == len(self.used_labels), message
+        return parsed_params
 
     @staticmethod
     def parse_gaussian_parameter(
@@ -200,18 +204,11 @@ class RandomLabelsToImage(RandomTransform, IntensityTransform):
 
     def apply_transform(self, subject: Subject) -> Subject:
         self._guess_label_key(subject)
+        assert self.label_key is not None
 
-        arguments = {
-            'label_key': self.label_key,
-            'mean': [],
-            'std': [],
-            'image_key': self.image_key,
-            'used_labels': self.used_labels,
-            'discretize': self.discretize,
-            'ignore_background': self.ignore_background,
-        }
-
-        label_map = subject[self.label_key].data
+        means: list[float] = []
+        stds: list[float] = []
+        label_map = subject.get_label_map(self.label_key).data
 
         # Find out if we face a partial-volume image or a label map.
         # One-hot-encoded label map is considered as a partial-volume image
@@ -234,35 +231,52 @@ class RandomLabelsToImage(RandomTransform, IntensityTransform):
             labels = range(label_map.shape[0])
 
         # Raise error if mean and std are not defined for every label
-        _check_mean_and_std_length(labels, self.mean, self.std)  # type: ignore[arg-type]
+        _check_mean_and_std_length(labels, self.mean_ranges, self.std_ranges)
 
         for label in labels:
             mean, std = self.get_params(label)
-            means = arguments['mean']
-            stds = arguments['std']
-            assert isinstance(means, list)
-            assert isinstance(stds, list)
             means.append(mean)
             stds.append(std)
 
-        transform = LabelsToImage(**self.add_base_args(arguments))
+        transform = LabelsToImage(
+            label_key=self.label_key,
+            mean=means,
+            std=stds,
+            image_key=self.image_key,
+            used_labels=self.used_labels,
+            ignore_background=self.ignore_background,
+            discretize=self.discretize,
+            **self.get_base_args(),
+        )
         transformed = transform(subject)
         assert isinstance(transformed, Subject)
         return transformed
 
     def get_params(self, label: int) -> tuple[float, float]:
-        if self.mean is None:
+        if self.mean_ranges is None:
             mean_range = self.default_mean
         else:
-            assert isinstance(self.mean, Sequence)
-            mean_range = self.mean[label]
-        if self.std is None:
+            mean_range = self.mean_ranges[label]
+        if self.std_ranges is None:
             std_range = self.default_std
         else:
-            std_range = self.std[label]
-        mean = self.sample_uniform(*mean_range)  # type: ignore[misc]
-        std = self.sample_uniform(*std_range)  # type: ignore[misc]
+            std_range = self.std_ranges[label]
+        mean = self.sample_uniform(*mean_range)
+        std = self.sample_uniform(*std_range)
         return mean, std
+
+    def _get_named_arguments(self) -> dict[str, object]:
+        return {
+            'label_key': self.label_key,
+            'used_labels': self.used_labels,
+            'image_key': self.image_key,
+            'mean': self.mean_ranges,
+            'std': self.std_ranges,
+            'default_mean': self.default_mean,
+            'default_std': self.default_std,
+            'discretize': self.discretize,
+            'ignore_background': self.ignore_background,
+        }
 
 
 class LabelsToImage(IntensityTransform):
@@ -320,9 +334,12 @@ class LabelsToImage(IntensityTransform):
         **kwargs,
     ):
         super().__init__(**kwargs)
-        self.label_key = _parse_label_key(label_key)
+        parsed_label_key = _parse_label_key(label_key)
+        assert parsed_label_key is not None
+        self.label_key: str = parsed_label_key
         self.used_labels = _parse_used_labels(used_labels)
-        self.mean, self.std = mean, std  # type: ignore[assignment]
+        self.means: Sequence[float] | None = mean
+        self.stds: Sequence[float] | None = std
         self.image_key = image_key
         self.ignore_background = ignore_background
         self.discretize = discretize
@@ -337,9 +354,13 @@ class LabelsToImage(IntensityTransform):
         ]
 
     def apply_transform(self, subject: Subject) -> Subject:
-        original_image = subject.get(self.image_key)
+        original_image = (
+            subject.get_scalar_image(self.image_key)
+            if self.image_key in subject
+            else None
+        )
 
-        label_map_image = subject[self.label_key]
+        label_map_image = subject.get_label_map(self.label_key)
         label_map = label_map_image.data
         affine = label_map_image.affine
 
@@ -367,18 +388,18 @@ class LabelsToImage(IntensityTransform):
         # Raise error if mean and std are not defined for every label
         _check_mean_and_std_length(
             labels_in_image,
-            self.mean,  # type: ignore[arg-type]
-            self.std,
+            self.means,
+            self.stds,
         )
 
         for i, label in enumerate(labels_in_image):
             if label == 0 and self.ignore_background:
                 continue
             if self.used_labels is None or label in self.used_labels:
-                assert isinstance(self.mean, Sequence)
-                assert isinstance(self.std, Sequence)
-                mean = self.mean[i]
-                std = self.std[i]
+                assert self.means is not None
+                assert self.stds is not None
+                mean = self.means[i]
+                std = self.stds[i]
                 if is_discretized:
                     mask = label_map == label
                 else:
@@ -404,12 +425,23 @@ class LabelsToImage(IntensityTransform):
         subject.add_image(final_image, self.image_key)
         return subject
 
+    def _get_named_arguments(self) -> dict[str, object]:
+        return {
+            'label_key': self.label_key,
+            'mean': self.means,
+            'std': self.stds,
+            'image_key': self.image_key,
+            'used_labels': self.used_labels,
+            'ignore_background': self.ignore_background,
+            'discretize': self.discretize,
+        }
+
     @staticmethod
     def generate_tissue(
-        data: TypeData,
+        data: torch.Tensor,
         mean: float,
         std: float,
-    ) -> TypeData:
+    ) -> torch.Tensor:
         # Create the simulated tissue using a gaussian random variable
         gaussian = torch.randn(data.shape) * std + mean
         return gaussian * data
@@ -440,8 +472,8 @@ def _parse_used_labels(
 
 def _check_mean_and_std_length(
     labels: Sequence[int],
-    means: Sequence[TypeRangeFloat] | None,
-    stds: Sequence[TypeRangeFloat] | None,
+    means: Sequence[GaussianParameterT] | None,
+    stds: Sequence[GaussianParameterT] | None,
 ) -> None:
     num_labels = len(labels)
     if means is not None:

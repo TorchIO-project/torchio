@@ -1,5 +1,6 @@
 import warnings
 from numbers import Number
+from typing import cast
 
 import numpy as np
 import SimpleITK as sitk
@@ -130,10 +131,16 @@ class RandomElasticDeformation(RandomTransform, SpatialTransform):
     ):
         super().__init__(**kwargs)
         self._bspline_transformation = None
-        self.num_control_points = to_tuple(num_control_points, length=3)
-        _parse_num_control_points(self.num_control_points)  # type: ignore[arg-type]
-        self.max_displacement = to_tuple(max_displacement, length=3)
-        _parse_max_displacement(self.max_displacement)  # type: ignore[arg-type]
+        self.num_control_points = cast(
+            TypeTripletInt,
+            to_tuple(num_control_points, length=3),
+        )
+        _parse_num_control_points(self.num_control_points)
+        self.max_displacement = cast(
+            TypeTripletFloat,
+            to_tuple(max_displacement, length=3),
+        )
+        _parse_max_displacement(self.max_displacement)
         self.num_locked_borders = locked_borders
         if locked_borders not in (0, 1, 2):
             raise ValueError('locked_borders must be 0, 1, or 2')
@@ -178,19 +185,18 @@ class RandomElasticDeformation(RandomTransform, SpatialTransform):
     def apply_transform(self, subject: Subject) -> Subject:
         subject.check_consistent_spatial_shape()
         control_points = self.get_params(
-            self.num_control_points,  # type: ignore[arg-type]
-            self.max_displacement,  # type: ignore[arg-type]
+            self.num_control_points,
+            self.max_displacement,
             self.num_locked_borders,
         )
 
-        arguments = {
-            'control_points': control_points,
-            'max_displacement': self.max_displacement,
-            'image_interpolation': self.image_interpolation,
-            'label_interpolation': self.label_interpolation,
-        }
-
-        transform = ElasticDeformation(**self.add_base_args(arguments))
+        transform = ElasticDeformation(
+            control_points=control_points,
+            max_displacement=self.max_displacement,
+            image_interpolation=self.image_interpolation,
+            label_interpolation=self.label_interpolation,
+            **self.get_base_args(),
+        )
         transformed = transform(subject)
         assert isinstance(transformed, Subject)
         return transformed
@@ -301,7 +307,7 @@ class ElasticDeformation(SpatialTransform):
             bspline_transform = self.get_bspline_transform(image)
             self.parse_free_form_transform(
                 bspline_transform,
-                self.max_displacement,  # type: ignore[arg-type]
+                self.max_displacement,
             )
             interpolator = self.get_sitk_interpolator(interpolation)
             resampler = sitk.ResampleImageFilter()

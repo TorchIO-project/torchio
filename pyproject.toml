@@ -120,6 +120,9 @@ replace = 'version = "{new_version}"'
 [tool.mypy]
 pretty = true
 
+[tool.ty.src]
+include = ["src", "tests"]
+
 [[tool.mypy.overrides]]
 module = "duecredit.*"
 ignore_missing_imports = true

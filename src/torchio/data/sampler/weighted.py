@@ -82,7 +82,7 @@ class WeightedSampler(RandomSampler):
     def get_probability_map_image(self, subject: Subject) -> Image:
         assert self.probability_map_name is not None
         if self.probability_map_name in subject:
-            return subject[self.probability_map_name]
+            return subject.get_image(self.probability_map_name)
         else:
             message = (
                 f'Image "{self.probability_map_name}" not found in subject: {subject}'
@@ -159,7 +159,7 @@ class WeightedSampler(RandomSampler):
 
         # The call tolist() is very important. Using np.uint16 as negative
         # index will not work because e.g. -np.uint16(2) == 65534
-        crop_i, crop_j, crop_k = crop_fin.tolist()  # type: ignore[misc]
+        crop_i, crop_j, crop_k = (int(value) for value in crop_fin.tolist())
         if crop_i:
             probability_map[-crop_i:, :, :] = 0
         if crop_j:

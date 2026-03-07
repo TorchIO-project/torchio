@@ -2,7 +2,8 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from numbers import Number
-from typing import Union
+from typing import Protocol
+from typing import cast
 
 import numpy as np
 import SimpleITK as sitk
@@ -20,7 +21,11 @@ from ....utils import to_tuple
 from ...spatial_transform import SpatialTransform
 from .. import RandomTransform
 
-TypeOneToSixFloat = Union[TypeRangeFloat, TypeTripletFloat, TypeSextetFloat]
+TypeOneToSixFloat = TypeRangeFloat | TypeTripletFloat | TypeSextetFloat
+
+
+class _CompositeTransform(Protocol):
+    def AddTransform(self, transform: sitk.Transform) -> None: ...
 
 
 class RandomAffine(RandomTransform, SpatialTransform):
@@ -175,18 +180,25 @@ class RandomAffine(RandomTransform, SpatialTransform):
             self.translation,
             self.isotropic,
         )
-        arguments = {
-            'scales': scaling_params,
-            'degrees': rotation_params,
-            'translation': translation_params,
-            'center': self.center,
-            'default_pad_value': self.default_pad_value,
-            'default_pad_label': self.default_pad_label,
-            'image_interpolation': self.image_interpolation,
-            'label_interpolation': self.label_interpolation,
-            'check_shape': self.check_shape,
-        }
-        transform = Affine(**self.add_base_args(arguments))
+        scaling_values = [float(value) for value in scaling_params.tolist()]
+        rotation_values = [float(value) for value in rotation_params.tolist()]
+        translation_values = [float(value) for value in translation_params.tolist()]
+        transform = Affine(
+            scales=(scaling_values[0], scaling_values[1], scaling_values[2]),
+            degrees=(rotation_values[0], rotation_values[1], rotation_values[2]),
+            translation=(
+                translation_values[0],
+                translation_values[1],
+                translation_values[2],
+            ),
+            center=self.center,
+            default_pad_value=self.default_pad_value,
+            default_pad_label=self.default_pad_label,
+            image_interpolation=self.image_interpolation,
+            label_interpolation=self.label_interpolation,
+            check_shape=self.check_shape,
+            **self.get_base_args(),
+        )
         transformed = transform(subject)
         assert isinstance(transformed, Subject)
         return transformed
@@ -309,14 +321,14 @@ class Affine(SpatialTransform):
         translation: Sequence[float],
         center_lps: TypeTripletFloat | None = None,
     ) -> sitk.Euler3DTransform:
-        def ras_to_lps(triplet: Sequence[float]):
+        def ras_to_lps(triplet: Sequence[float] | np.ndarray) -> np.ndarray:
             return np.array((-1, -1, 1), dtype=float) * np.asarray(triplet)
 
         transform = sitk.Euler3DTransform()
-        radians = np.radians(degrees).tolist()
+        radians = np.asarray(np.radians(degrees), dtype=float)
 
         # SimpleITK uses LPS
-        radians_lps = ras_to_lps(radians)  # type: ignore[arg-type]
+        radians_lps = ras_to_lps(radians)
         translation_lps = ras_to_lps(translation)
 
         transform.SetRotation(*radians_lps)
@@ -351,9 +363,13 @@ class Affine(SpatialTransform):
 
         sitk_major_version = get_major_sitk_version()
         if sitk_major_version == 1:
-            transform = sitk.Transform(3, sitk.sitkComposite)
-            transform.AddTransform(scaling_transform)
-            transform.AddTransform(rotation_transform)
+            composite = cast(
+                _CompositeTransform,
+                sitk.Transform(3, sitk.sitkComposite),
+            )
+            composite.AddTransform(scaling_transform)
+            composite.AddTransform(rotation_transform)
+            transform = cast(sitk.Transform, composite)
         elif sitk_major_version == 2:
             transforms = [scaling_transform, rotation_transform]
             transform = sitk.CompositeTransform(transforms)

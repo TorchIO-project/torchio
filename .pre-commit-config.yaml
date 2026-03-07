@@ -37,6 +37,17 @@ repos:
       - id: pyupgrade
         args: ['--py310-plus']
 
+  - repo: local
+    hooks:
+      - id: ty-check
+        name: ty check
+        entry: uvx ty check --project . --output-format concise --no-progress
+        language: system
+        always_run: true
+        pass_filenames: false
+        require_serial: true
+        types_or: [python, pyi]
+
 ci:
   autoupdate_commit_msg: Autoupdate pre-commit hooks
   autoupdate_schedule: quarterly

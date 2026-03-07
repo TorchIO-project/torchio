@@ -1,8 +1,6 @@
 from __future__ import annotations
 
-from collections import defaultdict
 from collections.abc import Sequence
-from typing import TypeVar
 
 import numpy as np
 import torch
@@ -15,7 +13,6 @@ from ...intensity_transform import IntensityTransform
 from .. import RandomTransform
 
 TypeLocations = Sequence[tuple[TypeTripletInt, TypeTripletInt]]
-TensorArray = TypeVar('TensorArray', np.ndarray, torch.Tensor)
 
 
 class RandomSwap(RandomTransform, IntensityTransform):
@@ -63,16 +60,17 @@ class RandomSwap(RandomTransform, IntensityTransform):
     ) -> list[tuple[TypeTripletInt, TypeTripletInt]]:
         si, sj, sk = tensor.shape[-3:]
         spatial_shape = si, sj, sk  # for mypy
+        patch_size_values = [int(value) for value in patch_size.tolist()]
         locations = []
         for _ in range(num_iterations):
             first_ini, first_fin = get_random_indices_from_shape(
                 spatial_shape,
-                patch_size.tolist(),  # type: ignore[arg-type]
+                patch_size_values,
             )
             while True:
                 second_ini, second_fin = get_random_indices_from_shape(
                     spatial_shape,
-                    patch_size.tolist(),  # type: ignore[arg-type]
+                    patch_size_values,
                 )
                 larger_than_initial = np.all(second_ini >= first_ini)
                 less_than_final = np.all(second_fin <= first_fin)
@@ -80,25 +78,44 @@ class RandomSwap(RandomTransform, IntensityTransform):
                     continue  # patches overlap
                 else:
                     break  # patches don't overlap
-            location = tuple(first_ini), tuple(second_ini)
+            first_values = [int(value) for value in first_ini.tolist()]
+            second_values = [int(value) for value in second_ini.tolist()]
+            first_location: TypeTripletInt = (
+                first_values[0],
+                first_values[1],
+                first_values[2],
+            )
+            second_location: TypeTripletInt = (
+                second_values[0],
+                second_values[1],
+                second_values[2],
+            )
+            location = first_location, second_location
             locations.append(location)
-        return locations  # type: ignore[return-value]
+        return locations
 
     def apply_transform(self, subject: Subject) -> Subject:
         images_dict = self.get_images_dict(subject)
         if not images_dict:
             return subject
 
-        arguments: dict[str, dict] = defaultdict(dict)
+        locations_by_name: dict[str, TypeLocations] = {}
+        patch_size_by_name: dict[str, TypeTripletInt] = {}
+        patch_values = [int(value) for value in self.patch_size.tolist()]
+        patch_size = (patch_values[0], patch_values[1], patch_values[2])
         for name, image in images_dict.items():
             locations = self.get_params(
                 image.data,
                 self.patch_size,
                 self.num_iterations,
             )
-            arguments['locations'][name] = locations
-            arguments['patch_size'][name] = self.patch_size
-        transform = Swap(**self.add_base_args(arguments))
+            locations_by_name[name] = locations
+            patch_size_by_name[name] = patch_size
+        transform = Swap(
+            patch_size=patch_size_by_name,
+            locations=locations_by_name,
+            **self.get_base_args(),
+        )
         transformed = transform(subject)
         assert isinstance(transformed, Subject)
         return transformed
@@ -132,17 +149,12 @@ class Swap(IntensityTransform):
         self.invert_transform = False
 
     def apply_transform(self, subject: Subject) -> Subject:
-        locations, patch_size = self.locations, self.patch_size
         for name, image in self.get_images_dict(subject).items():
-            if self.arguments_are_dict():
-                assert isinstance(self.locations, dict)
-                assert isinstance(self.patch_size, dict)
-                locations = self.locations[name]
-                patch_size = self.patch_size[name]
+            locations = list(self.get_parameter(self.locations, name))
+            patch_size = self.get_parameter(self.patch_size, name)
             if self.invert_transform:
-                assert isinstance(locations, list)
                 locations.reverse()
-            swapped = _swap(image.data, patch_size, locations)  # type: ignore[arg-type]
+            swapped = _swap(image.data, patch_size, locations)
             image.set_data(swapped)
         return subject
 
@@ -150,24 +162,26 @@ class Swap(IntensityTransform):
 def _swap(
     tensor: torch.Tensor,
     patch_size: TypeTuple,
-    locations: list[tuple[np.ndarray, np.ndarray]],
+    locations: TypeLocations,
 ) -> torch.Tensor:
     # Note this function modifies the input in-place
     tensor = tensor.clone()
     patch_size_array = np.array(patch_size)
     for first_ini, second_ini in locations:
-        first_fin = first_ini + patch_size_array
-        second_fin = second_ini + patch_size_array
-        first_patch = _crop(tensor, first_ini, first_fin)
-        second_patch = _crop(tensor, second_ini, second_fin).clone()
-        _insert(tensor, first_patch, second_ini)
-        _insert(tensor, second_patch, first_ini)
+        first_ini_array = np.asarray(first_ini)
+        second_ini_array = np.asarray(second_ini)
+        first_fin = first_ini_array + patch_size_array
+        second_fin = second_ini_array + patch_size_array
+        first_patch = _crop(tensor, first_ini_array, first_fin)
+        second_patch = _crop(tensor, second_ini_array, second_fin).clone()
+        _insert(tensor, first_patch, second_ini_array)
+        _insert(tensor, second_patch, first_ini_array)
     return tensor
 
 
 def _insert(
-    tensor: TensorArray,
-    patch: TensorArray,
+    tensor: torch.Tensor,
+    patch: torch.Tensor,
     index_ini: np.ndarray,
 ) -> None:
     index_fin = index_ini + np.array(patch.shape[-3:])
@@ -177,10 +191,10 @@ def _insert(
 
 
 def _crop(
-    image: TensorArray,
+    image: torch.Tensor,
     index_ini: np.ndarray,
     index_fin: np.ndarray,
-) -> TensorArray:
+) -> torch.Tensor:
     i_ini, j_ini, k_ini = index_ini
     i_fin, j_fin, k_fin = index_fin
     return image[:, i_ini:i_fin, j_ini:j_fin, k_ini:k_fin]
