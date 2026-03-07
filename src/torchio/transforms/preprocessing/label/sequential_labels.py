@@ -29,7 +29,7 @@ class SequentialLabels(LabelTransform):
         tensor([[[[0, 1, 2]]]])
 
     Note:
-        This transformation is always [fully invertible ](invertibility).
+        This transformation is always [fully invertible ](../index.md#invertibility).
 
     Warning:
         The background is typically represented with the label `0`. There

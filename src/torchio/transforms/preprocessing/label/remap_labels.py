@@ -6,7 +6,7 @@ class RemapLabels(LabelTransform):
     r"""Modify labels in a label map.
 
     Masking can be used to split the label into two during
-    the [inverse transformation ](invertibility).
+    the [inverse transformation ](../index.md#invertibility).
 
     Args:
         remapping: Dictionary that specifies how labels should be remapped.

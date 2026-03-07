@@ -9,7 +9,7 @@ class RemoveLabels(RemapLabels):
 
     The removed labels are remapped to the background label.
 
-    This transformation is not [invertible ](invertibility).
+    This transformation is not [invertible ](../index.md#invertibility).
 
     Args:
         labels: A sequence of label integers that will be removed.
