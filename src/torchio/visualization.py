@@ -38,6 +38,21 @@ def import_mpl_plt():
     return mpl, plt
 
 
+def _figure_to_html(fig: Figure) -> str:
+    """Convert a matplotlib Figure to an HTML img tag with base64-encoded PNG."""
+    import base64
+    import io
+
+    from matplotlib import pyplot as plt
+
+    buffer = io.BytesIO()
+    fig.savefig(buffer, format='png', bbox_inches='tight')
+    plt.close(fig)
+    buffer.seek(0)
+    img_str = base64.b64encode(buffer.read()).decode('utf-8')
+    return f'<img src="data:image/png;base64,{img_str}"/>'
+
+
 def rotate(image: np.ndarray, *, radiological: bool = True, n: int = -1) -> np.ndarray:
     # Rotate for visualization purposes
     image = np.rot90(image, n, axes=(0, 1))
@@ -214,8 +229,9 @@ def plot_subject(
     output_path=None,
     figsize=None,
     clear_axes=True,
+    savefig_kwargs: dict[str, Any] | None = None,
     **plot_volume_kwargs,
-):
+) -> Figure:
     _, plt = import_mpl_plt()
     num_images = len(subject)
     many_images = num_images > 2
@@ -252,9 +268,12 @@ def plot_subject(
             axis.set_title(f'{name} ({axis_name})')
     plt.tight_layout()
     if output_path is not None:
-        fig.savefig(output_path)
+        if savefig_kwargs is None:
+            savefig_kwargs = {}
+        fig.savefig(output_path, **savefig_kwargs)
     if show:
         plt.show()
+    return fig
 
 
 def get_num_bins(x: np.ndarray) -> int:

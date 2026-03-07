@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import base64
-import io
 import warnings
 from collections import Counter
 from collections.abc import Callable
@@ -203,25 +201,16 @@ class Image(dict):
 
     def _repr_html_(self):
         try:
-            from matplotlib import pyplot as plt
             from matplotlib.figure import Figure
         except ImportError:
             return self.__repr__()
 
-        buffer = io.BytesIO()
-        fig = self.plot(
-            return_fig=True,
-            output_path=buffer,
-            show=False,
-            savefig_kwargs={'bbox_inches': 'tight'},
-        )
+        fig = self.plot(return_fig=True, show=False)
         assert isinstance(fig, Figure)
-        plt.close(fig)
-        buffer.seek(0)
 
-        img_str = base64.b64encode(buffer.read()).decode('utf-8')
-        html = f'<img src="data:image/png;base64,{img_str}"/>'
-        return html
+        from ..visualization import _figure_to_html
+
+        return _figure_to_html(fig)
 
     def __getitem__(self, item):
         if isinstance(item, (slice, int, tuple)):
