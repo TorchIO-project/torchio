@@ -15,25 +15,25 @@ class RandomAnisotropy(RandomTransform):
     This transform simulates an image that has been acquired using anisotropic
     spacing and resampled back to its original spacing.
 
-    Similar to the work by Billot et al.: `Partial Volume Segmentation of Brain
+    Similar to the work by Billot et al.: [Partial Volume Segmentation of Brain
     MRI Scans of any Resolution and
-    Contrast <https://link.springer.com/chapter/10.1007/978-3-030-59728-3_18>`_.
+    Contrast ](https://link.springer.com/chapter/10.1007/978-3-030-59728-3_18).
 
     Args:
         axes: Axis or tuple of axes along which the image will be downsampled.
-        downsampling: Downsampling factor :math:`m \gt 1`. If a tuple
-            :math:`(a, b)` is provided then :math:`m \sim \mathcal{U}(a, b)`.
+        downsampling: Downsampling factor $m \gt 1$. If a tuple
+            $(a, b)$ is provided then $m \sim \mathcal{U}(a, b)$.
         image_interpolation: Image interpolation used to upsample the image
             back to its initial spacing. Downsampling is performed using
-            nearest neighbor interpolation. See :ref:`Interpolation` for
+            nearest neighbor interpolation. See Interpolation for
             supported interpolation types.
-        scalars_only: Apply only to instances of :class:`torchio.ScalarImage`.
+        scalars_only: Apply only to instances of [`torchio.ScalarImage`][torchio.ScalarImage].
             This is useful when the segmentation quality needs to be kept,
-            as in `Billot et al. <https://link.springer.com/chapter/10.1007/978-3-030-59728-3_18>`_.
-        **kwargs: See :class:`~torchio.transforms.Transform` for additional
+            as in [Billot et al. ](https://link.springer.com/chapter/10.1007/978-3-030-59728-3_18).
+        **kwargs: See [`Transform`][torchio.transforms.Transform] for additional
             keyword arguments.
 
-    Example:
+    Examples:
         >>> import torchio as tio
         >>> transform = tio.RandomAnisotropy(axes=1, downsampling=2)
         >>> transform = tio.RandomAnisotropy(

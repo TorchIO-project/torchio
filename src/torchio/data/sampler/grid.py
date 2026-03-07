@@ -15,30 +15,29 @@ class GridSampler(PatchSampler):
     r"""Extract patches across a whole volume.
 
     Grid samplers are useful to perform inference using all patches from a
-    volume. It is often used with a :class:`~torchio.data.GridAggregator`.
+    volume. It is often used with a [`GridAggregator`][torchio.data.GridAggregator].
 
     Args:
-        subject: Instance of :class:`~torchio.data.Subject`
+        subject: Instance of [`Subject`][torchio.data.Subject]
             from which patches will be extracted.
-        patch_size: Tuple of integers :math:`(w, h, d)` to generate patches
-            of size :math:`w \times h \times d`.
-            If a single number :math:`n` is provided,
-            :math:`w = h = d = n`.
-        patch_overlap: Tuple of even integers :math:`(w_o, h_o, d_o)`
+        patch_size: Tuple of integers $(w, h, d)$ to generate patches
+            of size $w \times h \times d$.
+            If a single number $n$ is provided,
+            $w = h = d = n$.
+        patch_overlap: Tuple of even integers $(w_o, h_o, d_o)$
             specifying the overlap between patches for dense inference. If a
-            single number :math:`n` is provided, :math:`w_o = h_o = d_o = n`.
-        padding_mode: Same as :attr:`padding_mode` in
-            :class:`~torchio.transforms.Pad`. If ``None``, the volume will not
+            single number $n$ is provided, $w_o = h_o = d_o = n$.
+        padding_mode: Same as `padding_mode` in
+            [`Pad`][torchio.transforms.Pad]. If `None`, the volume will not
             be padded before sampling and patches at the border will not be
             cropped by the aggregator.
             Otherwise, the volume will be padded with
-            :math:`\left(\frac{w_o}{2}, \frac{h_o}{2}, \frac{d_o}{2} \right)`
+            $\left(\frac{w_o}{2}, \frac{h_o}{2}, \frac{d_o}{2} \right)$
             on each side before sampling. If the sampler is passed to a
-            :class:`~torchio.data.GridAggregator`, it will crop the output
+            [`GridAggregator`][torchio.data.GridAggregator], it will crop the output
             to its original size.
 
-    Example:
-
+    Examples:
         >>> import torchio as tio
         >>> colin = tio.datasets.Colin27()
         >>> sampler = tio.GridSampler(colin, patch_size=88)
@@ -50,10 +49,11 @@ class GridSampler(PatchSampler):
         >>> len(sampler)
         8
 
-    .. note:: Adapted from NiftyNet. See `this NiftyNet tutorial
-        <https://niftynet.readthedocs.io/en/dev/window_sizes.html>`_ for more
+    Note:
+        Adapted from NiftyNet. See [this NiftyNet tutorial
+        ](https://niftynet.readthedocs.io/en/dev/window_sizes.html) for more
         information about patch based sampling. Note that
-        :attr:`patch_overlap` is twice :attr:`border` in NiftyNet
+        `patch_overlap` is twice `border` in NiftyNet
         tutorial.
     """
 

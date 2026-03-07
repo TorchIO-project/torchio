@@ -39,8 +39,8 @@ class MetadataIndexColumn(str, enum.Enum):
 class CtRate(SubjectsDataset):
     """CT-RATE dataset.
 
-    This class helps loading the `CT-RATE dataset
-    <https://huggingface.co/datasets/ibrahimhamamci/CT-RATE>`_,
+    This class helps loading the [CT-RATE dataset
+    ](https://huggingface.co/datasets/ibrahimhamamci/CT-RATE),
     which contains chest CT scans with associated radiology reports and
     abnormality labels.
 
@@ -48,16 +48,16 @@ class CtRate(SubjectsDataset):
 
     Args:
         root: Root directory where the dataset has been downloaded.
-        split: Dataset split to use, either ``'train'`` or ``'validation'``.
+        split: Dataset split to use, either `'train'` or `'validation'`.
         num_subjects: Optional limit on the number of subjects to load (useful for
-            debugging). If ``None``, all subjects in the split are loaded.
+            debugging). If `None`, all subjects in the split are loaded.
         report_key: Key to use for storing radiology reports in the Subject metadata.
         sizes: List of image sizes (in-plane, in voxels) to include.
-        load_fixed: If ``True``, load the files with fixed spatial metadata
-            added in `this pull request
-            <https://huggingface.co/datasets/ibrahimhamamci/CT-RATE/discussions/85>`_.
+        load_fixed: If `True`, load the files with fixed spatial metadata
+            added in [this pull request
+            ](https://huggingface.co/datasets/ibrahimhamamci/CT-RATE/discussions/85).
             Otherwise, load the original files with incorrect spatial metadata.
-        verify_paths: If ``True``, verify that the paths to the images exist
+        verify_paths: If `True`, verify that the paths to the images exist
             during instantiation of the dataset. This might be slow for large that are
             not stored locally.
         **kwargs: Additional arguments for SubjectsDataset.
@@ -168,8 +168,8 @@ class CtRate(SubjectsDataset):
         on the expand_validation parameter.
 
         Args:
-            expand_validation: If ``True`` and split is ``'valid'``, return
-                ``'validation'``. Otherwise, return the split name as is.
+            expand_validation: If `True` and split is `'valid'`, return
+                `'validation'`. Otherwise, return the split name as is.
         """
         if expand_validation and self._split == 'valid':
             prefix = 'validation'
@@ -215,9 +215,9 @@ class CtRate(SubjectsDataset):
     def _merge(self, base_df: pd.DataFrame, new_df: pd.DataFrame) -> pd.DataFrame:
         """Merge a new dataframe into the base dataframe using the filename as the key.
 
-        This method performs a left join between ``base_df`` and ``new_df`` using the
-        volume filename as the join key, ensuring that all records from ``base_df`` are
-        preserved while matching data from ``new_df`` is added.
+        This method performs a left join between `base_df` and `new_df` using the
+        volume filename as the join key, ensuring that all records from `base_df` are
+        preserved while matching data from `new_df` is added.
 
         Args:
             base_df: The primary dataframe to merge into.
@@ -236,7 +236,7 @@ class CtRate(SubjectsDataset):
         )
 
     def _keep_n_subjects(self, metadata: pd.DataFrame, n: int) -> pd.DataFrame:
-        """Limit the metadata to the first ``n`` subjects.
+        """Limit the metadata to the first `n` subjects.
 
         Args:
             metadata: The complete metadata dataframe.
@@ -364,7 +364,7 @@ class CtRate(SubjectsDataset):
         Returns:
             Path: The relative path to the image file within the dataset directory.
 
-        Example:
+        Examples:
             >>> path = CtRate._get_image_path('train_2_a_1.nii.gz')
             # Returns Path('dataset/train/train_2/train_2_a/train_2_a_1.nii.gz')
         """

@@ -12,13 +12,13 @@ from ...intensity_transform import IntensityTransform
 class To(IntensityTransform):
     """Convert the image tensor data type and/or device.
 
-    This transform is a thin wrapper around :func:`torch.Tensor.to`.
+    This transform is a thin wrapper around `torch.Tensor.to()`.
 
     Args:
-        target: First argument to :func:`torch.Tensor.to`.
-        to_kwargs: Additional keyword arguments to pass to :func:`torch.Tensor.to`.
+        target: First argument to `torch.Tensor.to()`.
+        to_kwargs: Additional keyword arguments to pass to `torch.Tensor.to()`.
 
-    Example:
+    Examples:
         >>> import torchio as tio
         >>> ct = tio.datasets.Slicer('CTChest').CT_chest
         >>> clamp = tio.Clamp(out_min=-1000, out_max=1000)

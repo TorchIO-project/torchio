@@ -1,13 +1,13 @@
-"""The `Information eXtraction from Images (IXI) <https://brain-development.org/ixi-dataset/>`_
+"""The [Information eXtraction from Images (IXI)](https://brain-development.org/ixi-dataset/)
 dataset contains "nearly 600 MR images from normal, healthy subjects",
 including "T1, T2 and PD-weighted images, MRA images and Diffusion-weighted
 images (15 directions)".
 
-.. note ::
+Note:
     This data is made available under the
     Creative Commons CC BY-SA 3.0 license.
     If you use it please acknowledge the source of the IXI data, e.g.
-    `the IXI website <https://brain-development.org/ixi-dataset/>`_.
+    [the IXI website](https://brain-development.org/ixi-dataset/).
 """
 
 # Adapted from
@@ -34,17 +34,17 @@ class IXI(SubjectsDataset):
     Args:
         root: Root directory to which the dataset will be downloaded.
         transform: An instance of
-            :class:`~torchio.transforms.transform.Transform`.
-        download: If set to ``True``, will download the data into :attr:`root`.
+            [`Transform`][torchio.transforms.transform.Transform].
+        download: If set to `True`, will download the data into `root`.
         modalities: List of modalities to be downloaded. They must be in
-            ``('T1', 'T2', 'PD', 'MRA', 'DTI')``.
+            `('T1', 'T2', 'PD', 'MRA', 'DTI')`.
 
-    .. warning:: The size of this dataset is multiple GB.
-        If you set :attr:`download` to ``True``, it will take some time
+    Warning:
+        The size of this dataset is multiple GB.
+        If you set `download` to `True`, it will take some time
         to be downloaded if it is not already present.
 
-    Example:
-
+    Examples:
         >>> import torchio as tio
         >>> transforms = [
         ...     tio.ToCanonical(),  # to RAS
@@ -159,20 +159,19 @@ class IXI(SubjectsDataset):
 
 
 class IXITiny(SubjectsDataset):
-    r"""This is the dataset used in the main `notebook`_. It is a tiny version
-    of IXI, containing 566 :math:`T_1`-weighted brain MR images and their
-    corresponding brain segmentations, all with size :math:`83 \times 44 \times
-    55`.
+    r"""This is the dataset used in the main [notebook](https://github.com/TorchIO-project/torchio/blob/main/tutorials/README.md). It is a tiny version
+    of IXI, containing 566 $T_1$-weighted brain MR images and their
+    corresponding brain segmentations, all with size $83 \times 44 \times
+    55$.
 
     It can be used as a medical image MNIST.
 
     Args:
         root: Root directory to which the dataset will be downloaded.
         transform: An instance of
-            :class:`~torchio.transforms.transform.Transform`.
-        download: If set to ``True``, will download the data into :attr:`root`.
+            [`Transform`][torchio.transforms.transform.Transform].
+        download: If set to `True`, will download the data into `root`.
 
-    .. _notebook: https://github.com/TorchIO-project/torchio/blob/main/tutorials/README.md
     """
 
     url = 'https://www.dropbox.com/s/ogxjwjxdv5mieah/ixi_tiny.zip?dl=1'

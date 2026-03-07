@@ -8,33 +8,23 @@ from ...intensity_transform import IntensityTransform
 
 
 class Clamp(IntensityTransform):
-    """Clamp intensity values into a range :math:`[a, b]`.
+    """Clamp intensity values into a range $[a, b]$.
 
-    For more information, see :func:`torch.clamp`.
+    For more information, see `torch.clamp()`.
 
     Args:
-        out_min: Minimum value :math:`a` of the output image. If ``None``, the
+        out_min: Minimum value $a$ of the output image. If `None`, the
             minimum of the image is used.
-        out_max: Maximum value :math:`b` of the output image. If ``None``, the
+        out_max: Maximum value $b$ of the output image. If `None`, the
             maximum of the image is used.
 
-    Example:
+    Examples:
         >>> import torchio as tio
         >>> ct = tio.datasets.Slicer('CTChest').CT_chest
         >>> HOUNSFIELD_AIR, HOUNSFIELD_BONE = -1000, 1000
         >>> clamp = tio.Clamp(out_min=HOUNSFIELD_AIR, out_max=HOUNSFIELD_BONE)
         >>> ct_clamped = clamp(ct)
 
-    .. plot::
-
-        import torchio as tio
-        subject = tio.datasets.Slicer('CTChest')
-        ct = subject.CT_chest
-        HOUNSFIELD_AIR, HOUNSFIELD_BONE = -1000, 1000
-        clamp = tio.Clamp(out_min=HOUNSFIELD_AIR, out_max=HOUNSFIELD_BONE)
-        ct_clamped = clamp(ct)
-        subject.add_image(ct_clamped, 'Clamped')
-        subject.plot()
     """
 
     def __init__(

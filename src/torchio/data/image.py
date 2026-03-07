@@ -59,52 +59,52 @@ deprecation_message = (
 class Image(dict):
     r"""TorchIO image.
 
-    For information about medical image orientation, check out `NiBabel docs`_,
-    the `3D Slicer wiki`_, `Graham Wideman's website`_, `FSL docs`_ or
-    `SimpleITK docs`_.
+    For information about medical image orientation, check out [NiBabel docs](https://nipy.org/nibabel/image_orientation.html),
+    the [3D Slicer wiki](https://www.slicer.org/wiki/Coordinate_systems), [Graham Wideman's website](http://www.grahamwideman.com/gw/brain/orientation/orientterms.htm), [FSL docs](https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/Orientation%20Explained) or
+    [SimpleITK docs](https://simpleitk.readthedocs.io/en/master/fundamentalConcepts.html).
 
     Args:
         path: Path to a file or sequence of paths to files that can be read by
-            :mod:`SimpleITK` or :mod:`nibabel`, or to a directory containing
-            DICOM files. If :attr:`tensor` is given, the data in
-            :attr:`path` will not be read.
+            [SimpleITK][SimpleITK] or [nibabel][nibabel], or to a directory containing
+            DICOM files. If `tensor` is given, the data in
+            `path` will not be read.
             If a sequence of paths is given, data
             will be concatenated on the channel dimension so spatial
             dimensions must match.
-        type: Type of image, such as :attr:`torchio.INTENSITY` or
-            :attr:`torchio.LABEL`. This will be used by the transforms to
+        type: Type of image, such as `torchio.INTENSITY` or
+            `torchio.LABEL`. This will be used by the transforms to
             decide whether to apply an operation, or which interpolation to use
-            when resampling. For example, `preprocessing`_ and `augmentation`_
+            when resampling. For example, [preprocessing](https://docs.torchio.org/transforms/preprocessing.html#intensity) and [augmentation](https://docs.torchio.org/transforms/augmentation.html#intensity)
             intensity transforms will only be applied to images with type
-            :attr:`torchio.INTENSITY`. Spatial transforms will be applied to
+            `torchio.INTENSITY`. Spatial transforms will be applied to
             all types, and nearest neighbor interpolation is always used to
-            resample images with type :attr:`torchio.LABEL`.
-            The type :attr:`torchio.SAMPLING_MAP` may be used with instances of
-            :class:`~torchio.data.sampler.weighted.WeightedSampler`.
-        tensor: If :attr:`path` is not given, :attr:`tensor` must be a 4D
-            :class:`torch.Tensor` or NumPy array with dimensions
-            :math:`(C, W, H, D)`.
-        affine: :math:`4 \times 4` matrix to convert voxel coordinates to world
-            coordinates. If ``None``, an identity matrix will be used. See the
-            `NiBabel docs on coordinates`_ for more information.
-        check_nans: If ``True``, issues a warning if NaNs are found
-            in the image. If ``False``, images will not be checked for the
+            resample images with type `torchio.LABEL`.
+            The type `torchio.SAMPLING_MAP` may be used with instances of
+            [`WeightedSampler`][torchio.data.sampler.weighted.WeightedSampler].
+        tensor: If `path` is not given, `tensor` must be a 4D
+            [`torch.Tensor`][torch.Tensor] or NumPy array with dimensions
+            $(C, W, H, D)$.
+        affine: $4 \times 4$ matrix to convert voxel coordinates to world
+            coordinates. If `None`, an identity matrix will be used. See the
+            [NiBabel docs on coordinates](https://nipy.org/nibabel/coordinate_systems.html#the-affine-matrix-as-a-transformation-between-spaces) for more information.
+        check_nans: If `True`, issues a warning if NaNs are found
+            in the image. If `False`, images will not be checked for the
             presence of NaNs.
         reader: Callable object that takes a path and returns a 4D tensor and a
-            2D, :math:`4 \times 4` affine matrix. This can be used if your data
-            is saved in a custom format, such as ``.npy`` (see example below).
-            If the affine matrix is ``None``, an identity matrix will be used.
+            2D, $4 \times 4$ affine matrix. This can be used if your data
+            is saved in a custom format, such as `.npy` (see example below).
+            If the affine matrix is `None`, an identity matrix will be used.
         **kwargs: Items that will be added to the image dictionary, e.g.
             acquisition parameters or image ID.
-        verify_path: If ``True``, the path will be checked to see if it exists. If
-            ``False``, the path will not be verified. This is useful when it is
+        verify_path: If `True`, the path will be checked to see if it exists. If
+            `False`, the path will not be verified. This is useful when it is
             expensive to check the path, e.g., when reading a large dataset from a
             mounted drive.
 
-    TorchIO images are `lazy loaders`_, i.e. the data is only loaded from disk
+    TorchIO images are [lazy loaders](https://en.wikipedia.org/wiki/Lazy_loading), i.e. the data is only loaded from disk
     when needed.
 
-    Example:
+    Examples:
         >>> import torchio as tio
         >>> import numpy as np
         >>> image = tio.ScalarImage('t1.nii.gz')  # subclass of Image
@@ -120,15 +120,6 @@ class Image(dict):
         ...     return data, affine
         >>> image = tio.ScalarImage('t1.npy', reader=numpy_reader)
 
-    .. _lazy loaders: https://en.wikipedia.org/wiki/Lazy_loading
-    .. _preprocessing: https://docs.torchio.org/transforms/preprocessing.html#intensity
-    .. _augmentation: https://docs.torchio.org/transforms/augmentation.html#intensity
-    .. _NiBabel docs: https://nipy.org/nibabel/image_orientation.html
-    .. _NiBabel docs on coordinates: https://nipy.org/nibabel/coordinate_systems.html#the-affine-matrix-as-a-transformation-between-spaces
-    .. _3D Slicer wiki: https://www.slicer.org/wiki/Coordinate_systems
-    .. _FSL docs: https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/Orientation%20Explained
-    .. _SimpleITK docs: https://simpleitk.readthedocs.io/en/master/fundamentalConcepts.html
-    .. _Graham Wideman's website: http://www.grahamwideman.com/gw/brain/orientation/orientterms.htm
     """
 
     def __init__(
@@ -238,7 +229,7 @@ class Image(dict):
 
     @property
     def data(self) -> torch.Tensor:
-        """Tensor data (same as :class:`Image.tensor`)."""
+        """Tensor data (same as [Image.tensor][Image.tensor])."""
         return self[DATA]
 
     @data.setter  # type: ignore[misc]
@@ -247,17 +238,17 @@ class Image(dict):
         self.set_data(tensor)
 
     def set_data(self, tensor: TypeData):
-        """Store a 4D tensor in the :attr:`data` key and attribute.
+        """Store a 4D tensor in the `data` key and attribute.
 
         Args:
-            tensor: 4D tensor with dimensions :math:`(C, W, H, D)`.
+            tensor: 4D tensor with dimensions $(C, W, H, D)$.
         """
         self[DATA] = self._parse_tensor(tensor, none_ok=False)
         self._loaded = True
 
     @property
     def tensor(self) -> torch.Tensor:
-        """Tensor data (same as :class:`Image.data`)."""
+        """Tensor data (same as [Image.data][Image.data])."""
         return self.data
 
     @property
@@ -286,7 +277,7 @@ class Image(dict):
 
     @property
     def shape(self) -> TypeQuartetInt:
-        """Tensor shape as :math:`(C, W, H, D)`."""
+        """Tensor shape as $(C, W, H, D)$."""
         custom_reader = self.reader is not read_image
         multipath = self._is_multipath()
         if isinstance(self.path, Path):
@@ -302,7 +293,7 @@ class Image(dict):
 
     @property
     def spatial_shape(self) -> TypeTripletInt:
-        """Tensor spatial shape as :math:`(W, H, D)`."""
+        """Tensor spatial shape as $(W, H, D)$."""
         return self.shape[1:]
 
     def check_is_2d(self) -> None:
@@ -381,18 +372,20 @@ class Image(dict):
         """Convert an axis name to an axis index.
 
         Args:
-            axis: Possible inputs are ``'Left'``, ``'Right'``, ``'Anterior'``,
-                ``'Posterior'``, ``'Inferior'``, ``'Superior'``. Lower-case
+            axis: Possible inputs are `'Left'`, `'Right'`, `'Anterior'`,
+                `'Posterior'`, `'Inferior'`, `'Superior'`. Lower-case
                 versions and first letters are also valid, as only the first
                 letter will be used.
 
-        .. note:: If you are working with animals, you should probably use
-            ``'Superior'``, ``'Inferior'``, ``'Anterior'`` and ``'Posterior'``
-            for ``'Dorsal'``, ``'Ventral'``, ``'Rostral'`` and ``'Caudal'``,
+        Note:
+            If you are working with animals, you should probably use
+            `'Superior'`, `'Inferior'`, `'Anterior'` and `'Posterior'`
+            for `'Dorsal'`, `'Ventral'`, `'Rostral'` and `'Caudal'`,
             respectively.
 
-        .. note:: If your images are 2D, you can use ``'Top'``, ``'Bottom'``,
-            ``'Left'`` and ``'Right'``.
+        Note:
+            If your images are 2D, you can use `'Top'`, `'Bottom'`,
+            `'Left'` and `'Right'`.
         """
         # Top and bottom are used for the vertical 2D axis as the use of
         # Height vs Horizontal might be ambiguous
@@ -416,10 +409,10 @@ class Image(dict):
 
     @staticmethod
     def flip_axis(axis: str) -> str:
-        """Return the opposite axis label. For example, ``'L'`` -> ``'R'``.
+        """Return the opposite axis label. For example, `'L'` -> `'R'`.
 
         Args:
-            axis: Axis label, such as ``'L'`` or ``'left'``.
+            axis: Axis label, such as `'L'` or `'left'`.
         """
         labels = 'LRPAISTBDV'
         first = labels[::2]
@@ -564,8 +557,8 @@ class Image(dict):
         r"""Load the image from disk.
 
         Returns:
-            Tuple containing a 4D tensor of size :math:`(C, W, H, D)` and a 2D
-            :math:`4 \times 4` affine matrix to convert voxel indices to world
+            Tuple containing a 4D tensor of size $(C, W, H, D)$ and a 2D
+            $4 \times 4$ affine matrix to convert voxel indices to world
             coordinates.
         """
         if self._loaded:
@@ -641,9 +634,9 @@ class Image(dict):
         """Save image to disk.
 
         Args:
-            path: String or instance of :class:`pathlib.Path`.
+            path: String or instance of [pathlib.Path][pathlib.Path].
             squeeze: Whether to remove singleton dimensions before saving.
-                If ``None``, the array will be squeezed if the output format is
+                If `None`, the array will be squeezed if the output format is
                 JP(E)G, PNG, BMP or TIF(F).
         """
         write_image(
@@ -661,14 +654,14 @@ class Image(dict):
         return np.asarray(self)
 
     def as_sitk(self, **kwargs) -> sitk.Image:
-        """Get the image as an instance of :class:`sitk.Image`."""
+        """Get the image as an instance of [sitk.Image][sitk.Image]."""
         return nib_to_sitk(self.data, self.affine, **kwargs)
 
     @classmethod
     def from_sitk(cls, sitk_image):
-        """Instantiate a new TorchIO image from a :class:`sitk.Image`.
+        """Instantiate a new TorchIO image from a [sitk.Image][sitk.Image].
 
-        Example:
+        Examples:
             >>> import torchio as tio
             >>> import SimpleITK as sitk
             >>> sitk_image = sitk.Image(20, 30, 40, sitk.sitkUInt16)
@@ -682,12 +675,14 @@ class Image(dict):
         return cls(tensor=tensor, affine=affine)
 
     def as_pil(self, transpose=True):
-        """Get the image as an instance of :class:`PIL.Image`.
+        """Get the image as an instance of [PIL.Image][PIL.Image].
 
-        .. note:: Values will be clamped to 0-255 and cast to uint8.
+        Note:
+            Values will be clamped to 0-255 and cast to uint8.
 
-        .. note:: To use this method, Pillow needs to be installed:
-            ``pip install Pillow``.
+        Note:
+            To use this method, Pillow needs to be installed:
+            `pip install Pillow`.
         """
         try:
             from PIL import Image as ImagePIL
@@ -727,10 +722,10 @@ class Image(dict):
             duration: Duration of the full animation in seconds.
             output_path: Path to the output GIF file.
             loop: Number of times the GIF should loop.
-                ``0`` means that it will loop forever.
-            rescale: Use :class:`~torchio.transforms.preprocessing.intensity.rescale.RescaleIntensity`
-                to rescale the intensity values to :math:`[0, 255]`.
-            optimize: If ``True``, attempt to compress the palette by
+                `0` means that it will loop forever.
+            rescale: Use [`RescaleIntensity`][torchio.transforms.preprocessing.intensity.rescale.RescaleIntensity]
+                to rescale the intensity values to $[0, 255]$.
+            optimize: If `True`, attempt to compress the palette by
                 eliminating unused colors. This is only useful if the palette
                 can be compressed to the next smaller power of 2 elements.
             reverse: Reverse the temporal order of frames.
@@ -759,7 +754,7 @@ class Image(dict):
         """Get image center in RAS+ or LPS+ coordinates.
 
         Args:
-            lps: If ``True``, the coordinates will be in LPS+ orientation, i.e.
+            lps: If `True`, the coordinates will be in LPS+ orientation, i.e.
                 the first dimension grows towards the left, etc. Otherwise, the
                 coordinates will be in RAS+ orientation.
         """
@@ -788,11 +783,11 @@ class Image(dict):
 
         Args:
             viewer_path: Path to the application used to view the image. If
-                ``None``, the value of the environment variable
-                ``SITK_SHOW_COMMAND`` will be used. If this variable is also
+                `None`, the value of the environment variable
+                `SITK_SHOW_COMMAND` will be used. If this variable is also
                 not set, TorchIO will try to guess the location of
-                `ITK-SNAP <http://www.itksnap.org/pmwiki/pmwiki.php>`_ and
-                `3D Slicer <https://www.slicer.org/>`_.
+                [ITK-SNAP ](http://www.itksnap.org/pmwiki/pmwiki.php) and
+                [3D Slicer ](https://www.slicer.org/).
 
         Raises:
             RuntimeError: If the viewer is not found.
@@ -860,7 +855,7 @@ class Image(dict):
 class ScalarImage(Image):
     """Image whose pixel values represent scalars.
 
-    Example:
+    Examples:
         >>> import torch
         >>> import torchio as tio
         >>> # Loading from a file
@@ -877,7 +872,7 @@ class ScalarImage(Image):
         >>> type(image.data)
         torch.Tensor
 
-    See :class:`~torchio.Image` for more information.
+    See [`Image`][torchio.Image] for more information.
     """
 
     def __init__(self, *args, **kwargs):
@@ -910,7 +905,8 @@ class ScalarImage(Image):
             direction:
             verbosity:
 
-        .. note:: Only ``frame_rate`` or ``seconds`` may (and must) be specified.
+        Note:
+            Only `frame_rate` or `seconds` may (and must) be specified.
         """
         from ..visualization import make_video  # avoid circular import
 
@@ -939,7 +935,7 @@ class LabelMap(Image):
     independently of the specified interpolation type in the transform
     instantiation.
 
-    Example:
+    Examples:
         >>> import torch
         >>> import torchio as tio
         >>> binary_tensor = torch.rand(1, 128, 128, 68) > 0.5
@@ -949,7 +945,7 @@ class LabelMap(Image):
         >>> tissues = 'gray_matter.nii.gz', 'white_matter.nii.gz', 'csf.nii.gz'
         >>> tpm = tio.LabelMap(tissues)
 
-    See :class:`~torchio.Image` for more information.
+    See [`Image`][torchio.Image] for more information.
     """
 
     def __init__(self, *args, **kwargs):

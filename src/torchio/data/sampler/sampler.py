@@ -16,13 +16,14 @@ class PatchSampler:
     r"""Base class for TorchIO samplers.
 
     Args:
-        patch_size: Tuple of integers :math:`(w, h, d)` to generate patches
-            of size :math:`w \times h \times d`.
-            If a single number :math:`n` is provided, :math:`w = h = d = n`.
+        patch_size: Tuple of integers $(w, h, d)$ to generate patches
+            of size $w \times h \times d$.
+            If a single number $n$ is provided, $w = h = d = n$.
 
-    .. warning:: This is an abstract class that should only be instantiated
-        using child classes such as :class:`~torchio.data.UniformSampler` and
-        :class:`~torchio.data.WeightedSampler`.
+    Warning:
+        This is an abstract class that should only be instantiated
+        using child classes such as [`UniformSampler`][torchio.data.UniformSampler] and
+        [`WeightedSampler`][torchio.data.WeightedSampler].
     """
 
     def __init__(self, patch_size: TypeSpatialShape):
@@ -107,9 +108,9 @@ class RandomSampler(PatchSampler):
     r"""Base class for random samplers.
 
     Args:
-        patch_size: Tuple of integers :math:`(w, h, d)` to generate patches
-            of size :math:`w \times h \times d`.
-            If a single number :math:`n` is provided, :math:`w = h = d = n`.
+        patch_size: Tuple of integers $(w, h, d)$ to generate patches
+            of size $w \times h \times d$.
+            If a single number $n$ is provided, $w = h = d = n$.
     """
 
     def get_probability_map(self, subject: Subject):

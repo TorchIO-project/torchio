@@ -12,8 +12,8 @@ class ZonePlate(Subject):
     processing algorithms, particularly those related to frequency analysis and
     interpolation.
 
-    See equation 10.63 in `Practical Handbook on Image Processing for
-    Scientific Applications <https://www.routledge.com/Practical-Handbook-on-Image-Processing-for-Scientific-and-Technical-Applications/Jahne/p/book/9780849319006?srsltid=AfmBOoptrtzILIlMx9FYqvx6UrGbevfD66x2k242iprFdn_CfyOWXjjH>`_
+    See equation 10.63 in [Practical Handbook on Image Processing for
+    Scientific Applications ](https://www.routledge.com/Practical-Handbook-on-Image-Processing-for-Scientific-and-Technical-Applications/Jahne/p/book/9780849319006?srsltid=AfmBOoptrtzILIlMx9FYqvx6UrGbevfD66x2k242iprFdn_CfyOWXjjH)
     by Bernd Jähne.
 
     Args:

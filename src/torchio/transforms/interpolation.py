@@ -7,45 +7,46 @@ class Interpolation(enum.Enum):
     """Interpolation techniques available in ITK.
 
     For a full quantitative comparison of interpolation methods, you can read
-    `Meijering et al. 1999, Quantitative Comparison of Sinc-Approximating Kernels for Medical Image Interpolation <https://link.springer.com/chapter/10.1007/10704282_23>`_
+    [Meijering et al. 1999, Quantitative Comparison of Sinc-Approximating Kernels for
+    Medical Image Interpolation ](https://link.springer.com/chapter/10.1007/10704282_23).
 
-    Example:
+    Examples:
         >>> import torchio as tio
         >>> transform = tio.RandomAffine(image_interpolation='bspline')
     """
 
-    #: Interpolates image intensity at a non-integer pixel position by copying the intensity for the nearest neighbor.
     NEAREST = 'sitkNearestNeighbor'
+    """Nearest neighbor interpolation."""
 
-    #: Linearly interpolates image intensity at a non-integer pixel position.
     LINEAR = 'sitkLinear'
+    """Linear interpolation."""
 
-    #: B-Spline of order 3 (cubic) interpolation.
     BSPLINE = 'sitkBSpline'
+    """B-Spline of order 3 (cubic) interpolation."""
 
-    #: Same as ``bspline``.
     CUBIC = 'sitkBSpline'
+    """Same as `BSPLINE`."""
 
-    #: Gaussian interpolation. Sigma is set to 0.8 input pixels and alpha is 4
     GAUSSIAN = 'sitkGaussian'
+    """Gaussian interpolation. Sigma is set to 0.8 input pixels and alpha is 4."""
 
-    #: Smoothly interpolate multi-label images. Sigma is set to 1 input pixel and alpha is 1
     LABEL_GAUSSIAN = 'sitkLabelGaussian'
+    """Smoothly interpolate multi-label images. Sigma is set to 1 input pixel and alpha is 1."""
 
-    #: Hamming windowed sinc kernel.
     HAMMING = 'sitkHammingWindowedSinc'
+    """Hamming windowed sinc kernel."""
 
-    #: Cosine windowed sinc kernel.
     COSINE = 'sitkCosineWindowedSinc'
+    """Cosine windowed sinc kernel."""
 
-    #: Welch windowed sinc kernel.
     WELCH = 'sitkWelchWindowedSinc'
+    """Welch windowed sinc kernel."""
 
-    #: Lanczos windowed sinc kernel.
     LANCZOS = 'sitkLanczosWindowedSinc'
+    """Lanczos windowed sinc kernel."""
 
-    #: Blackman windowed sinc kernel.
     BLACKMAN = 'sitkBlackmanWindowedSinc'
+    """Blackman windowed sinc kernel."""
 
 
 def get_sitk_interpolator(interpolation: str) -> int:

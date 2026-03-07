@@ -1,0 +1,3 @@
+# OneHot
+
+::: torchio.transforms.OneHot

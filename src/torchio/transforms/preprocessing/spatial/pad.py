@@ -16,31 +16,30 @@ class Pad(BoundsTransform):
 
     Args:
         padding: Tuple
-            :math:`(w_{ini}, w_{fin}, h_{ini}, h_{fin}, d_{ini}, d_{fin})`
+            $(w_{ini}, w_{fin}, h_{ini}, h_{fin}, d_{ini}, d_{fin})$
             defining the number of values padded to the edges of each axis.
             If the initial shape of the image is
-            :math:`W \times H \times D`, the final shape will be
-            :math:`(w_{ini} + W + w_{fin}) \times (h_{ini} + H + h_{fin})
-            \times (d_{ini} + D + d_{fin})`.
-            If only three values :math:`(w, h, d)` are provided, then
-            :math:`w_{ini} = w_{fin} = w`,
-            :math:`h_{ini} = h_{fin} = h` and
-            :math:`d_{ini} = d_{fin} = d`.
-            If only one value :math:`n` is provided, then
-            :math:`w_{ini} = w_{fin} = h_{ini} = h_{fin} =
-            d_{ini} = d_{fin} = n`.
-        padding_mode: See possible modes in `NumPy docs`_. If it is a number,
-            the mode will be set to ``'constant'``. If it is ``'mean'``,
-            ``'maximum'``, ``'median'`` or ``'minimum'``, the statistic will be
+            $W \times H \times D$, the final shape will be
+            $(w_{ini} + W + w_{fin}) \times (h_{ini} + H + h_{fin})
+            \times (d_{ini} + D + d_{fin})$.
+            If only three values $(w, h, d)$ are provided, then
+            $w_{ini} = w_{fin} = w$,
+            $h_{ini} = h_{fin} = h$ and
+            $d_{ini} = d_{fin} = d$.
+            If only one value $n$ is provided, then
+            $w_{ini} = w_{fin} = h_{ini} = h_{fin} =
+            d_{ini} = d_{fin} = n$.
+        padding_mode: See possible modes in [NumPy docs](https://numpy.org/doc/stable/reference/generated/numpy.pad.html). If it is a number,
+            the mode will be set to `'constant'`. If it is `'mean'`,
+            `'maximum'`, `'median'` or `'minimum'`, the statistic will be
             computed from the whole volume, unlike in NumPy, which computes it
             along the padded axis.
-        **kwargs: See :class:`~torchio.transforms.Transform` for additional
+        **kwargs: See [`Transform`][torchio.transforms.Transform] for additional
             keyword arguments.
 
-    .. seealso:: If you want to pass the output shape instead, please use
-        :class:`~torchio.transforms.CropOrPad` instead.
+    See also: If you want to pass the output shape instead, please use
+        [`CropOrPad`][torchio.transforms.CropOrPad] instead.
 
-    .. _NumPy docs: https://numpy.org/doc/stable/reference/generated/numpy.pad.html
     """
 
     PADDING_MODES = (

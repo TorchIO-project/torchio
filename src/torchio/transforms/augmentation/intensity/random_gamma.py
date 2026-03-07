@@ -12,54 +12,41 @@ from .. import RandomTransform
 
 class RandomGamma(RandomTransform, IntensityTransform):
     r"""Randomly change contrast of an image by raising its values to the power
-    :math:`\gamma`.
+    $\gamma$.
 
     Args:
-        log_gamma: Tuple :math:`(a, b)` to compute the exponent
-            :math:`\gamma = e ^ \beta`,
-            where :math:`\beta \sim \mathcal{U}(a, b)`.
-            If a single value :math:`d` is provided, then
-            :math:`\beta \sim \mathcal{U}(-d, d)`.
+        log_gamma: Tuple $(a, b)$ to compute the exponent
+            $\gamma = e ^ \beta$,
+            where $\beta \sim \mathcal{U}(a, b)$.
+            If a single value $d$ is provided, then
+            $\beta \sim \mathcal{U}(-d, d)$.
             Negative and positive values for this argument perform gamma
             compression and expansion, respectively.
-            See the `Gamma correction`_ Wikipedia entry for more information.
-        **kwargs: See :class:`~torchio.transforms.Transform` for additional
+            See the [Gamma correction](https://en.wikipedia.org/wiki/Gamma_correction) Wikipedia entry for more information.
+        **kwargs: See [`Transform`][torchio.transforms.Transform] for additional
             keyword arguments.
 
-    .. _Gamma correction: https://en.wikipedia.org/wiki/Gamma_correction
 
-    .. note:: Fractional exponentiation of negative values is generally not
+    Note:
+        Fractional exponentiation of negative values is generally not
         well-defined for non-complex numbers.
-        If negative values are found in the input image :math:`I`,
-        the applied transform is :math:`\text{sign}(I) |I|^\gamma`,
-        instead of the usual :math:`I^\gamma`. The
-        :class:`~torchio.transforms.RescaleIntensity`
+        If negative values are found in the input image $I$,
+        the applied transform is $\text{sign}(I) |I|^\gamma$,
+        instead of the usual $I^\gamma$. The
+        [`RescaleIntensity`][torchio.transforms.RescaleIntensity]
         transform may be used to ensure that all values are positive. This is
         generally not problematic, but it is recommended to visualize results
         on images with negative values. More information can be found on
-        `this StackExchange question`_.
+        [this StackExchange question](https://math.stackexchange.com/questions/317528/how-do-you-compute-negative-numbers-to-fractional-powers).
 
-        .. _this StackExchange question: https://math.stackexchange.com/questions/317528/how-do-you-compute-negative-numbers-to-fractional-powers
 
-    .. plot::
 
-        import torch
-        import torchio as tio
-        subject = tio.datasets.FPG()
-        subject.remove_image('seg')
-        transform = tio.RandomGamma(log_gamma=(-0.3, -0.3))
-        transformed = transform(subject)
-        subject.add_image(transformed.t1, 'log -0.3')
-        transform = tio.RandomGamma(log_gamma=(0.3, 0.3))
-        transformed = transform(subject)
-        subject.add_image(transformed.t1, 'log 0.3')
-        subject.plot()
-
-    Example:
+    Examples:
         >>> import torchio as tio
         >>> subject = tio.datasets.FPG()
         >>> transform = tio.RandomGamma(log_gamma=(-0.3, 0.3))  # gamma between 0.74 and 1.34
         >>> transformed = transform(subject)
+
     """
 
     def __init__(self, log_gamma: TypeRangeFloat = (-0.3, 0.3), **kwargs):
@@ -87,32 +74,31 @@ class RandomGamma(RandomTransform, IntensityTransform):
 
 class Gamma(IntensityTransform):
     r"""Change contrast of an image by raising its values to the power
-    :math:`\gamma`.
+    $\gamma$.
 
     Args:
         gamma: Exponent to which values in the image will be raised.
             Negative and positive values for this argument perform gamma
             compression and expansion, respectively.
-            See the `Gamma correction`_ Wikipedia entry for more information.
-        **kwargs: See :class:`~torchio.transforms.Transform` for additional
+            See the [Gamma correction](https://en.wikipedia.org/wiki/Gamma_correction) Wikipedia entry for more information.
+        **kwargs: See [`Transform`][torchio.transforms.Transform] for additional
             keyword arguments.
 
-    .. _Gamma correction: https://en.wikipedia.org/wiki/Gamma_correction
 
-    .. note:: Fractional exponentiation of negative values is generally not
+    Note:
+        Fractional exponentiation of negative values is generally not
         well-defined for non-complex numbers.
-        If negative values are found in the input image :math:`I`,
-        the applied transform is :math:`\text{sign}(I) |I|^\gamma`,
-        instead of the usual :math:`I^\gamma`. The
-        :class:`~torchio.transforms.preprocessing.intensity.rescale.RescaleIntensity`
+        If negative values are found in the input image $I$,
+        the applied transform is $\text{sign}(I) |I|^\gamma$,
+        instead of the usual $I^\gamma$. The
+        [`RescaleIntensity`][torchio.transforms.preprocessing.intensity.rescale.RescaleIntensity]
         transform may be used to ensure that all values are positive. This is
         generally not problematic, but it is recommended to visualize results
         on image with negative values. More information can be found on
-        `this StackExchange question`_.
+        [this StackExchange question](https://math.stackexchange.com/questions/317528/how-do-you-compute-negative-numbers-to-fractional-powers).
 
-        .. _this StackExchange question: https://math.stackexchange.com/questions/317528/how-do-you-compute-negative-numbers-to-fractional-powers
 
-    Example:
+    Examples:
         >>> import torchio as tio
         >>> subject = tio.datasets.FPG()
         >>> transform = tio.Gamma(0.8)

@@ -10,15 +10,15 @@ class CopyAffine(SpatialTransform):
     Small unexpected differences in spatial metadata across different images
     of a subject can arise due to rounding errors while converting formats.
 
-    If the ``shape`` and ``orientation`` of the images are the same and their
-    ``affine`` attributes are different but very similar, this transform can be
+    If the `shape` and `orientation` of the images are the same and their
+    `affine` attributes are different but very similar, this transform can be
     used to avoid errors during safety checks in other transforms and samplers.
 
     Args:
         target: Name of the image within the subject whose affine matrix will
             be used.
 
-    Example:
+    Examples:
         >>> import torch
         >>> import torchio as tio
         >>> import numpy as np
@@ -46,13 +46,15 @@ class CopyAffine(SpatialTransform):
         (1, 210, 244, 221)
 
 
-    .. warning:: This transform should be used with caution. Modifying the
+    Warning:
+        This transform should be used with caution. Modifying the
         spatial metadata of an image manually can lead to incorrect processing
         of the position of anatomical structures. For example, a machine
         learning algorithm might incorrectly predict that a lesion on the right
         lung is on the left lung.
 
-    .. note:: For more information, see some related discussions on GitHub:
+    Note:
+        For more information, see some related discussions on GitHub:
 
         * https://github.com/TorchIO-project/torchio/issues/354
         * https://github.com/TorchIO-project/torchio/discussions/489

@@ -46,16 +46,15 @@ class BITE3(BITE):
     brain tumors to facilitate the development and validation of new image
     processing algorithms.*
 
-    Please check the `BITE website`_ for more information and
+    Please check the [BITE website](https://nist.mni.mcgill.ca/bite-brain-images-of-tumors-for-evaluation-database/) for more information and
     acknowledgments instructions.
 
-    .. _BITE website: https://nist.mni.mcgill.ca/bite-brain-images-of-tumors-for-evaluation-database/
 
     Args:
         root: Root directory to which the dataset will be downloaded.
         transform: An instance of
-            :class:`~torchio.transforms.transform.Transform`.
-        download: If set to ``True``, will download the data into :attr:`root`.
+            [`Transform`][torchio.transforms.transform.Transform].
+        download: If set to `True`, will download the data into `root`.
     """
 
     dirname = 'group3'
