@@ -14,6 +14,8 @@ from ..utils import get_subclasses
 from .image import Image
 
 if TYPE_CHECKING:
+    from matplotlib.figure import Figure
+
     from ..transforms import Compose
     from ..transforms import Transform
 
@@ -65,6 +67,19 @@ class Subject(dict):
             f'(Keys: {tuple(self.keys())}; images: {num_images})'
         )
         return string
+
+    def _repr_html_(self):
+        try:
+            from matplotlib.figure import Figure
+        except ImportError:
+            return self.__repr__()
+
+        fig = self.plot(return_fig=True, show=False)
+        assert isinstance(fig, Figure)
+
+        from ..visualization import _figure_to_html
+
+        return _figure_to_html(fig)
 
     def __len__(self):
         return len(self.get_images(intensity_only=False))
@@ -412,13 +427,17 @@ class Subject(dict):
         del self[image_name]
         delattr(self, image_name)
 
-    def plot(self, **kwargs) -> None:
+    def plot(self, return_fig: bool = False, **kwargs) -> None | Figure:
         """Plot images using matplotlib.
 
         Args:
+            return_fig: If ``True``, return the figure instead of showing it.
             **kwargs: Keyword arguments that will be passed on to
                 [`plot()`][torchio.Image.plot].
         """
         from ..visualization import plot_subject  # avoid circular import
 
-        plot_subject(self, **kwargs)
+        figure = plot_subject(self, **kwargs)
+        if return_fig:
+            return figure
+        return None
