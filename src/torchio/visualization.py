@@ -103,6 +103,14 @@ def plot_volume(
     elif rgb and image.num_channels == 3:
         data = image.data  # keep image as it is
     elif channel is None:
+        if image.num_channels > 1:
+            message = (
+                'Multiple channels found in the image. '
+                'Plotting the first channel (0). '
+                'To plot a different channel, please specify the channel '
+                'index using the "channel" argument.'
+            )
+            warnings.warn(message, RuntimeWarning, stacklevel=2)
         data = image.data[0:1]  # just use the first channel
     else:
         data = image.data[np.newaxis, channel]
@@ -255,7 +263,7 @@ def get_num_bins(x: np.ndarray) -> int:
     This method uses the Freedman–Diaconis rule to compute the histogram that
     minimizes "the integral of the squared difference between the histogram
     (i.e., relative frequency density) and the density of the theoretical
-    probability distribution" (`Wikipedia <https://en.wikipedia.org/wiki/Freedman%E2%80%93Diaconis_rule>`_).
+    probability distribution" ([Wikipedia ](https://en.wikipedia.org/wiki/Freedman%E2%80%93Diaconis_rule)).
 
     Args:
         x: Input values.

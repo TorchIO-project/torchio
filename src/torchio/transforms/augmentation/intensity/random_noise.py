@@ -14,19 +14,19 @@ class RandomNoise(RandomTransform, IntensityTransform):
     Add noise sampled from a normal distribution with random parameters.
 
     Args:
-        mean: Mean :math:`\mu` of the Gaussian distribution
+        mean: Mean $\mu$ of the Gaussian distribution
             from which the noise is sampled.
-            If two values :math:`(a, b)` are provided,
-            then :math:`\mu \sim \mathcal{U}(a, b)`.
-            If only one value :math:`d` is provided,
-            :math:`\mu \sim \mathcal{U}(-d, d)`.
-        std: Standard deviation :math:`\sigma` of the Gaussian distribution
+            If two values $(a, b)$ are provided,
+            then $\mu \sim \mathcal{U}(a, b)$.
+            If only one value $d$ is provided,
+            $\mu \sim \mathcal{U}(-d, d)$.
+        std: Standard deviation $\sigma$ of the Gaussian distribution
             from which the noise is sampled.
-            If two values :math:`(a, b)` are provided,
-            then :math:`\sigma \sim \mathcal{U}(a, b)`.
-            If only one value :math:`d` is provided,
-            :math:`\sigma \sim \mathcal{U}(0, d)`.
-        **kwargs: See :class:`~torchio.transforms.Transform` for additional
+            If two values $(a, b)$ are provided,
+            then $\sigma \sim \mathcal{U}(a, b)$.
+            If only one value $d$ is provided,
+            $\sigma \sim \mathcal{U}(0, d)$.
+        **kwargs: See [`Transform`][torchio.transforms.Transform] for additional
             keyword arguments.
     """
 
@@ -73,12 +73,12 @@ class Noise(IntensityTransform):
     Add noise sampled from a normal distribution.
 
     Args:
-        mean: Mean :math:`\mu` of the Gaussian distribution
+        mean: Mean $\mu$ of the Gaussian distribution
             from which the noise is sampled.
-        std: Standard deviation :math:`\sigma` of the Gaussian distribution
+        std: Standard deviation $\sigma$ of the Gaussian distribution
             from which the noise is sampled.
         seed: Seed for the random number generator.
-        **kwargs: See :class:`~torchio.transforms.Transform` for additional
+        **kwargs: See [`Transform`][torchio.transforms.Transform] for additional
             keyword arguments.
     """
 

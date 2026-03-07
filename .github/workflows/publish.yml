@@ -4,6 +4,9 @@ on:
   push:
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   build:
     name: Build the package
@@ -21,7 +24,7 @@ jobs:
         run: uv build
 
       - name: Upload dist directory
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: dist
           path: dist
@@ -31,6 +34,7 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     permissions:
+      contents: read
       id-token: write
 
     steps:
@@ -38,7 +42,7 @@ jobs:
         run: echo ${{ github.ref }}
 
       - name: Download all workflow run artifacts
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: dist
           path: dist

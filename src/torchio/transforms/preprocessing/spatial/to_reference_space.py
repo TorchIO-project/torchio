@@ -14,8 +14,7 @@ class ToReferenceSpace(SpatialTransform):
     network embedding, for visualization or further processing such as
     resampling a segmentation output.
 
-    Example:
-
+    Examples:
     >>> import torchio as tio
     >>> image = tio.datasets.FPG().t1
     >>> embedding_tensor = my_network(image.tensor)  # we lose metadata here

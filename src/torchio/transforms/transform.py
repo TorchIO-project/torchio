@@ -50,16 +50,16 @@ class Transform(ABC):
     """Abstract class for all TorchIO transforms.
 
     When called, the input can be an instance of
-    :class:`torchio.Subject`,
-    :class:`torchio.Image`,
-    :class:`numpy.ndarray`,
-    :class:`torch.Tensor`,
-    :class:`SimpleITK.Image`,
-    or :class:`dict` containing 4D tensors as values.
+    [`torchio.Subject`][torchio.Subject],
+    [`torchio.Image`][torchio.Image],
+    [`numpy.ndarray`][numpy.ndarray],
+    [`torch.Tensor`][torch.Tensor],
+    [SimpleITK.Image][SimpleITK.Image],
+    or [`dict`][dict] containing 4D tensors as values.
 
     All subclasses must overwrite
-    :meth:`~torchio.transforms.Transform.apply_transform`,
-    which takes an instance of :class:`~torchio.Subject`,
+    [`apply_transform()`][torchio.transforms.Transform.apply_transform],
+    which takes an instance of [`Subject`][torchio.Subject],
     modifies it and returns the result.
 
     Args:
@@ -67,23 +67,23 @@ class Transform(ABC):
         copy: Make a deep copy of the input before applying the transform.
         include: Sequence of strings with the names of the only images to which
             the transform will be applied.
-            Mandatory if the input is a :class:`dict`.
+            Mandatory if the input is a [`dict`][dict].
         exclude: Sequence of strings with the names of the images to which the
             the transform will not be applied, apart from the ones that are
             excluded because of the transform type.
             For example, if a subject includes an MRI, a CT and a label map,
             and the CT is added to the list of exclusions of an intensity
-            transform such as :class:`~torchio.transforms.RandomBlur`,
+            transform such as [`RandomBlur`][torchio.transforms.RandomBlur],
             the transform will be only applied to the MRI, as the label map is
             excluded by default by spatial transforms.
         keep: Dictionary with the names of the input images that will be kept
             in the output and their new names. For example:
-            ``{'t1': 't1_original'}``. This might be useful for autoencoders
+            `{'t1': 't1_original'}`. This might be useful for autoencoders
             or registration tasks.
-        parse_input: If ``True``, the input will be converted to an instance of
-            :class:`~torchio.Subject`. This is used internally by some special
+        parse_input: If `True`, the input will be converted to an instance of
+            [`Subject`][torchio.Subject]. This is used internally by some special
             transforms like
-            :class:`~torchio.transforms.augmentation.composition.Compose`.
+            [`Compose`][torchio.transforms.augmentation.composition.Compose].
         label_keys: If the input is a dictionary, names of images that
             correspond to label maps.
     """
@@ -125,14 +125,14 @@ class Transform(ABC):
         """Transform data and return a result of the same type.
 
         Args:
-            data: Instance of :class:`torchio.Subject`, 4D
-                :class:`torch.Tensor` or :class:`numpy.ndarray` with dimensions
-                :math:`(C, W, H, D)`, where :math:`C` is the number of channels
-                and :math:`W, H, D` are the spatial dimensions. If the input is
+            data: Instance of [`torchio.Subject`][torchio.Subject], 4D
+                [`torch.Tensor`][torch.Tensor] or [`numpy.ndarray`][numpy.ndarray] with dimensions
+                $(C, W, H, D)$, where $C$ is the number of channels
+                and $W, H, D$ are the spatial dimensions. If the input is
                 a tensor, the affine matrix will be set to identity. Other
                 valid input types are a SimpleITK image, a
-                :class:`torchio.Image`, a NiBabel Nifti1 image or a
-                :class:`dict`. The output type is the same as the input type.
+                [`torchio.Image`][torchio.Image], a NiBabel Nifti1 image or a
+                [`dict`][dict]. The output type is the same as the input type.
         """
         if torch.rand(1).item() > self.probability:
             return data
@@ -184,14 +184,15 @@ class Transform(ABC):
 
     def get_base_args(self) -> dict:
         r"""Provides easy access to the arguments used to instantiate the base class
-        (:class:`~torchio.transforms.transform.Transform`) of any transform.
+        ([`Transform`][torchio.transforms.transform.Transform]) of any transform.
 
         This method is particularly useful when a new transform can be represented as a variant
         of an existing transform (e.g. all random transforms), allowing for seamless instantiation
         of the existing transform with the same arguments as the new transform during `apply_transform`.
 
-        Note: The `p` argument (probability of applying the transform) is excluded to avoid
-        multiplying the probability of both existing and new transform.
+        Note:
+            The `p` argument (probability of applying the transform) is excluded to avoid
+            multiplying the probability of both existing and new transform.
         """
         return {
             'copy': self.copy,
@@ -278,36 +279,36 @@ class Transform(ABC):
         max_constraint: TypeNumber | None = None,
         type_constraint: type | None = None,
     ) -> tuple[TypeNumber, TypeNumber]:
-        r"""Adapted from :class:`torchvision.transforms.RandomRotation`.
+        r"""Adapted from [torchvision.transforms.RandomRotation][torchvision.transforms.RandomRotation].
 
         Args:
-            nums_range: Tuple of two numbers :math:`(n_{min}, n_{max})`,
-                where :math:`n_{min} \leq n_{max}`.
-                If a single positive number :math:`n` is provided,
-                :math:`n_{min} = -n` and :math:`n_{max} = n`.
+            nums_range: Tuple of two numbers $(n_{min}, n_{max})$,
+                where $n_{min} \leq n_{max}$.
+                If a single positive number $n$ is provided,
+                $n_{min} = -n$ and $n_{max} = n$.
             name: Name of the parameter, so that an informative error message
                 can be printed.
-            min_constraint: Minimal value that :math:`n_{min}` can take,
+            min_constraint: Minimal value that $n_{min}$ can take,
                 default is None, i.e. there is no minimal value.
-            max_constraint: Maximal value that :math:`n_{max}` can take,
+            max_constraint: Maximal value that $n_{max}$ can take,
                 default is None, i.e. there is no maximal value.
-            type_constraint: Precise type that :math:`n_{max}` and
-                :math:`n_{min}` must take.
+            type_constraint: Precise type that $n_{max}$ and
+                $n_{min}$ must take.
 
         Returns:
-            A tuple of two numbers :math:`(n_{min}, n_{max})`.
+            A tuple of two numbers $(n_{min}, n_{max})$.
 
         Raises:
-            ValueError: if :attr:`nums_range` is negative
-            ValueError: if :math:`n_{max}` or :math:`n_{min}` is not a number
-            ValueError: if :math:`n_{max} \lt n_{min}`
-            ValueError: if :attr:`min_constraint` is not None and
-                :math:`n_{min}` is smaller than :attr:`min_constraint`
-            ValueError: if :attr:`max_constraint` is not None and
-                :math:`n_{max}` is greater than :attr:`max_constraint`
-            ValueError: if :attr:`type_constraint` is not None and
-                :math:`n_{max}` and :math:`n_{max}` are not of type
-                :attr:`type_constraint`.
+            ValueError: if `nums_range` is negative
+            ValueError: if $n_{max}$ or $n_{min}$ is not a number
+            ValueError: if $n_{max} \lt n_{min}$
+            ValueError: if `min_constraint` is not None and
+                $n_{min}$ is smaller than `min_constraint`
+            ValueError: if `max_constraint` is not None and
+                $n_{max}$ is greater than `max_constraint`
+            ValueError: if `type_constraint` is not None and
+                $n_{max}$ and $n_{max}$ are not of type
+                `type_constraint`.
         """
         if isinstance(nums_range, numbers.Number):  # single number given
             if nums_range < 0:
@@ -596,3 +597,22 @@ class Transform(ABC):
         mask = torch.zeros_like(tensor, dtype=torch.bool)
         mask[:, i0:i1, j0:j1, k0:k1] = True
         return mask
+
+    def _get_name_with_module(self) -> str:
+        """Return the name of the transform including its module."""
+        return f'{self.__class__.__module__}.{self.__class__.__name__}'
+
+    @staticmethod
+    def _tuples_to_lists(obj):
+        if isinstance(obj, (tuple, list)):
+            return [Transform._tuples_to_lists(x) for x in obj]
+        if isinstance(obj, dict):
+            return {k: Transform._tuples_to_lists(v) for k, v in obj.items()}
+        return obj
+
+    def to_hydra_config(self) -> dict:
+        """Return a dictionary representation of the transform for Hydra instantiation."""
+        target = self._get_name_with_module()
+        transform_dict = {'_target_': target}
+        transform_dict.update(self._get_reproducing_arguments())
+        return self._tuples_to_lists(transform_dict)

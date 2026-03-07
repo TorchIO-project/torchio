@@ -13,16 +13,16 @@ class GridAggregator:
     r"""Aggregate patches for dense inference.
 
     This class is typically used to build a volume made of patches after
-    inference of batches extracted by a :class:`~torchio.data.GridSampler`.
+    inference of batches extracted by a [`GridSampler`][torchio.data.GridSampler].
 
     Args:
-        sampler: Instance of :class:`~torchio.data.GridSampler` used to
+        sampler: Instance of [`GridSampler`][torchio.data.GridSampler] used to
             extract the patches.
-        overlap_mode: If ``'crop'``, the overlapping predictions will be
-            cropped. If ``'average'``, the predictions in the overlapping areas
-            will be averaged with equal weights. If ``'hann'``, the predictions
+        overlap_mode: If `'crop'`, the overlapping predictions will be
+            cropped. If `'average'`, the predictions in the overlapping areas
+            will be averaged with equal weights. If `'hann'`, the predictions
             in the overlapping areas will be weighted with a Hann window
-            function. See the `grid aggregator tests`_ for a raw visualization
+            function. See the [grid aggregator tests](https://github.com/TorchIO-project/torchio/blob/main/tests/data/inference/test_aggregator.py) for a raw visualization
             of the three modes.
         downsampling_factor: Factor by which the output volume is expected to
             be smaller than the input volume in each spatial dimension. This is
@@ -31,10 +31,10 @@ class GridAggregator:
             is supported, which applies the same downsampling factor to all
             spatial dimensions.
 
-    .. _grid aggregator tests: https://github.com/TorchIO-project/torchio/blob/main/tests/data/inference/test_aggregator.py
 
-    .. note:: Adapted from NiftyNet. See `this NiftyNet tutorial
-        <https://niftynet.readthedocs.io/en/dev/window_sizes.html>`_ for more
+    Note:
+        Adapted from NiftyNet. See [this NiftyNet tutorial
+        ](https://niftynet.readthedocs.io/en/dev/window_sizes.html) for more
         information about patch-based sampling.
     """
 
@@ -155,10 +155,10 @@ class GridAggregator:
 
         Args:
             batch_tensor: 5D tensor, typically the output of a convolutional
-                neural network, e.g. ``batch['image'][torchio.DATA]``.
-            locations: 2D tensor with shape :math:`(B, 6)` representing the
+                neural network, e.g. `batch['image'][torchio.DATA]`.
+            locations: 2D tensor with shape $(B, 6)$ representing the
                 patch indices in the original image. They are typically
-                extracted using ``batch[torchio.LOCATION]``.
+                extracted using `batch[torchio.LOCATION]`.
         """
         batch = batch_tensor.cpu()
         locations_array = locations.cpu().numpy() // self._downsampling_factor

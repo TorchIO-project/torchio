@@ -25,20 +25,19 @@ def format_age(n):
 class Pediatric(SubjectMNI):
     """MNI pediatric atlases.
 
-    See `the MNI website <https://nist.mni.mcgill.ca/pediatric-atlases-4-5-18-5y/>`_
+    See [the MNI website ](https://nist.mni.mcgill.ca/pediatric-atlases-4-5-18-5y/)
     for more information.
 
-    .. image:: https://nist.mni.mcgill.ca/wp-content/uploads/2016/04/nihpd_asym_all_sm.jpg
-        :alt: Pediatric MNI template
+    ![Pediatric MNI template](https://nist.mni.mcgill.ca/wp-content/uploads/2016/04/nihpd_asym_all_sm.jpg)
 
     Arguments:
-        years: Tuple of 2 ages. Possible values are: ``(4.5, 18.5)``,
-            ``(4.5, 8.5)``,
-            ``(7, 11)``,
-            ``(7.5, 13.5)``,
-            ``(10, 14)`` and
-            ``(13, 18.5)``.
-        symmetric: If ``True``, the left-right symmetric templates will be
+        years: Tuple of 2 ages. Possible values are: `(4.5, 18.5)`,
+            `(4.5, 8.5)`,
+            `(7, 11)`,
+            `(7.5, 13.5)`,
+            `(10, 14)` and
+            `(13, 18.5)`.
+        symmetric: If `True`, the left-right symmetric templates will be
             used. Else, the asymmetric (natural) templates will be used.
     """
 

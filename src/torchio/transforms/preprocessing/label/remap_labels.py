@@ -6,7 +6,7 @@ class RemapLabels(LabelTransform):
     r"""Modify labels in a label map.
 
     Masking can be used to split the label into two during
-    the `inverse transformation <invertibility>`_.
+    the [inverse transformation ](../index.md#invertibility).
 
     Args:
         remapping: Dictionary that specifies how labels should be remapped.
@@ -14,70 +14,20 @@ class RemapLabels(LabelTransform):
             them.
         masking_method: Defines a mask for where the label remapping is applied. It can be one of:
 
-            - ``None``: the mask image is all ones, i.e. all values in the image are used.
+            - `None`: the mask image is all ones, i.e. all values in the image are used.
 
-            - A string: key to a :class:`torchio.LabelMap` in the subject which is used as a mask,
-              OR an anatomical label: ``'Left'``, ``'Right'``, ``'Anterior'``, ``'Posterior'``,
-              ``'Inferior'``, ``'Superior'`` which specifies a half of the mask volume to be ones.
+            - A string: key to a [`torchio.LabelMap`][torchio.LabelMap] in the subject which is used as a mask,
+              OR an anatomical label: `'Left'`, `'Right'`, `'Anterior'`, `'Posterior'`,
+              `'Inferior'`, `'Superior'` which specifies a half of the mask volume to be ones.
 
             - A function: the mask image is computed as a function of the intensity image.
-              The function must receive and return a 4D :class:`torch.Tensor`.
+              The function must receive and return a 4D [`torch.Tensor`][torch.Tensor].
 
-        **kwargs: See :class:`~torchio.transforms.Transform` for additional
+        **kwargs: See [`Transform`][torchio.transforms.Transform] for additional
             keyword arguments.
 
-    .. plot::
 
-        import torchio as tio
-
-        subject = tio.datasets.FPG()
-        subject.remove_image('t1')
-
-        background_labels = (0, 1, 2, 3, 4)
-
-        csf_labels = (5, 12, 16, 47, 52, 53)
-
-        white_matter_labels = (
-            45, 46,
-            66, 67,
-            81, 82,
-            83, 84,
-            85, 86,
-            87,
-            89, 90,
-            91, 92,
-            93, 94,
-        )
-
-        not_gray_matter_labels = (
-            background_labels
-            + csf_labels
-            + white_matter_labels
-        )
-
-        gray_matter_labels = [
-            label for label in subject.GIF_COLORS
-            if label not in not_gray_matter_labels
-        ]
-
-        labels_groups = (
-            background_labels,
-            gray_matter_labels,
-            white_matter_labels,
-            csf_labels,
-        )
-        remapping = {}
-        for target, labels in enumerate(labels_groups):
-            for label in labels:
-                remapping[label] = target
-
-        parcellation_to_tissues = tio.RemapLabels(remapping)
-        tissues = parcellation_to_tissues(subject).seg
-        subject.add_image(tissues, 'remapped')
-        subject.plot()
-
-    Example:
-
+    Examples:
         >>> import torch
         >>> import torchio as tio
         >>> def get_image(*labels):
@@ -91,25 +41,26 @@ class RemapLabels(LabelTransform):
         >>> transform(image).data
         tensor([[[[0, 2, 1, 1, 7]]]])
 
-    .. warning::
+    Warning:
         The transform will not be correctly inverted if one of the values in
-        ``remapping`` is also in the input image::
+        `remapping` is also in the input image:
 
-            >>> tensor = torch.as_tensor([0, 1]).reshape(1, 1, 1, -1)
-            >>> subject = tio.Subject(label=tio.LabelMap(tensor=tensor))
-            >>> mapping = {3: 1}  # the value 1 is in the input image
-            >>> transform = tio.RemapLabels(mapping)
-            >>> transformed = transform(subject)
-            >>> back = transformed.apply_inverse_transform()
-            >>> original_label_set = set(subject.label.data.unique().tolist())
-            >>> back_label_set = set(back.label.data.unique().tolist())
-            >>> original_label_set
-            {0, 1}
-            >>> back_label_set
-            {0, 3}
+        ```pycon
+        >>> tensor = torch.as_tensor([0, 1]).reshape(1, 1, 1, -1)
+        >>> subject = tio.Subject(label=tio.LabelMap(tensor=tensor))
+        >>> mapping = {3: 1}  # the value 1 is in the input image
+        >>> transform = tio.RemapLabels(mapping)
+        >>> transformed = transform(subject)
+        >>> back = transformed.apply_inverse_transform()
+        >>> original_label_set = set(subject.label.data.unique().tolist())
+        >>> back_label_set = set(back.label.data.unique().tolist())
+        >>> original_label_set
+        {0, 1}
+        >>> back_label_set
+        {0, 3}
+        ```
 
-    Example:
-
+    Examples:
         >>> import torchio as tio
         >>> # Target label map has the following labels:
         >>> # {
@@ -130,6 +81,7 @@ class RemapLabels(LabelTransform):
         >>> transformed = transform(subject)
         >>> # Apply the inverse on the right side only. The labels are correctly split into left/right.
         >>> inverse_transformed = transformed.apply_inverse_transform()
+
     """
 
     def __init__(

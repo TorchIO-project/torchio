@@ -1,0 +1,3 @@
+# SequentialLabels
+
+::: torchio.transforms.SequentialLabels

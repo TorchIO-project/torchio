@@ -21,15 +21,15 @@ TensorArray = TypeVar('TensorArray', np.ndarray, torch.Tensor)
 class RandomSwap(RandomTransform, IntensityTransform):
     r"""Randomly swap patches within an image.
 
-    This is typically used in `context restoration for self-supervised learning
-    <https://www.sciencedirect.com/science/article/pii/S1361841518304699>`_.
+    This is typically used in [context restoration for self-supervised learning
+    ](https://www.sciencedirect.com/science/article/pii/S1361841518304699).
 
     Args:
-        patch_size: Tuple of integers :math:`(w, h, d)` to swap patches
-            of size :math:`w \times h \times d`.
-            If a single number :math:`n` is provided, :math:`w = h = d = n`.
+        patch_size: Tuple of integers $(w, h, d)$ to swap patches
+            of size $w \times h \times d$.
+            If a single number $n$ is provided, $w = h = d = n$.
         num_iterations: Number of times that two patches will be swapped.
-        **kwargs: See :class:`~torchio.transforms.Transform` for additional
+        **kwargs: See [`Transform`][torchio.transforms.Transform] for additional
             keyword arguments.
     """
 
@@ -107,15 +107,15 @@ class RandomSwap(RandomTransform, IntensityTransform):
 class Swap(IntensityTransform):
     r"""Swap patches within an image.
 
-    This is typically used in `context restoration for self-supervised learning
-    <https://www.sciencedirect.com/science/article/pii/S1361841518304699>`_.
+    This is typically used in [context restoration for self-supervised learning
+    ](https://www.sciencedirect.com/science/article/pii/S1361841518304699).
 
     Args:
-        patch_size: Tuple of integers :math:`(w, h, d)` to swap patches
-            of size :math:`w \times h \times d`.
-            If a single number :math:`n` is provided, :math:`w = h = d = n`.
+        patch_size: Tuple of integers $(w, h, d)$ to swap patches
+            of size $w \times h \times d$.
+            If a single number $n$ is provided, $w = h = d = n$.
         num_iterations: Number of times that two patches will be swapped.
-        **kwargs: See :class:`~torchio.transforms.Transform` for additional
+        **kwargs: See [`Transform`][torchio.transforms.Transform] for additional
             keyword arguments.
     """
 
