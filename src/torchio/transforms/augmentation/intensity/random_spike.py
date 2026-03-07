@@ -13,29 +13,30 @@ from .. import RandomTransform
 class RandomSpike(RandomTransform, IntensityTransform, FourierTransform):
     r"""Add random MRI spike artifacts.
 
-    Also known as `Herringbone artifact
-    <https://radiopaedia.org/articles/herringbone-artifact>`_,
+    Also known as [Herringbone artifact
+    ](https://radiopaedia.org/articles/herringbone-artifact),
     crisscross artifact or corduroy artifact, it creates stripes in different
     directions in image space due to spikes in k-space.
 
     Args:
-        num_spikes: Number of spikes :math:`n` present in k-space.
-            If a tuple :math:`(a, b)` is provided, then
-            :math:`n \sim \mathcal{U}(a, b) \cap \mathbb{N}`.
-            If only one value :math:`d` is provided,
-            :math:`n \sim \mathcal{U}(0, d) \cap \mathbb{N}`.
+        num_spikes: Number of spikes $n$ present in k-space.
+            If a tuple $(a, b)$ is provided, then
+            $n \sim \mathcal{U}(a, b) \cap \mathbb{N}$.
+            If only one value $d$ is provided,
+            $n \sim \mathcal{U}(0, d) \cap \mathbb{N}$.
             Larger values generate more distorted images.
-        intensity: Ratio :math:`r` between the spike intensity and the maximum
+        intensity: Ratio $r$ between the spike intensity and the maximum
             of the spectrum.
-            If a tuple :math:`(a, b)` is provided, then
-            :math:`r \sim \mathcal{U}(a, b)`.
-            If only one value :math:`d` is provided,
-            :math:`r \sim \mathcal{U}(-d, d)`.
+            If a tuple $(a, b)$ is provided, then
+            $r \sim \mathcal{U}(a, b)$.
+            If only one value $d$ is provided,
+            $r \sim \mathcal{U}(-d, d)$.
             Larger values generate more distorted images.
-        **kwargs: See :class:`~torchio.transforms.Transform` for additional
+        **kwargs: See [`Transform`][torchio.transforms.Transform] for additional
             keyword arguments.
 
-    .. note:: The execution time of this transform does not depend on the
+    Note:
+        The execution time of this transform does not depend on the
         number of spikes.
     """
 
@@ -90,19 +91,20 @@ class RandomSpike(RandomTransform, IntensityTransform, FourierTransform):
 class Spike(IntensityTransform, FourierTransform):
     r"""Add MRI spike artifacts.
 
-    Also known as `Herringbone artifact
-    <https://radiopaedia.org/articles/herringbone-artifact>`_,
+    Also known as [Herringbone artifact
+    ](https://radiopaedia.org/articles/herringbone-artifact),
     crisscross artifact or corduroy artifact, it creates stripes in different
     directions in image space due to spikes in k-space.
 
     Args:
         spikes_positions:
-        intensity: Ratio :math:`r` between the spike intensity and the maximum
+        intensity: Ratio $r$ between the spike intensity and the maximum
             of the spectrum.
-        **kwargs: See :class:`~torchio.transforms.Transform` for additional
+        **kwargs: See [`Transform`][torchio.transforms.Transform] for additional
             keyword arguments.
 
-    .. note:: The execution time of this transform does not depend on the
+    Note:
+        The execution time of this transform does not depend on the
         number of spikes.
     """
 

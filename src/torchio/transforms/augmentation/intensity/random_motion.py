@@ -18,31 +18,32 @@ class RandomMotion(RandomTransform, IntensityTransform, FourierTransform):
 
     Magnetic resonance images suffer from motion artifacts when the subject
     moves during image acquisition. This transform follows
-    `Shaw et al., 2019 <http://proceedings.mlr.press/v102/shaw19a.html>`_ to
+    [Shaw et al., 2019 ](http://proceedings.mlr.press/v102/shaw19a.html) to
     simulate motion artifacts for data augmentation.
 
     Args:
-        degrees: Tuple :math:`(a, b)` defining the rotation range in degrees of
+        degrees: Tuple $(a, b)$ defining the rotation range in degrees of
             the simulated movements. The rotation angles around each axis are
-            :math:`(\theta_1, \theta_2, \theta_3)`,
-            where :math:`\theta_i \sim \mathcal{U}(a, b)`.
-            If only one value :math:`d` is provided,
-            :math:`\theta_i \sim \mathcal{U}(-d, d)`.
+            $(\theta_1, \theta_2, \theta_3)$,
+            where $\theta_i \sim \mathcal{U}(a, b)$.
+            If only one value $d$ is provided,
+            $\theta_i \sim \mathcal{U}(-d, d)$.
             Larger values generate more distorted images.
-        translation: Tuple :math:`(a, b)` defining the translation in mm of
+        translation: Tuple $(a, b)$ defining the translation in mm of
             the simulated movements. The translations along each axis are
-            :math:`(t_1, t_2, t_3)`,
-            where :math:`t_i \sim \mathcal{U}(a, b)`.
-            If only one value :math:`t` is provided,
-            :math:`t_i \sim \mathcal{U}(-t, t)`.
+            $(t_1, t_2, t_3)$,
+            where $t_i \sim \mathcal{U}(a, b)$.
+            If only one value $t$ is provided,
+            $t_i \sim \mathcal{U}(-t, t)$.
             Larger values generate more distorted images.
         num_transforms: Number of simulated movements.
             Larger values generate more distorted images.
-        image_interpolation: See :ref:`Interpolation`.
-        **kwargs: See :class:`~torchio.transforms.Transform` for additional
+        image_interpolation: See Interpolation.
+        **kwargs: See [`Transform`][torchio.transforms.Transform] for additional
             keyword arguments.
 
-    .. warning:: Large numbers of movements lead to longer execution times for
+    Warning:
+        Large numbers of movements lead to longer execution times for
         3D images.
     """
 
@@ -130,15 +131,15 @@ class Motion(IntensityTransform, FourierTransform):
 
     Magnetic resonance images suffer from motion artifacts when the subject
     moves during image acquisition. This transform follows
-    `Shaw et al., 2019 <http://proceedings.mlr.press/v102/shaw19a.html>`_ to
+    [Shaw et al., 2019 ](http://proceedings.mlr.press/v102/shaw19a.html) to
     simulate motion artifacts for data augmentation.
 
     Args:
-        degrees: Sequence of rotations :math:`(\theta_1, \theta_2, \theta_3)`.
-        translation: Sequence of translations :math:`(t_1, t_2, t_3)` in mm.
+        degrees: Sequence of rotations $(\theta_1, \theta_2, \theta_3)$.
+        translation: Sequence of translations $(t_1, t_2, t_3)$ in mm.
         times: Sequence of times from 0 to 1 at which the motions happen.
-        image_interpolation: See :ref:`Interpolation`.
-        **kwargs: See :class:`~torchio.transforms.Transform` for additional
+        image_interpolation: See Interpolation.
+        **kwargs: See [`Transform`][torchio.transforms.Transform] for additional
             keyword arguments.
     """
 

@@ -36,6 +36,12 @@ jobs:
           path: ~/.cache/torchio
           key: ${{ runner.os }}-torchio-data
 
+      - name: Generate plots
+        run: just generate-plots
+
+      - name: Generate examples gallery
+        run: just generate-gallery
+
       - name: Build docs
         run: just build-docs
 
@@ -47,13 +53,12 @@ jobs:
           path: ~/.cache/torchio
           key: ${{ steps.cache-torchio-data-restore.outputs.cache-primary-key }}
 
-      # Uploade to smokeshow if not on main branch
+      # Upload to smokeshow if not on main branch
       - name: Upload docs to smokeshow
         if: github.ref != 'refs/heads/main'
         run: |
-          rm ./docs/build/html/_images/*.gif
-          rm ./docs/build/html/_images/*.png
-          uvx smokeshow upload ./docs/build/html
+          find ./site -type f \( -name '*.png' -o -name '*.jpg' -o -name '*.jpeg' -o -name '*.gif' -o -name '*.svg' -o -name '*.webp' \) -delete
+          uvx smokeshow upload ./site
 
       # Upload to GitHub Pages if on main branch
       - name: Upload artifacts using actions/upload-pages-artifact
@@ -61,7 +66,7 @@ jobs:
         id: deployment
         uses: actions/upload-pages-artifact@v4
         with:
-          path: ./docs/build/html
+          path: ./site
 
   deploy:
     if: github.ref == 'refs/heads/main'

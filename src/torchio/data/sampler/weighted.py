@@ -23,14 +23,14 @@ class WeightedSampler(RandomSampler):
     with a value of 1.
 
     Args:
-        patch_size: See :class:`~torchio.data.PatchSampler`.
+        patch_size: See [`PatchSampler`][torchio.data.PatchSampler].
         probability_map: Name of the image in the input subject that will be
             used as a sampling probability map.
 
     Raises:
         RuntimeError: If the probability map is empty.
 
-    Example:
+    Examples:
         >>> import torchio as tio
         >>> subject = tio.Subject(
         ...     t1=tio.ScalarImage('t1_mri.nii.gz'),
@@ -41,11 +41,13 @@ class WeightedSampler(RandomSampler):
         >>> for patch in sampler(subject):
         ...     print(patch[tio.LOCATION])
 
-    .. note:: The index of the center of a patch with even size :math:`s` is
-        arbitrarily set to :math:`s/2`. This is an implementation detail that
+    Note:
+        The index of the center of a patch with even size $s$ is
+        arbitrarily set to $s/2$. This is an implementation detail that
         will typically not make any difference in practice.
 
-    .. note:: Values of the probability map near the border will be set to 0 as
+    Note:
+        Values of the probability map near the border will be set to 0 as
         the center of the patch cannot be at the border (unless the patch has
         size 1 or 2 along that axis).
     """
@@ -212,7 +214,7 @@ class WeightedSampler(RandomSampler):
     ) -> np.ndarray:
         """Inverse transform sampling.
 
-        Example:
+        Examples:
             >>> probability_map = np.array(
             ...    ((0,0,1,1,5,2,1,1,0),
             ...     (2,2,2,2,2,2,2,2,2)))

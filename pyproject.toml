@@ -6,6 +6,7 @@ build-backend = "uv_build"
 name = "torchio"
 version = "0.21.3"
 description = "Tools for medical image processing with PyTorch"
+license = "Apache-2.0"
 readme = "README.md"
 authors = [{ name = "TorchIO contributors" }]
 maintainers = [{ name = "Fernando Perez-Garcia", email = "fepegar@gmail.com" }]
@@ -13,7 +14,6 @@ classifiers = [
     "Development Status :: 4 - Beta",
     "Environment :: Console",
     "Intended Audience :: Science/Research",
-    "License :: OSI Approved :: Apache Software License",
     "Natural Language :: English",
     "Operating System :: OS Independent",
     "Programming Language :: Python",
@@ -75,15 +75,12 @@ dev = [
     "prek",
 ]
 doc = [
+    "colorcet>=3.1.0",
     "distinctipy",
     "einops",
-    "furo",
     "matplotlib",
-    "sphinx",
-    "sphinx-autobuild",
-    "sphinx-copybutton",
-    "sphinx-gallery",
-    "sphinxext-opengraph",
+    "mkdocstrings-python>=2.0.2",
+    "zensical>=0.0.23",
 ]
 maintain = ["bump-my-version"]
 quality = ["ruff"]
@@ -100,7 +97,7 @@ test = [
     "matplotlib",
     "parameterized",
     "pillow",
-    "pytest",
+    "pytest>=9",
     "pytest-sugar",
     "tox-uv",
 ]
@@ -144,10 +141,7 @@ module = "scipy.*"
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]
-markers = [
-    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
-    "serial",
-]
+addopts = ["-ra", "--strict-config", "--strict-markers"]
 filterwarnings = [
     # Ignore SimpleITK Swig warnings
     "ignore:builtin type .* has no __module__ attribute",
@@ -155,6 +149,14 @@ filterwarnings = [
     # Raised by SimpleITK on CI
     "ignore:invalid escape sequence",
 ]
+log_level = "INFO"
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "serial",
+]
+minversion = "9"
+testpaths = ["tests"]
+xfail_strict = true
 
 [tool.ruff.format]
 quote-style = 'single'

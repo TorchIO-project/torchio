@@ -263,7 +263,7 @@ def get_num_bins(x: np.ndarray) -> int:
     This method uses the Freedman–Diaconis rule to compute the histogram that
     minimizes "the integral of the squared difference between the histogram
     (i.e., relative frequency density) and the density of the theoretical
-    probability distribution" (`Wikipedia <https://en.wikipedia.org/wiki/Freedman%E2%80%93Diaconis_rule>`_).
+    probability distribution" ([Wikipedia ](https://en.wikipedia.org/wiki/Freedman%E2%80%93Diaconis_rule)).
 
     Args:
         x: Input values.

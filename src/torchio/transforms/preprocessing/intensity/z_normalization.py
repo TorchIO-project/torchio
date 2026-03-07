@@ -12,8 +12,8 @@ class ZNormalization(NormalizationTransform):
 
     Args:
         masking_method: See
-            :class:`~torchio.transforms.preprocessing.intensity.NormalizationTransform`.
-        **kwargs: See :class:`~torchio.transforms.Transform` for additional
+            [`NormalizationTransform`][torchio.transforms.preprocessing.intensity.NormalizationTransform].
+        **kwargs: See [`Transform`][torchio.transforms.Transform] for additional
             keyword arguments.
     """
 

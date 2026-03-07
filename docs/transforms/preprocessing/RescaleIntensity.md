@@ -1,0 +1,3 @@
+# RescaleIntensity
+
+::: torchio.transforms.RescaleIntensity

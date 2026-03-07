@@ -12,7 +12,7 @@ class RandomTransform(Transform):
     """Base class for stochastic augmentation transforms.
 
     Args:
-        **kwargs: See :class:`~torchio.transforms.Transform` for additional
+        **kwargs: See [`Transform`][torchio.transforms.Transform] for additional
             keyword arguments.
     """
 

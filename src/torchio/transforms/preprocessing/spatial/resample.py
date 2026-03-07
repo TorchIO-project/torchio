@@ -33,40 +33,40 @@ class Resample(SpatialTransform):
     Args:
         target: Argument to define the output space. Can be one of:
 
-            - Output spacing :math:`(s_w, s_h, s_d)`, in mm. If only one value
-              :math:`s` is specified, then :math:`s_w = s_h = s_d = s`.
+            - Output spacing $(s_w, s_h, s_d)$, in mm. If only one value
+              $s$ is specified, then $s_w = s_h = s_d = s$.
 
             - Path to an image that will be used as reference.
 
-            - Instance of :class:`~torchio.Image`.
+            - Instance of [`Image`][torchio.Image].
 
             - Name of an image key in the subject.
 
-            - Tuple ``(spatial_shape, affine)`` defining the output space.
+            - Tuple `(spatial_shape, affine)` defining the output space.
 
         pre_affine_name: Name of the *image key* (not subject key) storing an
             affine matrix that will be applied to the image header before
-            resampling. If ``None``, the image is resampled with an identity
+            resampling. If `None`, the image is resampled with an identity
             transform. See usage in the example below.
-        image_interpolation: See :ref:`Interpolation`.
-        label_interpolation: See :ref:`Interpolation`.
-        scalars_only: Apply only to instances of :class:`~torchio.ScalarImage`.
-            Used internally by :class:`~torchio.transforms.RandomAnisotropy`.
-        antialias: If ``True``, apply Gaussian smoothing before
+        image_interpolation: See Interpolation.
+        label_interpolation: See Interpolation.
+        scalars_only: Apply only to instances of [`ScalarImage`][torchio.ScalarImage].
+            Used internally by [`RandomAnisotropy`][torchio.transforms.RandomAnisotropy].
+        antialias: If `True`, apply Gaussian smoothing before
             downsampling along any dimension that will be downsampled. For example,
             if the input image has spacing (0.5, 0.5, 4) and the target
             spacing is (1, 1, 1), the image will be smoothed along the first two
             dimensions before resampling. Label maps are not smoothed.
             The standard deviations of the Gaussian kernels are computed according to
             the method described in Cardoso et al.,
-            `Scale factor point spread function matching: beyond aliasing in image
+            [Scale factor point spread function matching: beyond aliasing in image
             resampling
-            <https://link.springer.com/chapter/10.1007/978-3-319-24571-3_81>`_,
+            ](https://link.springer.com/chapter/10.1007/978-3-319-24571-3_81),
             MICCAI 2015.
-        **kwargs: See :class:`~torchio.transforms.Transform` for additional
+        **kwargs: See [`Transform`][torchio.transforms.Transform] for additional
             keyword arguments.
 
-    Example:
+    Examples:
         >>> import torch
         >>> import torchio as tio
         >>> transform = tio.Resample()                      # resample all images to 1mm isotropic
@@ -79,23 +79,11 @@ class Resample(SpatialTransform):
         >>> transform = tio.Resample(colin.t1.path, pre_affine_name='to_mni')  # nearest neighbor interpolation is used for label maps
         >>> transformed = transform(image)  # "image" is now in the MNI space
 
-    .. note::
-        The ``antialias`` option is recommended when large (e.g. > 2×) downsampling
+    Note:
+        The `antialias` option is recommended when large (e.g. > 2×) downsampling
         factors are expected, particularly for offline (before training) preprocessing,
         when run times are not a concern.
 
-    .. plot::
-
-        import torchio as tio
-        subject = tio.datasets.FPG()
-        subject.remove_image('seg')
-        resample = tio.Resample(8)
-        t1_resampled = resample(subject.t1)
-        subject.add_image(t1_resampled, 'Antialias off')
-        resample = tio.Resample(8, antialias=True)
-        t1_resampled_antialias = resample(subject.t1)
-        subject.add_image(t1_resampled_antialias, 'Antialias on')
-        subject.plot()
     """
 
     def __init__(
@@ -417,9 +405,9 @@ class Resample(SpatialTransform):
     def _get_sigmas(downsampling_factor: np.ndarray, spacing: np.ndarray) -> np.ndarray:
         """Compute optimal standard deviation for Gaussian kernel.
 
-        From Cardoso et al., `Scale factor point spread function matching:
+        From Cardoso et al., [Scale factor point spread function matching:
         beyond aliasing in image resampling
-        <https://link.springer.com/chapter/10.1007/978-3-319-24571-3_81>`_,
+        ](https://link.springer.com/chapter/10.1007/978-3-319-24571-3_81),
         MICCAI 2015.
 
         Args:

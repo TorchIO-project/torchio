@@ -23,8 +23,8 @@ class Compose(Transform):
 
     Args:
         transforms: Sequence of instances of
-            :class:`~torchio.transforms.Transform`.
-        **kwargs: See :class:`~torchio.transforms.Transform` for additional
+            [`Transform`][torchio.transforms.Transform].
+        **kwargs: See [`Transform`][torchio.transforms.Transform] for additional
             keyword arguments.
     """
 
@@ -100,14 +100,14 @@ class OneOf(RandomTransform):
 
     Args:
         transforms: Dictionary with instances of
-            :class:`~torchio.transforms.Transform` as keys and
+            [`Transform`][torchio.transforms.Transform] as keys and
             probabilities as values. Probabilities are normalized so they sum
             to one. If a sequence is given, the same probability will be
             assigned to each transform.
-        **kwargs: See :class:`~torchio.transforms.Transform` for additional
+        **kwargs: See [`Transform`][torchio.transforms.Transform] for additional
             keyword arguments.
 
-    Example:
+    Examples:
         >>> import torchio as tio
         >>> colin = tio.datasets.Colin27()
         >>> transforms_dict = {

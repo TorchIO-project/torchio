@@ -11,19 +11,19 @@ class NormalizationTransform(IntensityTransform):
     Args:
         masking_method: Defines the mask used to compute the normalization statistics. It can be one of:
 
-            - ``None``: the mask image is all ones, i.e. all values in the image are used.
+            - `None`: the mask image is all ones, i.e. all values in the image are used.
 
-            - A string: key to a :class:`torchio.LabelMap` in the subject which is used as a mask,
-              OR an anatomical label: ``'Left'``, ``'Right'``, ``'Anterior'``, ``'Posterior'``,
-              ``'Inferior'``, ``'Superior'`` which specifies a side of the mask volume to be ones.
+            - A string: key to a [`torchio.LabelMap`][torchio.LabelMap] in the subject which is used as a mask,
+              OR an anatomical label: `'Left'`, `'Right'`, `'Anterior'`, `'Posterior'`,
+              `'Inferior'`, `'Superior'` which specifies a side of the mask volume to be ones.
 
             - A function: the mask image is computed as a function of the intensity image.
-              The function must receive and return a :class:`torch.Tensor`
+              The function must receive and return a [`torch.Tensor`][torch.Tensor]
 
-        **kwargs: See :class:`~torchio.transforms.Transform` for additional
+        **kwargs: See [`Transform`][torchio.transforms.Transform] for additional
             keyword arguments.
 
-    Example:
+    Examples:
         >>> import torchio as tio
         >>> subject = tio.datasets.Colin27()
         >>> subject

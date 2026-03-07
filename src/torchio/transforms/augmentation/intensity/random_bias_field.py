@@ -20,16 +20,16 @@ class RandomBiasField(RandomTransform, IntensityTransform):
     *Automated model-based tissue classification of MR images of the brain*.
 
     It was implemented in NiftyNet by Carole Sudre and used in
-    `Sudre et al., 2017, Longitudinal segmentation of age-related
+    [Sudre et al., 2017, Longitudinal segmentation of age-related
     white matter hyperintensities
-    <https://www.sciencedirect.com/science/article/pii/S1361841517300257?via%3Dihub>`_.
+    ](https://www.sciencedirect.com/science/article/pii/S1361841517300257?via%3Dihub).
 
     Args:
-        coefficients: Maximum magnitude :math:`n` of polynomial coefficients.
-            If a tuple :math:`(a, b)` is specified, then
-            :math:`n \sim \mathcal{U}(a, b)`.
+        coefficients: Maximum magnitude $n$ of polynomial coefficients.
+            If a tuple $(a, b)$ is specified, then
+            $n \sim \mathcal{U}(a, b)$.
         order: Order of the basis polynomial functions.
-        **kwargs: See :class:`~torchio.transforms.Transform` for additional
+        **kwargs: See [`Transform`][torchio.transforms.Transform] for additional
             keyword arguments.
     """
 
@@ -82,7 +82,7 @@ class BiasField(IntensityTransform):
     Args:
         coefficients: Magnitudes of the polinomial coefficients.
         order: Order of the basis polynomial functions.
-        **kwargs: See :class:`~torchio.transforms.Transform` for additional
+        **kwargs: See [`Transform`][torchio.transforms.Transform] for additional
             keyword arguments.
     """
 

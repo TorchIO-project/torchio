@@ -134,7 +134,7 @@ def download_url(
         url: URL to download file from
         root: Directory to place downloaded file in
         filename: Name to save the file under.
-            If ``None``, use the basename of the URL
+            If `None`, use the basename of the URL
         md5: MD5 checksum of the download. If None, do not check
     """
 

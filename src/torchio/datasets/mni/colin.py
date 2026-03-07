@@ -26,22 +26,22 @@ class Colin27(SubjectMNI):
     r"""Colin27 MNI template.
 
     More information can be found in the website of the
-    `1998 <https://nist.mni.mcgill.ca/colin-27-average-brain/>`_ and
-    `2008 <http://www.bic.mni.mcgill.ca/ServicesAtlases/Colin27Highres>`_
+    [1998 ](https://nist.mni.mcgill.ca/colin-27-average-brain/) and
+    [2008 ](http://www.bic.mni.mcgill.ca/ServicesAtlases/Colin27Highres)
     versions.
 
-    .. image:: http://www.bic.mni.mcgill.ca/uploads/ServicesAtlases/mni_colin27_2008.jpg
-        :alt: MNI Colin 27 2008 version
+    ![MNI Colin 27 2008 version](http://www.bic.mni.mcgill.ca/uploads/ServicesAtlases/mni_colin27_2008.jpg)
 
     Arguments:
-        version: Template year. It can be ``1998`` or ``2008``.
+        version: Template year. It can be `1998` or `2008`.
 
-    .. warning:: The resolution of the ``2008`` version is quite high. The
+    Warning:
+        The resolution of the `2008` version is quite high. The
         subject instance will contain four images of size
-        :math:`362 \times 434 \times 362`, therefore applying a transform to
+        $362 \times 434 \times 362$, therefore applying a transform to
         it might take longer than expected.
 
-    Example:
+    Examples:
         >>> import torchio as tio
         >>> colin_1998 = tio.datasets.Colin27(version=1998)
         >>> colin_1998

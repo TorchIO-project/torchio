@@ -20,36 +20,36 @@ class RandomGhosting(RandomTransform, IntensityTransform):
     field-of-view vary or move in a regular (periodic) fashion. Pulsatile flow
     of blood or CSF, cardiac motion, and respiratory motion are the most
     important patient-related causes of ghost artifacts in clinical MR imaging
-    (from `mriquestions.com`_).
+    (from [mriquestions.com](http://mriquestions.com/why-discrete-ghosts.html)).
 
-    .. _mriquestions.com: https://mriquestions.com/why-discrete-ghosts.html
 
     Args:
-        num_ghosts: Number of 'ghosts' :math:`n` in the image.
-            If :attr:`num_ghosts` is a tuple :math:`(a, b)`, then
-            :math:`n \sim \mathcal{U}(a, b) \cap \mathbb{N}`.
-            If only one value :math:`d` is provided,
-            :math:`n \sim \mathcal{U}(0, d) \cap \mathbb{N}`.
+        num_ghosts: Number of 'ghosts' $n$ in the image.
+            If `num_ghosts` is a tuple $(a, b)$, then
+            $n \sim \mathcal{U}(a, b) \cap \mathbb{N}$.
+            If only one value $d$ is provided,
+            $n \sim \mathcal{U}(0, d) \cap \mathbb{N}$.
         axes: Axis along which the ghosts will be created. If
-            :attr:`axes` is a tuple, the axis will be randomly chosen
+            `axes` is a tuple, the axis will be randomly chosen
             from the passed values. Anatomical labels may also be used (see
-            :class:`~torchio.transforms.augmentation.RandomFlip`).
+            [`RandomFlip`][torchio.transforms.augmentation.RandomFlip]).
         intensity: Positive number representing the artifact strength
-            :math:`s` with respect to the maximum of the :math:`k`-space.
-            If ``0``, the ghosts will not be visible. If a tuple
-            :math:`(a, b)` is provided then :math:`s \sim \mathcal{U}(a, b)`.
-            If only one value :math:`d` is provided,
-            :math:`s \sim \mathcal{U}(0, d)`.
-        restore: Number between ``0`` and ``1`` indicating how much of the
-            :math:`k`-space center should be restored after removing the planes
-            that generate the artifact. If ``None``, only the central slice
-            will be restored. If a tuple :math:`(a, b)` is provided then
-            :math:`r \sim \mathcal{U}(a, b)`. If only one value :math:`d` is
-            provided, :math:`r \sim \mathcal{U}(0, d)`.
-        **kwargs: See :class:`~torchio.transforms.Transform` for additional
+            $s$ with respect to the maximum of the $k$-space.
+            If `0`, the ghosts will not be visible. If a tuple
+            $(a, b)$ is provided then $s \sim \mathcal{U}(a, b)$.
+            If only one value $d$ is provided,
+            $s \sim \mathcal{U}(0, d)$.
+        restore: Number between `0` and `1` indicating how much of the
+            $k$-space center should be restored after removing the planes
+            that generate the artifact. If `None`, only the central slice
+            will be restored. If a tuple $(a, b)$ is provided then
+            $r \sim \mathcal{U}(a, b)$. If only one value $d$ is
+            provided, $r \sim \mathcal{U}(0, d)$.
+        **kwargs: See [`Transform`][torchio.transforms.Transform] for additional
             keyword arguments.
 
-    .. note:: The execution time of this transform does not depend on the
+    Note:
+        The execution time of this transform does not depend on the
         number of ghosts.
     """
 
@@ -148,24 +148,24 @@ class Ghosting(IntensityTransform, FourierTransform):
     field-of-view vary or move in a regular (periodic) fashion. Pulsatile flow
     of blood or CSF, cardiac motion, and respiratory motion are the most
     important patient-related causes of ghost artifacts in clinical MR imaging
-    (from `mriquestions.com`_).
+    (from [mriquestions.com](http://mriquestions.com/why-discrete-ghosts.html)).
 
-    .. _mriquestions.com: http://mriquestions.com/why-discrete-ghosts.html
 
     Args:
-        num_ghosts: Number of 'ghosts' :math:`n` in the image.
+        num_ghosts: Number of 'ghosts' $n$ in the image.
         axes: Axis along which the ghosts will be created.
         intensity: Positive number representing the artifact strength
-            :math:`s` with respect to the maximum of the :math:`k`-space.
-            If ``0``, the ghosts will not be visible.
-        restore: Number between ``0`` and ``1`` indicating how much of the
-            :math:`k`-space center should be restored after removing the planes
-            that generate the artifact. If ``None``, only the central slice
+            $s$ with respect to the maximum of the $k$-space.
+            If `0`, the ghosts will not be visible.
+        restore: Number between `0` and `1` indicating how much of the
+            $k$-space center should be restored after removing the planes
+            that generate the artifact. If `None`, only the central slice
             will be restored.
-        **kwargs: See :class:`~torchio.transforms.Transform` for additional
+        **kwargs: See [`Transform`][torchio.transforms.Transform] for additional
             keyword arguments.
 
-    .. note:: The execution time of this transform does not depend on the
+    Note:
+        The execution time of this transform does not depend on the
         number of ghosts.
     """
 

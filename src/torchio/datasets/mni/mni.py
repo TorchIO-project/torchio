@@ -5,7 +5,7 @@ from ...utils import get_torchio_cache_dir
 class SubjectMNI(Subject):
     """Atlases from the Montreal Neurological Institute (MNI).
 
-    See `the website <https://nist.mni.mcgill.ca/?page_id=714>`_ for more
+    See [the website ](https://nist.mni.mcgill.ca/?page_id=714) for more
     information.
     """
 
