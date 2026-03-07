@@ -57,7 +57,10 @@ jobs:
       - name: Upload docs to smokeshow
         if: github.ref != 'refs/heads/main'
         run: |
-          find ./site -type f \( -name '*.png' -o -name '*.jpg' -o -name '*.jpeg' -o -name '*.gif' -o -name '*.svg' -o -name '*.webp' \) -delete
+          # Smokeshow limit: 50 MB total, 25 MB per file
+          # Remove large GIFs to stay under the limit
+          find ./site -type f -size +25M -delete
+          find ./site -type f -name '*.gif' -size +2M -delete
           uvx smokeshow upload ./site
 
       # Upload to GitHub Pages if on main branch
