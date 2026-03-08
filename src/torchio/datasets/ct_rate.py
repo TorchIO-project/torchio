@@ -303,14 +303,14 @@ class CtRate(SubjectsDataset):
                 DataFrame containing metadata for all images associated to that subject.
         """
         subject_id, subject_df = subject_id_and_metadata
-        subject_dict: dict[str, str | ScalarImage] = {'subject_id': str(subject_id)}
+        subject_dict: dict[str, object] = {'subject_id': str(subject_id)}
         for _, image_row in subject_df.iterrows():
             image = self._instantiate_image(image_row)
             scan_id = image_row['scan_id']
             reconstruction_id = image_row['reconstruction_id']
             image_key = f'scan_{scan_id}_reconstruction_{reconstruction_id}'
             subject_dict[image_key] = image
-        return Subject(**subject_dict)  # type: ignore[arg-type]
+        return Subject(subject_dict)
 
     def _instantiate_image(self, image_row: pd.Series) -> ScalarImage:
         """Create a ScalarImage object for a specific image.
@@ -321,19 +321,24 @@ class CtRate(SubjectsDataset):
             image_row: A pandas Series representing a row from the metadata DataFrame,
                 containing information about a single image.
         """
-        image_dict: dict[str, str | dict[str, str]] = image_row.to_dict()  # type: ignore[assignment]
-        filename: str = image_dict[self._FILENAME_KEY]  # type: ignore[assignment]
+        image_dict = {str(key): value for key, value in image_row.to_dict().items()}
+        filename = image_dict[self._FILENAME_KEY]
+        if not isinstance(filename, str):
+            message = (
+                f'Expected {self._FILENAME_KEY} to be a string, not {type(filename)!r}'
+            )
+            raise TypeError(message)
         relative_image_path = self._get_image_path(
             filename,
             load_fixed=self._load_fixed,
         )
         image_path = self._root_dir / relative_image_path
-        report_dict = self._extract_report_dict(image_dict)  # type: ignore[arg-type]
+        report_dict = self._extract_report_dict(image_dict)
         image_dict[self._report_key] = report_dict
         image = ScalarImage(image_path, verify_path=self._verify_paths, **image_dict)
         return image
 
-    def _extract_report_dict(self, subject_dict: dict[str, str]) -> dict[str, str]:
+    def _extract_report_dict(self, subject_dict: dict[str, object]) -> dict[str, str]:
         """Extract radiology report information from the subject dictionary.
 
         Extracts the English radiology report components (clinical information,
@@ -348,7 +353,13 @@ class CtRate(SubjectsDataset):
         """
         report_dict = {}
         for key in self.REPORT_KEYS:
-            report_dict[key] = subject_dict.pop(key)
+            value = subject_dict.pop(key)
+            if not isinstance(value, str):
+                message = (
+                    f'Expected report field {key!r} to be a string, not {type(value)!r}'
+                )
+                raise TypeError(message)
+            report_dict[key] = value
         return report_dict
 
     @staticmethod

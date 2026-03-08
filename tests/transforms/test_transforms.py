@@ -1,4 +1,8 @@
 import copy
+from collections.abc import Sequence
+from pathlib import Path
+from typing import Any
+from typing import cast
 
 import numpy as np
 import pytest
@@ -7,15 +11,30 @@ import torch
 from nibabel.nifti1 import Nifti1Image
 
 import torchio as tio
+from torchio.data.io import nib_to_sitk
 
 from ..utils import TorchioTestCase
+
+
+def _parse_range_with_invalid_value(
+    transform: tio.Transform,
+    value: object,
+) -> None:
+    transform._parse_range(cast(Any, value), 'name')
 
 
 class TestTransforms(TorchioTestCase):
     """Tests for all transforms."""
 
-    def get_transform(self, channels, is_3d=True, labels=True):
-        landmarks_dict = {channel: np.linspace(0, 100, 13) for channel in channels}
+    def get_transform(
+        self,
+        channels: Sequence[str],
+        is_3d: bool = True,
+        labels: bool = True,
+    ) -> tio.Compose:
+        landmarks_dict: dict[str, str | Path | np.ndarray] = {
+            channel: np.linspace(0, 100, 13) for channel in channels
+        }
         disp = 1 if is_3d else (1, 1, 0.01)
         elastic = tio.RandomElasticDeformation(max_displacement=disp)
         affine_elastic = tio.RandomAffineElasticDeformation(
@@ -28,7 +47,11 @@ class TestTransforms(TorchioTestCase):
         pad_args = (1, 2, 3, 0, 5, 6) if is_3d else (0, 0, 3, 0, 5, 6)
         crop_args = (3, 2, 8, 0, 1, 4) if is_3d else (0, 0, 8, 0, 1, 4)
         remapping = {1: 2, 2: 1, 3: 20, 4: 25}
-        transforms = [
+        one_of_transforms: dict[tio.Transform, float] = {
+            tio.RandomAffine(): 3,
+            elastic: 1,
+        }
+        transforms: list[tio.Transform] = [
             tio.CropOrPad(cp_args),
             tio.EnsureShapeMultiple(2, method='crop'),
             tio.Resize(resize_args),
@@ -51,12 +74,7 @@ class TestTransforms(TorchioTestCase):
             elastic,
             tio.RandomAffine(),
             affine_elastic,
-            tio.OneOf(
-                {
-                    tio.RandomAffine(): 3,
-                    elastic: 1,
-                }
-            ),
+            tio.OneOf(one_of_transforms),
             tio.RemapLabels(remapping=remapping, masking_method='Left'),
             tio.RemoveLabels([1, 3]),
             tio.SequentialLabels(),
@@ -69,13 +87,23 @@ class TestTransforms(TorchioTestCase):
 
     def test_transforms_dict(self):
         transform = tio.RandomNoise(include=('t1', 't2'))
-        input_dict = {k: v.data for (k, v) in self.sample_subject.items()}
+        input_dict: dict[str, object] = {
+            name: image.data
+            for name, image in self.sample_subject.get_images_dict(
+                intensity_only=False
+            ).items()
+        }
         transformed = transform(input_dict)
         assert isinstance(transformed, dict)
 
     def test_transforms_dict_no_keys(self):
         transform = tio.RandomNoise()
-        input_dict = {k: v.data for (k, v) in self.sample_subject.items()}
+        input_dict: dict[str, object] = {
+            name: image.data
+            for name, image in self.sample_subject.get_images_dict(
+                intensity_only=False
+            ).items()
+        }
         with pytest.raises(RuntimeError):
             transform(input_dict)
 
@@ -108,7 +136,7 @@ class TestTransforms(TorchioTestCase):
     def test_transforms_sitk(self):
         tensor = torch.rand(2, 4, 5, 8)
         affine = np.diag((-1, 2, -3, 1))
-        image = tio.data.io.nib_to_sitk(tensor, affine)
+        image = nib_to_sitk(tensor, affine)
         transform = self.get_transform(
             channels=('default_image_name',),
             labels=False,
@@ -275,14 +303,14 @@ class TestTransform(TorchioTestCase):
     def test_no_numbers(self):
         transform = tio.RandomNoise()
         with pytest.raises(ValueError):
-            transform._parse_range('j', 'name')
+            _parse_range_with_invalid_value(transform, 'j')
 
     def test_apply_transform_missing(self):
         class T(tio.Transform):
             pass
 
         with pytest.raises(TypeError):
-            T().apply_transform(0)
+            T()
 
     def test_non_invertible(self):
         transform = tio.RandomBlur()
@@ -319,9 +347,9 @@ class TestTransform(TorchioTestCase):
 
     def test_bounds_mask(self):
         transform = tio.ZNormalization()
-        with pytest.raises(ValueError):
-            transform.get_mask_from_anatomical_label('test', 0)
         tensor = torch.rand((1, 2, 2, 2))
+        with pytest.raises(ValueError):
+            transform.get_mask_from_anatomical_label('test', tensor)
 
         def get_mask(label):
             mask = transform.get_mask_from_anatomical_label(label, tensor)
@@ -352,13 +380,15 @@ class TestTransform(TorchioTestCase):
         num_classes = 2  # excluding background
         label = torch.randint(num_classes + 1, size)
 
-        data_dict = {'image': image, 'label': label}
+        data_dict: dict[str, object] = {'image': image, 'label': label}
 
         transform = tio.RandomAffine(
             include=['image', 'label'],
             label_keys=['label'],
         )
-        transformed_label = transform(data_dict)['label']
+        transformed_dict = transform(data_dict)
+        transformed_label = transformed_dict['label']
+        assert isinstance(transformed_label, torch.Tensor)
 
         # If the image is indeed transformed as a label map, nearest neighbor
         # interpolation is used by default and therefore no intermediate values

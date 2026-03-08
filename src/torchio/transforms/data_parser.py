@@ -19,6 +19,7 @@ from ..data.io import nib_to_sitk
 from ..data.io import sitk_to_nib
 from ..data.subject import Subject
 from ..types import TypeData
+from ..types import TypeImageData
 
 TypeTransformInput: TypeAlias = (
     Subject
@@ -131,7 +132,7 @@ class DataParser(Generic[ParserInput]):
             raise ValueError(message)
         return self._get_subject_from_tensor(data)
 
-    def _get_subject_from_tensor(self, tensor: TypeData) -> Subject:
+    def _get_subject_from_tensor(self, tensor: TypeImageData) -> Subject:
         image = ScalarImage(tensor=tensor)
         return self._get_subject_from_image(image)
 

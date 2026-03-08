@@ -7,13 +7,19 @@ from typing import TypeAlias
 
 import numpy as np
 import torch
+from jaxtyping import Shaped
 
 # For typing hints
 TypePath: TypeAlias = str | Path
 TypeNumber: TypeAlias = int | float
 TypeKeys: TypeAlias = Sequence[str] | None
 TypeData: TypeAlias = torch.Tensor | np.ndarray
+TypeImageTensor: TypeAlias = Shaped[torch.Tensor, 'channels width height depth']  # noqa: F722
+TypeImageArray: TypeAlias = Shaped[np.ndarray, 'channels width height depth']  # noqa: F722
+TypeImageData: TypeAlias = TypeImageTensor | TypeImageArray
+TypeAffineMatrix: TypeAlias = Shaped[np.ndarray, '4 4']  # noqa: F722
 TypeDataAffine: TypeAlias = tuple[torch.Tensor, np.ndarray]
+TypeImageDataAffine: TypeAlias = tuple[TypeImageTensor, TypeAffineMatrix]
 TypeSlice: TypeAlias = int | slice
 
 TypeDoubletInt: TypeAlias = tuple[int, int]

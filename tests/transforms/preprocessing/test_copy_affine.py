@@ -1,3 +1,5 @@
+from typing import cast
+
 import numpy as np
 import pytest
 import torch
@@ -17,7 +19,7 @@ class TestCopyAffine(TorchioTestCase):
 
     def test_wrong_target_type(self):
         with pytest.raises(ValueError):
-            tio.CopyAffine(target=[1])
+            tio.CopyAffine(target=cast(str, [1]))
 
     def test_same_affine(self):
         image = tio.ScalarImage(tensor=torch.rand(2, 2, 2, 2))
@@ -26,9 +28,11 @@ class TestCopyAffine(TorchioTestCase):
         subject = tio.Subject(t1=image, mask=mask)
         transform = tio.CopyAffine('t1')
         transformed = transform(subject)
+        transformed_t1 = transformed.get_image('t1')
+        transformed_mask = transformed.get_image('mask')
         self.assert_tensor_equal(
-            transformed['t1'].affine,
-            transformed['mask'].affine,
+            transformed_t1.affine,
+            transformed_mask.affine,
         )
 
     def test_before_loading(self):
@@ -38,7 +42,9 @@ class TestCopyAffine(TorchioTestCase):
         subject = tio.Subject(t1=image, mask=mask)
         transform = tio.CopyAffine('t1')
         transformed = transform(subject)
+        transformed_t1 = transformed.get_image('t1')
+        transformed_mask = transformed.get_image('mask')
         self.assert_tensor_equal(
-            transformed['t1'].affine,
-            transformed['mask'].affine,
+            transformed_t1.affine,
+            transformed_mask.affine,
         )

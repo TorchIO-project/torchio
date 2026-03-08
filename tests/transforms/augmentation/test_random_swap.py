@@ -1,3 +1,6 @@
+from typing import Any
+from typing import cast
+
 import pytest
 
 import torchio as tio
@@ -24,7 +27,7 @@ class TestRandomSwap(TorchioTestCase):
 
     def test_wrong_num_iterations_type(self):
         with pytest.raises(TypeError):
-            tio.RandomSwap(num_iterations='wrong')
+            tio.RandomSwap(num_iterations=cast(Any, 'wrong'))
 
     def test_negative_num_iterations(self):
         with pytest.raises(ValueError):

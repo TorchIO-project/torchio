@@ -26,9 +26,12 @@ from ..constants import LABEL
 from ..constants import PATH
 from ..constants import STEM
 from ..constants import TYPE
+from ..types import TypeAffineMatrix
 from ..types import TypeData
 from ..types import TypeDataAffine
 from ..types import TypeDirection3D
+from ..types import TypeImageDataAffine
+from ..types import TypeImageTensor
 from ..types import TypePath
 from ..types import TypeQuartetInt
 from ..types import TypeSlice
@@ -256,7 +259,7 @@ class Image(dict[str, object]):
         return new_image
 
     @property
-    def data(self) -> torch.Tensor:
+    def data(self) -> TypeImageTensor:
         """Tensor data (same as [Image.tensor][Image.tensor])."""
         value = self[DATA]
         if not isinstance(value, torch.Tensor):
@@ -280,12 +283,12 @@ class Image(dict[str, object]):
         self._loaded = True
 
     @property
-    def tensor(self) -> torch.Tensor:
+    def tensor(self) -> TypeImageTensor:
         """Tensor data (same as [Image.data][Image.data])."""
         return self.data
 
     @property
-    def affine(self) -> np.ndarray:
+    def affine(self) -> TypeAffineMatrix:
         """Affine matrix to transform voxel indices into world coordinates."""
         # If path is a dir (probably DICOM), just load the data
         # Same if it's a list of paths (used to create a 4D image)
@@ -302,7 +305,7 @@ class Image(dict[str, object]):
             assert isinstance(self.path, Path)
             affine = read_affine(self.path)
         assert isinstance(affine, np.ndarray)
-        return affine
+        return cast(TypeAffineMatrix, affine)
 
     @affine.setter
     def affine(self, matrix: TypeData | None):
@@ -539,7 +542,7 @@ class Image(dict[str, object]):
         self,
         tensor: TypeData | None,
         none_ok: bool = True,
-    ) -> torch.Tensor | None:
+    ) -> TypeImageTensor | None:
         if tensor is None:
             if none_ok:
                 return None
@@ -564,13 +567,13 @@ class Image(dict[str, object]):
         return tensor
 
     @staticmethod
-    def _parse_tensor_shape(tensor: TypeData) -> torch.Tensor:
+    def _parse_tensor_shape(tensor: TypeData) -> TypeImageTensor:
         return ensure_4d(tensor)
 
     @staticmethod
-    def _parse_affine(affine: TypeData | None) -> np.ndarray:
+    def _parse_affine(affine: TypeData | None) -> TypeAffineMatrix:
         if affine is None:
-            return np.eye(4)
+            return cast(TypeAffineMatrix, np.eye(4))
         if isinstance(affine, torch.Tensor):
             affine = affine.numpy()
         if not isinstance(affine, np.ndarray):
@@ -579,7 +582,7 @@ class Image(dict[str, object]):
         if affine.shape != (4, 4):
             bad_shape = affine.shape
             raise ValueError(f'Affine shape must be (4, 4), not {bad_shape}')
-        return affine.astype(np.float64)
+        return cast(TypeAffineMatrix, affine.astype(np.float64))
 
     @staticmethod
     def _is_paths_sequence(
@@ -669,7 +672,7 @@ class Image(dict[str, object]):
         self[AFFINE] = None
         self._loaded = False
 
-    def read_and_check(self, path: TypePath) -> TypeDataAffine:
+    def read_and_check(self, path: TypePath) -> TypeImageDataAffine:
         tensor, affine = self.reader(path)
         # Make sure the data type is compatible with PyTorch
         if self.reader is not read_image and isinstance(tensor, np.ndarray):

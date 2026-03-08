@@ -1,3 +1,6 @@
+from collections.abc import Callable
+from typing import cast
+
 import pytest
 import torch
 
@@ -9,7 +12,7 @@ from ..utils import TorchioTestCase
 class TestSubjectsDataset(TorchioTestCase):
     def test_indexing_nonint(self):
         dset = tio.SubjectsDataset(self.subjects_list)
-        dset[torch.tensor(0)]
+        dset[cast(int, torch.tensor(0))]
 
     def test_images(self):
         self.iterate_dataset(self.subjects_list)
@@ -36,18 +39,20 @@ class TestSubjectsDataset(TorchioTestCase):
 
     def test_wrong_index(self):
         with pytest.raises(ValueError):
-            self.dataset[:3]
+            self.dataset[cast(int, slice(None, 3))]
 
     def test_wrong_transform_init(self):
         with pytest.raises(ValueError):
+            invalid_transform = cast(Callable[[tio.Subject], tio.Subject], {})
             tio.SubjectsDataset(
                 self.subjects_list,
-                transform={},
+                transform=invalid_transform,
             )
 
     def test_wrong_transform_arg(self):
         with pytest.raises(ValueError):
-            self.dataset.set_transform(1)
+            invalid_transform = cast(Callable[[tio.Subject], tio.Subject], 1)
+            self.dataset.set_transform(invalid_transform)
 
     @staticmethod
     def iterate_dataset(subjects_list):

@@ -268,8 +268,18 @@ class GridAggregator:
             from ...transforms import Crop
 
             border = self.patch_overlap // 2
-            cropping = border.repeat(2)
-            crop = Crop(cropping)  # type: ignore[arg-type]
-            return crop(output)  # type: ignore[return-value]
+            cropping_values = [int(value) for value in border.repeat(2).tolist()]
+            cropping = (
+                cropping_values[0],
+                cropping_values[1],
+                cropping_values[2],
+                cropping_values[3],
+                cropping_values[4],
+                cropping_values[5],
+            )
+            crop = Crop(cropping)
+            cropped = crop(output)
+            assert isinstance(cropped, torch.Tensor)
+            return cropped
         else:
             return output

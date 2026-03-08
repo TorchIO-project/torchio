@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import warnings
 from pathlib import Path
+from typing import cast
 
 import nibabel as nib
 import numpy as np
@@ -50,7 +51,7 @@ def read_image(path: TypePath) -> TypeDataAffine:
 
 
 def _read_nibabel(path: TypePath) -> TypeDataAffine:
-    img: SpatialImage = nib.load(str(path), mmap=False)  # type: ignore[assignment]
+    img = cast(SpatialImage, nib.load(str(path), mmap=False))
     data = img.get_fdata(dtype=np.float32)
     if data.ndim == 5:
         data = data[..., 0, :]

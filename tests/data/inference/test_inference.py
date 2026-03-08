@@ -1,3 +1,7 @@
+from typing import cast
+
+from torch.utils.data import Dataset
+
 import torchio as tio
 from torchio import DATA
 from torchio import LOCATION
@@ -29,7 +33,11 @@ class TestInference(TorchioTestCase):
                 padding_mode=padding_mode,
             )
             aggregator = GridAggregator(grid_sampler)
-            patch_loader = tio.SubjectsLoader(grid_sampler, batch_size=batch_size)
+            sampler_dataset = cast(Dataset[tio.Subject], grid_sampler)
+            patch_loader = tio.SubjectsLoader(
+                sampler_dataset,
+                batch_size=batch_size,
+            )
             for patches_batch in patch_loader:
                 input_tensor = patches_batch['t1'][DATA]
                 locations = patches_batch[LOCATION]

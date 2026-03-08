@@ -35,6 +35,7 @@ dependencies = [
     "deprecated>=1.2",
     "einops>=0.3",
     "humanize>=0.1",
+    "jaxtyping>=0.2",
     "nibabel>=3",
     "numpy>=1.20",
     "packaging>=20",
@@ -85,7 +86,8 @@ doc = [
 maintain = ["bump-my-version"]
 quality = ["ruff"]
 types = [
-    "mypy",
+    "matplotlib",
+    "ty",
     "pandas-stubs",
     "pillow",
     "pip",
@@ -117,31 +119,8 @@ filename = "pyproject.toml"
 search = 'version = "{current_version}"'
 replace = 'version = "{new_version}"'
 
-[tool.mypy]
-pretty = true
-
 [tool.ty.src]
 include = ["src", "tests"]
-
-[[tool.mypy.overrides]]
-module = "duecredit.*"
-ignore_missing_imports = true
-
-[[tool.mypy.overrides]]
-module = "huggingface_hub.*"
-ignore_missing_imports = true
-
-[[tool.mypy.overrides]]
-module = "matplotlib.*"
-ignore_missing_imports = true
-
-[[tool.mypy.overrides]]
-module = "nibabel.*"
-ignore_missing_imports = true
-
-[[tool.mypy.overrides]]
-module = "scipy.*"
-ignore_missing_imports = true
 
 [tool.pytest.ini_options]
 addopts = ["-ra", "--strict-config", "--strict-markers"]

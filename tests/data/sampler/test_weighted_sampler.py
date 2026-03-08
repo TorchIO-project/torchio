@@ -12,8 +12,10 @@ class TestWeightedSampler(TorchioTestCase):
     def test_weighted_sampler(self):
         subject = self.get_sample((1, 7, 7, 7))
         sampler = WeightedSampler(5, 'prob')
-        patch = tio.utils.get_first_item(sampler(subject))
-        assert tuple(patch[tio.LOCATION][:3]) == (1, 1, 1)
+        patch = next(sampler(subject))
+        location = patch[tio.LOCATION]
+        assert isinstance(location, torch.Tensor)
+        assert tuple(location[:3].tolist()) == (1, 1, 1)
 
     def get_sample(self, image_shape):
         t1 = torch.rand(*image_shape)

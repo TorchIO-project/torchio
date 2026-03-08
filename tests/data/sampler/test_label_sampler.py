@@ -12,7 +12,7 @@ class TestLabelSampler(TorchioTestCase):
     def test_label_sampler(self):
         sampler = tio.LabelSampler(5)
         for patch in sampler(self.sample_subject, num_patches=10):
-            patch_center = patch['label'][tio.DATA][0, 2, 2, 2]
+            patch_center = patch.get_label_map('label').data[0, 2, 2, 2]
             assert patch_center == 1
 
     def test_label_probabilities(self):
@@ -21,7 +21,7 @@ class TestLabelSampler(TorchioTestCase):
             label=tio.Image(tensor=labels, type=tio.LABEL),
         )
         subject = tio.SubjectsDataset([subject])[0]
-        probs_dict = {0: 0, 1: 50, 2: 25, 3: 25}
+        probs_dict: dict[int, float] = {0: 0.0, 1: 50.0, 2: 25.0, 3: 25.0}
         patch_size = (1, 1, 5)
         sampler = tio.LabelSampler(patch_size, label_probabilities=probs_dict)
         probabilities = sampler.get_probability_map(subject)

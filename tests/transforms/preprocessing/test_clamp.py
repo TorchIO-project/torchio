@@ -1,3 +1,5 @@
+from typing import cast
+
 import pytest
 import torch
 
@@ -30,20 +32,20 @@ class TestClamp(TorchioTestCase):
 
     def test_too_many_values_for_out_min(self):
         with pytest.raises(TypeError):
-            clamp = tio.Clamp(out_min=(1, 2))
+            clamp = tio.Clamp(out_min=cast(float, (1, 2)))
             clamp(self.sample_subject)
 
     def test_too_many_values_for_out_max(self):
         with pytest.raises(TypeError):
-            clamp = tio.Clamp(out_max=(1, 2))
+            clamp = tio.Clamp(out_max=cast(float, (1, 2)))
             clamp(self.sample_subject)
 
     def test_wrong_out_min_type(self):
         with pytest.raises(TypeError):
-            clamp = tio.Clamp(out_min='foo')
+            clamp = tio.Clamp(out_min=cast(float, 'foo'))
             clamp(self.sample_subject)
 
     def test_wrong_out_max_type(self):
         with pytest.raises(TypeError):
-            clamp = tio.Clamp(out_max='foo')
+            clamp = tio.Clamp(out_max=cast(float, 'foo'))
             clamp(self.sample_subject)
