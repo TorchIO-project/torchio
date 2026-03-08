@@ -122,6 +122,15 @@ class Resample(SpatialTransform):
     def _parse_spacing(spacing: TypeSpacing) -> tuple[float, float, float]:
         if isinstance(spacing, (int, float)):
             result = (float(spacing), float(spacing), float(spacing))
+        elif isinstance(spacing, np.ndarray):
+            flat = list(spacing.flat)
+            if len(flat) != 3:
+                message = (
+                    'Target must be a string, a positive number'
+                    f' or a sequence of positive numbers, not {type(spacing)}'
+                )
+                raise ValueError(message)
+            result = (float(flat[0]), float(flat[1]), float(flat[2]))
         elif isinstance(spacing, Sequence):
             if len(spacing) != 3:
                 message = (
@@ -298,7 +307,7 @@ class Resample(SpatialTransform):
     ) -> sitk.ResampleImageFilter:
         """Instantiate a SimpleITK resampler."""
         if target is None:
-            raise TypeError('Target cannot be None')
+            raise RuntimeError('Target cannot be None')
         resampler = sitk.ResampleImageFilter()
         resampler.SetInterpolator(interpolator)
         self._set_resampler_reference(

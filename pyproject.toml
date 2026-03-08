@@ -119,9 +119,6 @@ filename = "pyproject.toml"
 search = 'version = "{current_version}"'
 replace = 'version = "{new_version}"'
 
-[tool.ty.src]
-include = ["src", "tests"]
-
 [tool.pytest.ini_options]
 addopts = ["-ra", "--strict-config", "--strict-markers"]
 filterwarnings = [

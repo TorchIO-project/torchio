@@ -304,7 +304,7 @@ class Affine(SpatialTransform):
 
     @staticmethod
     def _get_scaling_transform(
-        scaling_params: Sequence[float],
+        scaling_params: Sequence[float] | np.ndarray,
         center_lps: TypeTripletFloat | None = None,
     ) -> sitk.ScaleTransform:
         # 1.5 means the objects look 1.5 times larger
@@ -317,8 +317,8 @@ class Affine(SpatialTransform):
 
     @staticmethod
     def _get_rotation_transform(
-        degrees: Sequence[float],
-        translation: Sequence[float],
+        degrees: Sequence[float] | np.ndarray,
+        translation: Sequence[float] | np.ndarray,
         center_lps: TypeTripletFloat | None = None,
     ) -> sitk.Euler3DTransform:
         def ras_to_lps(triplet: Sequence[float] | np.ndarray) -> np.ndarray:

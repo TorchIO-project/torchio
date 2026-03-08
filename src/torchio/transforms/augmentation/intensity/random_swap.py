@@ -101,8 +101,8 @@ class RandomSwap(RandomTransform, IntensityTransform):
 
         locations_by_name: dict[str, TypeLocations] = {}
         patch_size_by_name: dict[str, TypeTripletInt] = {}
-        patch_values = [int(value) for value in self.patch_size.tolist()]
-        patch_size = (patch_values[0], patch_values[1], patch_values[2])
+        broadcast = np.broadcast_to(self.patch_size, 3)
+        patch_size = (int(broadcast[0]), int(broadcast[1]), int(broadcast[2]))
         for name, image in images_dict.items():
             locations = self.get_params(
                 image.data,

@@ -62,6 +62,8 @@ class RandomGhosting(RandomTransform, IntensityTransform):
         **kwargs,
     ):
         super().__init__(**kwargs)
+        if axes is None:
+            raise ValueError('Axes cannot be None')
         if isinstance(axes, (int, str)):
             axes = (axes,)
         else:

@@ -177,8 +177,7 @@ class Transform(ABC):
             )
             subject = data_parser.get_subject()
         else:
-            assert isinstance(data, Subject)
-            subject = data
+            subject = cast(Subject, data)
 
         if self.keep is not None:
             images_to_keep: dict[str, Image] = {}
@@ -317,7 +316,9 @@ class Transform(ABC):
         max_constraint: TypeNumber | None = None,
         type_constraint: type[int] | type[float] | None = None,
     ) -> tuple[float, float, float, float, float, float] | tuple[float, ...]:
-        if isinstance(params, Sequence):
+        if isinstance(params, (torch.Tensor, np.ndarray)):
+            params_tuple = tuple(float(p) for p in params.tolist())
+        elif isinstance(params, Sequence):
             params_sequence = cast(Sequence[TypeNumber], params)
             params_tuple = tuple(float(param) for param in params_sequence)
         else:
