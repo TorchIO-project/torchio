@@ -1,4 +1,4 @@
-from collections import defaultdict
+from collections.abc import Sequence
 
 import numpy as np
 import torch
@@ -58,11 +58,11 @@ class RandomGamma(RandomTransform, IntensityTransform):
         if not images_dict:
             return subject
 
-        arguments: dict[str, dict] = defaultdict(dict)
+        gamma_by_name: dict[str, float | Sequence[float]] = {}
         for name, image in images_dict.items():
             gammas = [self.get_params(self.log_gamma_range) for _ in image.data]
-            arguments['gamma'][name] = gammas
-        transform = Gamma(**self.add_base_args(arguments))
+            gamma_by_name[name] = gammas
+        transform = Gamma(gamma=gamma_by_name, **self.get_base_args())
         transformed = transform(subject)
         assert isinstance(transformed, Subject)
         return transformed
@@ -105,18 +105,19 @@ class Gamma(IntensityTransform):
         >>> transformed = transform(subject)
     """
 
-    def __init__(self, gamma: float, **kwargs):
+    def __init__(
+        self,
+        gamma: float | Sequence[float] | dict[str, float | Sequence[float]],
+        **kwargs,
+    ):
         super().__init__(**kwargs)
         self.gamma = gamma
         self.args_names = ['gamma']
         self.invert_transform = False
 
     def apply_transform(self, subject: Subject) -> Subject:
-        gamma = self.gamma
         for name, image in self.get_images_dict(subject).items():
-            if self.arguments_are_dict():
-                assert isinstance(self.gamma, dict)
-                gamma = self.gamma[name]
+            gamma = self.get_parameter(self.gamma, name)
             gammas = to_tuple(gamma, length=len(image.data))
             transformed_tensors = []
             image.set_data(image.data.float())

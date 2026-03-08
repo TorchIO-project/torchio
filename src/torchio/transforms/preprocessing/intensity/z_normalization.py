@@ -27,7 +27,7 @@ class ZNormalization(NormalizationTransform):
         image_name: str,
         mask: torch.Tensor,
     ) -> None:
-        image = subject[image_name]
+        image = subject.get_scalar_image(image_name)
         standardized = self.znorm(
             image.data,
             mask,

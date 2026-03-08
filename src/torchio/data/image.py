@@ -7,6 +7,9 @@ from collections.abc import Sequence
 from pathlib import Path
 from typing import TYPE_CHECKING
 from typing import Any
+from typing import TypeGuard
+from typing import cast
+from typing import overload
 
 import humanize
 import nibabel as nib
@@ -22,11 +25,13 @@ from ..constants import INTENSITY
 from ..constants import LABEL
 from ..constants import PATH
 from ..constants import STEM
-from ..constants import TENSOR
 from ..constants import TYPE
+from ..types import TypeAffineMatrix
 from ..types import TypeData
 from ..types import TypeDataAffine
 from ..types import TypeDirection3D
+from ..types import TypeImageDataAffine
+from ..types import TypeImageTensor
 from ..types import TypePath
 from ..types import TypeQuartetInt
 from ..types import TypeSlice
@@ -60,7 +65,7 @@ deprecation_message = (
 )
 
 
-class Image(dict):
+class Image(dict[str, object]):
     r"""TorchIO image.
 
     For information about medical image orientation, check out [NiBabel docs](https://nipy.org/nibabel/image_orientation.html),
@@ -136,7 +141,7 @@ class Image(dict):
         check_nans: bool = False,  # removed by ITK by default
         reader: Callable[[TypePath], TypeDataAffine] = read_image,
         verify_path: bool = True,
-        **kwargs: dict[str, Any],
+        **kwargs: object,
     ):
         self.check_nans = check_nans
         self.reader = reader
@@ -174,7 +179,10 @@ class Image(dict):
             warnings.warn(message, FutureWarning, stacklevel=2)
 
         super().__init__(**kwargs)
-        self.path = self._parse_path(path, verify=verify_path)
+        self.path: Path | list[Path] | None = self._parse_path(
+            path,
+            verify=verify_path,
+        )
 
         self[PATH] = '' if self.path is None else str(self.path)
         self[STEM] = '' if self.path is None else get_stem(self.path)
@@ -213,7 +221,15 @@ class Image(dict):
 
         return _figure_to_html(fig)
 
-    def __getitem__(self, item):
+    @overload
+    def __getitem__(self, item: str) -> object: ...
+
+    @overload
+    def __getitem__(self, item: slice | int | tuple[object, ...]) -> Image: ...
+
+    def __getitem__(
+        self, item: str | slice | int | tuple[object, ...]
+    ) -> object | Image:
         if isinstance(item, (slice, int, tuple)):
             return self._crop_from_slices(item)
 
@@ -226,31 +242,34 @@ class Image(dict):
         return self.data.numpy()
 
     def __copy__(self):
-        kwargs = {
-            TYPE: self.type,
-            PATH: self.path,
-        }
-        if self._loaded:
-            kwargs[TENSOR] = self.data
-            kwargs[AFFINE] = self.affine
+        extra_kwargs: dict[str, object] = {}
         for key, value in self.items():
             if key in PROTECTED_KEYS:
                 continue
-            kwargs[key] = value  # should I copy? deepcopy?
+            extra_kwargs[key] = value  # should I copy? deepcopy?
         new_image_class = type(self)
         new_image = new_image_class(
+            path=self.path,
+            type=self.type,
+            tensor=self.data if self._loaded else None,
+            affine=self.affine if self._loaded else None,
             check_nans=self.check_nans,
             reader=self.reader,
-            **kwargs,
+            **cast(dict[str, Any], extra_kwargs),
         )
         return new_image
 
     @property
-    def data(self) -> torch.Tensor:
+    def data(self) -> TypeImageTensor:
         """Tensor data (same as [Image.tensor][Image.tensor])."""
-        return self[DATA]
+        value = self[DATA]
+        if not isinstance(value, torch.Tensor):
+            self.load()
+            value = self[DATA]
+        assert isinstance(value, torch.Tensor)
+        return value
 
-    @data.setter  # type: ignore[misc]
+    @data.setter
     @deprecated(version='0.18.16', reason=deprecation_message)
     def data(self, tensor: TypeData):
         self.set_data(tensor)
@@ -265,12 +284,12 @@ class Image(dict):
         self._loaded = True
 
     @property
-    def tensor(self) -> torch.Tensor:
+    def tensor(self) -> TypeImageTensor:
         """Tensor data (same as [Image.data][Image.data])."""
         return self.data
 
     @property
-    def affine(self) -> np.ndarray:
+    def affine(self) -> TypeAffineMatrix:
         """Affine matrix to transform voxel indices into world coordinates."""
         # If path is a dir (probably DICOM), just load the data
         # Same if it's a list of paths (used to create a 4D image)
@@ -279,19 +298,25 @@ class Image(dict):
         is_custom_reader = self.reader is not read_image
         if self._loaded or self._is_dir() or self._is_multipath() or is_custom_reader:
             affine = self[AFFINE]
+            if not isinstance(affine, np.ndarray):
+                self.load()
+                affine = self[AFFINE]
         else:
             assert self.path is not None
-            assert isinstance(self.path, (str, Path))
+            assert isinstance(self.path, Path)
             affine = read_affine(self.path)
-        return affine
+        assert isinstance(affine, np.ndarray)
+        return cast(TypeAffineMatrix, affine)
 
     @affine.setter
-    def affine(self, matrix):
+    def affine(self, matrix: TypeData | None):
         self[AFFINE] = self._parse_affine(matrix)
 
     @property
     def type(self) -> str:  # noqa: A003
-        return self[TYPE]
+        value = self[TYPE]
+        assert isinstance(value, str)
+        return value
 
     @property
     def shape(self) -> TypeQuartetInt:
@@ -347,7 +372,9 @@ class Image(dict):
             self.affine,
             lps=False,
         )
-        return direction  # type: ignore[return-value]
+        if len(direction) != 9:
+            raise RuntimeError(f'Expected a 3D direction, not {direction}')
+        return cast(TypeDirection3D, direction)
 
     @property
     def spacing(self) -> tuple[float, float, float]:
@@ -456,8 +483,11 @@ class Image(dict):
         first_point = apply_affine(self.affine, first_index)
         last_point = apply_affine(self.affine, last_index)
         array = np.array((first_point, last_point))
-        bounds_x, bounds_y, bounds_z = array.T.tolist()  # type: ignore[misc]
-        return bounds_x, bounds_y, bounds_z  # type: ignore[return-value]
+        bounds_x, bounds_y, bounds_z = array.T.tolist()
+        x0, x1 = bounds_x
+        y0, y1 = bounds_y
+        z0, z1 = bounds_z
+        return (x0, x1), (y0, y1), (z0, z1)
 
     def _parse_single_path(
         self,
@@ -502,16 +532,18 @@ class Image(dict):
         elif isinstance(path, dict):
             # https://github.com/TorchIO-project/torchio/pull/838
             raise TypeError('The path argument cannot be a dictionary')
+        elif isinstance(path, (str, Path)):
+            return self._parse_single_path(path, verify=verify)
         elif self._is_paths_sequence(path):
-            return [self._parse_single_path(p, verify=verify) for p in path]  # type: ignore[union-attr]
-        else:
-            return self._parse_single_path(path, verify=verify)  # type: ignore[arg-type]
+            return [self._parse_single_path(p, verify=verify) for p in path]
+        message = f'Input path must be a path or sequence of paths, not {type(path)}'
+        raise TypeError(message)
 
     def _parse_tensor(
         self,
         tensor: TypeData | None,
         none_ok: bool = True,
-    ) -> torch.Tensor | None:
+    ) -> TypeImageTensor | None:
         if tensor is None:
             if none_ok:
                 return None
@@ -536,13 +568,13 @@ class Image(dict):
         return tensor
 
     @staticmethod
-    def _parse_tensor_shape(tensor: torch.Tensor) -> TypeData:
+    def _parse_tensor_shape(tensor: TypeData) -> TypeImageTensor:
         return ensure_4d(tensor)
 
     @staticmethod
-    def _parse_affine(affine: TypeData | None) -> np.ndarray:
+    def _parse_affine(affine: TypeData | None) -> TypeAffineMatrix:
         if affine is None:
-            return np.eye(4)
+            return cast(TypeAffineMatrix, np.eye(4))
         if isinstance(affine, torch.Tensor):
             affine = affine.numpy()
         if not isinstance(affine, np.ndarray):
@@ -551,15 +583,28 @@ class Image(dict):
         if affine.shape != (4, 4):
             bad_shape = affine.shape
             raise ValueError(f'Affine shape must be (4, 4), not {bad_shape}')
-        return affine.astype(np.float64)
+        return cast(TypeAffineMatrix, affine.astype(np.float64))
 
     @staticmethod
-    def _is_paths_sequence(path: TypePath | Sequence[TypePath] | None) -> bool:
-        is_not_string = not isinstance(path, str)
-        return is_not_string and is_iterable(path)
+    def _is_paths_sequence(
+        path: TypePath | Sequence[TypePath] | None,
+    ) -> TypeGuard[Sequence[TypePath]]:
+        return (
+            path is not None and not isinstance(path, (str, Path)) and is_iterable(path)
+        )
 
     def _is_multipath(self) -> bool:
         return self._is_paths_sequence(self.path)
+
+    def _as_path_list(self) -> list[Path]:
+        if self.path is None:
+            raise RuntimeError('Image path is not available')
+        if self._is_multipath():
+            paths = self.path
+            assert isinstance(paths, list)
+            return paths
+        assert isinstance(self.path, Path)
+        return [self.path]
 
     def _is_dir(self) -> bool:
         is_sequence = self._is_multipath()
@@ -582,11 +627,7 @@ class Image(dict):
         if self._loaded:
             return
 
-        paths: list[Path]
-        if self._is_multipath():
-            paths = self.path  # type: ignore[assignment]
-        else:
-            paths = [self.path]  # type: ignore[list-item]
+        paths = self._as_path_list()
         tensor, affine = self.read_and_check(paths[0])
         tensors = [tensor]
         for path in paths[1:]:
@@ -632,13 +673,15 @@ class Image(dict):
         self[AFFINE] = None
         self._loaded = False
 
-    def read_and_check(self, path: TypePath) -> TypeDataAffine:
+    def read_and_check(self, path: TypePath) -> TypeImageDataAffine:
         tensor, affine = self.reader(path)
         # Make sure the data type is compatible with PyTorch
         if self.reader is not read_image and isinstance(tensor, np.ndarray):
             tensor = check_uint_to_int(tensor)
-        tensor = self._parse_tensor_shape(tensor)  # type: ignore[assignment]
-        tensor = self._parse_tensor(tensor)  # type: ignore[assignment]
+        tensor = self._parse_tensor_shape(tensor)
+        parsed_tensor = self._parse_tensor(tensor, none_ok=False)
+        assert parsed_tensor is not None
+        tensor = parsed_tensor
         affine = self._parse_affine(affine)
         if self.check_nans and torch.isnan(tensor).any():
             warnings.warn(
@@ -837,26 +880,25 @@ class Image(dict):
 
     def _crop_from_slices(
         self,
-        slices: TypeSlice | tuple[TypeSlice, ...],
+        slices: TypeSlice | tuple[object, ...],
     ) -> Image:
         from ..transforms import Crop
 
-        slices_tuple = to_tuple(slices)  # type: ignore[assignment]
+        slices_tuple = tuple(to_tuple(slices))
         cropping: list[int] = []
-        for dim, slice_ in enumerate(slices_tuple):
-            if isinstance(slice_, slice):
-                pass
-            elif slice_ is Ellipsis:
+        for dim, slice_item in enumerate(slices_tuple):
+            if isinstance(slice_item, slice):
+                slice_object = slice_item
+            elif slice_item is Ellipsis:
                 message = 'Ellipsis slicing is not supported yet'
                 raise NotImplementedError(message)
-            elif isinstance(slice_, int):
-                slice_ = slice(slice_, slice_ + 1)  # type: ignore[assignment]
+            elif isinstance(slice_item, int):
+                slice_object = slice(slice_item, slice_item + 1)
             else:
-                message = f'Slice type not understood: "{type(slice_)}"'
+                message = f'Slice type not understood: "{type(slice_item)}"'
                 raise TypeError(message)
             shape_dim = self.spatial_shape[dim]
-            assert isinstance(slice_, slice)
-            start, stop, step = slice_.indices(shape_dim)
+            start, stop, step = slice_object.indices(shape_dim)
             if step != 1:
                 message = (
                     'Slicing with steps different from 1 is not supported yet.'
@@ -871,7 +913,9 @@ class Image(dict):
             dim += 1
         w_ini, w_fin, h_ini, h_fin, d_ini, d_fin = cropping
         cropping_arg = w_ini, w_fin, h_ini, h_fin, d_ini, d_fin  # making mypy happy
-        return Crop(cropping_arg)(self)  # type: ignore[return-value]
+        cropped = Crop(cropping_arg)(self)
+        assert isinstance(cropped, Image)
+        return cropped
 
 
 class ScalarImage(Image):
@@ -932,8 +976,10 @@ class ScalarImage(Image):
         """
         from ..visualization import make_video  # avoid circular import
 
+        ras_image = self.to_ras()
+        assert isinstance(ras_image, ScalarImage)
         make_video(
-            self.to_ras(),  # type: ignore[arg-type]
+            ras_image,
             output_path,
             frame_rate=frame_rate,
             seconds=seconds,

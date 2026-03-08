@@ -1,3 +1,6 @@
+from pathlib import Path
+from typing import cast
+
 import numpy as np
 import pytest
 import torch
@@ -58,20 +61,22 @@ class TestHistogramStandardization(TorchioTestCase):
 
     def test_bad_paths_lengths(self):
         with pytest.raises(ValueError):
+            image_paths = cast(list[str], [1, 2])
+            mask_paths = cast(list[str], [1, 2, 3])
             HistogramStandardization.train(
-                [1, 2],
-                mask_path=[1, 2, 3],
+                image_paths,
+                mask_path=mask_paths,
             )
 
     def test_normalize(self):
         landmarks = np.linspace(0, 100, 13)
-        landmarks_dict = {'image': landmarks}
+        landmarks_dict: dict[str, str | Path | np.ndarray] = {'image': landmarks}
         transform = HistogramStandardization(landmarks_dict)
         transform(self.dataset[0])
 
     def test_wrong_image_key(self):
         landmarks = np.linspace(0, 100, 13)
-        landmarks_dict = {'wrong_key': landmarks}
+        landmarks_dict: dict[str, str | Path | np.ndarray] = {'wrong_key': landmarks}
         transform = HistogramStandardization(landmarks_dict)
         with pytest.raises(KeyError):
             transform(self.dataset[0])

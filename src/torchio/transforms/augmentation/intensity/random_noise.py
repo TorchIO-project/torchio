@@ -1,6 +1,3 @@
-from collections import defaultdict
-from collections.abc import Sequence
-
 import torch
 
 from ....data.subject import Subject
@@ -45,13 +42,20 @@ class RandomNoise(RandomTransform, IntensityTransform):
         if not images_dict:
             return subject
 
-        arguments: dict[str, dict] = defaultdict(dict)
+        means_by_name: dict[str, float] = {}
+        stds_by_name: dict[str, float] = {}
+        seeds_by_name: dict[str, int] = {}
         for image_name in images_dict:
             mean, std, seed = self.get_params(self.mean_range, self.std_range)
-            arguments['mean'][image_name] = mean
-            arguments['std'][image_name] = std
-            arguments['seed'][image_name] = seed
-        transform = Noise(**self.add_base_args(arguments))
+            means_by_name[image_name] = mean
+            stds_by_name[image_name] = std
+            seeds_by_name[image_name] = seed
+        transform = Noise(
+            mean=means_by_name,
+            std=stds_by_name,
+            seed=seeds_by_name,
+            **self.get_base_args(),
+        )
         transformed = transform(subject)
         assert isinstance(transformed, Subject)
         return transformed
@@ -86,30 +90,34 @@ class Noise(IntensityTransform):
         self,
         mean: float | dict[str, float],
         std: float | dict[str, float],
-        seed: int | Sequence[int],
+        seed: int | dict[str, int],
         **kwargs,
     ):
         super().__init__(**kwargs)
-        self.mean = mean  # type: ignore[assignment]
-        self.std = std
-        self.seed = seed
+        self.noise_mean: float | dict[str, float] = mean
+        self.noise_std: float | dict[str, float] = std
+        self.seed: int | dict[str, int] = seed
         self.invert_transform = False
         self.args_names = ['mean', 'std', 'seed']
 
     def apply_transform(self, subject: Subject) -> Subject:
-        mean, std, seed = args = self.mean, self.std, self.seed
         for name, image in self.get_images_dict(subject).items():
-            if self.arguments_are_dict():
-                values = (arg[name] for arg in args)  # type: ignore[index,call-overload]
-                mean, std, seed = values  # type: ignore[assignment]
+            mean = self.get_parameter(self.noise_mean, name)
+            std = self.get_parameter(self.noise_std, name)
+            seed = self.get_parameter(self.seed, name)
             with self._use_seed(seed):
-                assert isinstance(mean, float)
-                assert isinstance(std, float)
                 noise = get_noise(image.data, mean, std)
             if self.invert_transform:
                 noise *= -1
             image.set_data(image.data + noise)
         return subject
+
+    def _get_named_arguments(self) -> dict[str, object]:
+        return {
+            'mean': self.noise_mean,
+            'std': self.noise_std,
+            'seed': self.seed,
+        }
 
 
 def get_noise(tensor: torch.Tensor, mean: float, std: float) -> torch.Tensor:

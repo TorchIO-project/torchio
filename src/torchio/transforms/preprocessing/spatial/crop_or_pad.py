@@ -204,6 +204,7 @@ class CropOrPad(SpatialTransform):
         self,
         subject: Subject,
     ) -> tuple[TypeSixBounds | None, TypeSixBounds | None]:
+        assert self.mask_name is not None
         if self.mask_name not in subject:
             message = (
                 f'Mask name "{self.mask_name}"'
@@ -213,10 +214,11 @@ class CropOrPad(SpatialTransform):
             warnings.warn(message, RuntimeWarning, stacklevel=2)
             return self._compute_center_crop_or_pad(subject=subject)
 
+        mask_image = subject.get_image(self.mask_name)
         mask_data = self.get_mask_from_masking_method(
             self.mask_name,
             subject,
-            subject[self.mask_name].data,
+            mask_image.data,
             self.labels,
         ).numpy()
 
@@ -277,23 +279,59 @@ class CropOrPad(SpatialTransform):
         padding_array = np.asarray(padding, dtype=int)
         cropping_array = np.asarray(cropping, dtype=int)
         if padding_array.any():
-            padding_params = tuple(padding_array.tolist())
+            padding_values = [int(value) for value in padding_array.tolist()]
+            padding_params = (
+                padding_values[0],
+                padding_values[1],
+                padding_values[2],
+                padding_values[3],
+                padding_values[4],
+                padding_values[5],
+            )
         else:
             padding_params = None
         if cropping_array.any():
-            cropping_params = tuple(cropping_array.tolist())
+            cropping_values = [int(value) for value in cropping_array.tolist()]
+            cropping_params = (
+                cropping_values[0],
+                cropping_values[1],
+                cropping_values[2],
+                cropping_values[3],
+                cropping_values[4],
+                cropping_values[5],
+            )
         else:
             cropping_params = None
-        return padding_params, cropping_params  # type: ignore[return-value]
+        return padding_params, cropping_params
 
     def apply_transform(self, subject: Subject) -> Subject:
         subject.check_consistent_space()
         padding_params, cropping_params = self.compute_crop_or_pad(subject)
-        padding_kwargs = {'padding_mode': self.padding_mode}
         if padding_params is not None and not self.only_crop:
-            pad = Pad(padding_params, **self.get_base_args(), **padding_kwargs)
-            subject = pad(subject)  # type: ignore[assignment]
+            pad = Pad(
+                padding_params,
+                padding_mode=self.padding_mode,
+                copy=self.copy,
+                include=self.include,
+                exclude=self.exclude,
+                keep=self.keep,
+                parse_input=self.parse_input,
+                label_keys=self.label_keys,
+            )
+            transformed = pad(subject)
+            assert isinstance(transformed, Subject)
+            subject = transformed
         if cropping_params is not None and not self.only_pad:
-            crop = Crop(cropping_params, **self.get_base_args())
-            subject = crop(subject)  # type: ignore[assignment]
+            crop = Crop(
+                cropping_params,
+                copy=self.copy,
+                include=self.include,
+                exclude=self.exclude,
+                keep=self.keep,
+                parse_input=self.parse_input,
+                label_keys=self.label_keys,
+            )
+            transformed = crop(subject)
+            assert isinstance(transformed, Subject)
+            subject = transformed
         return subject

@@ -3,6 +3,7 @@ from __future__ import annotations
 from collections.abc import Callable
 from typing import Any
 from typing import TypeVar
+from typing import cast
 
 import numpy as np
 import torch
@@ -22,7 +23,7 @@ class SubjectsLoader(DataLoader):
         **kwargs,
     ):
         if collate_fn is None:
-            collate_fn = self._collate  # type: ignore[assignment]
+            collate_fn = cast(Callable[[list[T]], Any], self._collate)
         super().__init__(
             dataset=dataset,
             collate_fn=collate_fn,

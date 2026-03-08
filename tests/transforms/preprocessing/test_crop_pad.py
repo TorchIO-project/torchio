@@ -1,3 +1,5 @@
+from typing import cast
+
 import numpy as np
 import pytest
 
@@ -10,57 +12,60 @@ class TestCropOrPad(TorchioTestCase):
     """Tests for `CropOrPad`."""
 
     def test_no_changes(self):
-        sample_t1 = self.sample_subject['t1']
+        sample_t1 = self.sample_subject.get_scalar_image('t1')
         shape = sample_t1.spatial_shape
         transform = tio.CropOrPad(shape)
         transformed = transform(self.sample_subject)
-        self.assert_tensor_equal(sample_t1.data, transformed['t1'].data)
-        self.assert_tensor_equal(sample_t1.affine, transformed['t1'].affine)
+        transformed_t1 = transformed.get_scalar_image('t1')
+        self.assert_tensor_equal(sample_t1.data, transformed_t1.data)
+        self.assert_tensor_equal(sample_t1.affine, transformed_t1.affine)
 
     def test_no_changes_mask(self):
-        sample_t1 = self.sample_subject['t1']
-        sample_mask = self.sample_subject['label'].data
+        sample_t1 = self.sample_subject.get_scalar_image('t1')
+        sample_mask = self.sample_subject.get_label_map('label').data
         sample_mask *= 0
         shape = sample_t1.spatial_shape
         transform = tio.CropOrPad(shape, mask_name='label')
         with pytest.warns(RuntimeWarning):
             transformed = transform(self.sample_subject)
-        for key in transformed:
-            image = self.sample_subject[key]
-            self.assert_tensor_equal(image.data, transformed[key].data)
-            self.assert_tensor_equal(image.affine, transformed[key].affine)
+        for key, transformed_image in transformed.get_images_dict(
+            intensity_only=False
+        ).items():
+            image = self.sample_subject.get_image(key)
+            self.assert_tensor_equal(image.data, transformed_image.data)
+            self.assert_tensor_equal(image.affine, transformed_image.affine)
 
     def test_different_shape(self):
-        shape = self.sample_subject['t1'].spatial_shape
+        shape = self.sample_subject.get_scalar_image('t1').spatial_shape
         target_shape = 9, 21, 30
         transform = tio.CropOrPad(target_shape)
         transformed = transform(self.sample_subject)
-        for key in transformed:
-            result_shape = transformed[key].spatial_shape
+        for image in transformed.get_images(intensity_only=False):
+            result_shape = image.spatial_shape
             self.assertNotEqual(shape, result_shape)
 
     def test_shape_right(self):
         target_shape = 9, 21, 30
         transform = tio.CropOrPad(target_shape)
         transformed = transform(self.sample_subject)
-        for key in transformed:
-            result_shape = transformed[key].spatial_shape
+        for image in transformed.get_images(intensity_only=False):
+            result_shape = image.spatial_shape
             assert target_shape == result_shape
 
     def test_only_pad(self):
         target_shape = 11, 22, 30
         transform = tio.CropOrPad(target_shape)
         transformed = transform(self.sample_subject)
-        for key in transformed:
-            result_shape = transformed[key].spatial_shape
+        for image in transformed.get_images(intensity_only=False):
+            result_shape = image.spatial_shape
             assert target_shape == result_shape
 
     def test_only_crop(self):
         target_shape = 9, 18, 30
         transform = tio.CropOrPad(target_shape)
         transformed = transform(self.sample_subject)
-        for key in transformed:
-            result_shape = transformed[key].spatial_shape
+        for image in transformed.get_images(intensity_only=False):
+            result_shape = image.spatial_shape
             assert target_shape == result_shape
 
     def test_shape_negative(self):
@@ -69,17 +74,17 @@ class TestCropOrPad(TorchioTestCase):
 
     def test_shape_float(self):
         with pytest.raises(ValueError):
-            tio.CropOrPad(2.5)
+            tio.CropOrPad(cast(int, 2.5))
 
     def test_shape_string(self):
-        with pytest.raises(ValueError):
-            tio.CropOrPad('')
+        with pytest.raises(TypeError):
+            tio.CropOrPad(cast(int, ''))
 
     def test_shape_one(self):
         transform = tio.CropOrPad(1)
         transformed = transform(self.sample_subject)
-        for key in transformed:
-            result_shape = transformed[key].spatial_shape
+        for image in transformed.get_images(intensity_only=False):
+            result_shape = image.spatial_shape
             assert result_shape == (1, 1, 1)
 
     def test_wrong_mask_name(self):
@@ -90,26 +95,26 @@ class TestCropOrPad(TorchioTestCase):
     def test_empty_mask(self):
         target_shape = 8, 22, 30
         transform = tio.CropOrPad(target_shape, mask_name='label')
-        mask = self.sample_subject['label'].data
+        mask = self.sample_subject.get_label_map('label').data
         mask *= 0
         with pytest.warns(RuntimeWarning):
             transform(self.sample_subject)
 
     def mask_only(self, target_shape):
         transform = tio.CropOrPad(target_shape, mask_name='label')
-        mask = self.sample_subject['label'].data
+        mask = self.sample_subject.get_label_map('label').data
         mask *= 0
         mask[0, 4:6, 5:8, 3:7] = 1
         transformed = transform(self.sample_subject)
         shapes = []
-        for key in transformed:
-            result_shape = transformed[key].spatial_shape
+        for image in transformed.get_images(intensity_only=False):
+            result_shape = image.spatial_shape
             shapes.append(result_shape)
         set_shapes = set(shapes)
         message = f'Images have different shapes: {set_shapes}'
         assert len(set_shapes) == 1, message
-        for key in transformed:
-            result_shape = transformed[key].spatial_shape
+        for key, image in transformed.get_images_dict(intensity_only=False).items():
+            result_shape = image.spatial_shape
             assert target_shape == result_shape, f'Wrong shape for image: {key}'
 
     def test_mask_only_pad(self):
@@ -123,14 +128,14 @@ class TestCropOrPad(TorchioTestCase):
         target_shape = 8, 22, 30
         transform_center = tio.CropOrPad(target_shape)
         transform_mask = tio.CropOrPad(target_shape, mask_name='label')
-        mask = self.sample_subject['label'].data
+        mask = self.sample_subject.get_label_map('label').data
         mask *= 0
         mask[0, 4:6, 9:11, 14:16] = 1
         transformed_center = transform_center(self.sample_subject)
         transformed_mask = transform_mask(self.sample_subject)
         zipped = zip(
-            transformed_center.values(),
-            transformed_mask.values(),
+            transformed_center.get_images(intensity_only=False),
+            transformed_mask.get_images(intensity_only=False),
             strict=True,
         )
         for image_center, image_mask in zipped:
@@ -153,15 +158,15 @@ class TestCropOrPad(TorchioTestCase):
             target_shape,
             mask_name='label',
         )
-        mask = self.sample_subject['label'][tio.DATA]
+        mask = self.sample_subject.get_label_map('label').data
         mask *= 0
         mask[0, 0, 0, 0] = 1
         mask[0, -1, -1, -1] = 1
         transformed_center = transform_center(self.sample_subject)
         transformed_mask = transform_mask(self.sample_subject)
         zipped = zip(
-            transformed_center.values(),
-            transformed_mask.values(),
+            transformed_center.get_images(intensity_only=False),
+            transformed_mask.get_images(intensity_only=False),
             strict=True,
         )
         for image_center, image_mask in zipped:
@@ -227,24 +232,24 @@ class TestCropOrPad(TorchioTestCase):
 
     def test_only_pad_true(self):
         target_shape = 9, 21, 30
-        orig_shape = self.sample_subject['t1'].spatial_shape
+        orig_shape = self.sample_subject.get_scalar_image('t1').spatial_shape
         expected_shape = tuple(
             t if t > o else o for o, t in zip(orig_shape, target_shape, strict=True)
         )
         transform = tio.CropOrPad(target_shape, only_pad=True)
         transformed = transform(self.sample_subject)
-        for key in transformed:
-            result_shape = transformed[key].spatial_shape
+        for image in transformed.get_images(intensity_only=False):
+            result_shape = image.spatial_shape
             assert result_shape == expected_shape
 
     def test_only_crop_true(self):
         target_shape = 9, 21, 30
-        orig_shape = self.sample_subject['t1'].spatial_shape
+        orig_shape = self.sample_subject.get_scalar_image('t1').spatial_shape
         expected_shape = tuple(
             t if t < o else o for o, t in zip(orig_shape, target_shape, strict=True)
         )
         transform = tio.CropOrPad(target_shape, only_crop=True)
         transformed = transform(self.sample_subject)
-        for key in transformed:
-            result_shape = transformed[key].spatial_shape
+        for image in transformed.get_images(intensity_only=False):
+            result_shape = image.spatial_shape
             assert result_shape == expected_shape

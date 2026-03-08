@@ -1,3 +1,6 @@
+from typing import Any
+from typing import cast
+
 import numpy as np
 import pytest
 import torch
@@ -5,6 +8,12 @@ import torch
 import torchio as tio
 
 from ...utils import TorchioTestCase
+
+
+def _apply_resample(target: object, subject: tio.Subject) -> tio.Subject:
+    transformed = tio.Resample(cast(Any, target))(subject)
+    assert isinstance(transformed, tio.Subject)
+    return transformed
 
 
 class TestResample(TorchioTestCase):
@@ -62,7 +71,7 @@ class TestResample(TorchioTestCase):
 
     def test_wrong_spacing_length(self):
         with pytest.raises(RuntimeError):
-            tio.Resample((1, 2))(self.sample_subject)
+            _apply_resample((1, 2), self.sample_subject)
 
     def test_wrong_spacing_value(self):
         with pytest.raises(ValueError):
@@ -85,11 +94,10 @@ class TestResample(TorchioTestCase):
         assert shape == (1, 4, 6, 1)
 
     def test_input_list(self):
-        tio.Resample([1, 2, 3])(self.sample_subject)
+        _apply_resample([1, 2, 3], self.sample_subject)
 
     def test_input_array(self):
-        resample = tio.Resample(np.asarray([1, 2, 3]))
-        resample(self.sample_subject)
+        _apply_resample(np.asarray([1, 2, 3]), self.sample_subject)
 
     def test_image_target(self):
         tio.Resample(self.sample_subject.t1)(self.sample_subject)

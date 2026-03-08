@@ -1,12 +1,14 @@
 from __future__ import annotations
 
 from collections.abc import Generator
+from typing import overload
 
 import numpy as np
 import torch
 
 from ...constants import MIN_FLOAT_32
 from ...types import TypeSpatialShape
+from ...types import TypeTripletInt
 from ..image import Image
 from ..subject import Subject
 from .sampler import RandomSampler
@@ -82,7 +84,7 @@ class WeightedSampler(RandomSampler):
     def get_probability_map_image(self, subject: Subject) -> Image:
         assert self.probability_map_name is not None
         if self.probability_map_name in subject:
-            return subject[self.probability_map_name]
+            return subject.get_image(self.probability_map_name)
         else:
             message = (
                 f'Image "{self.probability_map_name}" not found in subject: {subject}'
@@ -159,7 +161,7 @@ class WeightedSampler(RandomSampler):
 
         # The call tolist() is very important. Using np.uint16 as negative
         # index will not work because e.g. -np.uint16(2) == 65534
-        crop_i, crop_j, crop_k = crop_fin.tolist()  # type: ignore[misc]
+        crop_i, crop_j, crop_k = (int(value) for value in crop_fin.tolist())
         if crop_i:
             probability_map[-crop_i:, :, :] = 0
         if crop_j:
@@ -177,22 +179,46 @@ class WeightedSampler(RandomSampler):
         cdf = np.cumsum(flat_map_normalized)
         return cdf
 
-    def extract_patch(  # type: ignore[override]
+    @overload
+    def extract_patch(
+        self,
+        subject: Subject,
+        index_ini: TypeTripletInt,
+        cdf: None = None,
+    ) -> Subject: ...
+
+    @overload
+    def extract_patch(
         self,
         subject: Subject,
         probability_map: np.ndarray,
         cdf: np.ndarray,
+    ) -> Subject: ...
+
+    def extract_patch(
+        self,
+        subject: Subject,
+        index_ini_or_probability_map: TypeTripletInt | np.ndarray,
+        cdf: np.ndarray | None = None,
     ) -> Subject:
-        i, j, k = self.get_random_index_ini(probability_map, cdf)
+        if cdf is None:
+            if isinstance(index_ini_or_probability_map, np.ndarray):
+                index_ini = (
+                    int(index_ini_or_probability_map[0]),
+                    int(index_ini_or_probability_map[1]),
+                    int(index_ini_or_probability_map[2]),
+                )
+            else:
+                index_ini = index_ini_or_probability_map
+            return super().extract_patch(subject, index_ini)
+
+        if not isinstance(index_ini_or_probability_map, np.ndarray):
+            message = 'Probability map must be a NumPy array when using a CDF'
+            raise TypeError(message)
+
+        i, j, k = self.get_random_index_ini(index_ini_or_probability_map, cdf)
         index_ini = i, j, k
-        si, sj, sk = self.patch_size
-        patch_size = int(si), int(sj), int(sk)
-        cropped_subject = self.crop(
-            subject,
-            index_ini,
-            patch_size,
-        )
-        return cropped_subject
+        return super().extract_patch(subject, index_ini)
 
     def get_random_index_ini(
         self,

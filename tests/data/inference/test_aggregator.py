@@ -1,5 +1,8 @@
+from typing import cast
+
 import pytest
 import torch
+from torch.utils.data import Dataset
 
 import torchio as tio
 
@@ -19,7 +22,8 @@ class TestAggregator(TorchioTestCase):
         patch_overlap = 0, 2, 2
         sampler = tio.data.GridSampler(subject, patch_size, patch_overlap)
         aggregator = tio.data.GridAggregator(sampler, overlap_mode=mode)
-        loader = tio.SubjectsLoader(sampler, batch_size=3)
+        sampler_dataset = cast(Dataset[tio.Subject], sampler)
+        loader = tio.SubjectsLoader(sampler_dataset, batch_size=3)
         values_dict = {
             (0, 0): 0,
             (0, 1): 2,
@@ -73,7 +77,8 @@ class TestAggregator(TorchioTestCase):
             patch_size,
             patch_overlap,
         )
-        patch_loader = tio.SubjectsLoader(grid_sampler)
+        sampler_dataset = cast(Dataset[tio.Subject], grid_sampler)
+        patch_loader = tio.SubjectsLoader(sampler_dataset)
         aggregator = tio.inference.GridAggregator(
             grid_sampler,
             overlap_mode=overlap_mode,
@@ -105,7 +110,8 @@ class TestAggregator(TorchioTestCase):
             patch_size,
             patch_overlap,
         )
-        patch_loader = tio.SubjectsLoader(grid_sampler)
+        sampler_dataset = cast(Dataset[tio.Subject], grid_sampler)
+        patch_loader = tio.SubjectsLoader(sampler_dataset)
         aggregator = tio.inference.GridAggregator(grid_sampler)
         for patches_batch in patch_loader:
             input_tensor = patches_batch['image'][tio.DATA]
@@ -134,7 +140,8 @@ class TestAggregator(TorchioTestCase):
             padding_mode='edge',
         )
         aggregator = tio.data.GridAggregator(sampler)
-        loader = tio.SubjectsLoader(sampler, batch_size=3)
+        sampler_dataset = cast(Dataset[tio.Subject], sampler)
+        loader = tio.SubjectsLoader(sampler_dataset, batch_size=3)
         for batch in loader:
             input_batch = batch[image_name][tio.DATA]
             crop = tio.CropOrPad(12)
@@ -171,7 +178,8 @@ class TestAggregator(TorchioTestCase):
             sampler,
             downsampling_factor=downsampling_factor,
         )
-        loader = tio.SubjectsLoader(sampler, batch_size=3)
+        sampler_dataset = cast(Dataset[tio.Subject], sampler)
+        loader = tio.SubjectsLoader(sampler_dataset, batch_size=3)
         for batch in loader:
             input_batch = batch[image_name][tio.DATA]
             embeddings = network(input_batch)

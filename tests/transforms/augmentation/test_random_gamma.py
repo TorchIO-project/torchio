@@ -1,3 +1,6 @@
+from typing import Any
+from typing import cast
+
 import pytest
 import torch
 
@@ -44,4 +47,4 @@ class TestRandomGamma(TorchioTestCase):
 
     def test_wrong_gamma_type(self):
         with pytest.raises(ValueError):
-            RandomGamma(log_gamma='wrong')
+            RandomGamma(log_gamma=cast(Any, 'wrong'))

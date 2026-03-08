@@ -42,7 +42,9 @@ class PatchSampler:
         subject: Subject,
         index_ini: TypeTripletInt,
     ) -> Subject:
-        cropped_subject = self.crop(subject, index_ini, self.patch_size)  # type: ignore[arg-type]
+        si, sj, sk = (int(value) for value in self.patch_size.tolist())
+        patch_size = si, sj, sk
+        cropped_subject = self.crop(subject, index_ini, patch_size)
         return cropped_subject
 
     def crop(
@@ -77,9 +79,20 @@ class PatchSampler:
         index_fin = index_ini_array + patch_size_array
         crop_ini = index_ini_array.tolist()
         crop_fin = (shape - index_fin).tolist()
-        start = ()
-        cropping = sum(zip(crop_ini, crop_fin, strict=True), start)  # type: ignore[arg-type]
-        return Crop(cropping)  # type: ignore[arg-type]
+        cropping_values = [
+            int(value)
+            for pair in zip(crop_ini, crop_fin, strict=True)
+            for value in pair
+        ]
+        cropping = (
+            cropping_values[0],
+            cropping_values[1],
+            cropping_values[2],
+            cropping_values[3],
+            cropping_values[4],
+            cropping_values[5],
+        )
+        return Crop(cropping)
 
     def __call__(
         self,

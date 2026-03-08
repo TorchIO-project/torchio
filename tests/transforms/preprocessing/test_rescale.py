@@ -1,4 +1,5 @@
 import copy
+from typing import cast
 
 import numpy as np
 import pytest
@@ -85,11 +86,13 @@ class TestRescaleIntensity(TorchioTestCase):
 
     def test_too_many_values_for_out_min_max(self):
         with pytest.raises(ValueError):
-            tio.RescaleIntensity(out_min_max=(1, 2, 3))
+            invalid_out_min_max = cast(tuple[float, float], (1, 2, 3))
+            tio.RescaleIntensity(out_min_max=invalid_out_min_max)
 
     def test_wrong_out_min_max_type(self):
         with pytest.raises(ValueError):
-            tio.RescaleIntensity(out_min_max='wrong')
+            invalid_out_min_max = cast(tuple[float, float], 'wrong')
+            tio.RescaleIntensity(out_min_max=invalid_out_min_max)
 
     def test_min_percentile_higher_than_max_percentile(self):
         with pytest.raises(ValueError):
@@ -97,11 +100,13 @@ class TestRescaleIntensity(TorchioTestCase):
 
     def test_too_many_values_for_percentiles(self):
         with pytest.raises(ValueError):
-            tio.RescaleIntensity(out_min_max=(0, 1), percentiles=(1, 2, 3))
+            invalid_percentiles = cast(tuple[float, float], (1, 2, 3))
+            tio.RescaleIntensity(out_min_max=(0, 1), percentiles=invalid_percentiles)
 
     def test_wrong_percentiles_type(self):
         with pytest.raises(ValueError):
-            tio.RescaleIntensity(out_min_max=(0, 1), percentiles='wrong')
+            invalid_percentiles = cast(tuple[float, float], 'wrong')
+            tio.RescaleIntensity(out_min_max=(0, 1), percentiles=invalid_percentiles)
 
     def test_empty_mask(self):
         subject = copy.deepcopy(self.sample_subject)

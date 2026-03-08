@@ -78,7 +78,7 @@ class RandomAffineElasticDeformation(RandomTransform, SpatialTransform):
         )
         return affine_params, elastic_params
 
-    def apply_transform(self, subject: Subject):
+    def apply_transform(self, subject: Subject) -> Subject:
         affine_params, elastic_params = self.get_params()
 
         scaling_params, rotation_params, translation_params = affine_params
@@ -100,13 +100,12 @@ class RandomAffineElasticDeformation(RandomTransform, SpatialTransform):
             'label_interpolation': self.random_elastic.label_interpolation,
         }
 
-        arguments = {
-            'affine_first': self.affine_first,
-            'affine_params': affine_params,
-            'elastic_params': elastic_params,
-        }
-
-        transform = AffineElasticDeformation(**self.add_base_args(arguments))
+        transform = AffineElasticDeformation(
+            affine_first=self.affine_first,
+            affine_params=affine_params,
+            elastic_params=elastic_params,
+            **self.get_base_args(),
+        )
         transformed = transform(subject)
         assert isinstance(transformed, Subject)
         return transformed

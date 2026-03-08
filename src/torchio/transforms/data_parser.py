@@ -1,7 +1,11 @@
 from __future__ import annotations
 
+from collections.abc import Mapping
 from collections.abc import Sequence
-from typing import Union
+from typing import Generic
+from typing import TypeAlias
+from typing import TypeVar
+from typing import cast
 
 import nibabel as nib
 import numpy as np
@@ -15,22 +19,24 @@ from ..data.io import nib_to_sitk
 from ..data.io import sitk_to_nib
 from ..data.subject import Subject
 from ..types import TypeData
+from ..types import TypeImageData
 
-TypeTransformInput = Union[
-    Subject,
-    Image,
-    torch.Tensor,
-    np.ndarray,
-    sitk.Image,
-    dict,
-    nib.Nifti1Image,
-]
+TypeTransformInput: TypeAlias = (
+    Subject
+    | Image
+    | torch.Tensor
+    | np.ndarray
+    | sitk.Image
+    | dict[str, object]
+    | nib.Nifti1Image
+)
+ParserInput = TypeVar('ParserInput', bound=TypeTransformInput)
 
 
-class DataParser:
+class DataParser(Generic[ParserInput]):
     def __init__(
         self,
-        data: TypeTransformInput,
+        data: ParserInput,
         keys: Sequence[str] | None = None,
         label_keys: Sequence[str] | None = None,
     ):
@@ -45,7 +51,7 @@ class DataParser:
         self.is_sitk = False
         self.is_nib = False
 
-    def get_subject(self):
+    def get_subject(self) -> Subject:
         if isinstance(self.data, nib.Nifti1Image):
             tensor = self.data.get_fdata(dtype=np.float32)
             if tensor.ndim == 3:
@@ -78,8 +84,9 @@ class DataParser:
                     ' https://docs.torchio.org/transforms/transforms.html#torchio.transforms.Transform'
                 )
                 raise RuntimeError(message)
+            data_dict = dict(self.data)
             subject = self._get_subject_from_dict(
-                self.data,
+                data_dict,
                 self.keys,
                 self.label_keys,
             )
@@ -89,26 +96,30 @@ class DataParser:
         assert isinstance(subject, Subject)
         return subject
 
-    def get_output(self, transformed):
+    def get_output(self, transformed: Subject) -> ParserInput:
+        output: object
         if self.is_tensor or self.is_sitk:
-            image = transformed[self.default_image_name]
-            transformed = image.data
+            image = transformed.get_image(self.default_image_name)
+            output = image.data
             if self.is_array:
-                transformed = transformed.numpy()
+                output = output.numpy()
             elif self.is_sitk:
-                transformed = nib_to_sitk(image.data, image.affine)
+                output = nib_to_sitk(image.data, image.affine)
         elif self.is_image:
-            transformed = transformed[self.default_image_name]
+            output = transformed.get_image(self.default_image_name)
         elif self.is_dict:
-            transformed = dict(transformed)
-            for key, value in transformed.items():
+            output_dict: dict[str, object] = dict(transformed)
+            for key, value in output_dict.items():
                 if isinstance(value, Image):
-                    transformed[key] = value.data
+                    output_dict[key] = value.data
+            output = output_dict
         elif self.is_nib:
-            image = transformed[self.default_image_name]
+            image = transformed.get_image(self.default_image_name)
             data = image.data
-            transformed = nib.Nifti1Image(data[0].numpy(), image.affine)
-        return transformed
+            output = nib.Nifti1Image(data[0].numpy(), image.affine)
+        else:
+            output = transformed
+        return cast(ParserInput, output)
 
     def _parse_tensor(self, data: TypeData) -> Subject:
         if data.ndim != 4:
@@ -121,7 +132,7 @@ class DataParser:
             raise ValueError(message)
         return self._get_subject_from_tensor(data)
 
-    def _get_subject_from_tensor(self, tensor: TypeData) -> Subject:
+    def _get_subject_from_tensor(self, tensor: TypeImageData) -> Subject:
         image = ScalarImage(tensor=tensor)
         return self._get_subject_from_image(image)
 
@@ -131,20 +142,26 @@ class DataParser:
 
     @staticmethod
     def _get_subject_from_dict(
-        data: dict,
+        data: Mapping[str, object],
         image_keys: Sequence[str],
         label_keys: Sequence[str] | None = None,
     ) -> Subject:
-        subject_dict = {}
+        subject_dict: dict[str, object] = {}
         label_keys = [] if label_keys is None else label_keys
         for key, value in data.items():
             if key in image_keys:
+                if not isinstance(value, (np.ndarray, torch.Tensor)):
+                    message = (
+                        'Input dictionary values selected as images must be'
+                        f' tensors or arrays, not {type(value)}'
+                    )
+                    raise TypeError(message)
                 class_ = LabelMap if key in label_keys else ScalarImage
                 value = class_(tensor=value)
             subject_dict[key] = value
         return Subject(subject_dict)
 
-    def _get_subject_from_sitk_image(self, image):
+    def _get_subject_from_sitk_image(self, image: sitk.Image) -> Subject:
         tensor, affine = sitk_to_nib(image)
-        image = ScalarImage(tensor=tensor, affine=affine)
-        return self._get_subject_from_image(image)
+        scalar_image = ScalarImage(tensor=tensor, affine=affine)
+        return self._get_subject_from_image(scalar_image)

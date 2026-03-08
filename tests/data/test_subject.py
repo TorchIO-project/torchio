@@ -1,6 +1,7 @@
 import copy
 import sys
 import tempfile
+from typing import cast
 
 import numpy as np
 import pytest
@@ -16,7 +17,7 @@ class TestSubject(TorchioTestCase):
 
     def test_positional_args(self):
         with pytest.raises(ValueError):
-            tio.Subject(0)
+            tio.Subject(cast(dict[str, object], 0))
 
     def test_input_dict(self):
         with tempfile.NamedTemporaryFile(delete=False) as f:
@@ -145,7 +146,7 @@ class TestSubject(TorchioTestCase):
 
     def test_bad_arg(self):
         with pytest.raises(ValueError):
-            tio.Subject(0)
+            tio.Subject(cast(dict[str, object], 0))
 
     def test_no_images(self):
         with pytest.raises(TypeError):
@@ -191,10 +192,12 @@ class TestSubject(TorchioTestCase):
         sub_copy = copy.deepcopy(self.sample_subject)
         assert isinstance(sub_copy, tio.data.Subject)
 
-        new_tensor = torch.ones_like(sub_copy['t1'].data)
-        sub_copy['t1'].set_data(new_tensor)
+        sub_copy_t1 = sub_copy.get_scalar_image('t1')
+        sample_t1 = self.sample_subject.get_scalar_image('t1')
+        new_tensor = torch.ones_like(sub_copy_t1.data)
+        sub_copy_t1.set_data(new_tensor)
         # The data of the original subject should not be modified
-        assert not torch.allclose(sub_copy['t1'].data, self.sample_subject['t1'].data)
+        assert not torch.allclose(sub_copy_t1.data, sample_t1.data)
 
     def test_shallow_copy_subject(self):
         # We are creating a deep copy of the original subject first to not modify the original subject
@@ -202,13 +205,14 @@ class TestSubject(TorchioTestCase):
         sub_copy = copy.copy(copy_original_subj)
         assert isinstance(sub_copy, tio.data.Subject)
 
-        new_tensor = torch.ones_like(sub_copy['t1'].data)
-        sub_copy['t1'].set_data(new_tensor)
+        sub_copy_t1 = sub_copy.get_scalar_image('t1')
+        copy_original_t1 = copy_original_subj.get_scalar_image('t1')
+        sample_t1 = self.sample_subject.get_scalar_image('t1')
+        new_tensor = torch.ones_like(sub_copy_t1.data)
+        sub_copy_t1.set_data(new_tensor)
 
         # The data of both copies needs to be the same as we are using a shallow copy
-        assert torch.allclose(sub_copy['t1'].data, copy_original_subj['t1'].data)
+        assert torch.allclose(sub_copy_t1.data, copy_original_t1.data)
         # The data of the original subject should not be modified
-        assert not torch.allclose(sub_copy['t1'].data, self.sample_subject['t1'].data)
-        assert not torch.allclose(
-            copy_original_subj['t1'].data, self.sample_subject['t1'].data
-        )
+        assert not torch.allclose(sub_copy_t1.data, sample_t1.data)
+        assert not torch.allclose(copy_original_t1.data, sample_t1.data)

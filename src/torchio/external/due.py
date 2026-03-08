@@ -48,17 +48,20 @@ def _donothing_func(*args, **kwargs):
 
 
 try:
-    from duecredit import BibTeX
-    from duecredit import Doi
-    from duecredit import Text
-    from duecredit import Url
-    from duecredit import due
+    import importlib
+
+    duecredit = importlib.import_module('duecredit')
+    BibTeX = duecredit.BibTeX
+    Doi = duecredit.Doi
+    Text = duecredit.Text
+    Url = duecredit.Url
+    due = duecredit.due
 
     if 'due' in locals() and not hasattr(due, 'cite'):
         raise RuntimeError(
             'Imported due lacks .cite. DueCredit is now disabled',
         )
-except Exception as e:  # noqa: B902
+except Exception as e:
     if not isinstance(e, ImportError):
         import logging
 

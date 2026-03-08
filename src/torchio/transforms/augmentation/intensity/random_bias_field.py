@@ -1,4 +1,4 @@
-from collections import defaultdict
+from collections.abc import Sequence
 
 import numpy as np
 import torch
@@ -51,12 +51,17 @@ class RandomBiasField(RandomTransform, IntensityTransform):
         if not images_dict:
             return subject
 
-        arguments: dict[str, dict] = defaultdict(dict)
+        coefficients_by_name: dict[str, list[float]] = {}
+        orders_by_name: dict[str, int] = {}
         for image_name in images_dict:
             coefficients = self.get_params(self.order, self.coefficients_range)
-            arguments['coefficients'][image_name] = coefficients
-            arguments['order'][image_name] = self.order
-        transform = BiasField(**self.add_base_args(arguments))
+            coefficients_by_name[image_name] = coefficients
+            orders_by_name[image_name] = self.order
+        transform = BiasField(
+            coefficients=coefficients_by_name,
+            order=orders_by_name,
+            **self.get_base_args(),
+        )
         transformed = transform(subject)
         return transformed
 
@@ -107,17 +112,13 @@ class BiasField(IntensityTransform):
         return coefficients_dict and order_dict
 
     def apply_transform(self, subject: Subject) -> Subject:
-        coefficients, order = self.coefficients, self.order
         for name, image in self.get_images_dict(subject).items():
-            if self.arguments_are_dict():
-                assert isinstance(self.coefficients, dict)
-                assert isinstance(self.order, dict)
-                coefficients, order = self.coefficients[name], self.order[name]
-            assert isinstance(order, int)
+            coefficients = self.get_parameter(self.coefficients, name)
+            order = self.get_parameter(self.order, name)
             bias_field = self.generate_bias_field(
                 image.data,
                 order,
-                coefficients,  # type: ignore[arg-type]
+                coefficients,
             )
             if self.invert_transform:
                 np.divide(1, bias_field, out=bias_field)
@@ -128,7 +129,7 @@ class BiasField(IntensityTransform):
     def generate_bias_field(
         data: TypeData,
         order: int,
-        coefficients: TypeData,
+        coefficients: Sequence[float],
     ) -> np.ndarray:
         # Create the bias field map using a linear combination of polynomial
         # functions and the coefficients previously sampled

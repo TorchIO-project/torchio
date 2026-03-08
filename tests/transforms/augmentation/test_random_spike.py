@@ -1,3 +1,6 @@
+from typing import Any
+from typing import cast
+
 import pytest
 
 from torchio import RandomSpike
@@ -42,12 +45,12 @@ class TestRandomSpike(TorchioTestCase):
 
     def test_not_integer_num_spikes(self):
         with pytest.raises(ValueError):
-            RandomSpike(num_spikes=(0.7, 4))
+            RandomSpike(num_spikes=cast(Any, (0.7, 4)))
 
     def test_wrong_num_spikes_type(self):
         with pytest.raises(ValueError):
-            RandomSpike(num_spikes='wrong')
+            RandomSpike(num_spikes=cast(Any, 'wrong'))
 
     def test_wrong_intensity_type(self):
         with pytest.raises(ValueError):
-            RandomSpike(intensity='wrong')
+            RandomSpike(intensity=cast(Any, 'wrong'))

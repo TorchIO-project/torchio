@@ -1,3 +1,6 @@
+from typing import Any
+from typing import cast
+
 import pytest
 
 from torchio import RandomBlur
@@ -34,13 +37,15 @@ class TestRandomBlur(TorchioTestCase):
 
     def test_wrong_std_type(self):
         with pytest.raises(ValueError):
-            RandomBlur(std='wrong')
+            RandomBlur(std=cast(Any, 'wrong'))
 
     def test_parse_stds(self):
-        def do_assert(transform):
+        def do_assert(transform: RandomBlur) -> None:
             assert transform.std_ranges == 3 * (0, 1)
 
+        triplet_std: tuple[int, int, int] = (1, 1, 1)
+        sextet_std: tuple[int, int, int, int, int, int] = (0, 1, 0, 1, 0, 1)
         do_assert(RandomBlur(std=1))
         do_assert(RandomBlur(std=(0, 1)))
-        do_assert(RandomBlur(std=3 * (1,)))
-        do_assert(RandomBlur(std=3 * [0, 1]))
+        do_assert(RandomBlur(std=cast(Any, triplet_std)))
+        do_assert(RandomBlur(std=cast(Any, sextet_std)))

@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 from collections.abc import Iterator
+from collections.abc import Sequence
+from collections.abc import Sized
 from itertools import islice
 
 import humanize
@@ -214,7 +216,7 @@ class Queue(Dataset):
     def __len__(self):
         return self.iterations_per_epoch
 
-    def __getitem__(self, _):
+    def __getitem__(self, index):
         # There are probably more elegant ways of doing this
         if not self.patches_list:
             self._print('Patches list is empty.')
@@ -250,12 +252,12 @@ class Queue(Dataset):
     @property
     def num_subjects(self) -> int:
         if self.subject_sampler is not None:
-            if not hasattr(self.subject_sampler, '__len__'):
+            if not isinstance(self.subject_sampler, Sized):
                 raise ValueError(
                     'The subject sampler passed to the queue must have a'
                     ' __len__ method',
                 )
-            num_subjects = len(self.subject_sampler)  # type: ignore[arg-type]
+            num_subjects = len(self.subject_sampler)
         else:
             num_subjects = len(self.subjects_dataset)
         return num_subjects
@@ -267,6 +269,7 @@ class Queue(Dataset):
     @property
     def iterations_per_epoch(self) -> int:
         all_subjects_list = self.subjects_dataset.dry_iter()
+        subjects_list: Sequence[Subject]
         if self.subject_sampler is not None:
             subjects_list = []
             for subject_index in self.subject_sampler:
