@@ -316,8 +316,10 @@ class Transform(ABC):
         max_constraint: TypeNumber | None = None,
         type_constraint: type[int] | type[float] | None = None,
     ) -> tuple[float, float, float, float, float, float] | tuple[float, ...]:
-        if isinstance(params, (torch.Tensor, np.ndarray)):
-            params_tuple = tuple(float(p) for p in params.tolist())
+        if isinstance(params, torch.Tensor):
+            params_tuple = tuple(float(param) for param in params.reshape(-1))
+        elif isinstance(params, np.ndarray):
+            params_tuple = tuple(float(param) for param in np.ravel(params))
         elif isinstance(params, Sequence):
             params_sequence = cast(Sequence[TypeNumber], params)
             params_tuple = tuple(float(param) for param in params_sequence)
