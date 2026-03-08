@@ -51,3 +51,4 @@ repos:
 ci:
   autoupdate_commit_msg: Autoupdate pre-commit hooks
   autoupdate_schedule: quarterly
+  skip: [ty-check]
