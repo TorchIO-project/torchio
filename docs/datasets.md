@@ -3,6 +3,8 @@
 TorchIO offers tools to easily download publicly available datasets from
 different institutions and modalities.
 
+For a module-oriented reference, see the [Datasets API](api/datasets.md).
+
 The interface is similar to `torchvision.datasets`.
 
 If you use any of them, please visit the corresponding website (linked in each

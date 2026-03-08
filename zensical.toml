@@ -107,6 +107,18 @@ nav = [
     "interfaces/cli.md",
     "interfaces/slicer.md",
   ] },
+  { "API reference" = [
+    "api/index.md",
+    "api/data.md",
+    { Transforms = [
+      "api/transforms/index.md",
+      "api/transforms/augmentation.md",
+      "api/transforms/preprocessing.md",
+    ] },
+    "api/datasets.md",
+    "api/utilities.md",
+    "api/cli.md",
+  ] },
   { "GitHub repository" = "https://github.com/TorchIO-project/torchio" },
   { Paper = "https://www.sciencedirect.com/science/article/pii/S0169260721003102" },
 ]

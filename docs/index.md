@@ -42,6 +42,9 @@ If you like TorchIO, please go to the repository and star it!
 See [Getting started](getting-started.md) for installation instructions and a
 usage overview.
 
+If you are looking for module-oriented documentation, visit the
+[API reference](api/index.md).
+
 Contributions are more than welcome.
 Please check our [contributing guide](https://github.com/TorchIO-project/torchio/blob/main/CONTRIBUTING.rst)
 if you would like to contribute.

@@ -6,6 +6,8 @@ A transform can be quickly applied to an image file using the command-line
 tool `tiotr`, which is automatically installed by `pip`
 during installation of TorchIO:
 
+For the underlying module reference, see the [CLI API](../api/cli.md).
+
 ```
 $ tiotr input.nii RandomAffine output.nii.gz --kwargs "degrees=(0,0,10) scales=0.1" --seed 42
 ```

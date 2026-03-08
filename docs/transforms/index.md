@@ -8,6 +8,8 @@ TorchIO transforms take as input instances of
 4D NumPy arrays, SimpleITK images, NiBabel images, or Python dictionaries
 (see [`Transform`][torchio.transforms.Transform]).
 
+For a module-oriented reference, see the [Transforms API](../api/transforms/index.md).
+
 For example:
 
 ```python
