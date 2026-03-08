@@ -114,7 +114,7 @@ class RandomSwap(RandomTransform, IntensityTransform):
         transform = Swap(
             patch_size=patch_size_by_name,
             locations=locations_by_name,
-            **self.get_base_args(),
+            **self._get_base_args(),
         )
         transformed = transform(subject)
         assert isinstance(transformed, Subject)

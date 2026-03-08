@@ -60,7 +60,7 @@ class RandomBiasField(RandomTransform, IntensityTransform):
         transform = BiasField(
             coefficients=coefficients_by_name,
             order=orders_by_name,
-            **self.get_base_args(),
+            **self._get_base_args(),
         )
         transformed = transform(subject)
         return transformed

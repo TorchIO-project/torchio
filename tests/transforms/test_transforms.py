@@ -422,15 +422,15 @@ class TestTransform(TorchioTestCase):
 
     def test_init_args(self):
         transform = tio.Compose([tio.RandomNoise()])
-        base_args = transform.get_base_args()
+        base_args = transform._get_base_args()
         assert 'parse_input' not in base_args
 
         transform = tio.OneOf([tio.RandomNoise()])
-        base_args = transform.get_base_args()
+        base_args = transform._get_base_args()
         assert 'parse_input' not in base_args
 
         transform = tio.RandomNoise()
-        base_args = transform.get_base_args()
+        base_args = transform._get_base_args()
         assert all(
             arg in base_args
             for arg in [

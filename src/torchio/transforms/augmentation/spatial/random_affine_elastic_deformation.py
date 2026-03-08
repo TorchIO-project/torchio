@@ -104,7 +104,7 @@ class RandomAffineElasticDeformation(RandomTransform, SpatialTransform):
             affine_first=self.affine_first,
             affine_params=affine_params,
             elastic_params=elastic_params,
-            **self.get_base_args(),
+            **self._get_base_args(),
         )
         transformed = transform(subject)
         assert isinstance(transformed, Subject)
