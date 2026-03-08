@@ -65,3 +65,10 @@ class TestGridSampler(TorchioTestCase):
         )
         final_shape = self.sample_subject.shape
         assert initial_shape == final_shape
+
+    def test_num_patches_not_supported(self):
+        sampler = tio.GridSampler(self.sample_subject, 5)
+        with pytest.raises(
+            ValueError, match='does not support limiting the number of patches'
+        ):
+            next(sampler(num_patches=1))

@@ -1,4 +1,5 @@
 import sys
+from unittest.mock import patch
 
 import pytest
 import torch
@@ -43,6 +44,17 @@ class TestQueue(TorchioTestCase):
             _ = batch['segmentation'][tio.DATA]
         return queue_dataset
 
+    def get_queue(self, **kwargs):
+        subjects_dataset = tio.SubjectsDataset(self.subjects_list)
+        sampler = UniformSampler(10)
+        return tio.Queue(
+            subjects_dataset,
+            max_length=6,
+            samples_per_volume=2,
+            sampler=sampler,
+            **kwargs,
+        )
+
     def test_queue(self):
         self.run_queue(num_workers=0)
 
@@ -79,3 +91,60 @@ class TestQueue(TorchioTestCase):
         queue = self.run_queue()
         memory_string = queue.get_max_memory_pretty()
         assert isinstance(memory_string, str)
+
+    def test_shuffle_subjects_with_subject_sampler(self):
+        with pytest.raises(ValueError, match='shuffle_subjects cannot be set'):
+            self.get_queue(subject_sampler=[0, 1], start_background=False)
+
+    def test_verbose_print(self):
+        queue = self.get_queue(start_background=False, verbose=True)
+        with patch('builtins.print') as print_mock:
+            queue._print('hello')
+        print_mock.assert_called_once_with('hello')
+
+    def test_subject_sampler_without_len(self):
+        queue = self.get_queue(
+            subject_sampler=iter([0, 1]),
+            shuffle_subjects=False,
+            start_background=False,
+        )
+        with pytest.raises(ValueError, match='__len__ method'):
+            _ = queue.num_subjects
+
+    def test_iterations_per_epoch_with_subject_sampler(self):
+        queue = self.get_queue(
+            subject_sampler=[0, 1],
+            shuffle_subjects=False,
+            shuffle_patches=False,
+            start_background=False,
+        )
+        assert queue.num_subjects == 2
+        assert queue.iterations_per_epoch == 4
+
+    def test_child_process_assertion(self):
+        class BrokenIterator:
+            def __iter__(self):
+                return self
+
+            def __next__(self):
+                raise AssertionError('can only test a child process')
+
+        queue = self.get_queue(start_background=False)
+        queue._subjects_iterable = BrokenIterator()
+
+        with pytest.raises(RuntimeError, match='number of workers'):
+            queue._get_next_subject()
+
+    def test_generic_assertion_is_reraised(self):
+        class BrokenIterator:
+            def __iter__(self):
+                return self
+
+            def __next__(self):
+                raise AssertionError('another assertion')
+
+        queue = self.get_queue(start_background=False)
+        queue._subjects_iterable = BrokenIterator()
+
+        with pytest.raises(AssertionError, match='another assertion'):
+            queue._get_next_subject()

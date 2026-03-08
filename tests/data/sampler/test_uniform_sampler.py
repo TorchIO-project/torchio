@@ -24,3 +24,8 @@ class TestUniformSampler(TorchioTestCase):
         patch_size = 2
         sampler = UniformSampler(patch_size)
         next(sampler(subject))
+
+    def test_num_patches(self):
+        sampler = UniformSampler(5)
+        patches = list(sampler(self.sample_subject, num_patches=3))
+        assert len(patches) == 3

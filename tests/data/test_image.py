@@ -1,19 +1,34 @@
 #!/usr/bin/env python
 """Tests for Image."""
 
+import builtins
 import copy
 import sys
 import tempfile
 from pathlib import Path
+from unittest.mock import MagicMock
+from unittest.mock import patch
 
 import nibabel as nib
 import numpy as np
 import pytest
 import torch
+from matplotlib.figure import Figure
 
 import torchio as tio
 
 from ..utils import TorchioTestCase
+
+
+def _raise_import_error(module_name: str):
+    real_import = builtins.__import__
+
+    def side_effect(name, *args, **kwargs):
+        if name == module_name:
+            raise ModuleNotFoundError(module_name)
+        return real_import(name, *args, **kwargs)
+
+    return side_effect
 
 
 class TestImage(TorchioTestCase):
@@ -69,6 +84,20 @@ class TestImage(TorchioTestCase):
         assert 'memory' not in repr(subject['t1'])
         subject.load()
         assert 'memory' in repr(subject['t1'])
+
+    def test_repr_html(self):
+        image = self.sample_subject.t1
+        with (
+            patch.object(tio.ScalarImage, 'plot', return_value=Figure()),
+            patch('torchio.visualization._figure_to_html', return_value='<figure>'),
+        ):
+            assert image._repr_html_() == '<figure>'
+
+        with patch(
+            'builtins.__import__',
+            side_effect=_raise_import_error('matplotlib.figure'),
+        ):
+            assert image._repr_html_() == repr(image)
 
     def test_data_tensor(self):
         subject = copy.deepcopy(self.sample_subject)
@@ -201,6 +230,13 @@ class TestImage(TorchioTestCase):
         with pytest.warns(FutureWarning):
             tio.Image(tensor=torch.rand(1, 2, 3, 4))
 
+    def test_channels_last(self):
+        with pytest.warns(FutureWarning, match='channels_last'):
+            tio.ScalarImage(
+                tensor=torch.rand(1, 2, 3, 4),
+                channels_last=True,
+            )
+
     def test_custom_reader(self):
         path = self.dir / 'im.npy'
 
@@ -275,11 +311,31 @@ class TestImage(TorchioTestCase):
         assert image[tio.AFFINE] is None
         assert not image._loaded
 
+    def test_reload_data_and_affine_after_unload(self):
+        path_1 = self.get_image_path('reload_1')
+        path_2 = self.get_image_path('reload_2')
+
+        image = tio.ScalarImage([path_1, path_2])
+        image.load()
+        image.unload()
+
+        assert image.data.shape == (2, 10, 20, 30)
+        image.unload()
+        np.testing.assert_array_equal(image.affine, np.eye(4))
+
     def test_unload_no_path(self):
         tensor = torch.rand(1, 2, 3, 4)
         image = tio.ScalarImage(tensor=tensor)
         with self.assertRaises(RuntimeError):
             image.unload()
+
+    def test_image_helpers_without_path(self):
+        image = tio.ScalarImage(tensor=torch.rand(1, 2, 3, 4))
+
+        with pytest.raises(RuntimeError, match='Image path is not available'):
+            image._as_path_list()
+
+        assert not image._is_dir()
 
     def test_copy_no_data(self):
         # https://github.com/TorchIO-project/torchio/issues/974
@@ -319,6 +375,12 @@ class TestImage(TorchioTestCase):
         with pytest.raises(ValueError):
             image[3::-1]
 
+    def test_bad_slice_type(self):
+        image = tio.ScalarImage(tensor=torch.rand(1, 2, 3, 4))
+
+        with pytest.raises(TypeError, match='Slice type not understood'):
+            image._crop_from_slices((object(),))
+
     def test_verify_path(self):
         path = Path(self.get_image_path('im_verify'))
 
@@ -335,3 +397,187 @@ class TestImage(TorchioTestCase):
 
         with pytest.raises(FileNotFoundError):
             tio.ScalarImage(fake_path, verify_path=True)
+
+    def test_private_path_parsing_errors(self):
+        image = tio.ScalarImage(tensor=torch.rand(1, 2, 3, 4))
+
+        with pytest.raises(TypeError, match='tensor=your_tensor'):
+            image._parse_single_path(torch.rand(1))
+
+        with pytest.raises(TypeError, match='Expected type str or Path'):
+            image._parse_single_path(object())
+
+        with pytest.raises(TypeError, match='cannot be a dictionary'):
+            image._parse_path({})
+
+    def test_private_tensor_parsing_errors(self):
+        image = tio.ScalarImage(tensor=torch.rand(1, 2, 3, 4))
+
+        with pytest.raises(RuntimeError, match='Input tensor cannot be None'):
+            image._parse_tensor(None, none_ok=False)
+
+        with pytest.raises(TypeError, match='PyTorch tensor or NumPy array'):
+            image._parse_tensor('bad tensor')
+
+        with pytest.raises(ValueError, match='Input tensor must be 4D'):
+            image._parse_tensor(torch.rand(1, 2, 3))
+
+    def test_read_and_check_warns_on_nans(self):
+        path = self.dir / 'nan_image.npy'
+        np.save(path, np.full((1, 2, 3, 4), np.nan))
+
+        def numpy_reader(path):
+            return np.load(path), np.eye(4)
+
+        image = tio.ScalarImage(path, check_nans=True, reader=numpy_reader)
+
+        with pytest.warns(RuntimeWarning, match='NaNs found in file'):
+            image.load()
+
+    def test_bounds_and_axis_validation(self):
+        image = tio.ScalarImage(tensor=torch.rand(1, 2, 3, 4))
+
+        np.testing.assert_array_equal(
+            image.bounds,
+            np.array(((0, 0, 0), (1, 2, 3))),
+        )
+        assert image.get_bounds() == ((-0.5, 1.5), (-0.5, 2.5), (-0.5, 3.5))
+
+        with pytest.raises(ValueError, match='Axis must be a string'):
+            image.axis_name_to_index(0)
+
+        with pytest.raises(ValueError, match='Axis not understood'):
+            image.flip_axis('x')
+
+    def test_direction_must_be_3d(self):
+        image = tio.ScalarImage(tensor=torch.rand(1, 2, 3, 4))
+
+        with (
+            patch(
+                'torchio.data.image.get_sitk_metadata_from_ras_affine',
+                return_value=((0, 0, 0), (1, 1, 1), (1, 0, 0, 1)),
+            ),
+            pytest.raises(RuntimeError, match='Expected a 3D direction'),
+        ):
+            _ = image.direction
+
+    def test_as_pil_without_pillow(self):
+        image = tio.ScalarImage(tensor=torch.rand(1, 2, 3, 1))
+
+        with (
+            patch('builtins.__import__', side_effect=_raise_import_error('PIL')),
+            pytest.raises(RuntimeError, match='Please install Pillow'),
+        ):
+            image.as_pil()
+
+    def test_as_pil_without_transpose(self):
+        image = tio.ScalarImage(tensor=torch.rand(4, 2, 3, 1))
+        pil_image = image.as_pil(transpose=False)
+        assert pil_image.size == (3, 2)
+
+    def test_to_ras(self):
+        image = tio.ScalarImage(tensor=torch.rand(1, 2, 3, 4))
+        assert image.to_ras() is image
+
+        non_ras = tio.ScalarImage(
+            tensor=torch.rand(1, 2, 3, 4),
+            affine=np.diag((-1, 1, 1, 1)),
+        )
+        assert non_ras.orientation_str != 'RAS'
+        assert non_ras.to_ras().orientation_str == 'RAS'
+
+    def test_plot_branches(self):
+        image_2d = tio.ScalarImage(tensor=torch.rand(1, 2, 3, 1))
+        pil_image = MagicMock()
+        with patch.object(tio.ScalarImage, 'as_pil', return_value=pil_image):
+            assert image_2d.plot() is None
+        pil_image.show.assert_called_once_with()
+
+        image_3d = tio.ScalarImage(tensor=torch.rand(1, 2, 3, 4))
+        with patch('torchio.visualization.plot_volume', return_value='figure'):
+            assert image_3d.plot(return_fig=True) == 'figure'
+
+    def test_show_with_explicit_viewer(self):
+        class DummyViewer:
+            def __init__(self):
+                self.application = None
+                self.extension = None
+                self.calls = 0
+
+            def SetFileExtension(self, extension):
+                self.extension = extension
+
+            def SetApplication(self, application):
+                self.application = application
+
+            def Execute(self, image):
+                self.calls += 1
+
+        viewer = DummyViewer()
+        viewer_path = self.dir / 'viewer'
+        image = tio.LabelMap(tensor=torch.rand(1, 2, 3, 4) > 0.5)
+
+        with patch('torchio.data.image.sitk.ImageViewer', return_value=viewer):
+            image.show(viewer_path=viewer_path)
+
+        assert viewer.extension == '.seg.nrrd'
+        assert viewer.application == str(viewer_path)
+        assert viewer.calls == 1
+
+    def test_show_with_guessed_viewer(self):
+        class DummyViewer:
+            def __init__(self):
+                self.application = None
+                self.calls = 0
+
+            def SetFileExtension(self, extension):
+                pass
+
+            def SetApplication(self, application):
+                self.application = application
+
+            def Execute(self, image):
+                self.calls += 1
+                if self.calls == 1:
+                    raise RuntimeError('viewer failed')
+
+        viewer = DummyViewer()
+        guessed_viewer = self.dir / 'guessed-viewer'
+
+        with (
+            patch('torchio.data.image.sitk.ImageViewer', return_value=viewer),
+            patch(
+                'torchio.data.image.guess_external_viewer',
+                return_value=guessed_viewer,
+            ),
+        ):
+            tio.ScalarImage(tensor=torch.rand(1, 2, 3, 4)).show()
+
+        assert viewer.application == str(guessed_viewer)
+        assert viewer.calls == 2
+
+    def test_show_without_available_viewer(self):
+        class DummyViewer:
+            def SetFileExtension(self, extension):
+                pass
+
+            def SetApplication(self, application):
+                pass
+
+            def Execute(self, image):
+                raise RuntimeError('viewer failed')
+
+        with (
+            patch('torchio.data.image.sitk.ImageViewer', return_value=DummyViewer()),
+            patch('torchio.data.image.guess_external_viewer', return_value=None),
+            pytest.raises(RuntimeError, match='No external viewer has been found'),
+        ):
+            tio.ScalarImage(tensor=torch.rand(1, 2, 3, 4)).show()
+
+    def test_to_video(self):
+        image = tio.ScalarImage(tensor=torch.rand(1, 2, 3, 4))
+
+        with patch('torchio.visualization.make_video') as make_video:
+            image.to_video(self.dir / 'video.mp4')
+
+        make_video.assert_called_once()

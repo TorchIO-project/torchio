@@ -69,6 +69,10 @@ class TestAggregator(TorchioTestCase):
         )
         self.aggregate('hann', fixture)
 
+    def test_bad_overlap_mode(self):
+        with pytest.raises(ValueError, match='Overlap mode must be'):
+            tio.data.GridAggregator._parse_overlap_mode('bad')
+
     def run_sampler_aggregator(self, overlap_mode='crop'):
         patch_size = 10
         patch_overlap = 2
@@ -92,6 +96,11 @@ class TestAggregator(TorchioTestCase):
         aggregator = self.run_sampler_aggregator()
         with pytest.warns(RuntimeWarning):
             aggregator.get_output_tensor()
+
+    def test_overlap_hann_casts_int_tensors_to_float(self):
+        aggregator = self.run_sampler_aggregator(overlap_mode='hann')
+        output = aggregator.get_output_tensor()
+        assert output.dtype == torch.float32
 
     def run_patch_crop_issue(self, *, padding_mode):
         # https://github.com/TorchIO-project/torchio/issues/813

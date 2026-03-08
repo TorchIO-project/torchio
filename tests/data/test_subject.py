@@ -1,15 +1,29 @@
+import builtins
 import copy
 import sys
 import tempfile
 from typing import cast
+from unittest.mock import patch
 
 import numpy as np
 import pytest
 import torch
+from matplotlib.figure import Figure
 
 import torchio as tio
 
 from ..utils import TorchioTestCase
+
+
+def _raise_import_error(module_name: str):
+    real_import = builtins.__import__
+
+    def side_effect(name, *args, **kwargs):
+        if name == module_name:
+            raise ModuleNotFoundError(module_name)
+        return real_import(name, *args, **kwargs)
+
+    return side_effect
 
 
 class TestSubject(TorchioTestCase):
@@ -36,6 +50,28 @@ class TestSubject(TorchioTestCase):
     def test_history(self):
         transformed = tio.RandomGamma()(self.sample_subject)
         assert len(transformed.history) == 1
+
+    def test_history_helpers(self):
+        transformed = tio.Resample((1, 1, 1))(copy.deepcopy(self.sample_subject))
+        transforms = transformed.get_applied_transforms(
+            image_interpolation='nearest',
+        )
+        assert len(transforms) == 1
+        assert transforms[0].image_interpolation == 'nearest'
+
+        composed = transformed.get_composed_history(image_interpolation='nearest')
+        assert len(composed.transforms) == 1
+
+        intensity = tio.RescaleIntensity((0, 1))(copy.deepcopy(self.sample_subject))
+        assert intensity.get_applied_transforms(ignore_intensity=True) == []
+
+        flipped = tio.Flip(axes=(0,))(copy.deepcopy(self.sample_subject))
+        inverse = flipped.get_inverse_transform()
+        assert len(inverse.transforms) == 1
+
+        recovered = flipped.apply_inverse_transform()
+        assert recovered.applied_transforms == []
+        assert torch.allclose(recovered.t1.data, self.sample_subject.t1.data)
 
     def test_inconsistent_shape(self):
         subject = tio.Subject(
@@ -72,6 +108,23 @@ class TestSubject(TorchioTestCase):
         path = self.get_image_path('t1_plot')
         subject = tio.Subject(t1=tio.ScalarImage(path))
         subject.plot(show=False)
+
+    def test_plot_return_fig(self):
+        with patch('torchio.visualization.plot_subject', return_value='figure'):
+            assert self.sample_subject.plot(return_fig=True) == 'figure'
+
+    def test_repr_html(self):
+        with (
+            patch.object(tio.Subject, 'plot', return_value=Figure()),
+            patch('torchio.visualization._figure_to_html', return_value='<figure>'),
+        ):
+            assert self.sample_subject._repr_html_() == '<figure>'
+
+        with patch(
+            'builtins.__import__',
+            side_effect=_raise_import_error('matplotlib.figure'),
+        ):
+            assert self.sample_subject._repr_html_() == repr(self.sample_subject)
 
     def test_same_space(self):
         # https://github.com/TorchIO-project/torchio/issues/381
@@ -136,6 +189,18 @@ class TestSubject(TorchioTestCase):
         with pytest.raises(AttributeError):
             _ = subject.t1
 
+    def test_subject_indexing_and_missing_attribute(self):
+        cropped = self.sample_subject[0]
+        assert isinstance(cropped, tio.Subject)
+        assert cropped['t1'].shape == (1, 1, 20, 30)
+
+        with pytest.raises(AttributeError, match="has no attribute 'missing'"):
+            _ = self.sample_subject.missing
+
+        inconsistent = self.get_inconsistent_shape_subject()
+        with pytest.raises(RuntimeError, match='same spatial shape'):
+            inconsistent[0]
+
     def test_2d(self):
         subject = self.make_2d(self.sample_subject)
         assert subject.is_2d()
@@ -143,6 +208,13 @@ class TestSubject(TorchioTestCase):
     def test_different_non_numeric(self):
         with pytest.raises(RuntimeError):
             self.sample_subject.check_consistent_attribute('path')
+
+    def test_check_consistent_space_message(self):
+        subject = copy.deepcopy(self.sample_subject)
+        subject.t1.affine = np.diag((-1, 1, 1, 1)) @ subject.t1.affine
+
+        with pytest.raises(RuntimeError, match='not in the same space'):
+            subject.check_consistent_space()
 
     def test_bad_arg(self):
         with pytest.raises(ValueError):
@@ -182,6 +254,21 @@ class TestSubject(TorchioTestCase):
         for image in self.sample_subject.get_images(intensity_only=False):
             assert not image._loaded
 
+    def test_image_helpers(self):
+        images = self.sample_subject.get_images_dict(
+            intensity_only=False,
+            exclude=('label',),
+        )
+        assert set(images) == {'t1', 't2'}
+
+        self.sample_subject.check_consistent_affine()
+
+        with pytest.raises(TypeError, match='is not a scalar image'):
+            self.sample_subject.get_scalar_image('label')
+
+        with pytest.raises(TypeError, match='is not a label map'):
+            self.sample_subject.get_label_map('t1')
+
     def test_subjects_batch(self):
         subjects = tio.SubjectsDataset(10 * [self.sample_subject])
         loader = tio.SubjectsLoader(subjects, batch_size=4)
@@ -216,3 +303,16 @@ class TestSubject(TorchioTestCase):
         # The data of the original subject should not be modified
         assert not torch.allclose(sub_copy_t1.data, sample_t1.data)
         assert not torch.allclose(copy_original_t1.data, sample_t1.data)
+
+    def test_add_image_validation(self):
+        subject = copy.deepcopy(self.sample_subject)
+
+        with pytest.raises(ValueError, match='Image must be an instance'):
+            subject.add_image(0, 'bad')
+
+        image = tio.ScalarImage(tensor=torch.zeros(1, 1, 1, 1))
+        with pytest.raises(ValueError, match='image name must be a string'):
+            subject.add_image(image, 0)
+
+        subject.add_image(image, 'new_image')
+        assert subject.new_image is image

@@ -1,5 +1,6 @@
 import tempfile
 from pathlib import Path
+from unittest.mock import patch
 
 import numpy as np
 import pytest
@@ -71,6 +72,93 @@ class TestIO(TorchioTestCase):
     def test_matrix_txt(self):
         self.write_read_matrix('.txt')
 
+    def test_read_shape_2d(self):
+        class DummyReader:
+            def SetFileName(self, filename):
+                self.filename = filename
+
+            def ReadImageInformation(self):
+                pass
+
+            def GetNumberOfComponents(self):
+                return 1
+
+            def GetDimension(self):
+                return 2
+
+            def GetSize(self):
+                return 4, 5
+
+        with patch('torchio.data.io.sitk.ImageFileReader', return_value=DummyReader()):
+            assert io.read_shape('test.png') == (1, 4, 5, 1)
+
+    def test_read_shape_4d(self):
+        class DummyReader:
+            def SetFileName(self, filename):
+                self.filename = filename
+
+            def ReadImageInformation(self):
+                pass
+
+            def GetNumberOfComponents(self):
+                return 1
+
+            def GetDimension(self):
+                return 4
+
+            def GetSize(self):
+                return 4, 5, 6, 7
+
+        with patch('torchio.data.io.sitk.ImageFileReader', return_value=DummyReader()):
+            assert io.read_shape('bad.nii.gz') == (7, 4, 5, 6)
+
+    def test_write_image_falls_back_to_nibabel(self):
+        tensor = torch.rand(1, 4, 5, 6)
+        affine = np.eye(4)
+        path = self.dir / 'fallback.nii.gz'
+
+        with (
+            patch('torchio.data.io._write_sitk', side_effect=RuntimeError),
+            patch('torchio.data.io._write_nibabel') as write_nibabel,
+        ):
+            io.write_image(tensor, affine, path)
+
+        write_nibabel.assert_called_once_with(tensor, affine, path)
+
+    def test_write_nibabel_img_pair(self):
+        tensor = torch.rand(1, 4, 5, 6)
+        affine = np.eye(4)
+        path = self.dir / 'pair.img'
+
+        io._write_nibabel(tensor, affine, path)
+
+        assert path.is_file()
+        assert path.with_suffix('.hdr').is_file()
+
+    def test_write_nibabel_invalid_suffix(self):
+        tensor = torch.rand(1, 4, 5, 6)
+        affine = np.eye(4)
+
+        with pytest.raises(io.ImageFileError):
+            io._write_nibabel(tensor, affine, self.dir / 'pair.xyz')
+
+    def test_write_sitk_with_explicit_squeeze(self):
+        tensor = torch.rand(1, 4, 5, 1)
+        affine = np.eye(4)
+        path = self.dir / 'squeezed.nii.gz'
+
+        with (
+            patch('torchio.data.io.nib_to_sitk', return_value=object()) as nib_to_sitk,
+            patch('torchio.data.io.sitk.WriteImage'),
+        ):
+            io._write_sitk(tensor, affine, path, squeeze=True)
+
+        assert nib_to_sitk.call_args.kwargs['force_3d'] is False
+
+    def test_read_matrix_unknown_suffix(self):
+        with pytest.raises(ValueError, match='Unknown suffix'):
+            io.read_matrix(self.dir / 'matrix.unknown')
+
     def test_ensure_4d_5d(self):
         tensor = torch.rand(3, 4, 5, 1, 2)
         assert io.ensure_4d(tensor).shape == (2, 3, 4, 5)
@@ -109,11 +197,34 @@ class TestIO(TorchioTestCase):
         with pytest.raises(ValueError):
             io.ensure_4d(tensor)
 
+    def test_ensure_4d_6d_not_supported(self):
+        tensor = torch.rand(1, 2, 3, 4, 5, 6)
+        with pytest.raises(ValueError, match='6D images not supported yet'):
+            io.ensure_4d(tensor)
+
     def test_sitk_to_nib(self):
         data = np.random.rand(10, 12)
         image = sitk.GetImageFromArray(data)
         tensor, _ = io.sitk_to_nib(image)
         assert data.sum() == pytest.approx(tensor.sum())
+
+    def test_sitk_to_nib_bad_4d_image(self):
+        class DummyImage:
+            def GetNumberOfComponentsPerPixel(self):
+                return 2
+
+            def GetDimension(self):
+                return 4
+
+        array = np.arange(2 * 4 * 3 * 5).reshape(2, 4, 3, 5, 1)
+        with (
+            patch('torchio.data.io.sitk.GetArrayFromImage', return_value=array),
+            patch('torchio.data.io.get_ras_affine_from_sitk', return_value=np.eye(4)),
+        ):
+            tensor, affine = io.sitk_to_nib(DummyImage())
+
+        assert tensor.shape == (2, 5, 3, 4)
+        np.testing.assert_array_equal(affine, np.eye(4))
 
     def test_sitk_to_affine(self):
         spacing = 1, 2, 3
@@ -128,6 +239,38 @@ class TestIO(TorchioTestCase):
         fixture[:3, 3] = origin_ras
         affine = io.get_ras_affine_from_sitk(image)
         self.assert_tensor_almost_equal(fixture, affine)
+
+    def test_get_ras_affine_from_sitk_2d(self):
+        class DummyImage:
+            def GetSpacing(self):
+                return 1, 2
+
+            def GetDirection(self):
+                return -1, 0, 0, -1
+
+            def GetOrigin(self):
+                return -5, -6
+
+        affine = io.get_ras_affine_from_sitk(DummyImage())
+        fixture = np.diag((1, 2, 1, 1))
+        fixture[:3, 3] = 5, 6, 0
+        np.testing.assert_array_equal(affine, fixture)
+
+    def test_get_ras_affine_from_sitk_4d_direction(self):
+        class DummyImage:
+            def GetSpacing(self):
+                return 1, 2, 3, 4
+
+            def GetDirection(self):
+                return tuple(np.diag((-1, -1, 1, 1)).flatten())
+
+            def GetOrigin(self):
+                return -5, -6, 7, 8
+
+        affine = io.get_ras_affine_from_sitk(DummyImage())
+        fixture = np.diag((1, 2, 3, 1))
+        fixture[:3, 3] = 5, 6, 7
+        np.testing.assert_array_equal(affine, fixture)
 
 
 # This doesn't work as a method of the class

@@ -21,3 +21,8 @@ class TestPatchSampler(TorchioTestCase):
 
     def test_extract_patch(self):
         PatchSampler(1).extract_patch(self.sample_subject, (3, 4, 5))
+
+    def test_patch_size_larger_than_image(self):
+        sampler = PatchSampler(100)
+        with pytest.raises(RuntimeError, match='cannot be larger than image size'):
+            sampler(self.sample_subject)
