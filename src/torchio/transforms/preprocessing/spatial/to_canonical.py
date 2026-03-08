@@ -19,6 +19,6 @@ class ToCanonical(ToOrientation):
 
     Note:
         The reorientation is performed using
-        [`ToOrientation()`][torchio.transforms.preprocessing.to_orientation.ToOrientation].
+        [`ToOrientation()`](../ToOrientation/#torchio.transforms.ToOrientation).
 
     """

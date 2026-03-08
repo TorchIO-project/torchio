@@ -231,7 +231,7 @@ class Subject(dict[str, object]):
         Args:
             warn: Issue a warning if some transforms are not invertible.
             ignore_intensity: If `True`, all instances of
-                [`IntensityTransform`][torchio.transforms.intensity_transform.IntensityTransform]
+                `IntensityTransform`
                 will be ignored.
             image_interpolation: Modify interpolation for scalar images inside
                 transforms that perform resampling.

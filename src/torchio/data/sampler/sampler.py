@@ -22,8 +22,8 @@ class PatchSampler:
 
     Warning:
         This is an abstract class that should only be instantiated
-        using child classes such as [`UniformSampler`][torchio.data.UniformSampler] and
-        [`WeightedSampler`][torchio.data.WeightedSampler].
+        using child classes such as [`UniformSampler`](#torchio.data.UniformSampler) and
+        [`WeightedSampler`](#torchio.data.WeightedSampler).
     """
 
     def __init__(self, patch_size: TypeSpatialShape):

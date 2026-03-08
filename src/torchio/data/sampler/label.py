@@ -18,7 +18,7 @@ class LabelSampler(WeightedSampler):
     in the `label_name`.
 
     Args:
-        patch_size: See [`PatchSampler`][torchio.data.PatchSampler].
+        patch_size: See [`PatchSampler`](#torchio.data.PatchSampler).
         label_name: Name of the label image in the subject that will be used to
             generate the sampling probability map. If `None`, the first image
             of type `torchio.LABEL` found in the subject subject will be

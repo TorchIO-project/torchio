@@ -15,10 +15,10 @@ class GridSampler(PatchSampler):
     r"""Extract patches across a whole volume.
 
     Grid samplers are useful to perform inference using all patches from a
-    volume. It is often used with a [`GridAggregator`][torchio.data.GridAggregator].
+    volume. It is often used with a [`GridAggregator`](../inference/#torchio.data.GridAggregator).
 
     Args:
-        subject: Instance of [`Subject`][torchio.data.Subject]
+        subject: Instance of [`Subject`](../../data/subject/#torchio.Subject)
             from which patches will be extracted.
         patch_size: Tuple of integers $(w, h, d)$ to generate patches
             of size $w \times h \times d$.
@@ -34,7 +34,7 @@ class GridSampler(PatchSampler):
             Otherwise, the volume will be padded with
             $\left(\frac{w_o}{2}, \frac{h_o}{2}, \frac{d_o}{2} \right)$
             on each side before sampling. If the sampler is passed to a
-            [`GridAggregator`][torchio.data.GridAggregator], it will crop the output
+            [`GridAggregator`](../inference/#torchio.data.GridAggregator), it will crop the output
             to its original size.
 
     Examples:
