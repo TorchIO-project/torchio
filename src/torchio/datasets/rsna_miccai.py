@@ -101,8 +101,7 @@ class RSNAMICCAI(SubjectsDataset):
                 int(subject_id)
             except ValueError:
                 continue
-            images_dict: dict[str, str | int | ScalarImage]
-            images_dict = {self.id_key: subject_dir.name}
+            images_dict: dict[str, object] = {self.id_key: subject_dir.name}
             if train and labels_dict:
                 images_dict[self.label_key] = labels_dict[subject_id]
             for modality in self.modalities:

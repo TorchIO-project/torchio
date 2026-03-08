@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 from collections.abc import Iterable
+from collections.abc import Sequence
 from collections.abc import Sized
-from numbers import Number
 from pathlib import Path
+from typing import TypeAlias
 from typing import Union
 
 import numpy as np
@@ -20,7 +21,8 @@ from ....types import TypeSpacing
 from ....types import TypeTripletFloat
 from ...spatial_transform import SpatialTransform
 
-TypeTarget = Union[TypeSpacing, str, Path, Image, None]
+TypeShapeAffine: TypeAlias = tuple[Sequence[int], np.ndarray]
+TypeTarget = Union[TypeSpacing, str, Path, Image, TypeShapeAffine, None]
 ONE_MILLIMITER_ISOTROPIC = 1
 
 
@@ -118,18 +120,41 @@ class Resample(SpatialTransform):
 
     @staticmethod
     def _parse_spacing(spacing: TypeSpacing) -> tuple[float, float, float]:
-        result: Iterable
-        if isinstance(spacing, Iterable) and len(spacing) == 3:
-            result = spacing
-        elif isinstance(spacing, Number):
-            result = 3 * (spacing,)
+        if isinstance(spacing, (int, float)):
+            result = (float(spacing), float(spacing), float(spacing))
+        elif isinstance(spacing, np.ndarray):
+            flat = list(spacing.flat)
+            if len(flat) != 3:
+                message = (
+                    'Target must be a string, a positive number'
+                    f' or a sequence of positive numbers, not {type(spacing)}'
+                )
+                raise ValueError(message)
+            result = (float(flat[0]), float(flat[1]), float(flat[2]))
+        elif isinstance(spacing, Sequence):
+            if len(spacing) != 3:
+                message = (
+                    'Target must be a string, a positive number'
+                    f' or a sequence of positive numbers, not {type(spacing)}'
+                )
+                raise ValueError(message)
+            values = []
+            for value in spacing:
+                if not isinstance(value, (int, float)):
+                    message = (
+                        'Target must be a string, a positive number'
+                        f' or a sequence of positive numbers, not {type(spacing)}'
+                    )
+                    raise ValueError(message)
+                values.append(float(value))
+            result = (values[0], values[1], values[2])
         else:
             message = (
                 'Target must be a string, a positive number'
                 f' or a sequence of positive numbers, not {type(spacing)}'
             )
             raise ValueError(message)
-        if np.any(np.array(spacing) <= 0):
+        if any(value <= 0 for value in result):
             message = f'Spacing must be strictly positive, not "{spacing}"'
             raise ValueError(message)
         return result
@@ -175,12 +200,14 @@ class Resample(SpatialTransform):
 
             # If the target is not a string, or is not an image in the subject,
             # do nothing
-            try:
-                target_image = subject[self.target]
-                if target_image is image:
-                    continue
-            except (KeyError, TypeError, RuntimeError):
-                pass
+            if isinstance(self.target, str):
+                try:
+                    target_image = subject.get_image(self.target)
+                except KeyError:
+                    pass
+                else:
+                    if target_image is image:
+                        continue
 
             # Choose interpolation
             if not isinstance(image, ScalarImage):
@@ -279,11 +306,13 @@ class Resample(SpatialTransform):
         target: TypeTarget,
     ) -> sitk.ResampleImageFilter:
         """Instantiate a SimpleITK resampler."""
+        if target is None:
+            raise RuntimeError('Target cannot be None')
         resampler = sitk.ResampleImageFilter()
         resampler.SetInterpolator(interpolator)
         self._set_resampler_reference(
             resampler,
-            target,  # type: ignore[arg-type]
+            target,
             floating,
             subject,
         )
@@ -292,7 +321,7 @@ class Resample(SpatialTransform):
     def _set_resampler_reference(
         self,
         resampler: sitk.ResampleImageFilter,
-        target: TypeSpacing | TypePath | Image,
+        target: TypeSpacing | TypePath | Image | TypeShapeAffine,
         floating_sitk,
         subject,
     ):
@@ -313,7 +342,7 @@ class Resample(SpatialTransform):
                 image = ScalarImage(path)
             else:  # assume it's the name of an image in the subject
                 try:
-                    image = subject[target]
+                    image = subject.get_image(target)
                 except KeyError as error:
                     message = (
                         f'Image name "{target}" not found in subject.'
@@ -326,18 +355,18 @@ class Resample(SpatialTransform):
                 image.spatial_shape,
                 image.affine,
             )
-        elif isinstance(target, Number):  # one number for target was passed
+        elif isinstance(target, (int, float)):  # one number for target was passed
             self._set_resampler_from_spacing(resampler, target, floating_sitk)
-        elif isinstance(target, Iterable) and len(target) == 2:
-            assert not isinstance(target, str)  # for mypy
-            shape, affine = target
+        elif isinstance(target, tuple) and len(target) == 2:
+            shape = target[0]
+            affine = target[1]
             if not (isinstance(shape, Sized) and len(shape) == 3):
                 message = (
                     'Target shape must be a sequence of three integers, but'
                     f' "{shape}" was passed'
                 )
                 raise RuntimeError(message)
-            if not affine.shape == (4, 4):
+            if not isinstance(affine, np.ndarray) or affine.shape != (4, 4):
                 message = (
                     'Target affine must have shape (4, 4) but the following'
                     f' was passed:\n{shape}'
@@ -348,7 +377,11 @@ class Resample(SpatialTransform):
                 shape,
                 affine,
             )
-        elif isinstance(target, Iterable) and len(target) == 3:
+        elif (
+            isinstance(target, Sized)
+            and isinstance(target, Iterable)
+            and len(target) == 3
+        ):
             self._set_resampler_from_spacing(resampler, target, floating_sitk)
         else:
             raise RuntimeError(f'Target not understood: "{target}"')

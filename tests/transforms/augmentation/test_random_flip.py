@@ -1,3 +1,6 @@
+from typing import Any
+from typing import cast
+
 import pytest
 import torch
 
@@ -26,14 +29,14 @@ class TestRandomFlip(TorchioTestCase):
 
     def test_wrong_axes_type(self):
         with pytest.raises(ValueError):
-            tio.RandomFlip(axes=None)
+            tio.RandomFlip(axes=cast(Any, None))
 
     def test_wrong_flip_probability_type(self):
         with pytest.raises(ValueError):
-            tio.RandomFlip(flip_probability='wrong')
+            tio.RandomFlip(flip_probability=cast(Any, 'wrong'))
 
     def test_anatomical_axis(self):
-        transform = tio.RandomFlip(axes=['i'], flip_probability=1)
+        transform = tio.RandomFlip(axes=cast(Any, ['i']), flip_probability=1)
         tensor = torch.rand(1, 2, 3, 4)
         transformed = transform(tensor)
         self.assert_tensor_equal(

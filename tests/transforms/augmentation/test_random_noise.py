@@ -1,3 +1,6 @@
+from typing import Any
+from typing import cast
+
 import pytest
 
 from torchio import RandomNoise
@@ -42,8 +45,8 @@ class TestRandomNoise(TorchioTestCase):
 
     def test_wrong_std_type(self):
         with pytest.raises(ValueError):
-            RandomNoise(std='wrong')
+            RandomNoise(std=cast(Any, 'wrong'))
 
     def test_wrong_mean_type(self):
         with pytest.raises(ValueError):
-            RandomNoise(mean='wrong')
+            RandomNoise(mean=cast(Any, 'wrong'))

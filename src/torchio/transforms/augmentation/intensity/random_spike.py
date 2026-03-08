@@ -1,6 +1,3 @@
-from collections import defaultdict
-from numbers import Number
-
 import numpy as np
 import torch
 
@@ -51,7 +48,7 @@ class RandomSpike(RandomTransform, IntensityTransform, FourierTransform):
             intensity,
             'intensity_range',
         )
-        self.num_spikes_range: tuple[int, int] = self._parse_range(  # type: ignore[assignment]
+        self.num_spikes_range = self._parse_range(
             num_spikes,
             'num_spikes',
             min_constraint=0,
@@ -63,15 +60,20 @@ class RandomSpike(RandomTransform, IntensityTransform, FourierTransform):
         if not images_dict:
             return subject
 
-        arguments: dict[str, dict] = defaultdict(dict)
+        spikes_positions_by_name: dict[str, np.ndarray] = {}
+        intensity_by_name: dict[str, float] = {}
         for image_name in images_dict:
             spikes_positions_param, intensity_param = self.get_params(
                 self.num_spikes_range,
                 self.intensity_range,
             )
-            arguments['spikes_positions'][image_name] = spikes_positions_param
-            arguments['intensity'][image_name] = intensity_param
-        transform = Spike(**self.add_base_args(arguments))
+            spikes_positions_by_name[image_name] = spikes_positions_param
+            intensity_by_name[image_name] = intensity_param
+        transform = Spike(
+            spikes_positions=spikes_positions_by_name,
+            intensity=intensity_by_name,
+            **self.get_base_args(),
+        )
         transformed = transform(subject)
         assert isinstance(transformed, Subject)
         return transformed
@@ -121,20 +123,15 @@ class Spike(IntensityTransform, FourierTransform):
         self.invert_transform = False
 
     def apply_transform(self, subject: Subject) -> Subject:
-        spikes_positions = self.spikes_positions
-        intensity = self.intensity
         for image_name, image in self.get_images_dict(subject).items():
-            if self.arguments_are_dict():
-                spikes_positions = self.spikes_positions[image_name]
-                assert isinstance(self.intensity, dict)
-                intensity = self.intensity[image_name]
+            spikes_positions = self.get_parameter(self.spikes_positions, image_name)
+            intensity = self.get_parameter(self.intensity, image_name)
             transformed_tensors = []
             for channel in image.data:
-                assert isinstance(intensity, Number)
                 transformed_tensor = self.add_artifact(
                     channel,
                     np.asarray(spikes_positions),
-                    intensity,
+                    float(intensity),
                 )
                 transformed_tensors.append(transformed_tensor)
             image.set_data(torch.stack(transformed_tensors))

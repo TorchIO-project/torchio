@@ -11,7 +11,7 @@ from ..utils import get_subjects_from_batch
 from .subject import Subject
 
 
-class SubjectsDataset(Dataset):
+class SubjectsDataset(Dataset[Subject]):
     """Base TorchIO dataset.
 
     Reader of 3D medical images that directly inherits from the PyTorch
@@ -61,12 +61,12 @@ class SubjectsDataset(Dataset):
     def __init__(
         self,
         subjects: Sequence[Subject],
-        transform: Callable | None = None,
+        transform: Callable[[Subject], Subject] | None = None,
         load_getitem: bool = True,
     ):
         self._parse_subjects_list(subjects)
         self._subjects = subjects
-        self._transform: Callable | None
+        self._transform: Callable[[Subject], Subject] | None
         self.set_transform(transform)
         self.load_getitem = load_getitem
 
@@ -104,7 +104,7 @@ class SubjectsDataset(Dataset):
         subjects: list[Subject] = get_subjects_from_batch(batch)
         return cls(subjects)
 
-    def dry_iter(self):
+    def dry_iter(self) -> Sequence[Subject]:
         """Return the internal list of subjects.
 
         This can be used to iterate over the subjects without loading the data
@@ -115,7 +115,10 @@ class SubjectsDataset(Dataset):
         """
         return self._subjects
 
-    def set_transform(self, transform: Callable | None) -> None:
+    def set_transform(
+        self,
+        transform: Callable[[Subject], Subject] | None,
+    ) -> None:
         """Set the `transform` attribute.
 
         Args:

@@ -81,7 +81,7 @@ class LabelSampler(WeightedSampler):
                 )
                 raise RuntimeError(message)
         elif self.probability_map_name in subject:
-            label_map = subject[self.probability_map_name]
+            label_map = subject.get_image(self.probability_map_name)
         else:
             message = (
                 f'Image "{self.probability_map_name}"'

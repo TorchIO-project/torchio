@@ -134,7 +134,7 @@ class IXI(SubjectsDataset):
                 skip_subject = False
             if skip_subject:
                 continue
-            subjects.append(Subject(**images_dict))  # type: ignore[arg-type]
+            subjects.append(Subject(images_dict))
         return subjects
 
     def _download(self, root, modalities):

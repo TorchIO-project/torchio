@@ -10,6 +10,9 @@ from collections.abc import Iterable
 from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
+from typing import TypeVar
+from typing import cast
+from typing import overload
 
 import numpy as np
 import SimpleITK as sitk
@@ -20,14 +23,29 @@ from torch.utils.data._utils.collate import default_collate
 from tqdm.auto import trange
 
 from . import constants
-from .types import TypeNumber
 from .types import TypePath
+
+T = TypeVar('T')
+
+
+@overload
+def to_tuple(
+    value: Iterable[T],
+    length: int = 1,
+) -> tuple[T, ...]: ...
+
+
+@overload
+def to_tuple(
+    value: T,
+    length: int = 1,
+) -> tuple[T, ...]: ...
 
 
 def to_tuple(
-    value: Any,
+    value: T | Iterable[T],
     length: int = 1,
-) -> tuple[TypeNumber, ...]:
+) -> tuple[T, ...]:
     """Convert variable to tuple of length n.
 
     Examples:
@@ -47,12 +65,11 @@ def to_tuple(
         >>> to_tuple([1, 2], length=3)
         (1, 2)
     """
-    try:
-        iter(value)
-        value = tuple(value)
-    except TypeError:
-        value = length * (value,)
-    return value
+    if isinstance(value, Iterable) and not isinstance(value, (str, bytes)):
+        iterable_value = cast(Iterable[T], value)
+        return tuple(iterable_value)
+    scalar_value = cast(T, value)
+    return length * (scalar_value,)
 
 
 def get_stem(
@@ -69,10 +86,10 @@ def get_stem(
     def _get_stem(path_string: TypePath) -> str:
         return Path(path_string).name.split('.')[0]
 
-    if isinstance(path, (str, os.PathLike)):
-        return _get_stem(path)
-    else:  # path is actually a sequence of paths
+    if isinstance(path, Sequence) and not isinstance(path, (str, Path)):
         return [_get_stem(p) for p in path]
+    assert isinstance(path, (str, Path))
+    return _get_stem(path)
 
 
 def create_dummy_dataset(

@@ -56,8 +56,7 @@ class RandomFlip(RandomTransform, SpatialTransform):
         if not axes_list:
             return subject
 
-        arguments = {'axes': axes_list}
-        transform = Flip(**self.add_base_args(arguments))
+        transform = Flip(axes=axes_list, **self.get_base_args())
         transformed = transform(subject)
         assert isinstance(transformed, Subject)
         return transformed
@@ -124,7 +123,7 @@ def _ensure_axes_indices(subject, axes):
 
 
 def _flip_image(image, axes):
-    spatial_axes = np.array(axes, int) + 1
+    spatial_axes = tuple(int(axis) + 1 for axis in axes)
     data = image.numpy()
     data = np.flip(data, axis=spatial_axes)
     data = np.ascontiguousarray(data)  # remove negative strides

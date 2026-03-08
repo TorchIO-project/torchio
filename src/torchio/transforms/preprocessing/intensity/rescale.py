@@ -5,7 +5,6 @@ import warnings
 import numpy as np
 import torch
 
-from ....data.image import Image
 from ....data.subject import Subject
 from ....types import TypeDoubleFloat
 from .normalization_transform import NormalizationTransform
@@ -84,7 +83,7 @@ class RescaleIntensity(NormalizationTransform):
         image_name: str,
         mask: torch.Tensor,
     ) -> None:
-        image: Image = subject[image_name]
+        image = subject.get_scalar_image(image_name)
         image.set_data(self.rescale(image.data, mask, image_name))
 
     def rescale(
@@ -106,7 +105,7 @@ class RescaleIntensity(NormalizationTransform):
 
         values = array[mask_array]
         cutoff = np.percentile(values, self.percentiles)
-        np.clip(array, *cutoff, out=array)  # type: ignore[call-overload]
+        np.clip(array, *cutoff, out=array)
 
         if self.in_min_max is None:
             in_min, in_max = array.min(), array.max()

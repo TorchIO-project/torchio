@@ -1,3 +1,6 @@
+from typing import Any
+from typing import cast
+
 import pytest
 
 from torchio.transforms import RandomLabelsToImage
@@ -27,13 +30,14 @@ class TestRandomLabelsToImage(TorchioTestCase):
             std=[0, 0],
         )
         transformed = transform(self.sample_subject)
+        sample_label = self.sample_subject.get_label_map('label')
         self.assert_tensor_equal(
             transformed['image_from_labels'].data == 0.5,
-            self.sample_subject['label'].data == 0,
+            sample_label.data == 0,
         )
         self.assert_tensor_equal(
             transformed['image_from_labels'].data == 2,
-            self.sample_subject['label'].data == 1,
+            sample_label.data == 1,
         )
 
     def test_deterministic_simulation_with_discretized_label_map(self):
@@ -49,13 +53,14 @@ class TestRandomLabelsToImage(TorchioTestCase):
             discretize=True,
         )
         transformed = transform(self.sample_subject)
+        sample_label = self.sample_subject.get_label_map('label')
         self.assert_tensor_equal(
             transformed['image_from_labels'].data == 0.5,
-            self.sample_subject['label'].data == 0,
+            sample_label.data == 0,
         )
         self.assert_tensor_equal(
             transformed['image_from_labels'].data == 2,
-            self.sample_subject['label'].data == 1,
+            sample_label.data == 1,
         )
 
     def test_deterministic_simulation_with_pv_map(self):
@@ -104,11 +109,13 @@ class TestRandomLabelsToImage(TorchioTestCase):
             image_key='t1',
             used_labels=[1],
         )
-        t1_indices = self.sample_subject['label'].data == 0
+        sample_label = self.sample_subject.get_label_map('label')
+        sample_t1 = self.sample_subject.get_scalar_image('t1')
+        t1_indices = sample_label.data == 0
         transformed = transform(self.sample_subject)
         self.assert_tensor_almost_equal(
             transformed['t1'].data[t1_indices],
-            self.sample_subject['t1'].data[t1_indices],
+            sample_t1.data[t1_indices],
         )
 
     def test_filling_with_discretized_label_map(self):
@@ -123,11 +130,13 @@ class TestRandomLabelsToImage(TorchioTestCase):
             discretize=True,
             used_labels=[1],
         )
-        t1_indices = self.sample_subject['label'].data < 0.5
+        sample_label = self.sample_subject.get_label_map('label')
+        sample_t1 = self.sample_subject.get_scalar_image('t1')
+        t1_indices = sample_label.data < 0.5
         transformed = transform(self.sample_subject)
         self.assert_tensor_almost_equal(
             transformed['t1'].data[t1_indices],
-            self.sample_subject['t1'].data[t1_indices],
+            sample_t1.data[t1_indices],
         )
 
     def test_filling_with_discretized_pv_label_map(self):
@@ -166,63 +175,87 @@ class TestRandomLabelsToImage(TorchioTestCase):
         """The transform raises an error if default_mean is not a single value
         nor a tuple of two values."""
         with pytest.raises(ValueError):
-            RandomLabelsToImage(label_key='label', default_mean=(0, 1, 2))
+            RandomLabelsToImage(
+                label_key='label',
+                default_mean=cast(Any, (0, 1, 2)),
+            )
 
     def test_with_bad_default_mean_type(self):
         """The transform raises an error if default_mean has the wrong type."""
         with pytest.raises(ValueError):
-            RandomLabelsToImage(label_key='label', default_mean='wrong')
+            RandomLabelsToImage(
+                label_key='label',
+                default_mean=cast(Any, 'wrong'),
+            )
 
     def test_with_bad_default_std_range(self):
         """The transform raises an error if default_std is not a single value
         nor a tuple of two values."""
         with pytest.raises(ValueError):
-            RandomLabelsToImage(label_key='label', default_std=(0, 1, 2))
+            RandomLabelsToImage(
+                label_key='label',
+                default_std=cast(Any, (0, 1, 2)),
+            )
 
     def test_with_bad_default_std_type(self):
         """The transform raises an error if default_std has the wrong type."""
         with pytest.raises(ValueError):
-            RandomLabelsToImage(label_key='label', default_std='wrong')
+            RandomLabelsToImage(
+                label_key='label',
+                default_std=cast(Any, 'wrong'),
+            )
 
     def test_with_wrong_label_key_type(self):
         """The transform raises an error if a wrong type is given for
         label_key."""
         with pytest.raises(TypeError):
-            RandomLabelsToImage(label_key=42)
+            RandomLabelsToImage(label_key=cast(Any, 42))
 
     def test_with_wrong_used_labels_type(self):
         """The transform raises an error if a wrong type is given for
         used_labels."""
         with pytest.raises(TypeError):
-            RandomLabelsToImage(label_key='label', used_labels=42)
+            RandomLabelsToImage(
+                label_key='label',
+                used_labels=cast(Any, 42),
+            )
 
     def test_with_wrong_used_labels_elements_type(self):
         """The transform raises an error if wrong type are given for
         used_labels elements."""
         with pytest.raises(ValueError):
-            RandomLabelsToImage(label_key='label', used_labels=['wrong'])
+            RandomLabelsToImage(
+                label_key='label',
+                used_labels=cast(Any, ['wrong']),
+            )
 
     def test_with_wrong_mean_type(self):
         """The transform raises an error if wrong type is given for mean."""
         with pytest.raises(TypeError):
-            RandomLabelsToImage(label_key='label', mean=42)
+            RandomLabelsToImage(label_key='label', mean=cast(Any, 42))
 
     def test_with_wrong_mean_elements_type(self):
         """The transform raises an error if wrong type are given for mean
         elements."""
         with pytest.raises(ValueError):
-            RandomLabelsToImage(label_key='label', mean=['wrong'])
+            RandomLabelsToImage(
+                label_key='label',
+                mean=cast(Any, ['wrong']),
+            )
 
     def test_with_wrong_std_type(self):
         """The transform raises an error if wrong type is given for std."""
         with pytest.raises(TypeError):
-            RandomLabelsToImage(label_key='label', std=42)
+            RandomLabelsToImage(label_key='label', std=cast(Any, 42))
 
     def test_with_wrong_std_elements_type(self):
         """The transform raises an error if wrong type are given for std
         elements."""
         with pytest.raises(ValueError):
-            RandomLabelsToImage(label_key='label', std=['wrong'])
+            RandomLabelsToImage(
+                label_key='label',
+                std=cast(Any, ['wrong']),
+            )
 
     def test_mean_and_std_len_not_matching(self):
         """The transform raises an error if mean and std length don't match."""

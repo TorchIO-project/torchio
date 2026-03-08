@@ -1,5 +1,7 @@
 import warnings
 from numbers import Number
+from typing import Literal
+from typing import cast
 
 import numpy as np
 import torch
@@ -9,6 +11,20 @@ from ....data.image import Image
 from ....data.subject import Subject
 from .bounds_transform import BoundsTransform
 from .bounds_transform import TypeBounds
+
+NumpyPadMode = Literal[
+    'empty',
+    'edge',
+    'wrap',
+    'constant',
+    'linear_ramp',
+    'maximum',
+    'mean',
+    'median',
+    'minimum',
+    'reflect',
+    'symmetric',
+]
 
 
 class Pad(BoundsTransform):
@@ -101,30 +117,33 @@ class Pad(BoundsTransform):
             new_affine = image.affine.copy()
             new_affine[:3, 3] = new_origin
 
-            mode: str | float = 'constant'
-            constant: torch.Tensor | float | None = None
-            kwargs: dict[str, str | float | torch.Tensor] = {}
+            mode: NumpyPadMode = 'constant'
+            constant: int | float | None = None
             if isinstance(self.padding_mode, Number):
-                constant = self.padding_mode  # type: ignore[assignment]
+                constant = float(self.padding_mode)
             elif self.padding_mode == 'maximum':
-                constant = image.data.max()
+                constant = image.data.max().item()
             elif self.padding_mode == 'mean':
-                constant = image.data.float().mean()
+                constant = image.data.float().mean().item()
             elif self.padding_mode == 'median':
-                constant = torch.quantile(image.data.float(), 0.5)
+                constant = torch.quantile(image.data.float(), 0.5).item()
             elif self.padding_mode == 'minimum':
-                constant = image.data.min()
+                constant = image.data.min().item()
             else:
                 constant = None
-                mode = self.padding_mode
-
-            if constant is not None:
-                kwargs['constant_values'] = constant
-            kwargs['mode'] = mode
+                mode = cast(NumpyPadMode, self.padding_mode)
 
             pad_params = self.bounds_parameters
             paddings = (0, 0), pad_params[:2], pad_params[2:4], pad_params[4:]
-            padded = np.pad(image.data, paddings, **kwargs)  # type: ignore[call-overload]
+            if constant is not None:
+                padded = np.pad(
+                    image.data.numpy(),
+                    paddings,
+                    mode='constant',
+                    constant_values=constant,
+                )
+            else:
+                padded = np.pad(image.data.numpy(), paddings, mode=mode)
             image.set_data(torch.as_tensor(padded))
             image.affine = new_affine
         return subject

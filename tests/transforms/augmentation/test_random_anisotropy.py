@@ -1,3 +1,6 @@
+from typing import Any
+from typing import cast
+
 import pytest
 import torch
 
@@ -28,11 +31,11 @@ class TestRandomAnisotropy(TorchioTestCase):
 
     def test_wrong_axes_type(self):
         with pytest.raises(ValueError):
-            RandomAnisotropy(axes='wrong')
+            RandomAnisotropy(axes=cast(Any, 'wrong'))
 
     def test_wrong_downsampling_type(self):
         with pytest.raises(ValueError):
-            RandomAnisotropy(downsampling='wrong')
+            RandomAnisotropy(downsampling=cast(Any, 'wrong'))
 
     def test_below_one_downsampling(self):
         with pytest.raises(ValueError):

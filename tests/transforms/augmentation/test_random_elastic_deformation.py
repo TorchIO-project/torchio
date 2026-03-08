@@ -1,3 +1,6 @@
+from typing import Any
+from typing import cast
+
 import pytest
 
 import torchio as tio
@@ -18,15 +21,15 @@ class TestRandomElasticDeformation(TorchioTestCase):
 
     def test_inputs_interpolation_int(self):
         with pytest.raises(TypeError):
-            tio.RandomElasticDeformation(image_interpolation=1)
+            tio.RandomElasticDeformation(image_interpolation=cast(Any, 1))
 
     def test_inputs_interpolation(self):
         with pytest.raises(TypeError):
-            tio.RandomElasticDeformation(image_interpolation=0)
+            tio.RandomElasticDeformation(image_interpolation=cast(Any, 0))
 
     def test_num_control_points_noint(self):
         with pytest.raises(ValueError):
-            tio.RandomElasticDeformation(num_control_points=2.5)
+            tio.RandomElasticDeformation(num_control_points=cast(Any, 2.5))
 
     def test_num_control_points_small(self):
         with pytest.raises(ValueError):
@@ -34,7 +37,7 @@ class TestRandomElasticDeformation(TorchioTestCase):
 
     def test_max_displacement_no_num(self):
         with pytest.raises(ValueError):
-            tio.RandomElasticDeformation(max_displacement=None)
+            tio.RandomElasticDeformation(max_displacement=cast(Any, None))
 
     def test_max_displacement_negative(self):
         with pytest.raises(ValueError):

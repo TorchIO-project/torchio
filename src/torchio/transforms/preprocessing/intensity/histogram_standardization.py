@@ -5,6 +5,7 @@ from collections.abc import Iterable
 from collections.abc import Sequence
 from pathlib import Path
 from typing import Union
+from typing import cast
 
 import numpy as np
 import torch
@@ -76,10 +77,13 @@ class HistogramStandardization(NormalizationTransform):
             landmarks_dict = torch.load(path)
         else:
             landmarks_dict = landmarks
+        parsed_landmarks: dict[str, np.ndarray] = {}
         for key, value in landmarks_dict.items():
             if isinstance(value, (str, Path)):
-                landmarks_dict[key] = np.load(value)
-        return landmarks_dict
+                parsed_landmarks[key] = np.load(value)
+            else:
+                parsed_landmarks[key] = value
+        return parsed_landmarks
 
     def apply_normalization(
         self,
@@ -94,7 +98,7 @@ class HistogramStandardization(NormalizationTransform):
                 f' landmarks dictionary, whose keys are {keys}'
             )
             raise KeyError(message)
-        image = subject[image_name]
+        image = subject.get_scalar_image(image_name)
         landmarks = self.landmarks_dict[image_name]
         normalized = _normalize(image.data, landmarks, mask=mask.numpy())
         image.set_data(normalized)
@@ -160,11 +164,16 @@ class HistogramStandardization(NormalizationTransform):
             >>>
             >>> transform = HistogramStandardization(landmarks_dict)
         """
-        is_masks_list = isinstance(mask_path, Sequence)
-        if is_masks_list and len(mask_path) != len(images_paths):  # type: ignore[arg-type]
+        mask_paths: Sequence[TypePath] | None = (
+            mask_path
+            if isinstance(mask_path, Sequence)
+            and not isinstance(mask_path, (str, Path))
+            else None
+        )
+        if mask_paths is not None and len(mask_paths) != len(images_paths):
             message = (
-                f'Different number of images ({len(images_paths)})'  # type: ignore[arg-type]
-                f' and mask ({len(mask_path)}) paths found'  # type: ignore[arg-type]
+                f'Different number of images ({len(images_paths)})'
+                f' and mask ({len(mask_paths)}) paths found'
             )
             raise ValueError(message)
         quantiles_cutoff = DEFAULT_CUTOFF if cutoff is None else cutoff
@@ -172,8 +181,9 @@ class HistogramStandardization(NormalizationTransform):
         percentiles_database = []
         a, b = percentiles_cutoff  # for mypy
         percentiles = _get_percentiles((a, b))
-        iterable: Iterable[TypePath]
-        iterable = tqdm(images_paths) if progress else images_paths  # type: ignore[assignment]
+        iterable = cast(
+            Iterable[TypePath], tqdm(images_paths) if progress else images_paths
+        )
         for i, image_file_path in enumerate(iterable):
             tensor, _ = read_image(image_file_path)
             if masking_function is not None:
@@ -182,11 +192,12 @@ class HistogramStandardization(NormalizationTransform):
                 if mask_path is None:
                     mask = np.ones_like(tensor, dtype=bool)
                 else:
-                    if is_masks_list:
-                        assert isinstance(mask_path, Sequence)
-                        path = mask_path[i]
+                    path: TypePath
+                    if mask_paths is not None:
+                        path = mask_paths[i]
                     else:
-                        path = mask_path  # type: ignore[assignment]
+                        assert isinstance(mask_path, (str, Path))
+                        path = mask_path
                     mask, _ = read_image(path)
                     mask = mask.numpy() > 0
             array = tensor.numpy()

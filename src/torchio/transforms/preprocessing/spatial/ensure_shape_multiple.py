@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from collections.abc import Callable
-
 import numpy as np
 
 from ....data.subject import Subject
@@ -128,10 +126,28 @@ class EnsureShapeMultiple(SpatialTransform):
 
     def apply_transform(self, subject: Subject) -> Subject:
         source_shape = np.array(subject.spatial_shape, np.uint16)
-        function: Callable = np.floor if self.method == 'crop' else np.ceil  # type: ignore[assignment]
-        integer_ratio = function(source_shape / self.target_multiple)
+        if self.method == 'crop':
+            integer_ratio = np.floor(source_shape / self.target_multiple)
+        else:
+            integer_ratio = np.ceil(source_shape / self.target_multiple)
         target_shape = integer_ratio * self.target_multiple
         target_shape = np.maximum(target_shape, 1)
-        transform = CropOrPad(target_shape.astype(int), **self.get_base_args())
-        subject = transform(subject)  # type: ignore[assignment]
-        return subject
+        target_shape_values = [
+            int(value) for value in target_shape.astype(int).tolist()
+        ]
+        transform = CropOrPad(
+            (
+                target_shape_values[0],
+                target_shape_values[1],
+                target_shape_values[2],
+            ),
+            copy=self.copy,
+            include=self.include,
+            exclude=self.exclude,
+            keep=self.keep,
+            parse_input=self.parse_input,
+            label_keys=self.label_keys,
+        )
+        transformed = transform(subject)
+        assert isinstance(transformed, Subject)
+        return transformed
