@@ -71,27 +71,6 @@ jobs:
           fi
         shell: bash # this wouldn't work on Powershell
 
-      - name: Summarize coverage
-        if: ${{ matrix.os == 'ubuntu-latest' && matrix.python == '3.14' }}
-        run: |
-          python3 - <<'PY'
-          import os
-          import xml.etree.ElementTree as ET
-
-          root = ET.parse('coverage.xml').getroot()
-          line_rate = float(root.attrib['line-rate']) * 100
-          lines_covered = int(root.attrib['lines-covered'])
-          lines_valid = int(root.attrib['lines-valid'])
-
-          with open(os.environ['GITHUB_STEP_SUMMARY'], 'a', encoding='utf-8') as f:
-              f.write('## Coverage report\n\n')
-              f.write(
-                  f'- Line coverage: **{line_rate:.2f}%** '
-                  f'({lines_covered}/{lines_valid} lines)\n'
-              )
-              f.write('- Full coverage details are uploaded to Codecov.\n')
-          PY
-
       - name: Upload coverage reports to Codecov
         if: ${{ matrix.os == 'ubuntu-latest' && matrix.python == '3.14' }}
         uses: codecov/codecov-action@v5.5.2
