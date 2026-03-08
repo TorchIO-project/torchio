@@ -4,7 +4,7 @@ build-backend = "uv_build"
 
 [project]
 name = "torchio"
-version = "0.21.4"
+version = "0.22.0"
 description = "Tools for medical image processing with PyTorch"
 license = "Apache-2.0"
 readme = "README.md"
@@ -105,7 +105,7 @@ test = [
 ]
 
 [tool.bumpversion]
-current_version = "0.21.4"
+current_version = "0.22.0"
 commit = true
 tag = true
 
