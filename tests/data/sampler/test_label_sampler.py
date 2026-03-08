@@ -1,3 +1,4 @@
+import numpy as np
 import pytest
 import torch
 
@@ -79,3 +80,18 @@ class TestLabelSampler(TorchioTestCase):
         sampler = tio.LabelSampler(4)
         with pytest.raises(RuntimeError):
             next(sampler(subject))
+
+    def test_missing_label_name(self):
+        subject = tio.Subject(image=tio.ScalarImage(tensor=torch.rand(1, 1, 1, 1)))
+        sampler = tio.LabelSampler(1, 'missing')
+        with pytest.raises(KeyError):
+            sampler.get_probability_map_image(subject)
+
+    def test_patch_size_larger_than_label_map(self):
+        label_map = torch.ones(1, 5, 5, 5)
+        with pytest.raises(RuntimeError, match='Patch size .*larger than label map'):
+            tio.LabelSampler.get_probabilities_from_label_map(
+                label_map,
+                {1: 1},
+                np.array((8, 8, 8)),
+            )

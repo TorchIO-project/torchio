@@ -46,21 +46,36 @@ jobs:
         shell: bash
 
       - name: Setup test suite
-        run: tox run -v --notest --skip-missing-interpreters false -e ${{ matrix.python }}
-
-      # Run all tests on schedule, but only non-slow tests on push
-      - name: Run pytest
         run: |
-          if [ "${{ github.event_name }}" == "schedule" ]; then
-            tox -e pytest
+          if [ "${{ matrix.os }}" == "ubuntu-latest" ] && [ "${{ matrix.python }}" == "3.14" ]; then
+            tox_env=coverage
           else
-            tox -e pytest -- -m "not slow"
+            tox_env=pytest
+          fi
+          tox run -v --notest --skip-missing-interpreters false -e "$tox_env"
+        shell: bash # this wouldn't work on Powershell
+
+      # Run all tests on schedule, but only non-slow tests otherwise
+      - name: Run unit tests
+        run: |
+          if [ "${{ matrix.os }}" == "ubuntu-latest" ] && [ "${{ matrix.python }}" == "3.14" ]; then
+            tox_env=coverage
+          else
+            tox_env=pytest
+          fi
+
+          if [ "${{ github.event_name }}" == "schedule" ]; then
+            tox -e "$tox_env"
+          else
+            tox -e "$tox_env" -- -m "not slow"
           fi
         shell: bash # this wouldn't work on Powershell
 
       - name: Upload coverage reports to Codecov
         if: ${{ matrix.os == 'ubuntu-latest' && matrix.python == '3.14' }}
         uses: codecov/codecov-action@v5.5.2
+        with:
+          files: ./coverage.xml
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
