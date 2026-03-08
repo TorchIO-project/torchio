@@ -107,8 +107,6 @@ nav = [
     "interfaces/cli.md",
     "interfaces/slicer.md",
   ] },
-  { "GitHub repository" = "https://github.com/TorchIO-project/torchio" },
-  { Paper = "https://www.sciencedirect.com/science/article/pii/S0169260721003102" },
 ]
 
 [project.theme]
