@@ -72,7 +72,7 @@ class RandomSpike(RandomTransform, IntensityTransform, FourierTransform):
         transform = Spike(
             spikes_positions=spikes_positions_by_name,
             intensity=intensity_by_name,
-            **self.get_base_args(),
+            **self._get_base_args(),
         )
         transformed = transform(subject)
         assert isinstance(transformed, Subject)

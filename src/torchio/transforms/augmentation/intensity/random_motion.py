@@ -93,7 +93,7 @@ class RandomMotion(RandomTransform, IntensityTransform, FourierTransform):
             translation=translation_by_name,
             times=times_by_name,
             image_interpolation=interpolation_by_name,
-            **self.get_base_args(),
+            **self._get_base_args(),
         )
         transformed = transform(subject)
         assert isinstance(transformed, Subject)

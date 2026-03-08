@@ -213,7 +213,7 @@ class Transform(ABC):
         else:
             return super().__repr__()
 
-    def get_base_args(self) -> dict[str, object]:
+    def _get_base_args(self) -> dict[str, object]:
         r"""Provides easy access to the arguments used to instantiate the base class
         ([`Transform`][torchio.transforms.transform.Transform]) of any transform.
 
@@ -234,13 +234,13 @@ class Transform(ABC):
             'label_keys': self.label_keys,
         }
 
-    def add_base_args(
+    def _add_base_args(
         self,
         arguments: ArgumentsDictT,
         overwrite_on_existing: bool = False,
     ) -> ArgumentsDictT:
         """Add the init args to existing arguments"""
-        for key, value in self.get_base_args().items():
+        for key, value in self._get_base_args().items():
             if key in arguments and not overwrite_on_existing:
                 continue
             arguments[key] = value
@@ -530,13 +530,13 @@ class Transform(ABC):
     ) -> tuple[TypeKeys, TypeKeys]:
         if include is not None and exclude is not None:
             raise ValueError('Include and exclude cannot both be specified')
-        Transform.validate_keys_sequence(include, 'include')
-        Transform.validate_keys_sequence(exclude, 'exclude')
-        Transform.validate_keys_sequence(label_keys, 'label_keys')
+        Transform._validate_keys_sequence(include, 'include')
+        Transform._validate_keys_sequence(exclude, 'exclude')
+        Transform._validate_keys_sequence(label_keys, 'label_keys')
         return include, exclude
 
     @staticmethod
-    def validate_keys_sequence(keys: TypeKeys, name: str) -> None:
+    def _validate_keys_sequence(keys: TypeKeys, name: str) -> None:
         """Ensure that the input is not a string but a sequence of strings."""
         if keys is None:
             return

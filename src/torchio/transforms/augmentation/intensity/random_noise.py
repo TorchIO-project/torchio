@@ -54,7 +54,7 @@ class RandomNoise(RandomTransform, IntensityTransform):
             mean=means_by_name,
             std=stds_by_name,
             seed=seeds_by_name,
-            **self.get_base_args(),
+            **self._get_base_args(),
         )
         transformed = transform(subject)
         assert isinstance(transformed, Subject)
