@@ -21,7 +21,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-        python: ["3.10", "3.11", "3.12", "3.13"]
+        python: ["3.10", "3.11", "3.12", "3.13", "3.14"]
       fail-fast: false
 
     runs-on: ${{ matrix.os }}
@@ -59,7 +59,7 @@ jobs:
         shell: bash # this wouldn't work on Powershell
 
       - name: Upload coverage reports to Codecov
-        if: ${{ matrix.os == 'ubuntu-latest' && matrix.python == '3.13' }}
+        if: ${{ matrix.os == 'ubuntu-latest' && matrix.python == '3.14' }}
         uses: codecov/codecov-action@v5.5.2
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
