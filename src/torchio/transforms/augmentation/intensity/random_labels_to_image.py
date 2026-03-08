@@ -246,7 +246,7 @@ class RandomLabelsToImage(RandomTransform, IntensityTransform):
             used_labels=self.used_labels,
             ignore_background=self.ignore_background,
             discretize=self.discretize,
-            **self.get_base_args(),
+            **self._get_base_args(),
         )
         transformed = transform(subject)
         assert isinstance(transformed, Subject)

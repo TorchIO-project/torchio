@@ -41,7 +41,7 @@ class RandomBlur(RandomTransform, IntensityTransform):
         std_by_name: dict[str, TypeTripletFloat] = {}
         for name in images_dict:
             std_by_name[name] = self.get_params(self.std_ranges)
-        transform = Blur(std=std_by_name, **self.get_base_args())
+        transform = Blur(std=std_by_name, **self._get_base_args())
         transformed = transform(subject)
         assert isinstance(transformed, Subject)
         return transformed

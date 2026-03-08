@@ -56,7 +56,7 @@ class RandomFlip(RandomTransform, SpatialTransform):
         if not axes_list:
             return subject
 
-        transform = Flip(axes=axes_list, **self.get_base_args())
+        transform = Flip(axes=axes_list, **self._get_base_args())
         transformed = transform(subject)
         assert isinstance(transformed, Subject)
         return transformed

@@ -195,7 +195,7 @@ class RandomElasticDeformation(RandomTransform, SpatialTransform):
             max_displacement=self.max_displacement,
             image_interpolation=self.image_interpolation,
             label_interpolation=self.label_interpolation,
-            **self.get_base_args(),
+            **self._get_base_args(),
         )
         transformed = transform(subject)
         assert isinstance(transformed, Subject)
