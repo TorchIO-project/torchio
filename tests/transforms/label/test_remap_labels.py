@@ -31,6 +31,7 @@ from ...utils import TorchioTestCase
     ),
 )
 def test_remap(original_label_set, remapping):
+    """Remapping should stay invertible only when the label mapping is lossless."""
     source_label_set = set(remapping.keys())
     target_label_set = set(remapping.values())
     remap_labels = tio.RemapLabels(remapping=remapping)

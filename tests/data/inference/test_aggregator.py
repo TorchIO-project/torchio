@@ -103,6 +103,7 @@ class TestAggregator(TorchioTestCase):
         assert output.dtype == torch.float32
 
     def run_patch_crop_issue(self, *, padding_mode):
+        """Regression helper for #813: cropped patches must reassemble exactly."""
         # https://github.com/TorchIO-project/torchio/issues/813
         pao, pas, ims, bb1, bb2 = 4, 102, 320, 100, 120
 
@@ -136,6 +137,7 @@ class TestAggregator(TorchioTestCase):
         self.run_patch_crop_issue(padding_mode='constant')
 
     def test_bad_aggregator_shape(self):
+        """Reject predictions whose cropped shape no longer matches sampler locations."""
         # https://github.com/microsoft/InnerEye-DeepLearning/pull/677/checks?check_run_id=5395915817
         tensor = torch.ones(1, 40, 40, 40)
         image_name = 'img'
@@ -160,7 +162,7 @@ class TestAggregator(TorchioTestCase):
                 aggregator.add_batch(inference_batch, batch[tio.LOCATION])
 
     def test_downsampling_model(self):
-        # This might be useful to compute image embeddings using a sliding window
+        """Reassemble downsampled patch embeddings onto the coarse output grid."""
         downsampling_factor = 4  # e.g. patch size in a ViT
         embedding_dim = 5
         net_input_size = 20

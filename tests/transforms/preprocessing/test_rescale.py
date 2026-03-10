@@ -116,6 +116,7 @@ class TestRescaleIntensity(TorchioTestCase):
             rescale(subject)
 
     def test_persistent_in_min_max(self):
+        """Rescaling should recompute input bounds on each call."""
         # see https://github.com/TorchIO-project/torchio/issues/1115
         img1 = torch.tensor([[[[0, 1]]]])
         img2 = torch.tensor([[[[0, 10]]]])

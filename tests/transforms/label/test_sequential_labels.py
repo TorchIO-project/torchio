@@ -22,6 +22,7 @@ from ...utils import TorchioTestCase
     ),
 )
 def test_sequential(original_labels):
+    """SequentialLabels should relabel masks to 0..n-1 and remain invertible."""
     remap_labels = tio.SequentialLabels()
     tensor = TorchioTestCase.get_tensor_with_labels(original_labels)
     subject = tio.Subject(label=tio.LabelMap(tensor=tensor))

@@ -55,9 +55,7 @@ class TestRandomElasticDeformation(TorchioTestCase):
             )
 
     def test_folding(self):
-        # Assume shape is (10, 20, 30) and spacing is (1, 1, 1)
-        # Then grid spacing is (10/(12-2), 20/(5-2), 30/(5-2))
-        # or (1, 6.7, 10), and half is (0.5, 3.3, 5)
+        """Warn when displacement exceeds half the control-point spacing."""
         transform = tio.RandomElasticDeformation(
             num_control_points=(12, 5, 5),
             max_displacement=6,

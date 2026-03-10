@@ -10,6 +10,7 @@ def _ignore_reproducibility_warnings() -> None:
 
 class TestReproducibility(TorchioTestCase):
     def test_all_random_transforms(self):
+        """Recorded random histories should replay the same sample exactly."""
         transform = self.get_large_composed_transform()
         # Ignore elastic deformation and gamma warnings during execution
         with warnings.catch_warnings():  # ignore elastic deformation warning

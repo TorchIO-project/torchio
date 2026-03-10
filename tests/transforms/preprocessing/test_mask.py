@@ -62,6 +62,7 @@ class TestMask(TorchioTestCase):
         assert (transformed.t1.data[masked_voxel_indices] == 0).all()
 
     def test_4d(self):
+        """Expand a single-channel mask across channels when masking 4D data."""
         image = tio.ScalarImage(tensor=torch.rand(3, 4, 5, 6))
         mask = tio.LabelMap(tensor=torch.ones(1, 4, 5, 6))
         subject = tio.Subject(image=image, mask_lm=mask)

@@ -62,9 +62,7 @@ class TestRandomAffineElasticDeformation(TorchioTestCase):
             )
 
     def test_folding(self):
-        # Assume shape is (10, 20, 30) and spacing is (1, 1, 1)
-        # Then grid spacing is (10/(12-2), 20/(5-2), 30/(5-2))
-        # or (1, 6.7, 10), and half is (0.5, 3.3, 5)
+        """Warn when displacement exceeds half the control-point spacing."""
         transform = tio.RandomAffineElasticDeformation(
             elastic_kwargs={'num_control_points': (12, 5, 5), 'max_displacement': 6}
         )
@@ -99,7 +97,7 @@ class TestRandomAffineElasticDeformation(TorchioTestCase):
         )
 
     def test_rotation_image(self):
-        # Rotation around image center
+        """Rotating around the image center should keep voxels in view."""
         transform = tio.RandomAffineElasticDeformation(
             affine_kwargs={
                 'degrees': (90, 90),
@@ -112,7 +110,7 @@ class TestRandomAffineElasticDeformation(TorchioTestCase):
         self.assertNotEqual(total, 0)
 
     def test_rotation_origin(self):
-        # Rotation around far away point, image should be empty
+        """Rotating around the distant world origin should empty the image."""
         transform = tio.RandomAffineElasticDeformation(
             affine_kwargs={
                 'degrees': (90, 90),
@@ -278,6 +276,7 @@ class TestRandomAffineElasticDeformation(TorchioTestCase):
         )
 
     def test_default_value_label_map(self):
+        """Regression test for issue #626: label padding must stay binary."""
         # From https://github.com/fepegar/torchio/issues/626
         a = torch.tensor([[1, 0, 0], [0, 1, 0], [0, 0, 1]]).reshape(1, 3, 3, 1)
         image = tio.LabelMap(tensor=a)
@@ -288,6 +287,7 @@ class TestRandomAffineElasticDeformation(TorchioTestCase):
         assert all(n in (0, 1) for n in transformed.data.flatten())
 
     def test_no_inverse(self):
+        """Affine tensors are resampled with the forward transform, not its inverse."""
         tensor = torch.zeros((1, 2, 2, 2))
         tensor[0, 1, 1, 1] = 1  # most RAS voxel
         expected = torch.zeros((1, 2, 2, 2))
@@ -314,6 +314,7 @@ class TestRandomAffineElasticDeformation(TorchioTestCase):
         )
 
     def test_transform_order(self):
+        """Applying affine and elastic steps in different orders should differ."""
         src_transform = tio.RandomAffineElasticDeformation(
             affine_kwargs={'scales': 0, 'degrees': 0, 'translation': 1},
             elastic_kwargs={'num_control_points': 5, 'max_displacement': 1},

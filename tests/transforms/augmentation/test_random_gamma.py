@@ -28,6 +28,7 @@ class TestRandomGamma(TorchioTestCase):
         self.assert_tensor_not_equal(tensor, transformed)
 
     def test_with_high_gamma(self):
+        """Extreme positive log-gamma should squash values in (0, 1) toward 0."""
         transform = RandomGamma(log_gamma=(100, 100))
         tensor = self.get_random_tensor_zero_one()
         transformed = transform(tensor)
@@ -37,6 +38,7 @@ class TestRandomGamma(TorchioTestCase):
         )
 
     def test_with_low_gamma(self):
+        """Extreme negative log-gamma should push positive values toward 1."""
         transform = RandomGamma(log_gamma=(-100, -100))
         tensor = self.get_random_tensor_zero_one()
         transformed = transform(tensor)

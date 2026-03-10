@@ -11,6 +11,7 @@ from ...utils import TorchioTestCase
 
 class TestRandomFlip(TorchioTestCase):
     def test_2d(self):
+        """Flip the two in-plane axes correctly on 2D subjects."""
         subject = self.make_2d(self.sample_subject)
         transform = tio.RandomFlip(axes=(1, 2), flip_probability=1)
         transformed = transform(subject)
@@ -36,6 +37,7 @@ class TestRandomFlip(TorchioTestCase):
             tio.RandomFlip(flip_probability=cast(Any, 'wrong'))
 
     def test_anatomical_axis(self):
+        """Resolve anatomical axis names to the expected tensor dimension."""
         transform = tio.RandomFlip(axes=cast(Any, ['i']), flip_probability=1)
         tensor = torch.rand(1, 2, 3, 4)
         transformed = transform(tensor)
