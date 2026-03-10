@@ -12,6 +12,7 @@ class TestGridSampler(TorchioTestCase):
     """Tests for `GridSampler`."""
 
     def test_locations(self):
+        """Generate the expected sliding-window coordinates for overlapping patches."""
         patch_size = 5, 20, 20
         patch_overlap = 2, 4, 6
         sampler = tio.GridSampler(

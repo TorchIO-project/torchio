@@ -27,10 +27,12 @@ class TestCollate(TorchioTestCase):
         return Dataset(data)
 
     def test_collate(self):
+        """Default collation should tolerate batch members with different keys."""
         loader = tio.SubjectsLoader(self.get_heterogeneous_dataset(), batch_size=2)
         tio.utils.get_first_item(loader)
 
     def test_history_collate(self):
+        """Keep each subject history even when only some samples were transformed."""
         loader = tio.SubjectsLoader(
             self.get_heterogeneous_dataset(),
             batch_size=4,

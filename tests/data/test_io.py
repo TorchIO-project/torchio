@@ -209,6 +209,8 @@ class TestIO(TorchioTestCase):
         assert data.sum() == pytest.approx(tensor.sum())
 
     def test_sitk_to_nib_bad_4d_image(self):
+        """Move vector components back to channels when converting 4D SITK images."""
+
         class DummyImage:
             def GetNumberOfComponentsPerPixel(self):
                 return 2
@@ -241,6 +243,8 @@ class TestIO(TorchioTestCase):
         self.assert_tensor_almost_equal(fixture, affine)
 
     def test_get_ras_affine_from_sitk_2d(self):
+        """Build a 3D RAS affine even when SimpleITK reports a 2D image."""
+
         class DummyImage:
             def GetSpacing(self):
                 return 1, 2
@@ -257,6 +261,8 @@ class TestIO(TorchioTestCase):
         np.testing.assert_array_equal(affine, fixture)
 
     def test_get_ras_affine_from_sitk_4d_direction(self):
+        """Ignore the time axis when deriving a 3D RAS affine from SimpleITK."""
+
         class DummyImage:
             def GetSpacing(self):
                 return 1, 2, 3, 4

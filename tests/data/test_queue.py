@@ -67,6 +67,7 @@ class TestQueue(TorchioTestCase):
 
     @parameterized.expand([(11,), (12,)])
     def test_different_samples_per_volume(self, max_length):
+        """Per-subject num_samples should override the queue-wide default."""
         image2 = tio.ScalarImage(tensor=2 * torch.ones(1, 1, 1, 1))
         image10 = tio.ScalarImage(tensor=10 * torch.ones(1, 1, 1, 1))
         subject2 = tio.Subject(im=image2, num_samples=2)
@@ -122,6 +123,8 @@ class TestQueue(TorchioTestCase):
         assert queue.iterations_per_epoch == 4
 
     def test_child_process_assertion(self):
+        """Promote child-process assertion hints to the user-facing worker error."""
+
         class BrokenIterator:
             def __iter__(self):
                 return self
@@ -136,6 +139,8 @@ class TestQueue(TorchioTestCase):
             queue._get_next_subject()
 
     def test_generic_assertion_is_reraised(self):
+        """Leave unrelated AssertionErrors untouched when fetching subjects."""
+
         class BrokenIterator:
             def __iter__(self):
                 return self

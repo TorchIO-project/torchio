@@ -124,7 +124,7 @@ class TestCropOrPad(TorchioTestCase):
         self.mask_only((9, 18, 30))
 
     def test_center_mask(self):
-        """The mask bounding box and the input image have the same center."""
+        """Mask-based and center-based cropping should match when centers align."""
         target_shape = 8, 22, 30
         transform_center = tio.CropOrPad(target_shape)
         transform_mask = tio.CropOrPad(target_shape, mask_name='label')
@@ -151,7 +151,7 @@ class TestCropOrPad(TorchioTestCase):
             )
 
     def test_mask_corners(self):
-        """The mask bounding box and the input image have the same center."""
+        """Corner voxels should still define a centered mask crop window."""
         target_shape = 8, 22, 30
         transform_center = tio.CropOrPad(target_shape)
         transform_mask = tio.CropOrPad(
@@ -182,6 +182,7 @@ class TestCropOrPad(TorchioTestCase):
             )
 
     def test_2d(self):
+        """Mask-based cropping should preserve singleton dimensions in 2D inputs."""
         # https://github.com/TorchIO-project/torchio/issues/434
         image = np.random.rand(1, 16, 16, 1)
         mask = np.zeros_like(image, dtype=bool)
@@ -207,6 +208,7 @@ class TestCropOrPad(TorchioTestCase):
         crop_with_mask(self.sample_subject)
 
     def test_persistent_bounds_params(self):
+        """Bounds should be recomputed on each call instead of leaking across subjects."""
         # https://github.com/TorchIO-project/torchio/issues/757
         shape = (1, 5, 5, 5)
         mask_a = np.zeros(shape)

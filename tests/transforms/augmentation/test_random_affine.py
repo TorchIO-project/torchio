@@ -19,7 +19,7 @@ class TestRandomAffine(TorchioTestCase):
         affine[:3, 3] = 1e5
 
     def test_rotation_image(self):
-        # Rotation around image center
+        """Rotating around the image center should keep voxels in view."""
         transform = tio.RandomAffine(
             degrees=(90, 90),
             default_pad_value=0,
@@ -30,7 +30,7 @@ class TestRandomAffine(TorchioTestCase):
         self.assertNotEqual(total, 0)
 
     def test_rotation_origin(self):
-        # Rotation around far away point, image should be empty
+        """Rotating around the distant world origin should empty the image."""
         transform = tio.RandomAffine(
             degrees=(90, 90),
             default_pad_value=0,
@@ -182,6 +182,7 @@ class TestRandomAffine(TorchioTestCase):
         do_assert(tio.RandomAffine(translation=sextet_translation))
 
     def test_default_value_label_map(self):
+        """Regression test for issue #626: label padding must stay binary."""
         # From https://github.com/TorchIO-project/torchio/issues/626
         a = torch.tensor([[1, 0, 0], [0, 1, 0], [0, 0, 1]]).reshape(1, 3, 3, 1)
         image = tio.LabelMap(tensor=a)
@@ -190,6 +191,7 @@ class TestRandomAffine(TorchioTestCase):
         assert all(n in (0, 1) for n in transformed.data.flatten())
 
     def test_default_pad_label_parameter(self):
+        """Regression test for issue #1304 and label-padding compatibility."""
         # Test for issue #1304: Using default_pad_value if image is of type LABEL
         # Create a simple label map
         label_data = torch.ones((1, 2, 2, 2))
@@ -239,6 +241,7 @@ class TestRandomAffine(TorchioTestCase):
             tio.RandomAffine(default_pad_label=cast(Any, 'minimum'))
 
     def test_no_inverse(self):
+        """Affine tensors are resampled with the forward transform, not its inverse."""
         tensor = torch.zeros((1, 2, 2, 2))
         tensor[0, 1, 1, 1] = 1  # most RAS voxel
         expected = torch.zeros((1, 2, 2, 2))

@@ -33,6 +33,7 @@ class TestWeightedSampler(TorchioTestCase):
         return subject
 
     def test_inconsistent_shape(self):
+        """Regression test for #234: differing channel counts should still sample."""
         # https://github.com/TorchIO-project/torchio/issues/234#issuecomment-675029767
         subject = tio.Subject(
             im1=tio.ScalarImage(tensor=torch.rand(1, 4, 5, 6)),
@@ -68,12 +69,14 @@ class TestWeightedSampler(TorchioTestCase):
         assert patch.spatial_shape == (5, 5, 5)
 
     def test_extract_patch_invalid_type_with_cdf(self):
+        """Passing a CDF should switch extract_patch to the NumPy-only code path."""
         subject = self.get_sample((1, 7, 7, 7))
         sampler = WeightedSampler(5, 'prob')
         with pytest.raises(TypeError, match='Probability map must be a NumPy array'):
             sampler.extract_patch(subject, (1, 1, 1), cdf=np.array((1.0,)))
 
     def test_probability_zero_raises(self):
+        """Raise a clear error if CDF lookup lands on a zero-probability entry."""
         probability_map = np.array(((0, 1), (1, 1)), dtype=np.float32)
         cdf = WeightedSampler.get_cumulative_distribution_function(probability_map)
 

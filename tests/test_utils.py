@@ -34,6 +34,7 @@ class TestUtils(TorchioTestCase):
         assert isinstance(tio.utils.guess_type('test'), str)
 
     def test_apply_transform_to_file(self):
+        """The file helper should run a transform end to end without a Subject."""
         transform = tio.RandomFlip()
         tio.utils.apply_transform_to_file(
             self.get_image_path('input'),
@@ -77,6 +78,7 @@ class TestUtils(TorchioTestCase):
         assert 'age' in subjects[0]
 
     def test_add_images_from_batch(self):
+        """Batched predictions should attach cleanly to repeated Subject references."""
         subject = copy.deepcopy(self.sample_subject)
         subjects = 4 * [subject]
         preds = torch.rand(4, *subject.shape)

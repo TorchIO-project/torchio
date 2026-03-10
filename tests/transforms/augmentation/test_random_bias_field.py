@@ -39,5 +39,6 @@ class TestRandomBiasField(TorchioTestCase):
             tio.RandomBiasField(order=cast(Any, 'wrong'))
 
     def test_small_image(self):
+        """Regression test for issue #300: tiny tensors should not fail."""
         # https://github.com/TorchIO-project/torchio/issues/300
         tio.RandomBiasField()(torch.rand(1, 2, 3, 4))

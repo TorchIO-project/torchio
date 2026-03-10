@@ -57,6 +57,7 @@ class TestToOrientation(TorchioTestCase):
         )
 
     def test_ras_to_las_to_ras(self):
+        """Round-tripping through LAS should recover the original data and affine."""
         # Step 1: Start with RAS orientation
         original_subject = self.sample_subject
         original_data = original_subject.t1.data.clone()

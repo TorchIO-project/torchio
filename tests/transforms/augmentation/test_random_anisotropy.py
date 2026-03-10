@@ -14,6 +14,7 @@ class TestRandomAnisotropy(TorchioTestCase):
     """Tests for `RandomAnisotropy`."""
 
     def test_downsample(self):
+        """Simulate lower resolution while restoring the original output spacing."""
         transform = RandomAnisotropy(
             axes=1,
             downsampling=(2, 2),

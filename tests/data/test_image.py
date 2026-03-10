@@ -280,6 +280,7 @@ class TestImage(TorchioTestCase):
         assert 0 <= counts[1] <= max_n
 
     def test_affine_multipath(self):
+        """Regression test for #762: multipath images keep an identity affine."""
         # https://github.com/TorchIO-project/torchio/issues/762
         path1 = self.get_image_path('multi1')
         path2 = self.get_image_path('multi2')
@@ -288,7 +289,9 @@ class TestImage(TorchioTestCase):
         self.assert_tensor_equal(image.affine, np.eye(4))
 
     def test_bad_numpy_type_reader(self):
+        """Regression test for #764: custom readers may return uint16 arrays."""
         # https://github.com/TorchIO-project/torchio/issues/764
+
         def numpy_reader(path):
             return np.load(path), np.eye(4)
 
@@ -312,6 +315,7 @@ class TestImage(TorchioTestCase):
         assert not image._loaded
 
     def test_reload_data_and_affine_after_unload(self):
+        """Accessing data or affine should transparently reload an unloaded image."""
         path_1 = self.get_image_path('reload_1')
         path_2 = self.get_image_path('reload_2')
 
@@ -338,6 +342,7 @@ class TestImage(TorchioTestCase):
         assert not image._is_dir()
 
     def test_copy_no_data(self):
+        """Regression test for #974: copying must preserve the loaded state."""
         # https://github.com/TorchIO-project/torchio/issues/974
         path = self.get_image_path('im_copy')
         my_image = tio.LabelMap(path)
@@ -450,6 +455,7 @@ class TestImage(TorchioTestCase):
             image.flip_axis('x')
 
     def test_direction_must_be_3d(self):
+        """Reject metadata that does not describe a 3D direction matrix."""
         image = tio.ScalarImage(tensor=torch.rand(1, 2, 3, 4))
 
         with (

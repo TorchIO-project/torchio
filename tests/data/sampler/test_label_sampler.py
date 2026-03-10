@@ -30,6 +30,7 @@ class TestLabelSampler(TorchioTestCase):
         assert torch.all(probabilities.squeeze().eq(fixture))
 
     def test_inconsistent_shape(self):
+        """Regression test for #234: differing channel counts should still sample."""
         # https://github.com/TorchIO-project/torchio/issues/234#issuecomment-675029767
         subject = tio.Subject(
             im1=tio.ScalarImage(tensor=torch.rand(2, 4, 5, 6)),
@@ -40,6 +41,7 @@ class TestLabelSampler(TorchioTestCase):
         next(sampler(subject))
 
     def test_multichannel_label_sampler(self):
+        """Combine per-channel label weights before normalizing voxel probabilities."""
         subject = tio.Subject(
             label=tio.LabelMap(
                 tensor=torch.tensor(
@@ -71,6 +73,7 @@ class TestLabelSampler(TorchioTestCase):
             next(sampler(subject))
 
     def test_empty_map(self):
+        """Regression test for #392: fail when no valid label-centered patch exists."""
         # https://github.com/TorchIO-project/torchio/issues/392
         im = tio.ScalarImage(tensor=torch.rand(1, 6, 6, 6))
         label = torch.zeros(1, 6, 6, 6)

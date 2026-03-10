@@ -10,6 +10,7 @@ from ..utils import TorchioTestCase
 
 class TestInvertibility(TorchioTestCase):
     def test_all_random_transforms(self):
+        """A large random pipeline should still round-trip shape and affine data."""
         transform = self.get_large_composed_transform()
         # Remove RandomLabelsToImage as it will add a new image to the subject
         for t in transform.transforms:
@@ -30,6 +31,8 @@ class TestInvertibility(TorchioTestCase):
         )
 
     def test_different_interpolation(self):
+        """Inverse interpolation can be overridden for probabilities and labels."""
+
         def model_probs(subject):
             subject = copy.deepcopy(subject)
             subject.im.set_data(torch.rand_like(subject.im.data))

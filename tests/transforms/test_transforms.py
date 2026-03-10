@@ -156,6 +156,7 @@ class TestTransforms(TorchioTestCase):
         assert isinstance(transformed, tio.Subject)
 
     def test_transforms_subject_4d(self):
+        """Each transform should preserve multichannel inputs across the pipeline."""
         composed = self.get_transform(channels=('t1', 't2'), is_3d=True)
         subject = self.make_multichannel(self.sample_subject)
         subject = self.flip_affine_x(subject)
@@ -318,6 +319,7 @@ class TestTransform(TorchioTestCase):
             transform.inverse()
 
     def test_batch_history(self):
+        """Regression test for applying inverse transforms after history collation."""
         # https://github.com/TorchIO-project/torchio/discussions/743
         subject = self.sample_subject
         transform = tio.Compose(
@@ -373,6 +375,7 @@ class TestTransform(TorchioTestCase):
         assert mask.sum() == 1
 
     def test_label_keys(self):
+        """Label keys should use label-map interpolation and stay discrete."""
         # Adapted from the issue in which the feature was requested:
         # https://github.com/TorchIO-project/torchio/issues/866#issue-1222255576
         size = 1, 10, 10, 10

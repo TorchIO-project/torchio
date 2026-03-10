@@ -20,6 +20,7 @@ class TestToCanonical(TorchioTestCase):
         )
 
     def test_las_to_ras(self):
+        """Converting LAS data to canonical RAS should flip voxels and affine."""
         self.sample_subject.t1.affine[0, 0] = -1  # Change orientation to 'LAS'
         transform = tio.ToCanonical()
         transformed = transform(self.sample_subject)

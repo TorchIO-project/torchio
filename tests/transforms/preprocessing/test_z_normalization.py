@@ -21,6 +21,7 @@ class TestZNormalization(TorchioTestCase):
             tio.ZNormalization()(image)
 
     def test_dtype(self):
+        """Accept integer tensors in both masked and unmasked normalization modes."""
         # https://github.com/TorchIO-project/torchio/issues/407
         tensor_int = (100 * torch.rand(1, 2, 3, 4)).byte()
         transform = tio.ZNormalization(masking_method=tio.ZNormalization.mean)

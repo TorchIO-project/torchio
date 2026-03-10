@@ -16,6 +16,7 @@ class TestUniformSampler(TorchioTestCase):
         assert torch.all(probabilities.eq(fixtures))
 
     def test_incosistent_shape(self):
+        """Regression test for #234: differing channel counts should still sample."""
         # https://github.com/TorchIO-project/torchio/issues/234#issuecomment-675029767
         subject = torchio.Subject(
             im1=torchio.ScalarImage(tensor=torch.rand(1, 4, 5, 6)),

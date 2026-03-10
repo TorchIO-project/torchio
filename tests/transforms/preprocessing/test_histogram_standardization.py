@@ -35,6 +35,7 @@ class TestHistogramStandardization(TorchioTestCase):
         self.dataset = SubjectsDataset(self.subjects)
 
     def test_train_histogram(self):
+        """Train landmarks with callable, single-mask, and per-image mask inputs."""
         paths = [subject.image.path for subject in self.dataset]
         # Use a function to mask
         HistogramStandardization.train(

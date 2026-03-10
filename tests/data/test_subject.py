@@ -74,6 +74,7 @@ class TestSubject(TorchioTestCase):
         assert torch.allclose(recovered.t1.data, self.sample_subject.t1.data)
 
     def test_inconsistent_shape(self):
+        """Allow channel mismatches in spatial_shape while shape still errors."""
         subject = tio.Subject(
             a=tio.ScalarImage(tensor=torch.rand(1, 2, 3, 4)),
             b=tio.ScalarImage(tensor=torch.rand(2, 2, 3, 4)),
@@ -127,6 +128,7 @@ class TestSubject(TorchioTestCase):
             assert self.sample_subject._repr_html_() == repr(self.sample_subject)
 
     def test_same_space(self):
+        """Regression test for #381: tiny affine noise should still match space."""
         # https://github.com/TorchIO-project/torchio/issues/381
         affine1 = np.array(
             [
@@ -276,6 +278,7 @@ class TestSubject(TorchioTestCase):
         assert batch.__class__ is dict
 
     def test_deep_copy_subject(self):
+        """Deep copies should detach image tensors from the source subject."""
         sub_copy = copy.deepcopy(self.sample_subject)
         assert isinstance(sub_copy, tio.data.Subject)
 
@@ -283,11 +286,10 @@ class TestSubject(TorchioTestCase):
         sample_t1 = self.sample_subject.get_scalar_image('t1')
         new_tensor = torch.ones_like(sub_copy_t1.data)
         sub_copy_t1.set_data(new_tensor)
-        # The data of the original subject should not be modified
         assert not torch.allclose(sub_copy_t1.data, sample_t1.data)
 
     def test_shallow_copy_subject(self):
-        # We are creating a deep copy of the original subject first to not modify the original subject
+        """Shallow copies should share tensors with their source copy only."""
         copy_original_subj = copy.deepcopy(self.sample_subject)
         sub_copy = copy.copy(copy_original_subj)
         assert isinstance(sub_copy, tio.data.Subject)
@@ -298,9 +300,7 @@ class TestSubject(TorchioTestCase):
         new_tensor = torch.ones_like(sub_copy_t1.data)
         sub_copy_t1.set_data(new_tensor)
 
-        # The data of both copies needs to be the same as we are using a shallow copy
         assert torch.allclose(sub_copy_t1.data, copy_original_t1.data)
-        # The data of the original subject should not be modified
         assert not torch.allclose(sub_copy_t1.data, sample_t1.data)
         assert not torch.allclose(copy_original_t1.data, sample_t1.data)
 

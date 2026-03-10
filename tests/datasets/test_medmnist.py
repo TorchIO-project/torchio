@@ -25,6 +25,7 @@ classes = (
 @pytest.mark.parametrize('class_', classes)
 @pytest.mark.parametrize('split', ('train', 'val', 'test'))
 def test_load_all(class_, split):
+    """Every MedMNIST split should be iterable through SubjectsLoader."""
     dataset = class_(split)
     loader = tio.SubjectsLoader(
         dataset,

@@ -27,6 +27,7 @@ class TestPad(TorchioTestCase):
         self.assert_tensor_equal(sitk_affine, tio_affine)
 
     def test_nans_history(self):
+        """Replaying a stored Pad transform should not introduce NaNs."""
         padded = tio.Pad(1, padding_mode=2)(self.sample_subject)
         again = padded.history[0](self.sample_subject)
         assert not torch.isnan(again.t1.data).any()
@@ -47,6 +48,7 @@ class TestPad(TorchioTestCase):
             tio.Pad(1, padding_mode='mean')(self.sample_subject.label)
 
     def test_padding_modes_global(self):
+        """Global padding modes should derive border values from the whole image."""
         x = torch.ones(1, 1, 2, 2, dtype=torch.int)
         x[..., 0, 0] = 0
         # The image should look like this:

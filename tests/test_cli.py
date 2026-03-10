@@ -13,6 +13,7 @@ runner = CliRunner()
 
 class TestCLI(TorchioTestCase):
     def test_cli_transform(self):
+        """The CLI should accept kwargs and stay silent when progress is hidden."""
         image = str(self.get_image_path('cli'))
         args = [
             image,
@@ -35,6 +36,7 @@ class TestCLI(TorchioTestCase):
         assert result.exit_code == 1
 
     def test_cli_hd(self):
+        """``--load`` should print fully realized image metadata, not a lazy stub."""
         image = str(self.get_image_path('cli'))
         args = [image, '--load']
         result = runner.invoke(print_info.app, args)
