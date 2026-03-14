@@ -19,11 +19,10 @@ class RSNACervicalSpineFracture(SubjectsDataset):
     """RSNA 2022 Cervical Spine Fracture Detection dataset.
 
     This is a helper class for the dataset used in the
-    `RSNA 2022 Cervical Spine Fracture Detection`_ hosted on
-    `kaggle <https://www.kaggle.com/>`_. The dataset must be downloaded before
+    [RSNA 2022 Cervical Spine Fracture Detection](https://www.kaggle.com/competitions/rsna-2022-cervical-spine-fracture-detection/overview/evaluation) hosted on
+    [kaggle ](https://www.kaggle.com/). The dataset must be downloaded before
     instantiating this class.
 
-    .. _RSNA 2022 Cervical Spine Fracture Detection: https://www.kaggle.com/competitions/rsna-2022-cervical-spine-fracture-detection/overview/evaluation
     """
 
     UID = 'StudyInstanceUID'

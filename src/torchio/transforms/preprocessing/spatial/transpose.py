@@ -9,8 +9,7 @@ class Transpose(SpatialTransform):
     The spatial metadata is updated accordingly, so the world coordinates of
     all voxels in the input and output spaces match.
 
-    Example:
-
+    Examples:
     >>> import torchio as tio
     >>> image = tio.datasets.FPG().t1
     >>> image

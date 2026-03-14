@@ -1,3 +1,6 @@
+from typing import Any
+from typing import cast
+
 import pytest
 import torch
 
@@ -90,11 +93,11 @@ class TestRandomAffine(TorchioTestCase):
 
     def test_wrong_scales_type(self):
         with pytest.raises(ValueError):
-            tio.RandomAffine(scales='wrong')
+            tio.RandomAffine(scales=cast(Any, 'wrong'))
 
     def test_wrong_degrees_type(self):
         with pytest.raises(ValueError):
-            tio.RandomAffine(degrees='wrong')
+            tio.RandomAffine(degrees=cast(Any, 'wrong'))
 
     def test_too_many_translation_values(self):
         with pytest.raises(ValueError):
@@ -102,11 +105,11 @@ class TestRandomAffine(TorchioTestCase):
 
     def test_wrong_translation_type(self):
         with pytest.raises(ValueError):
-            tio.RandomAffine(translation='wrong')
+            tio.RandomAffine(translation=cast(Any, 'wrong'))
 
     def test_wrong_center(self):
         with pytest.raises(ValueError):
-            tio.RandomAffine(center=0)
+            tio.RandomAffine(center=cast(Any, 0))
 
     def test_wrong_default_pad_value(self):
         with pytest.raises(ValueError):
@@ -114,7 +117,7 @@ class TestRandomAffine(TorchioTestCase):
 
     def test_wrong_image_interpolation_type(self):
         with pytest.raises(TypeError):
-            tio.RandomAffine(image_interpolation=0)
+            tio.RandomAffine(image_interpolation=cast(Any, 0))
 
     def test_wrong_image_interpolation_value(self):
         with pytest.raises(ValueError):
@@ -125,31 +128,58 @@ class TestRandomAffine(TorchioTestCase):
             tio.RandomAffine(scales=(0.8, 0.5, 0.1), isotropic=True)
 
     def test_parse_scales(self):
-        def do_assert(transform):
+        def do_assert(transform: tio.RandomAffine) -> None:
             assert transform.scales == 3 * (0.9, 1.1)
 
+        triplet_scales: tuple[float, float, float] = (0.1, 0.1, 0.1)
+        sextet_scales: tuple[float, float, float, float, float, float] = (
+            0.9,
+            1.1,
+            0.9,
+            1.1,
+            0.9,
+            1.1,
+        )
         do_assert(tio.RandomAffine(scales=0.1))
         do_assert(tio.RandomAffine(scales=(0.9, 1.1)))
-        do_assert(tio.RandomAffine(scales=3 * (0.1,)))
-        do_assert(tio.RandomAffine(scales=3 * [0.9, 1.1]))
+        do_assert(tio.RandomAffine(scales=triplet_scales))
+        do_assert(tio.RandomAffine(scales=sextet_scales))
 
     def test_parse_degrees(self):
-        def do_assert(transform):
+        def do_assert(transform: tio.RandomAffine) -> None:
             assert transform.degrees == 3 * (-10, 10)
 
+        triplet_degrees: tuple[int, int, int] = (10, 10, 10)
+        sextet_degrees: tuple[int, int, int, int, int, int] = (
+            -10,
+            10,
+            -10,
+            10,
+            -10,
+            10,
+        )
         do_assert(tio.RandomAffine(degrees=10))
         do_assert(tio.RandomAffine(degrees=(-10, 10)))
-        do_assert(tio.RandomAffine(degrees=3 * (10,)))
-        do_assert(tio.RandomAffine(degrees=3 * [-10, 10]))
+        do_assert(tio.RandomAffine(degrees=triplet_degrees))
+        do_assert(tio.RandomAffine(degrees=sextet_degrees))
 
     def test_parse_translation(self):
-        def do_assert(transform):
+        def do_assert(transform: tio.RandomAffine) -> None:
             assert transform.translation == 3 * (-10, 10)
 
+        triplet_translation: tuple[int, int, int] = (10, 10, 10)
+        sextet_translation: tuple[int, int, int, int, int, int] = (
+            -10,
+            10,
+            -10,
+            10,
+            -10,
+            10,
+        )
         do_assert(tio.RandomAffine(translation=10))
         do_assert(tio.RandomAffine(translation=(-10, 10)))
-        do_assert(tio.RandomAffine(translation=3 * (10,)))
-        do_assert(tio.RandomAffine(translation=3 * [-10, 10]))
+        do_assert(tio.RandomAffine(translation=triplet_translation))
+        do_assert(tio.RandomAffine(translation=sextet_translation))
 
     def test_default_value_label_map(self):
         # From https://github.com/TorchIO-project/torchio/issues/626
@@ -174,7 +204,8 @@ class TestRandomAffine(TorchioTestCase):
 
         # Should contain the specified pad value for labels
         message = 'default_pad_label=250 should be respected for LABEL images'
-        has_expected_value = (transformed_subject['label'].tensor == 250).any()
+        transformed_label = transformed_subject.get_label_map('label')
+        has_expected_value = (transformed_label.tensor == 250).any()
         assert has_expected_value, message
 
         # Test 2: backward compatibility - default_pad_value should still be ignored for labels
@@ -186,7 +217,8 @@ class TestRandomAffine(TorchioTestCase):
         s_aug_old = aff_old.apply_transform(subject)
 
         # Should still use 0 (default for labels), not the default_pad_value
-        non_one_values = s_aug_old['label'].data[s_aug_old['label'].data != 1]
+        augmented_label = s_aug_old.get_label_map('label')
+        non_one_values = augmented_label.data[augmented_label.data != 1]
         all_zeros = (non_one_values == 0).all() if len(non_one_values) > 0 else True
         assert all_zeros, message
 
@@ -198,12 +230,13 @@ class TestRandomAffine(TorchioTestCase):
             default_pad_label=123,
         )
         s_affine = affine_transform.apply_transform(subject)
-        has_affine_value = (s_affine['label'].tensor == 123).any()
+        affine_label = s_affine.get_label_map('label')
+        has_affine_value = (affine_label.tensor == 123).any()
         assert has_affine_value, 'Direct Affine class should respect default_pad_label'
 
     def test_wrong_default_pad_label(self):
         with pytest.raises(ValueError):
-            tio.RandomAffine(default_pad_label='minimum')
+            tio.RandomAffine(default_pad_label=cast(Any, 'minimum'))
 
     def test_no_inverse(self):
         tensor = torch.zeros((1, 2, 2, 2))

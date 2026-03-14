@@ -2,7 +2,8 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from numbers import Number
-from typing import Union
+from typing import Protocol
+from typing import cast
 
 import numpy as np
 import SimpleITK as sitk
@@ -20,83 +21,87 @@ from ....utils import to_tuple
 from ...spatial_transform import SpatialTransform
 from .. import RandomTransform
 
-TypeOneToSixFloat = Union[TypeRangeFloat, TypeTripletFloat, TypeSextetFloat]
+TypeOneToSixFloat = TypeRangeFloat | TypeTripletFloat | TypeSextetFloat
+
+
+class _CompositeTransform(Protocol):
+    def AddTransform(self, transform: sitk.Transform) -> None: ...
 
 
 class RandomAffine(RandomTransform, SpatialTransform):
     r"""Apply a random affine transformation and resample the image.
 
     Args:
-        scales: Tuple :math:`(a_1, b_1, a_2, b_2, a_3, b_3)` defining the
+        scales: Tuple $(a_1, b_1, a_2, b_2, a_3, b_3)$ defining the
             scaling ranges.
-            The scaling values along each dimension are :math:`(s_1, s_2, s_3)`,
-            where :math:`s_i \sim \mathcal{U}(a_i, b_i)`.
-            If two values :math:`(a, b)` are provided,
-            then :math:`s_i \sim \mathcal{U}(a, b)`.
-            If only one value :math:`x` is provided,
-            then :math:`s_i \sim \mathcal{U}(1 - x, 1 + x)`.
-            If three values :math:`(x_1, x_2, x_3)` are provided,
-            then :math:`s_i \sim \mathcal{U}(1 - x_i, 1 + x_i)`.
-            For example, using ``scales=(0.5, 0.5)`` will zoom out the image,
+            The scaling values along each dimension are $(s_1, s_2, s_3)$,
+            where $s_i \sim \mathcal{U}(a_i, b_i)$.
+            If two values $(a, b)$ are provided,
+            then $s_i \sim \mathcal{U}(a, b)$.
+            If only one value $x$ is provided,
+            then $s_i \sim \mathcal{U}(1 - x, 1 + x)$.
+            If three values $(x_1, x_2, x_3)$ are provided,
+            then $s_i \sim \mathcal{U}(1 - x_i, 1 + x_i)$.
+            For example, using `scales=(0.5, 0.5)` will zoom out the image,
             making the objects inside look twice as small while preserving
             the physical size and position of the image bounds.
-        degrees: Tuple :math:`(a_1, b_1, a_2, b_2, a_3, b_3)` defining the
+        degrees: Tuple $(a_1, b_1, a_2, b_2, a_3, b_3)$ defining the
             rotation ranges in degrees.
             Rotation angles around each axis are
-            :math:`(\theta_1, \theta_2, \theta_3)`,
-            where :math:`\theta_i \sim \mathcal{U}(a_i, b_i)`.
-            If two values :math:`(a, b)` are provided,
-            then :math:`\theta_i \sim \mathcal{U}(a, b)`.
-            If only one value :math:`x` is provided,
-            then :math:`\theta_i \sim \mathcal{U}(-x, x)`.
-            If three values :math:`(x_1, x_2, x_3)` are provided,
-            then :math:`\theta_i \sim \mathcal{U}(-x_i, x_i)`.
-        translation: Tuple :math:`(a_1, b_1, a_2, b_2, a_3, b_3)` defining the
+            $(\theta_1, \theta_2, \theta_3)$,
+            where $\theta_i \sim \mathcal{U}(a_i, b_i)$.
+            If two values $(a, b)$ are provided,
+            then $\theta_i \sim \mathcal{U}(a, b)$.
+            If only one value $x$ is provided,
+            then $\theta_i \sim \mathcal{U}(-x, x)$.
+            If three values $(x_1, x_2, x_3)$ are provided,
+            then $\theta_i \sim \mathcal{U}(-x_i, x_i)$.
+        translation: Tuple $(a_1, b_1, a_2, b_2, a_3, b_3)$ defining the
             translation ranges in mm.
-            Translation along each axis is :math:`(t_1, t_2, t_3)`,
-            where :math:`t_i \sim \mathcal{U}(a_i, b_i)`.
-            If two values :math:`(a, b)` are provided,
-            then :math:`t_i \sim \mathcal{U}(a, b)`.
-            If only one value :math:`x` is provided,
-            then :math:`t_i \sim \mathcal{U}(-x, x)`.
-            If three values :math:`(x_1, x_2, x_3)` are provided,
-            then :math:`t_i \sim \mathcal{U}(-x_i, x_i)`.
+            Translation along each axis is $(t_1, t_2, t_3)$,
+            where $t_i \sim \mathcal{U}(a_i, b_i)$.
+            If two values $(a, b)$ are provided,
+            then $t_i \sim \mathcal{U}(a, b)$.
+            If only one value $x$ is provided,
+            then $t_i \sim \mathcal{U}(-x, x)$.
+            If three values $(x_1, x_2, x_3)$ are provided,
+            then $t_i \sim \mathcal{U}(-x_i, x_i)$.
             For example, if the image is in RAS+ orientation (e.g., after
-            applying :class:`~torchio.transforms.preprocessing.ToCanonical`)
-            and the translation is :math:`(10, 20, 30)`, the sample will move
+            applying [`ToCanonical`][torchio.transforms.preprocessing.ToCanonical])
+            and the translation is $(10, 20, 30)$, the sample will move
             10 mm to the right, 20 mm to the front, and 30 mm upwards.
             If the image was in, e.g., PIR+ orientation, the sample will move
             10 mm to the back, 20 mm downwards, and 30 mm to the right.
-        isotropic: If ``True``, only one scaling factor will be sampled for all dimensions,
-            i.e. :math:`s_1 = s_2 = s_3`.
-            If one value :math:`x` is provided in :attr:`scales`, the scaling factor along all
-            dimensions will be :math:`s \sim \mathcal{U}(1 - x, 1 + x)`.
-            If two values provided :math:`(a, b)` in :attr:`scales`, the scaling factor along all
-            dimensions will be :math:`s \sim \mathcal{U}(a, b)`.
-        center: If ``'image'``, rotations and scaling will be performed around
-            the image center. If ``'origin'``, rotations and scaling will be
+        isotropic: If `True`, only one scaling factor will be sampled for all dimensions,
+            i.e. $s_1 = s_2 = s_3$.
+            If one value $x$ is provided in `scales`, the scaling factor along all
+            dimensions will be $s \sim \mathcal{U}(1 - x, 1 + x)$.
+            If two values provided $(a, b)$ in `scales`, the scaling factor along all
+            dimensions will be $s \sim \mathcal{U}(a, b)$.
+        center: If `'image'`, rotations and scaling will be performed around
+            the image center. If `'origin'`, rotations and scaling will be
             performed around the origin in world coordinates.
         default_pad_value: As the image is rotated, some values near the
             borders will be undefined.
-            If ``'minimum'``, the fill value will be the image minimum.
-            If ``'mean'``, the fill value is the mean of the border values.
-            If ``'otsu'``, the fill value is the mean of the values at the
+            If `'minimum'`, the fill value will be the image minimum.
+            If `'mean'`, the fill value is the mean of the border values.
+            If `'otsu'`, the fill value is the mean of the values at the
             border that lie under an
-            `Otsu threshold <https://ieeexplore.ieee.org/document/4310076>`_.
+            [Otsu threshold ](https://ieeexplore.ieee.org/document/4310076).
             If it is a number, that value will be used.
             This parameter applies to intensity images only.
         default_pad_label: As the label map is rotated, some values near the
             borders will be undefined. This numeric value will be used to fill
             those undefined regions. This parameter applies to label maps only.
-        image_interpolation: See :ref:`Interpolation`.
-        label_interpolation: See :ref:`Interpolation`.
-        check_shape: If ``True`` an error will be raised if the images are in
-            different physical spaces. If ``False``, :attr:`center` should
-            probably not be ``'image'`` but ``'center'``.
-        **kwargs: See :class:`~torchio.transforms.Transform` for additional
+        image_interpolation: See Interpolation.
+        label_interpolation: See Interpolation.
+        check_shape: If `True` an error will be raised if the images are in
+            different physical spaces. If `False`, `center` should
+            probably not be `'image'` but `'center'`.
+        **kwargs: See [`Transform`][torchio.transforms.Transform] for additional
             keyword arguments.
 
-    Example:
+    Examples:
         >>> import torchio as tio
         >>> image = tio.datasets.Colin27().t1
         >>> transform = tio.RandomAffine(
@@ -105,15 +110,6 @@ class RandomAffine(RandomTransform, SpatialTransform):
         ... )
         >>> transformed = transform(image)
 
-    .. plot::
-
-        import torchio as tio
-        subject = tio.datasets.Slicer('CTChest')
-        ct = subject.CT_chest
-        transform = tio.RandomAffine()
-        ct_transformed = transform(ct)
-        subject.add_image(ct_transformed, 'Transformed')
-        subject.plot()
     """
 
     def __init__(
@@ -184,18 +180,25 @@ class RandomAffine(RandomTransform, SpatialTransform):
             self.translation,
             self.isotropic,
         )
-        arguments = {
-            'scales': scaling_params,
-            'degrees': rotation_params,
-            'translation': translation_params,
-            'center': self.center,
-            'default_pad_value': self.default_pad_value,
-            'default_pad_label': self.default_pad_label,
-            'image_interpolation': self.image_interpolation,
-            'label_interpolation': self.label_interpolation,
-            'check_shape': self.check_shape,
-        }
-        transform = Affine(**self.add_base_args(arguments))
+        scaling_values = [float(value) for value in scaling_params.tolist()]
+        rotation_values = [float(value) for value in rotation_params.tolist()]
+        translation_values = [float(value) for value in translation_params.tolist()]
+        transform = Affine(
+            scales=(scaling_values[0], scaling_values[1], scaling_values[2]),
+            degrees=(rotation_values[0], rotation_values[1], rotation_values[2]),
+            translation=(
+                translation_values[0],
+                translation_values[1],
+                translation_values[2],
+            ),
+            center=self.center,
+            default_pad_value=self.default_pad_value,
+            default_pad_label=self.default_pad_label,
+            image_interpolation=self.image_interpolation,
+            label_interpolation=self.label_interpolation,
+            check_shape=self.check_shape,
+            **self._get_base_args(),
+        )
         transformed = transform(subject)
         assert isinstance(transformed, Subject)
         return transformed
@@ -205,33 +208,33 @@ class Affine(SpatialTransform):
     r"""Apply affine transformation.
 
     Args:
-        scales: Tuple :math:`(s_1, s_2, s_3)` defining the
+        scales: Tuple $(s_1, s_2, s_3)$ defining the
             scaling values along each dimension.
-        degrees: Tuple :math:`(\theta_1, \theta_2, \theta_3)` defining the
+        degrees: Tuple $(\theta_1, \theta_2, \theta_3)$ defining the
             rotation around each axis.
-        translation: Tuple :math:`(t_1, t_2, t_3)` defining the
+        translation: Tuple $(t_1, t_2, t_3)$ defining the
             translation in mm along each axis.
-        center: If ``'image'``, rotations and scaling will be performed around
-            the image center. If ``'origin'``, rotations and scaling will be
+        center: If `'image'`, rotations and scaling will be performed around
+            the image center. If `'origin'`, rotations and scaling will be
             performed around the origin in world coordinates.
         default_pad_value: As the image is rotated, some values near the
             borders will be undefined.
-            If ``'minimum'``, the fill value will be the image minimum.
-            If ``'mean'``, the fill value is the mean of the border values.
-            If ``'otsu'``, the fill value is the mean of the values at the
+            If `'minimum'`, the fill value will be the image minimum.
+            If `'mean'`, the fill value is the mean of the border values.
+            If `'otsu'`, the fill value is the mean of the values at the
             border that lie under an
-            `Otsu threshold <https://ieeexplore.ieee.org/document/4310076>`_.
+            [Otsu threshold ](https://ieeexplore.ieee.org/document/4310076).
             If it is a number, that value will be used.
             This parameter applies to intensity images only.
         default_pad_label: As the label map is rotated, some values near the
             borders will be undefined. This numeric value will be used to fill
             those undefined regions. This parameter applies to label maps only.
-        image_interpolation: See :ref:`Interpolation`.
-        label_interpolation: See :ref:`Interpolation`.
-        check_shape: If ``True`` an error will be raised if the images are in
-            different physical spaces. If ``False``, :attr:`center` should
-            probably not be ``'image'`` but ``'center'``.
-        **kwargs: See :class:`~torchio.transforms.Transform` for additional
+        image_interpolation: See Interpolation.
+        label_interpolation: See Interpolation.
+        check_shape: If `True` an error will be raised if the images are in
+            different physical spaces. If `False`, `center` should
+            probably not be `'image'` but `'center'`.
+        **kwargs: See [`Transform`][torchio.transforms.Transform] for additional
             keyword arguments.
     """
 
@@ -301,7 +304,7 @@ class Affine(SpatialTransform):
 
     @staticmethod
     def _get_scaling_transform(
-        scaling_params: Sequence[float],
+        scaling_params: Sequence[float] | np.ndarray,
         center_lps: TypeTripletFloat | None = None,
     ) -> sitk.ScaleTransform:
         # 1.5 means the objects look 1.5 times larger
@@ -314,18 +317,18 @@ class Affine(SpatialTransform):
 
     @staticmethod
     def _get_rotation_transform(
-        degrees: Sequence[float],
-        translation: Sequence[float],
+        degrees: Sequence[float] | np.ndarray,
+        translation: Sequence[float] | np.ndarray,
         center_lps: TypeTripletFloat | None = None,
     ) -> sitk.Euler3DTransform:
-        def ras_to_lps(triplet: Sequence[float]):
+        def ras_to_lps(triplet: Sequence[float] | np.ndarray) -> np.ndarray:
             return np.array((-1, -1, 1), dtype=float) * np.asarray(triplet)
 
         transform = sitk.Euler3DTransform()
-        radians = np.radians(degrees).tolist()
+        radians = np.asarray(np.radians(degrees), dtype=float)
 
         # SimpleITK uses LPS
-        radians_lps = ras_to_lps(radians)  # type: ignore[arg-type]
+        radians_lps = ras_to_lps(radians)
         translation_lps = ras_to_lps(translation)
 
         transform.SetRotation(*radians_lps)
@@ -360,9 +363,13 @@ class Affine(SpatialTransform):
 
         sitk_major_version = get_major_sitk_version()
         if sitk_major_version == 1:
-            transform = sitk.Transform(3, sitk.sitkComposite)
-            transform.AddTransform(scaling_transform)
-            transform.AddTransform(rotation_transform)
+            composite = cast(
+                _CompositeTransform,
+                sitk.Transform(3, sitk.sitkComposite),
+            )
+            composite.AddTransform(scaling_transform)
+            composite.AddTransform(rotation_transform)
+            transform = cast(sitk.Transform, composite)
         elif sitk_major_version == 2:
             transforms = [scaling_transform, rotation_transform]
             transform = sitk.CompositeTransform(transforms)

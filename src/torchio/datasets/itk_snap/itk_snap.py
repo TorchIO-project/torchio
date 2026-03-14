@@ -10,9 +10,8 @@ from ...utils import get_torchio_cache_dir
 class SubjectITKSNAP(Subject):
     """ITK-SNAP Image Data Downloads.
 
-    See `the ITK-SNAP website`_ for more information.
+    See [the ITK-SNAP website](http://www.itksnap.org/pmwiki/pmwiki.php?n=Downloads.Data) for more information.
 
-    .. _the ITK-SNAP website: http://www.itksnap.org/pmwiki/pmwiki.php?n=Downloads.Data
     """
 
     url_base = 'https://www.nitrc.org/frs/download.php/'

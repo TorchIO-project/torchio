@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from collections import defaultdict
 from collections.abc import Iterable
+from collections.abc import Sequence
 
 import numpy as np
 import torch
@@ -20,53 +20,54 @@ class RandomGhosting(RandomTransform, IntensityTransform):
     field-of-view vary or move in a regular (periodic) fashion. Pulsatile flow
     of blood or CSF, cardiac motion, and respiratory motion are the most
     important patient-related causes of ghost artifacts in clinical MR imaging
-    (from `mriquestions.com`_).
+    (from [mriquestions.com](http://mriquestions.com/why-discrete-ghosts.html)).
 
-    .. _mriquestions.com: https://mriquestions.com/why-discrete-ghosts.html
 
     Args:
-        num_ghosts: Number of 'ghosts' :math:`n` in the image.
-            If :attr:`num_ghosts` is a tuple :math:`(a, b)`, then
-            :math:`n \sim \mathcal{U}(a, b) \cap \mathbb{N}`.
-            If only one value :math:`d` is provided,
-            :math:`n \sim \mathcal{U}(0, d) \cap \mathbb{N}`.
+        num_ghosts: Number of 'ghosts' $n$ in the image.
+            If `num_ghosts` is a tuple $(a, b)$, then
+            $n \sim \mathcal{U}(a, b) \cap \mathbb{N}$.
+            If only one value $d$ is provided,
+            $n \sim \mathcal{U}(0, d) \cap \mathbb{N}$.
         axes: Axis along which the ghosts will be created. If
-            :attr:`axes` is a tuple, the axis will be randomly chosen
+            `axes` is a tuple, the axis will be randomly chosen
             from the passed values. Anatomical labels may also be used (see
-            :class:`~torchio.transforms.augmentation.RandomFlip`).
+            [`RandomFlip`](../RandomFlip/#torchio.transforms.RandomFlip)).
         intensity: Positive number representing the artifact strength
-            :math:`s` with respect to the maximum of the :math:`k`-space.
-            If ``0``, the ghosts will not be visible. If a tuple
-            :math:`(a, b)` is provided then :math:`s \sim \mathcal{U}(a, b)`.
-            If only one value :math:`d` is provided,
-            :math:`s \sim \mathcal{U}(0, d)`.
-        restore: Number between ``0`` and ``1`` indicating how much of the
-            :math:`k`-space center should be restored after removing the planes
-            that generate the artifact. If ``None``, only the central slice
-            will be restored. If a tuple :math:`(a, b)` is provided then
-            :math:`r \sim \mathcal{U}(a, b)`. If only one value :math:`d` is
-            provided, :math:`r \sim \mathcal{U}(0, d)`.
-        **kwargs: See :class:`~torchio.transforms.Transform` for additional
+            $s$ with respect to the maximum of the $k$-space.
+            If `0`, the ghosts will not be visible. If a tuple
+            $(a, b)$ is provided then $s \sim \mathcal{U}(a, b)$.
+            If only one value $d$ is provided,
+            $s \sim \mathcal{U}(0, d)$.
+        restore: Number between `0` and `1` indicating how much of the
+            $k$-space center should be restored after removing the planes
+            that generate the artifact. If `None`, only the central slice
+            will be restored. If a tuple $(a, b)$ is provided then
+            $r \sim \mathcal{U}(a, b)$. If only one value $d$ is
+            provided, $r \sim \mathcal{U}(0, d)$.
+        **kwargs: See [`Transform`][torchio.transforms.Transform] for additional
             keyword arguments.
 
-    .. note:: The execution time of this transform does not depend on the
+    Note:
+        The execution time of this transform does not depend on the
         number of ghosts.
     """
 
     def __init__(
         self,
         num_ghosts: int | tuple[int, int] = (4, 10),
-        axes: int | tuple[int, ...] = (0, 1, 2),
+        axes: int | str | Sequence[int | str] = (0, 1, 2),
         intensity: float | tuple[float, float] = (0.5, 1),
         restore: float | None = None,
         **kwargs,
     ):
         super().__init__(**kwargs)
-        if not isinstance(axes, tuple):
-            try:
-                axes = tuple(axes)  # type: ignore[arg-type]
-            except TypeError:
-                axes = (axes,)  # type: ignore[assignment]
+        if axes is None:
+            raise ValueError('Axes cannot be None')
+        if isinstance(axes, (int, str)):
+            axes = (axes,)
+        else:
+            axes = tuple(axes)
         assert isinstance(axes, Iterable)
         for axis in axes:
             if not isinstance(axis, str) and axis not in (0, 1, 2):
@@ -101,23 +102,32 @@ class RandomGhosting(RandomTransform, IntensityTransform):
         if any(isinstance(axis, str) for axis in self.axes):
             subject.check_consistent_orientation()
 
-        arguments: dict[str, dict] = defaultdict(dict)
+        num_ghosts_by_name: dict[str, int] = {}
+        axis_by_name: dict[str, int] = {}
+        intensity_by_name: dict[str, float] = {}
+        restore_by_name: dict[str, float | None] = {}
         for name, image in images_dict.items():
             is_2d = image.is_2d()
-            axes = [a for a in self.axes if a != 2] if is_2d else self.axes
+            axes = tuple(a for a in self.axes if a != 2) if is_2d else self.axes
             min_ghosts, max_ghosts = self.num_ghosts_range
             params = self.get_params(
                 (int(min_ghosts), int(max_ghosts)),
-                axes,  # type: ignore[arg-type]
+                tuple(int(axis) for axis in axes if not isinstance(axis, str)),
                 self.intensity_range,
                 self.restore,
             )
             num_ghosts_param, axis_param, intensity_param, restore_param = params
-            arguments['num_ghosts'][name] = num_ghosts_param
-            arguments['axis'][name] = axis_param
-            arguments['intensity'][name] = intensity_param
-            arguments['restore'][name] = restore_param
-        transform = Ghosting(**self.add_base_args(arguments))
+            num_ghosts_by_name[name] = num_ghosts_param
+            axis_by_name[name] = axis_param
+            intensity_by_name[name] = intensity_param
+            restore_by_name[name] = restore_param
+        transform = Ghosting(
+            num_ghosts=num_ghosts_by_name,
+            axis=axis_by_name,
+            intensity=intensity_by_name,
+            restore=restore_by_name,
+            **self._get_base_args(),
+        )
         transformed = transform(subject)
         assert isinstance(transformed, Subject)
         return transformed
@@ -148,24 +158,24 @@ class Ghosting(IntensityTransform, FourierTransform):
     field-of-view vary or move in a regular (periodic) fashion. Pulsatile flow
     of blood or CSF, cardiac motion, and respiratory motion are the most
     important patient-related causes of ghost artifacts in clinical MR imaging
-    (from `mriquestions.com`_).
+    (from [mriquestions.com](http://mriquestions.com/why-discrete-ghosts.html)).
 
-    .. _mriquestions.com: http://mriquestions.com/why-discrete-ghosts.html
 
     Args:
-        num_ghosts: Number of 'ghosts' :math:`n` in the image.
+        num_ghosts: Number of 'ghosts' $n$ in the image.
         axes: Axis along which the ghosts will be created.
         intensity: Positive number representing the artifact strength
-            :math:`s` with respect to the maximum of the :math:`k`-space.
-            If ``0``, the ghosts will not be visible.
-        restore: Number between ``0`` and ``1`` indicating how much of the
-            :math:`k`-space center should be restored after removing the planes
-            that generate the artifact. If ``None``, only the central slice
+            $s$ with respect to the maximum of the $k$-space.
+            If `0`, the ghosts will not be visible.
+        restore: Number between `0` and `1` indicating how much of the
+            $k$-space center should be restored after removing the planes
+            that generate the artifact. If `None`, only the central slice
             will be restored.
-        **kwargs: See :class:`~torchio.transforms.Transform` for additional
+        **kwargs: See [`Transform`][torchio.transforms.Transform] for additional
             keyword arguments.
 
-    .. note:: The execution time of this transform does not depend on the
+    Note:
+        The execution time of this transform does not depend on the
         number of ghosts.
     """
 
@@ -185,37 +195,18 @@ class Ghosting(IntensityTransform, FourierTransform):
         self.args_names = ['num_ghosts', 'axis', 'intensity', 'restore']
 
     def apply_transform(self, subject: Subject) -> Subject:
-        axis: int | dict[str, int]
-        num_ghosts: int | dict[str, int]
-        intensity: float | dict[str, float]
-        restore: float | None | dict[str, float | None]
         for name, image in self.get_images_dict(subject).items():
-            if self.arguments_are_dict():
-                assert isinstance(self.axis, dict)
-                assert isinstance(self.num_ghosts, dict)
-                assert isinstance(self.intensity, dict)
-                assert isinstance(self.restore, dict)
-                axis = self.axis[name]
-                num_ghosts = self.num_ghosts[name]
-                intensity = self.intensity[name]
-                restore = self.restore[name]
-            else:
-                axis = self.axis
-                num_ghosts = self.num_ghosts
-                intensity = self.intensity
-                restore = self.restore
+            axis = self.get_parameter(self.axis, name)
+            num_ghosts = self.get_parameter(self.num_ghosts, name)
+            intensity = self.get_parameter(self.intensity, name)
+            restore = self.get_parameter(self.restore, name)
             transformed_tensors = []
             for tensor in image.data:
-                assert isinstance(num_ghosts, int)
-                assert isinstance(axis, int)
-                assert isinstance(intensity, (int, float))
-                if restore is not None:
-                    assert isinstance(restore, float)
                 transformed_tensor = self.add_artifact(
                     tensor,
                     num_ghosts,
                     axis,
-                    intensity,
+                    float(intensity),
                     restore,
                 )
                 transformed_tensors.append(transformed_tensor)

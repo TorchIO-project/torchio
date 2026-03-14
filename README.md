@@ -250,7 +250,7 @@ BibTeX entry:
 }
 ```
 
-This project is supported by the following institutions:
+This project was originally supported by the following institutions:
 
 - [Engineering and Physical Sciences Research Council (EPSRC) & UK Research and Innovation (UKRI)](https://epsrc.ukri.org/)
 - [EPSRC Centre for Doctoral Training in Intelligent, Integrated Imaging In Healthcare (i4health)](https://www.ucl.ac.uk/intelligent-imaging-healthcare/) (University College London)
@@ -407,6 +407,7 @@ Thanks goes to all these people ([emoji key](https://allcontributors.org/docs/en
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/bcrobo"><img src="https://avatars.githubusercontent.com/u/28488814?v=4?s=100" width="100px;" alt="bcrobo"/><br /><sub><b>bcrobo</b></sub></a><br /><a href="https://github.com/TorchIO-project/torchio/issues?q=author%3Abcrobo" title="Bug reports">🐛</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/emmanuel-ferdman"><img src="https://avatars.githubusercontent.com/u/35470921?v=4?s=100" width="100px;" alt="Emmanuel Ferdman"/><br /><sub><b>Emmanuel Ferdman</b></sub></a><br /><a href="https://github.com/TorchIO-project/torchio/issues?q=author%3Aemmanuel-ferdman" title="Bug reports">🐛</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/AndersDHenriksen"><img src="https://avatars.githubusercontent.com/u/14275017?v=4?s=100" width="100px;" alt="Anders Dahl Henriksen"/><br /><sub><b>Anders Dahl Henriksen</b></sub></a><br /><a href="#maintenance-AndersDHenriksen" title="Maintenance">🚧</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://e-pet.github.io/"><img src="https://avatars.githubusercontent.com/u/1774207?v=4?s=100" width="100px;" alt="Eike Petersen"/><br /><sub><b>Eike Petersen</b></sub></a><br /><a href="https://github.com/TorchIO-project/torchio/issues?q=author%3Ae-pet" title="Bug reports">🐛</a></td>
     </tr>
   </tbody>
 </table>

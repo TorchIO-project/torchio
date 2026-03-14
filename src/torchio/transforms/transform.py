@@ -1,39 +1,43 @@
 from __future__ import annotations
 
 import copy
-import numbers
 import warnings
 from abc import ABC
 from abc import abstractmethod
+from collections.abc import MutableMapping
 from collections.abc import Sequence
 from contextlib import contextmanager
+from typing import TYPE_CHECKING
+from typing import Literal
+from typing import TypeGuard
 from typing import TypeVar
-from typing import Union
+from typing import cast
+from typing import overload
 
+import nibabel as nib
 import numpy as np
 import SimpleITK as sitk
 import torch
 
+from ..data.image import Image
 from ..data.image import LabelMap
 from ..data.io import nib_to_sitk
 from ..data.io import sitk_to_nib
 from ..data.subject import Subject
 from ..types import TypeCallable
 from ..types import TypeData
-from ..types import TypeDataAffine
 from ..types import TypeKeys
 from ..types import TypeNumber
 from ..types import TypeTripletInt
 from ..utils import is_iterable
-from ..utils import to_tuple
 from .data_parser import DataParser
 from .data_parser import TypeTransformInput
 from .interpolation import Interpolation
 from .interpolation import get_sitk_interpolator
 
 TypeSixBounds = tuple[int, int, int, int, int, int]
-TypeBounds = Union[int, TypeTripletInt, TypeSixBounds, None]
-TypeMaskingMethod = Union[str, TypeCallable, TypeBounds, None]
+TypeBounds = int | Sequence[int] | None
+TypeMaskingMethod = str | TypeCallable | TypeBounds | None
 ANATOMICAL_AXES = (
     'Left',
     'Right',
@@ -43,23 +47,26 @@ ANATOMICAL_AXES = (
     'Superior',
 )
 
-InputType = TypeVar('InputType', bound=TypeTransformInput)
+ArgumentsDictT = TypeVar('ArgumentsDictT', bound=MutableMapping[str, object])
+ImageT = TypeVar('ImageT', bound=Image)
+
+__all__ = ['Transform', 'TypeBounds', 'TypeMaskingMethod', 'TypeTripletInt']
 
 
 class Transform(ABC):
     """Abstract class for all TorchIO transforms.
 
     When called, the input can be an instance of
-    :class:`torchio.Subject`,
-    :class:`torchio.Image`,
-    :class:`numpy.ndarray`,
-    :class:`torch.Tensor`,
-    :class:`SimpleITK.Image`,
-    or :class:`dict` containing 4D tensors as values.
+    [`torchio.Subject`][torchio.Subject],
+    [`torchio.Image`][torchio.Image],
+    [`numpy.ndarray`][numpy.ndarray],
+    [`torch.Tensor`][torch.Tensor],
+    [`SimpleITK.Image`](https://simpleitk.org/doxygen/latest/html/classitk_1_1simple_1_1Image.html),
+    or [`dict`][dict] containing 4D tensors as values.
 
     All subclasses must overwrite
-    :meth:`~torchio.transforms.Transform.apply_transform`,
-    which takes an instance of :class:`~torchio.Subject`,
+    [`apply_transform()`][torchio.transforms.Transform.apply_transform],
+    which takes an instance of [`Subject`][torchio.Subject],
     modifies it and returns the result.
 
     Args:
@@ -67,26 +74,29 @@ class Transform(ABC):
         copy: Make a deep copy of the input before applying the transform.
         include: Sequence of strings with the names of the only images to which
             the transform will be applied.
-            Mandatory if the input is a :class:`dict`.
+            Mandatory if the input is a [`dict`][dict].
         exclude: Sequence of strings with the names of the images to which the
             the transform will not be applied, apart from the ones that are
             excluded because of the transform type.
             For example, if a subject includes an MRI, a CT and a label map,
             and the CT is added to the list of exclusions of an intensity
-            transform such as :class:`~torchio.transforms.RandomBlur`,
+            transform such as [`RandomBlur`][torchio.transforms.RandomBlur],
             the transform will be only applied to the MRI, as the label map is
             excluded by default by spatial transforms.
         keep: Dictionary with the names of the input images that will be kept
             in the output and their new names. For example:
-            ``{'t1': 't1_original'}``. This might be useful for autoencoders
+            `{'t1': 't1_original'}`. This might be useful for autoencoders
             or registration tasks.
-        parse_input: If ``True``, the input will be converted to an instance of
-            :class:`~torchio.Subject`. This is used internally by some special
+        parse_input: If `True`, the input will be converted to an instance of
+            [`Subject`][torchio.Subject]. This is used internally by some special
             transforms like
-            :class:`~torchio.transforms.augmentation.composition.Compose`.
+            [`Compose`][torchio.transforms.augmentation.composition.Compose].
         label_keys: If the input is a dictionary, names of images that
             correspond to label maps.
     """
+
+    if TYPE_CHECKING:
+        invert_transform: bool
 
     def __init__(
         self,
@@ -121,18 +131,39 @@ class Transform(ABC):
         # used to invert invertible transforms
         self.args_names: list[str] = []
 
-    def __call__(self, data: InputType) -> InputType:
+    @overload
+    def __call__(self, data: Subject) -> Subject: ...
+
+    @overload
+    def __call__(self, data: ImageT) -> ImageT: ...
+
+    @overload
+    def __call__(self, data: torch.Tensor) -> torch.Tensor: ...
+
+    @overload
+    def __call__(self, data: np.ndarray) -> np.ndarray: ...
+
+    @overload
+    def __call__(self, data: sitk.Image) -> sitk.Image: ...
+
+    @overload
+    def __call__(self, data: dict[str, object]) -> dict[str, object]: ...
+
+    @overload
+    def __call__(self, data: nib.Nifti1Image) -> nib.Nifti1Image: ...
+
+    def __call__(self, data: TypeTransformInput) -> TypeTransformInput:
         """Transform data and return a result of the same type.
 
         Args:
-            data: Instance of :class:`torchio.Subject`, 4D
-                :class:`torch.Tensor` or :class:`numpy.ndarray` with dimensions
-                :math:`(C, W, H, D)`, where :math:`C` is the number of channels
-                and :math:`W, H, D` are the spatial dimensions. If the input is
+            data: Instance of [`torchio.Subject`][torchio.Subject], 4D
+                [`torch.Tensor`][torch.Tensor] or [`numpy.ndarray`][numpy.ndarray] with dimensions
+                $(C, W, H, D)$, where $C$ is the number of channels
+                and $W, H, D$ are the spatial dimensions. If the input is
                 a tensor, the affine matrix will be set to identity. Other
                 valid input types are a SimpleITK image, a
-                :class:`torchio.Image`, a NiBabel Nifti1 image or a
-                :class:`dict`. The output type is the same as the input type.
+                [`torchio.Image`][torchio.Image], a NiBabel Nifti1 image or a
+                [`dict`][dict]. The output type is the same as the input type.
         """
         if torch.rand(1).item() > self.probability:
             return data
@@ -146,12 +177,12 @@ class Transform(ABC):
             )
             subject = data_parser.get_subject()
         else:
-            subject = data
+            subject = cast(Subject, data)
 
         if self.keep is not None:
-            images_to_keep = {}
+            images_to_keep: dict[str, Image] = {}
             for name, new_name in self.keep.items():
-                images_to_keep[new_name] = copy.deepcopy(subject[name])
+                images_to_keep[new_name] = copy.deepcopy(subject.get_image(name))
         if self.copy:
             subject = copy.deepcopy(subject)
         with np.errstate(all='raise', under='ignore'):
@@ -173,8 +204,8 @@ class Transform(ABC):
 
     def __repr__(self):
         if hasattr(self, 'args_names'):
-            names = self.args_names
-            args_strings = [f'{arg}={getattr(self, arg)}' for arg in names]
+            named_args = self._get_named_arguments()
+            args_strings = [f'{arg}={value}' for arg, value in named_args.items()]
             if hasattr(self, 'invert_transform') and self.invert_transform:
                 args_strings.append('invert=True')
             args_string = ', '.join(args_strings)
@@ -182,16 +213,17 @@ class Transform(ABC):
         else:
             return super().__repr__()
 
-    def get_base_args(self) -> dict:
+    def _get_base_args(self) -> dict[str, object]:
         r"""Provides easy access to the arguments used to instantiate the base class
-        (:class:`~torchio.transforms.transform.Transform`) of any transform.
+        ([`Transform`][torchio.transforms.transform.Transform]) of any transform.
 
         This method is particularly useful when a new transform can be represented as a variant
         of an existing transform (e.g. all random transforms), allowing for seamless instantiation
         of the existing transform with the same arguments as the new transform during `apply_transform`.
 
-        Note: The `p` argument (probability of applying the transform) is excluded to avoid
-        multiplying the probability of both existing and new transform.
+        Note:
+            The `p` argument (probability of applying the transform) is excluded to avoid
+            multiplying the probability of both existing and new transform.
         """
         return {
             'copy': self.copy,
@@ -202,13 +234,13 @@ class Transform(ABC):
             'label_keys': self.label_keys,
         }
 
-    def add_base_args(
+    def _add_base_args(
         self,
-        arguments,
+        arguments: ArgumentsDictT,
         overwrite_on_existing: bool = False,
-    ):
+    ) -> ArgumentsDictT:
         """Add the init args to existing arguments"""
-        for key, value in self.get_base_args().items():
+        for key, value in self._get_base_args().items():
             if key in arguments and not overwrite_on_existing:
                 continue
             arguments[key] = value
@@ -220,6 +252,14 @@ class Transform(ABC):
 
     @abstractmethod
     def apply_transform(self, subject: Subject) -> Subject:
+        """Apply the transform to a parsed subject.
+
+        Args:
+            subject: Subject to be modified by the transform.
+
+        Returns:
+            The transformed subject.
+        """
         raise NotImplementedError
 
     def add_transform_to_subject_history(self, subject):
@@ -244,31 +284,104 @@ class Transform(ABC):
             subject.add_transform(self, self._get_reproducing_arguments())
 
     @staticmethod
-    def to_range(n, around):
+    def to_range(n: TypeNumber, around: float | None) -> tuple[float, float]:
         if around is None:
-            return 0, n
+            return 0.0, float(n)
         else:
-            return around - n, around + n
+            return float(around - n), float(around + n)
 
-    def parse_params(self, params, around, name, make_ranges=True, **kwargs):
-        params = to_tuple(params)
+    @overload
+    def parse_params(
+        self,
+        params: TypeNumber | Sequence[TypeNumber],
+        around: float | None,
+        name: str,
+        make_ranges: Literal[True] = True,
+        min_constraint: TypeNumber | None = None,
+        max_constraint: TypeNumber | None = None,
+        type_constraint: type[int] | type[float] | None = None,
+    ) -> tuple[float, float, float, float, float, float]: ...
+
+    @overload
+    def parse_params(
+        self,
+        params: TypeNumber | Sequence[TypeNumber],
+        around: float | None,
+        name: str,
+        make_ranges: Literal[False],
+        min_constraint: TypeNumber | None = None,
+        max_constraint: TypeNumber | None = None,
+        type_constraint: type[int] | type[float] | None = None,
+    ) -> tuple[float, ...]: ...
+
+    def parse_params(
+        self,
+        params: TypeNumber | Sequence[TypeNumber],
+        around: float | None,
+        name: str,
+        make_ranges: bool = True,
+        min_constraint: TypeNumber | None = None,
+        max_constraint: TypeNumber | None = None,
+        type_constraint: type[int] | type[float] | None = None,
+    ) -> tuple[float, float, float, float, float, float] | tuple[float, ...]:
+        if isinstance(params, torch.Tensor):
+            params_tuple = tuple(float(param) for param in params.reshape(-1))
+        elif isinstance(params, np.ndarray):
+            params_tuple = tuple(float(param) for param in np.ravel(params))
+        elif isinstance(params, Sequence):
+            params_sequence = cast(Sequence[TypeNumber], params)
+            params_tuple = tuple(float(param) for param in params_sequence)
+        else:
+            params_tuple = (float(params),)
         # d or (a, b)
-        if len(params) == 1 or (len(params) == 2 and make_ranges):
-            params *= 3  # (d, d, d) or (a, b, a, b, a, b)
-        if len(params) == 3 and make_ranges:  # (a, b, c)
-            items = [self.to_range(n, around) for n in params]
+        if len(params_tuple) == 1 or (len(params_tuple) == 2 and make_ranges):
+            params_tuple *= 3  # (d, d, d) or (a, b, a, b, a, b)
+        if len(params_tuple) == 3 and make_ranges:  # (a, b, c)
+            items = [self.to_range(n, around) for n in params_tuple]
             # (-a, a, -b, b, -c, c) or (1-a, 1+a, 1-b, 1+b, 1-c, 1+c)
-            params = [n for prange in items for n in prange]
+            params_tuple = tuple(n for prange in items for n in prange)
         if make_ranges:
-            if len(params) != 6:
+            if len(params_tuple) != 6:
                 message = (
                     f'If "{name}" is a sequence, it must have length 2, 3 or'
-                    f' 6, not {len(params)}'
+                    f' 6, not {len(params_tuple)}'
                 )
                 raise ValueError(message)
-            for param_range in zip(params[::2], params[1::2], strict=True):
-                self._parse_range(param_range, name, **kwargs)
-        return tuple(params)
+            for param_range in zip(
+                params_tuple[::2],
+                params_tuple[1::2],
+                strict=True,
+            ):
+                self._parse_range(
+                    cast(tuple[float, float], param_range),
+                    name,
+                    min_constraint=min_constraint,
+                    max_constraint=max_constraint,
+                    type_constraint=type_constraint,
+                )
+            a, b, c, d, e, f = params_tuple
+            return a, b, c, d, e, f
+        return params_tuple
+
+    @overload
+    @staticmethod
+    def _parse_range(
+        nums_range: int | tuple[int, int],
+        name: str,
+        min_constraint: int | None = None,
+        max_constraint: int | None = None,
+        type_constraint: type[int] = int,
+    ) -> tuple[int, int]: ...
+
+    @overload
+    @staticmethod
+    def _parse_range(
+        nums_range: float | tuple[float, float],
+        name: str,
+        min_constraint: float | None = None,
+        max_constraint: float | None = None,
+        type_constraint: type[float] | None = None,
+    ) -> tuple[float, float]: ...
 
     @staticmethod
     def _parse_range(
@@ -276,40 +389,40 @@ class Transform(ABC):
         name: str,
         min_constraint: TypeNumber | None = None,
         max_constraint: TypeNumber | None = None,
-        type_constraint: type | None = None,
+        type_constraint: type[int] | type[float] | None = None,
     ) -> tuple[TypeNumber, TypeNumber]:
-        r"""Adapted from :class:`torchvision.transforms.RandomRotation`.
+        r"""Adapted from [torchvision.transforms.RandomRotation][torchvision.transforms.RandomRotation].
 
         Args:
-            nums_range: Tuple of two numbers :math:`(n_{min}, n_{max})`,
-                where :math:`n_{min} \leq n_{max}`.
-                If a single positive number :math:`n` is provided,
-                :math:`n_{min} = -n` and :math:`n_{max} = n`.
+            nums_range: Tuple of two numbers $(n_{min}, n_{max})$,
+                where $n_{min} \leq n_{max}$.
+                If a single positive number $n$ is provided,
+                $n_{min} = -n$ and $n_{max} = n$.
             name: Name of the parameter, so that an informative error message
                 can be printed.
-            min_constraint: Minimal value that :math:`n_{min}` can take,
+            min_constraint: Minimal value that $n_{min}$ can take,
                 default is None, i.e. there is no minimal value.
-            max_constraint: Maximal value that :math:`n_{max}` can take,
+            max_constraint: Maximal value that $n_{max}$ can take,
                 default is None, i.e. there is no maximal value.
-            type_constraint: Precise type that :math:`n_{max}` and
-                :math:`n_{min}` must take.
+            type_constraint: Precise type that $n_{max}$ and
+                $n_{min}$ must take.
 
         Returns:
-            A tuple of two numbers :math:`(n_{min}, n_{max})`.
+            A tuple of two numbers $(n_{min}, n_{max})$.
 
         Raises:
-            ValueError: if :attr:`nums_range` is negative
-            ValueError: if :math:`n_{max}` or :math:`n_{min}` is not a number
-            ValueError: if :math:`n_{max} \lt n_{min}`
-            ValueError: if :attr:`min_constraint` is not None and
-                :math:`n_{min}` is smaller than :attr:`min_constraint`
-            ValueError: if :attr:`max_constraint` is not None and
-                :math:`n_{max}` is greater than :attr:`max_constraint`
-            ValueError: if :attr:`type_constraint` is not None and
-                :math:`n_{max}` and :math:`n_{max}` are not of type
-                :attr:`type_constraint`.
+            ValueError: if `nums_range` is negative
+            ValueError: if $n_{max}$ or $n_{min}$ is not a number
+            ValueError: if $n_{max} \lt n_{min}$
+            ValueError: if `min_constraint` is not None and
+                $n_{min}$ is smaller than `min_constraint`
+            ValueError: if `max_constraint` is not None and
+                $n_{max}$ is greater than `max_constraint`
+            ValueError: if `type_constraint` is not None and
+                $n_{max}$ and $n_{max}$ are not of type
+                `type_constraint`.
         """
-        if isinstance(nums_range, numbers.Number):  # single number given
+        if isinstance(nums_range, (int, float)):  # single number given
             if nums_range < 0:
                 raise ValueError(
                     f'If {name} is a single number,'
@@ -331,20 +444,27 @@ class Transform(ABC):
                         f'If {name} is a single number, it must be of'
                         f' type {type_constraint}, not {nums_range}',
                     )
-            min_range = -nums_range if min_constraint is None else nums_range
+            min_range = -nums_range if min_constraint is None else min_constraint
             return (min_range, nums_range)
 
         try:
-            min_value, max_value = nums_range  # type: ignore[misc]
-        except (TypeError, ValueError) as err:
+            values = tuple(nums_range)
+        except TypeError as err:
             message = (
                 f'If {name} is not a single number, it must be'
                 f' a sequence of len 2, not {nums_range}'
             )
             raise ValueError(message) from err
+        if len(values) != 2:
+            message = (
+                f'If {name} is not a single number, it must be'
+                f' a sequence of len 2, not {nums_range}'
+            )
+            raise ValueError(message)
+        min_value, max_value = values
 
-        min_is_number = isinstance(min_value, numbers.Number)
-        max_is_number = isinstance(max_value, numbers.Number)
+        min_is_number = isinstance(min_value, (int, float))
+        max_is_number = isinstance(max_value, (int, float))
         if not min_is_number or not max_is_number:
             message = f'{name} values must be numbers, not {nums_range}'
             raise ValueError(message)
@@ -375,7 +495,7 @@ class Transform(ABC):
                     f'If "{name}" is a sequence, its values must be of'
                     f' type "{type_constraint}", not "{type(nums_range)}"',
                 )
-        return nums_range  # type: ignore[return-value]
+        return min_value, max_value
 
     @staticmethod
     def parse_interpolation(interpolation: str) -> str:
@@ -396,7 +516,7 @@ class Transform(ABC):
 
     @staticmethod
     def parse_probability(probability: float) -> float:
-        is_number = isinstance(probability, numbers.Number)
+        is_number = isinstance(probability, (int, float))
         if not (is_number and 0 <= probability <= 1):
             message = f'Probability must be a number in [0, 1], not {probability}'
             raise ValueError(message)
@@ -410,13 +530,13 @@ class Transform(ABC):
     ) -> tuple[TypeKeys, TypeKeys]:
         if include is not None and exclude is not None:
             raise ValueError('Include and exclude cannot both be specified')
-        Transform.validate_keys_sequence(include, 'include')
-        Transform.validate_keys_sequence(exclude, 'exclude')
-        Transform.validate_keys_sequence(label_keys, 'label_keys')
+        Transform._validate_keys_sequence(include, 'include')
+        Transform._validate_keys_sequence(exclude, 'exclude')
+        Transform._validate_keys_sequence(label_keys, 'label_keys')
         return include, exclude
 
     @staticmethod
-    def validate_keys_sequence(keys: TypeKeys, name: str) -> None:
+    def _validate_keys_sequence(keys: TypeKeys, name: str) -> None:
         """Ensure that the input is not a string but a sequence of strings."""
         if keys is None:
             return
@@ -432,8 +552,8 @@ class Transform(ABC):
         return nib_to_sitk(data, affine)
 
     @staticmethod
-    def sitk_to_nib(image: sitk.Image) -> TypeDataAffine:
-        return sitk_to_nib(image)  # type: ignore[return-value]
+    def sitk_to_nib(image: sitk.Image) -> tuple[np.ndarray, np.ndarray]:
+        return sitk_to_nib(image)
 
     def _get_reproducing_arguments(self):
         """Return a dictionary with the arguments that would be necessary to
@@ -443,9 +563,11 @@ class Transform(ABC):
             'exclude': self.exclude,
             'copy': self.copy,
         }
-        args_names = {name: getattr(self, name) for name in self.args_names}
-        reproducing_arguments.update(args_names)
+        reproducing_arguments.update(self._get_named_arguments())
         return reproducing_arguments
+
+    def _get_named_arguments(self) -> dict[str, object]:
+        return {name: getattr(self, name) for name in self.args_names}
 
     def is_invertible(self):
         return hasattr(self, 'invert_transform')
@@ -474,33 +596,41 @@ class Transform(ABC):
     def parse_bounds(bounds_parameters: TypeBounds) -> TypeSixBounds | None:
         if bounds_parameters is None:
             return None
-        try:
-            bounds_parameters = tuple(bounds_parameters)  # type: ignore[assignment,arg-type]
-        except TypeError:
-            bounds_parameters = (bounds_parameters,)  # type: ignore[assignment]
+        if isinstance(bounds_parameters, int):
+            values: tuple[int, ...] = (bounds_parameters,)
+        else:
+            values = tuple(bounds_parameters)
 
         # Check that numbers are integers
-        for number in bounds_parameters:  # type: ignore[union-attr]
+        for number in values:
             if not isinstance(number, (int, np.integer)) or number < 0:
                 message = (
                     'Bounds values must be integers greater or equal to zero,'
                     f' not "{bounds_parameters}" of type {type(number)}'
                 )
                 raise ValueError(message)
-        bounds_parameters_tuple = tuple(int(n) for n in bounds_parameters)  # type: ignore[assignment,union-attr]
+        bounds_parameters_tuple = tuple(int(n) for n in values)
         bounds_parameters_length = len(bounds_parameters_tuple)
         if bounds_parameters_length == 6:
-            return bounds_parameters_tuple  # type: ignore[return-value]
+            i0, i1, j0, j1, k0, k1 = bounds_parameters_tuple
+            return i0, i1, j0, j1, k0, k1
         if bounds_parameters_length == 1:
-            return 6 * bounds_parameters_tuple  # type: ignore[return-value]
+            (value,) = bounds_parameters_tuple
+            return value, value, value, value, value, value
         if bounds_parameters_length == 3:
-            repeat = np.repeat(bounds_parameters_tuple, 2).tolist()
-            return tuple(repeat)  # type: ignore[return-value]
+            i, j, k = bounds_parameters_tuple
+            return i, i, j, j, k, k
         message = (
             'Bounds parameter must be an integer or a tuple of'
             f' 3 or 6 integers, not {bounds_parameters_tuple}'
         )
         raise ValueError(message)
+
+    @staticmethod
+    def _is_mask_callable(
+        masking_method: object,
+    ) -> TypeGuard[TypeCallable]:
+        return callable(masking_method)
 
     @staticmethod
     def ones(tensor: torch.Tensor) -> torch.Tensor:
@@ -520,15 +650,19 @@ class Transform(ABC):
     ) -> torch.Tensor:
         if masking_method is None:
             return self.ones(tensor)
-        elif callable(masking_method):
+        elif self._is_mask_callable(masking_method):
             return masking_method(tensor)
         elif type(masking_method) is str:
             in_subject = masking_method in subject
-            if in_subject and isinstance(subject[masking_method], LabelMap):
+            if in_subject:
+                label_map = subject[masking_method]
+            else:
+                label_map = None
+            if isinstance(label_map, LabelMap):
                 if labels is None:
-                    return subject[masking_method].data.bool()
+                    return label_map.data.bool()
                 else:
-                    mask_data = subject[masking_method].data
+                    mask_data = label_map.data
                     volumes = [mask_data == label for label in labels]
                     return torch.stack(volumes).sum(0).bool()
             possible_axis = masking_method.capitalize()
@@ -537,8 +671,15 @@ class Transform(ABC):
                     possible_axis,
                     tensor,
                 )
-        elif type(masking_method) in (tuple, list, int):
-            return self.get_mask_from_bounds(masking_method, tensor)  # type: ignore[arg-type]
+        elif isinstance(masking_method, int):
+            return self.get_mask_from_bounds(masking_method, tensor)
+        elif isinstance(masking_method, (tuple, list)):
+            if all(isinstance(number, (int, np.integer)) for number in masking_method):
+                bounds_list: list[int] = []
+                for number in masking_method:
+                    assert isinstance(number, (int, np.integer))
+                    bounds_list.append(int(number))
+                return self.get_mask_from_bounds(bounds_list, tensor)
         first_anat_axes = tuple(s[0] for s in ANATOMICAL_AXES)
         message = (
             'Masking method must be one of:\n'
@@ -596,3 +737,22 @@ class Transform(ABC):
         mask = torch.zeros_like(tensor, dtype=torch.bool)
         mask[:, i0:i1, j0:j1, k0:k1] = True
         return mask
+
+    def _get_name_with_module(self) -> str:
+        """Return the name of the transform including its module."""
+        return f'{self.__class__.__module__}.{self.__class__.__name__}'
+
+    @staticmethod
+    def _tuples_to_lists(obj):
+        if isinstance(obj, (tuple, list)):
+            return [Transform._tuples_to_lists(x) for x in obj]
+        if isinstance(obj, dict):
+            return {k: Transform._tuples_to_lists(v) for k, v in obj.items()}
+        return obj
+
+    def to_hydra_config(self) -> dict:
+        """Return a dictionary representation of the transform for Hydra instantiation."""
+        target = self._get_name_with_module()
+        transform_dict = {'_target_': target}
+        transform_dict.update(self._get_reproducing_arguments())
+        return self._tuples_to_lists(transform_dict)

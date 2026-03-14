@@ -15,28 +15,28 @@ class LabelSampler(WeightedSampler):
     r"""Extract random patches with labeled voxels at their center.
 
     This sampler yields patches whose center value is greater than 0
-    in the :attr:`label_name`.
+    in the `label_name`.
 
     Args:
-        patch_size: See :class:`~torchio.data.PatchSampler`.
+        patch_size: See [`PatchSampler`](#torchio.data.PatchSampler).
         label_name: Name of the label image in the subject that will be used to
-            generate the sampling probability map. If ``None``, the first image
-            of type :attr:`torchio.LABEL` found in the subject subject will be
+            generate the sampling probability map. If `None`, the first image
+            of type `torchio.LABEL` found in the subject subject will be
             used.
         label_probabilities: Dictionary containing the probability that each
             class will be sampled. Probabilities do not need to be normalized.
-            For example, a value of ``{0: 0, 1: 2, 2: 1, 3: 1}`` will create a
+            For example, a value of `{0: 0, 1: 2, 2: 1, 3: 1}` will create a
             sampler whose patches centers will have 50% probability of being
-            labeled as ``1``, 25% of being ``2`` and 25% of being ``3``.
-            If ``None``, the label map is binarized and the value is set to
-            ``{0: 0, 1: 1}``.
+            labeled as `1`, 25% of being `2` and 25% of being `3`.
+            If `None`, the label map is binarized and the value is set to
+            `{0: 0, 1: 1}`.
             If the input has multiple channels, a value of
-            ``{0: 0, 1: 2, 2: 1, 3: 1}`` will create a
+            `{0: 0, 1: 2, 2: 1, 3: 1}` will create a
             sampler whose patches centers will have 50% probability of being
-            taken from a non zero value of channel ``1``, 25% from channel
-            ``2`` and 25% from channel ``3``.
+            taken from a non zero value of channel `1`, 25% from channel
+            `2` and 25% from channel `3`.
 
-    Example:
+    Examples:
         >>> import torchio as tio
         >>> subject = tio.datasets.Colin27()
         >>> subject
@@ -81,7 +81,7 @@ class LabelSampler(WeightedSampler):
                 )
                 raise RuntimeError(message)
         elif self.probability_map_name in subject:
-            label_map = subject[self.probability_map_name]
+            label_map = subject.get_image(self.probability_map_name)
         else:
             message = (
                 f'Image "{self.probability_map_name}"'

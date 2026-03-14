@@ -13,11 +13,11 @@ class RSNAMICCAI(SubjectsDataset):
     """RSNA-MICCAI Brain Tumor Radiogenomic Classification challenge dataset.
 
     This is a helper class for the dataset used in the
-    `RSNA-MICCAI Brain Tumor Radiogenomic Classification challenge`_ hosted on
-    `kaggle <https://www.kaggle.com/>`_. The dataset must be downloaded before
-    instantiating this class (as opposed to, e.g., :class:`torchio.datasets.IXI`).
+    [RSNA-MICCAI Brain Tumor Radiogenomic Classification challenge](https://www.kaggle.com/c/rsna-miccai-brain-tumor-radiogenomic-classification) hosted on
+    [kaggle ](https://www.kaggle.com/). The dataset must be downloaded before
+    instantiating this class (as opposed to, e.g., [`torchio.datasets.IXI`][torchio.datasets.IXI]).
 
-    This `kaggle kernel <https://www.kaggle.com/fepegar/preprocessing-mri-with-torchio/>`_
+    This [kaggle kernel ](https://www.kaggle.com/fepegar/preprocessing-mri-with-torchio/)
     includes a usage example including preprocessing of all the scans.
 
     If you reference or use the dataset in any form, include the following
@@ -27,15 +27,15 @@ class RSNAMICCAI(SubjectsDataset):
     Segmentation and Radiogenomic Classification", arXiv:2107.02314, 2021.
 
     Args:
-        root_dir: Directory containing the dataset (``train`` directory,
-            ``test`` directory, etc.).
-        train: If ``True``, the ``train`` set will be used. Otherwise the
-            ``test`` set will be used.
-        ignore_empty: If ``True``, the three subjects flagged as "presenting
+        root_dir: Directory containing the dataset (`train` directory,
+            `test` directory, etc.).
+        train: If `True`, the `train` set will be used. Otherwise the
+            `test` set will be used.
+        ignore_empty: If `True`, the three subjects flagged as "presenting
             issues" (empty images) by the challenge organizers will be ignored.
-            The subject IDs are ``00109``, ``00123`` and ``00709``.
+            The subject IDs are `00109`, `00123` and `00709`.
 
-    Example:
+    Examples:
         >>> import torchio as tio
         >>> from subprocess import call
         >>> call('kaggle competitions download -c rsna-miccai-brain-tumor-radiogenomic-classification'.split())
@@ -46,7 +46,6 @@ class RSNAMICCAI(SubjectsDataset):
         (582, 87)
 
 
-    .. _RSNA-MICCAI Brain Tumor Radiogenomic Classification challenge: https://www.kaggle.com/c/rsna-miccai-brain-tumor-radiogenomic-classification
     """
 
     id_key = 'BraTS21ID'
@@ -102,8 +101,7 @@ class RSNAMICCAI(SubjectsDataset):
                 int(subject_id)
             except ValueError:
                 continue
-            images_dict: dict[str, str | int | ScalarImage]
-            images_dict = {self.id_key: subject_dir.name}
+            images_dict: dict[str, object] = {self.id_key: subject_dir.name}
             if train and labels_dict:
                 images_dict[self.label_key] = labels_dict[subject_id]
             for modality in self.modalities:

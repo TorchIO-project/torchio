@@ -5,6 +5,7 @@ from collections.abc import Iterable
 from collections.abc import Sequence
 from pathlib import Path
 from typing import Union
+from typing import cast
 
 import numpy as np
 import torch
@@ -24,23 +25,23 @@ TypeLandmarks = Union[TypePath, dict[str, Union[TypePath, np.ndarray]]]
 class HistogramStandardization(NormalizationTransform):
     """Perform histogram standardization of intensity values.
 
-    Implementation of `New variants of a method of MRI scale
-    standardization <https://ieeexplore.ieee.org/document/836373>`_.
+    Implementation of [New variants of a method of MRI scale
+    standardization ](https://ieeexplore.ieee.org/document/836373).
 
-    See example in :func:`torchio.transforms.HistogramStandardization.train`.
+    See example in `torchio.transforms.HistogramStandardization.train()`.
 
     Args:
-        landmarks: Dictionary (or path to a PyTorch file with ``.pt`` or ``.pth``
+        landmarks: Dictionary (or path to a PyTorch file with `.pt` or `.pth`
             extension in which a dictionary has been saved) whose keys are
             image names in the subject and values are NumPy arrays or paths to
             NumPy arrays defining the landmarks after training with
-            :meth:`torchio.transforms.HistogramStandardization.train`.
+            `torchio.transforms.HistogramStandardization.train()`.
         masking_method: See
-            :class:`~torchio.transforms.preprocessing.intensity.NormalizationTransform`.
-        **kwargs: See :class:`~torchio.transforms.Transform` for additional
+            [`NormalizationTransform`][torchio.transforms.preprocessing.intensity.NormalizationTransform].
+        **kwargs: See [`Transform`][torchio.transforms.Transform] for additional
             keyword arguments.
 
-    Example:
+    Examples:
         >>> import torch
         >>> import torchio as tio
         >>> landmarks = {
@@ -76,10 +77,13 @@ class HistogramStandardization(NormalizationTransform):
             landmarks_dict = torch.load(path)
         else:
             landmarks_dict = landmarks
+        parsed_landmarks: dict[str, np.ndarray] = {}
         for key, value in landmarks_dict.items():
             if isinstance(value, (str, Path)):
-                landmarks_dict[key] = np.load(value)
-        return landmarks_dict
+                parsed_landmarks[key] = np.load(value)
+            else:
+                parsed_landmarks[key] = value
+        return parsed_landmarks
 
     def apply_normalization(
         self,
@@ -94,7 +98,7 @@ class HistogramStandardization(NormalizationTransform):
                 f' landmarks dictionary, whose keys are {keys}'
             )
             raise KeyError(message)
-        image = subject[image_name]
+        image = subject.get_scalar_image(image_name)
         landmarks = self.landmarks_dict[image_name]
         normalized = _normalize(image.data, landmarks, mask=mask.numpy())
         image.set_data(normalized)
@@ -116,19 +120,18 @@ class HistogramStandardization(NormalizationTransform):
             images_paths: List of image paths used to train.
             cutoff: Optional minimum and maximum quantile values,
                 respectively, that are used to select a range of intensity of
-                interest. Equivalent to :math:`pc_1` and :math:`pc_2` in
-                `Nyúl and Udupa's paper <https://pubmed.ncbi.nlm.nih.gov/10571928/>`_.
+                interest. Equivalent to $pc_1$ and $pc_2$ in
+                [Nyúl and Udupa's paper ](https://pubmed.ncbi.nlm.nih.gov/10571928/).
             mask_path: Path (or list of paths) to a binary image that will be
                 used to select the voxels use to compute the stats during
-                histogram training. If ``None``, all voxels in the image will
+                histogram training. If `None`, all voxels in the image will
                 be used.
             masking_function: Function used to extract voxels used for
                 histogram training.
-            output_path: Optional file path with extension ``.txt`` or
-                ``.npy``, where the landmarks will be saved.
+            output_path: Optional file path with extension `.txt` or
+                `.npy`, where the landmarks will be saved.
 
-        Example:
-
+        Examples:
             >>> import torch
             >>> import numpy as np
             >>> from pathlib import Path
@@ -161,11 +164,16 @@ class HistogramStandardization(NormalizationTransform):
             >>>
             >>> transform = HistogramStandardization(landmarks_dict)
         """
-        is_masks_list = isinstance(mask_path, Sequence)
-        if is_masks_list and len(mask_path) != len(images_paths):  # type: ignore[arg-type]
+        mask_paths: Sequence[TypePath] | None = (
+            mask_path
+            if isinstance(mask_path, Sequence)
+            and not isinstance(mask_path, (str, Path))
+            else None
+        )
+        if mask_paths is not None and len(mask_paths) != len(images_paths):
             message = (
-                f'Different number of images ({len(images_paths)})'  # type: ignore[arg-type]
-                f' and mask ({len(mask_path)}) paths found'  # type: ignore[arg-type]
+                f'Different number of images ({len(images_paths)})'
+                f' and mask ({len(mask_paths)}) paths found'
             )
             raise ValueError(message)
         quantiles_cutoff = DEFAULT_CUTOFF if cutoff is None else cutoff
@@ -173,8 +181,9 @@ class HistogramStandardization(NormalizationTransform):
         percentiles_database = []
         a, b = percentiles_cutoff  # for mypy
         percentiles = _get_percentiles((a, b))
-        iterable: Iterable[TypePath]
-        iterable = tqdm(images_paths) if progress else images_paths  # type: ignore[assignment]
+        iterable = cast(
+            Iterable[TypePath], tqdm(images_paths) if progress else images_paths
+        )
         for i, image_file_path in enumerate(iterable):
             tensor, _ = read_image(image_file_path)
             if masking_function is not None:
@@ -183,11 +192,12 @@ class HistogramStandardization(NormalizationTransform):
                 if mask_path is None:
                     mask = np.ones_like(tensor, dtype=bool)
                 else:
-                    if is_masks_list:
-                        assert isinstance(mask_path, Sequence)
-                        path = mask_path[i]
+                    path: TypePath
+                    if mask_paths is not None:
+                        path = mask_paths[i]
                     else:
-                        path = mask_path  # type: ignore[assignment]
+                        assert isinstance(mask_path, (str, Path))
+                        path = mask_path
                     mask, _ = read_image(path)
                     mask = mask.numpy() > 0
             array = tensor.numpy()

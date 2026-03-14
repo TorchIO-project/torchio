@@ -1,3 +1,6 @@
+from typing import Any
+from typing import cast
+
 import pytest
 
 from torchio import RandomGhosting
@@ -38,7 +41,7 @@ class TestRandomGhosting(TorchioTestCase):
 
     def test_wrong_intensity_type(self):
         with pytest.raises(ValueError):
-            RandomGhosting(intensity='wrong')
+            RandomGhosting(intensity=cast(Any, 'wrong'))
 
     def test_negative_num_ghosts(self):
         with pytest.raises(ValueError):
@@ -50,11 +53,11 @@ class TestRandomGhosting(TorchioTestCase):
 
     def test_not_integer_num_ghosts(self):
         with pytest.raises(ValueError):
-            RandomGhosting(num_ghosts=(0.7, 4))
+            RandomGhosting(num_ghosts=cast(Any, (0.7, 4)))
 
     def test_wrong_num_ghosts_type(self):
         with pytest.raises(ValueError):
-            RandomGhosting(num_ghosts='wrong')
+            RandomGhosting(num_ghosts=cast(Any, 'wrong'))
 
     def test_out_of_range_axis(self):
         with pytest.raises(ValueError):
@@ -66,7 +69,7 @@ class TestRandomGhosting(TorchioTestCase):
 
     def test_wrong_axes_type(self):
         with pytest.raises(ValueError):
-            RandomGhosting(axes=None)
+            RandomGhosting(axes=cast(Any, None))
 
     def test_out_of_range_restore(self):
         with pytest.raises(ValueError):
@@ -74,4 +77,4 @@ class TestRandomGhosting(TorchioTestCase):
 
     def test_wrong_restore_type(self):
         with pytest.raises(ValueError):
-            RandomGhosting(restore='wrong')
+            RandomGhosting(restore=cast(Any, 'wrong'))

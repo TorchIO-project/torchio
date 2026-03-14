@@ -16,6 +16,8 @@ from ..external.imports import get_pandas
 from ..types import TypePath
 
 if TYPE_CHECKING:
+    from collections.abc import Hashable
+
     import pandas as pd
 
 
@@ -37,8 +39,8 @@ class MetadataIndexColumn(str, enum.Enum):
 class CtRate(SubjectsDataset):
     """CT-RATE dataset.
 
-    This class helps loading the `CT-RATE dataset
-    <https://huggingface.co/datasets/ibrahimhamamci/CT-RATE>`_,
+    This class helps loading the [CT-RATE dataset
+    ](https://huggingface.co/datasets/ibrahimhamamci/CT-RATE),
     which contains chest CT scans with associated radiology reports and
     abnormality labels.
 
@@ -46,16 +48,16 @@ class CtRate(SubjectsDataset):
 
     Args:
         root: Root directory where the dataset has been downloaded.
-        split: Dataset split to use, either ``'train'`` or ``'validation'``.
+        split: Dataset split to use, either `'train'` or `'validation'`.
         num_subjects: Optional limit on the number of subjects to load (useful for
-            debugging). If ``None``, all subjects in the split are loaded.
+            debugging). If `None`, all subjects in the split are loaded.
         report_key: Key to use for storing radiology reports in the Subject metadata.
         sizes: List of image sizes (in-plane, in voxels) to include.
-        load_fixed: If ``True``, load the files with fixed spatial metadata
-            added in `this pull request
-            <https://huggingface.co/datasets/ibrahimhamamci/CT-RATE/discussions/85>`_.
+        load_fixed: If `True`, load the files with fixed spatial metadata
+            added in [this pull request
+            ](https://huggingface.co/datasets/ibrahimhamamci/CT-RATE/discussions/85).
             Otherwise, load the original files with incorrect spatial metadata.
-        verify_paths: If ``True``, verify that the paths to the images exist
+        verify_paths: If `True`, verify that the paths to the images exist
             during instantiation of the dataset. This might be slow for large that are
             not stored locally.
         **kwargs: Additional arguments for SubjectsDataset.
@@ -166,8 +168,8 @@ class CtRate(SubjectsDataset):
         on the expand_validation parameter.
 
         Args:
-            expand_validation: If ``True`` and split is ``'valid'``, return
-                ``'validation'``. Otherwise, return the split name as is.
+            expand_validation: If `True` and split is `'valid'`, return
+                `'validation'`. Otherwise, return the split name as is.
         """
         if expand_validation and self._split == 'valid':
             prefix = 'validation'
@@ -213,9 +215,9 @@ class CtRate(SubjectsDataset):
     def _merge(self, base_df: pd.DataFrame, new_df: pd.DataFrame) -> pd.DataFrame:
         """Merge a new dataframe into the base dataframe using the filename as the key.
 
-        This method performs a left join between ``base_df`` and ``new_df`` using the
-        volume filename as the join key, ensuring that all records from ``base_df`` are
-        preserved while matching data from ``new_df`` is added.
+        This method performs a left join between `base_df` and `new_df` using the
+        volume filename as the join key, ensuring that all records from `base_df` are
+        preserved while matching data from `new_df` is added.
 
         Args:
             base_df: The primary dataframe to merge into.
@@ -234,7 +236,7 @@ class CtRate(SubjectsDataset):
         )
 
     def _keep_n_subjects(self, metadata: pd.DataFrame, n: int) -> pd.DataFrame:
-        """Limit the metadata to the first ``n`` subjects.
+        """Limit the metadata to the first `n` subjects.
 
         Args:
             metadata: The complete metadata dataframe.
@@ -289,7 +291,7 @@ class CtRate(SubjectsDataset):
 
     def _get_subject(
         self,
-        subject_id_and_metadata: tuple[str, pd.DataFrame],
+        subject_id_and_metadata: tuple[Hashable, pd.DataFrame],
     ) -> Subject:
         """Create a Subject instance for a specific subject.
 
@@ -301,14 +303,14 @@ class CtRate(SubjectsDataset):
                 DataFrame containing metadata for all images associated to that subject.
         """
         subject_id, subject_df = subject_id_and_metadata
-        subject_dict: dict[str, str | ScalarImage] = {'subject_id': subject_id}
+        subject_dict: dict[str, object] = {'subject_id': str(subject_id)}
         for _, image_row in subject_df.iterrows():
             image = self._instantiate_image(image_row)
             scan_id = image_row['scan_id']
             reconstruction_id = image_row['reconstruction_id']
             image_key = f'scan_{scan_id}_reconstruction_{reconstruction_id}'
             subject_dict[image_key] = image
-        return Subject(**subject_dict)  # type: ignore[arg-type]
+        return Subject(subject_dict)
 
     def _instantiate_image(self, image_row: pd.Series) -> ScalarImage:
         """Create a ScalarImage object for a specific image.
@@ -319,19 +321,24 @@ class CtRate(SubjectsDataset):
             image_row: A pandas Series representing a row from the metadata DataFrame,
                 containing information about a single image.
         """
-        image_dict: dict[str, str | dict[str, str]] = image_row.to_dict()  # type: ignore[assignment]
-        filename: str = image_dict[self._FILENAME_KEY]  # type: ignore[assignment]
+        image_dict = {str(key): value for key, value in image_row.to_dict().items()}
+        filename = image_dict[self._FILENAME_KEY]
+        if not isinstance(filename, str):
+            message = (
+                f'Expected {self._FILENAME_KEY} to be a string, not {type(filename)!r}'
+            )
+            raise TypeError(message)
         relative_image_path = self._get_image_path(
             filename,
             load_fixed=self._load_fixed,
         )
         image_path = self._root_dir / relative_image_path
-        report_dict = self._extract_report_dict(image_dict)  # type: ignore[arg-type]
+        report_dict = self._extract_report_dict(image_dict)
         image_dict[self._report_key] = report_dict
         image = ScalarImage(image_path, verify_path=self._verify_paths, **image_dict)
         return image
 
-    def _extract_report_dict(self, subject_dict: dict[str, str]) -> dict[str, str]:
+    def _extract_report_dict(self, subject_dict: dict[str, object]) -> dict[str, str]:
         """Extract radiology report information from the subject dictionary.
 
         Extracts the English radiology report components (clinical information,
@@ -346,7 +353,13 @@ class CtRate(SubjectsDataset):
         """
         report_dict = {}
         for key in self.REPORT_KEYS:
-            report_dict[key] = subject_dict.pop(key)
+            value = subject_dict.pop(key)
+            if not isinstance(value, str):
+                message = (
+                    f'Expected report field {key!r} to be a string, not {type(value)!r}'
+                )
+                raise TypeError(message)
+            report_dict[key] = value
         return report_dict
 
     @staticmethod
@@ -362,7 +375,7 @@ class CtRate(SubjectsDataset):
         Returns:
             Path: The relative path to the image file within the dataset directory.
 
-        Example:
+        Examples:
             >>> path = CtRate._get_image_path('train_2_a_1.nii.gz')
             # Returns Path('dataset/train/train_2/train_2_a/train_2_a_1.nii.gz')
         """

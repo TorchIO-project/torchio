@@ -1,5 +1,3 @@
-from collections import defaultdict
-
 import numpy as np
 import scipy.ndimage as ndi
 import torch
@@ -16,18 +14,18 @@ class RandomBlur(RandomTransform, IntensityTransform):
     r"""Blur an image using a random-sized Gaussian filter.
 
     Args:
-        std: Tuple :math:`(a_1, b_1, a_2, b_2, a_3, b_3)` representing the
+        std: Tuple $(a_1, b_1, a_2, b_2, a_3, b_3)$ representing the
             ranges (in mm) of the standard deviations
-            :math:`(\sigma_1, \sigma_2, \sigma_3)` of the Gaussian kernels used
+            $(\sigma_1, \sigma_2, \sigma_3)$ of the Gaussian kernels used
             to blur the image along each axis, where
-            :math:`\sigma_i \sim \mathcal{U}(a_i, b_i)`.
-            If two values :math:`(a, b)` are provided,
-            then :math:`\sigma_i \sim \mathcal{U}(a, b)`.
-            If only one value :math:`x` is provided,
-            then :math:`\sigma_i \sim \mathcal{U}(0, x)`.
-            If three values :math:`(x_1, x_2, x_3)` are provided,
-            then :math:`\sigma_i \sim \mathcal{U}(0, x_i)`.
-        **kwargs: See :class:`~torchio.transforms.Transform` for additional
+            $\sigma_i \sim \mathcal{U}(a_i, b_i)$.
+            If two values $(a, b)$ are provided,
+            then $\sigma_i \sim \mathcal{U}(a, b)$.
+            If only one value $x$ is provided,
+            then $\sigma_i \sim \mathcal{U}(0, x)$.
+            If three values $(x_1, x_2, x_3)$ are provided,
+            then $\sigma_i \sim \mathcal{U}(0, x_i)$.
+        **kwargs: See [`Transform`][torchio.transforms.Transform] for additional
             keyword arguments.
     """
 
@@ -40,11 +38,10 @@ class RandomBlur(RandomTransform, IntensityTransform):
         if not images_dict:
             return subject
 
-        arguments: dict[str, dict] = defaultdict(dict)
+        std_by_name: dict[str, TypeTripletFloat] = {}
         for name in images_dict:
-            std = self.get_params(self.std_ranges)  # type: ignore[arg-type]
-            arguments['std'][name] = std
-        transform = Blur(**self.add_base_args(arguments))
+            std_by_name[name] = self.get_params(self.std_ranges)
+        transform = Blur(std=std_by_name, **self._get_base_args())
         transformed = transform(subject)
         assert isinstance(transformed, Subject)
         return transformed
@@ -58,10 +55,10 @@ class Blur(IntensityTransform):
     r"""Blur an image using a Gaussian filter.
 
     Args:
-        std: Tuple :math:`(\sigma_1, \sigma_2, \sigma_3)` representing the
+        std: Tuple $(\sigma_1, \sigma_2, \sigma_3)$ representing the
             the standard deviations (in mm) of the Gaussian kernels used to
             blur the image along each axis.
-        **kwargs: See :class:`~torchio.transforms.Transform` for additional
+        **kwargs: See [`Transform`][torchio.transforms.Transform] for additional
             keyword arguments.
     """
 
@@ -75,14 +72,10 @@ class Blur(IntensityTransform):
         self.args_names = ['std']
 
     def apply_transform(self, subject: Subject) -> Subject:
-        stds = self.std
         for name, image in self.get_images_dict(subject).items():
-            if self.arguments_are_dict():
-                assert isinstance(self.std, dict)
-                stds = self.std[name]
+            stds = self.get_parameter(self.std, name)
             repets = image.num_channels, 1
-            stds_channels: np.ndarray
-            stds_channels = np.tile(stds, repets)  # type: ignore[arg-type]
+            stds_channels: np.ndarray = np.tile(stds, repets)
             transformed_tensors = []
             for std, channel in zip(stds_channels, image.data, strict=True):
                 transformed_tensor = blur(

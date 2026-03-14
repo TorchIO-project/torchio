@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from collections.abc import Callable
-
 import numpy as np
 
 from ....data.subject import Subject
@@ -12,17 +10,16 @@ from .crop_or_pad import CropOrPad
 
 
 class EnsureShapeMultiple(SpatialTransform):
-    """Ensure that all values in the image shape are divisible by :math:`n`.
+    """Ensure that all values in the image shape are divisible by $n$.
 
     Some convolutional neural network architectures need that the size of the
-    input across all spatial dimensions is a power of :math:`2`.
+    input across all spatial dimensions is a power of $2$.
 
     For example, the canonical 3D U-Net from
-    `Çiçek et al. <https://link.springer.com/chapter/10.1007/978-3-319-46723-8_49>`_
+    [Çiçek et al. ](https://link.springer.com/chapter/10.1007/978-3-319-46723-8_49)
     includes three downsampling (pooling) and upsampling operations:
 
-    .. image:: https://www.researchgate.net/profile/Olaf-Ronneberger/publication/304226155/figure/fig1/AS:375619658502144@1466566113191/The-3D-u-net-architecture-Blue-boxes-represent-feature-maps-The-number-of-channels-is.png
-        :alt: 3D U-Net
+    ![3D U-Net](https://www.researchgate.net/profile/Olaf-Ronneberger/publication/304226155/figure/fig1/AS:375619658502144@1466566113191/The-3D-u-net-architecture-Blue-boxes-represent-feature-maps-The-number-of-channels-is.png)
 
     Pooling operations in PyTorch round down the output size:
 
@@ -40,18 +37,19 @@ class EnsureShapeMultiple(SpatialTransform):
         >>> x.shape
         torch.Size([3, 10, 20, 31])
 
-    If we try to concatenate ``x_down`` and ``x_down_up`` (to create skip
+    If we try to concatenate `x_down` and `x_down_up` (to create skip
     connections), we will get an error. It is therefore good practice to ensure
     that the size of our images is such that concatenations will be safe.
 
-    .. note:: In these examples, it's assumed that all convolutions in the
+    Note:
+        In these examples, it's assumed that all convolutions in the
         U-Net use padding so that the output size is the same as the input
         size.
 
-    The image above shows :math:`3` downsampling operations, so the input size
-    along all dimensions should be a multiple of :math:`2^3 = 8`.
+    The image above shows $3$ downsampling operations, so the input size
+    along all dimensions should be a multiple of $2^3 = 8$.
 
-    Example (assuming ``pip install unet`` has been run before):
+    Example (assuming `pip install unet` has been run before):
 
         >>> import torchio as tio
         >>> import unet
@@ -84,15 +82,15 @@ class EnsureShapeMultiple(SpatialTransform):
         torch.Size([1, 1, 184, 224, 184])  # as expected
 
     Args:
-        target_multiple: Tuple :math:`(n_w, n_h, n_d)`, so that the size of the
-            output along axis :math:`i` is a multiple of :math:`n_i`. If a
-            single value :math:`n` is provided, then
-            :math:`n_w = n_h = n_d = n`.
-        method: Either ``'crop'`` or ``'pad'``.
-        **kwargs: See :class:`~torchio.transforms.Transform` for additional
+        target_multiple: Tuple $(n_w, n_h, n_d)$, so that the size of the
+            output along axis $i$ is a multiple of $n_i$. If a
+            single value $n$ is provided, then
+            $n_w = n_h = n_d = n$.
+        method: Either `'crop'` or `'pad'`.
+        **kwargs: See [`Transform`][torchio.transforms.Transform] for additional
             keyword arguments.
 
-    Example:
+    Examples:
         >>> import torchio as tio
         >>> image = tio.datasets.Colin27().t1
         >>> image.shape
@@ -128,10 +126,28 @@ class EnsureShapeMultiple(SpatialTransform):
 
     def apply_transform(self, subject: Subject) -> Subject:
         source_shape = np.array(subject.spatial_shape, np.uint16)
-        function: Callable = np.floor if self.method == 'crop' else np.ceil  # type: ignore[assignment]
-        integer_ratio = function(source_shape / self.target_multiple)
+        if self.method == 'crop':
+            integer_ratio = np.floor(source_shape / self.target_multiple)
+        else:
+            integer_ratio = np.ceil(source_shape / self.target_multiple)
         target_shape = integer_ratio * self.target_multiple
         target_shape = np.maximum(target_shape, 1)
-        transform = CropOrPad(target_shape.astype(int), **self.get_base_args())
-        subject = transform(subject)  # type: ignore[assignment]
-        return subject
+        target_shape_values = [
+            int(value) for value in target_shape.astype(int).tolist()
+        ]
+        transform = CropOrPad(
+            (
+                target_shape_values[0],
+                target_shape_values[1],
+                target_shape_values[2],
+            ),
+            copy=self.copy,
+            include=self.include,
+            exclude=self.exclude,
+            keep=self.keep,
+            parse_input=self.parse_input,
+            label_keys=self.label_keys,
+        )
+        transformed = transform(subject)
+        assert isinstance(transformed, Subject)
+        return transformed

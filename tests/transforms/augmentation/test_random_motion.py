@@ -1,3 +1,6 @@
+from typing import Any
+from typing import cast
+
 import pytest
 
 from torchio import RandomMotion
@@ -42,7 +45,7 @@ class TestRandomMotion(TorchioTestCase):
 
     def test_wrong_degrees_type(self):
         with pytest.raises(ValueError):
-            RandomMotion(degrees='wrong')
+            RandomMotion(degrees=cast(Any, 'wrong'))
 
     def test_negative_translation(self):
         with pytest.raises(ValueError):
@@ -50,11 +53,11 @@ class TestRandomMotion(TorchioTestCase):
 
     def test_wrong_translation_type(self):
         with pytest.raises(ValueError):
-            RandomMotion(translation='wrong')
+            RandomMotion(translation=cast(Any, 'wrong'))
 
     def test_wrong_image_interpolation_type(self):
         with pytest.raises(TypeError):
-            RandomMotion(image_interpolation=0)
+            RandomMotion(image_interpolation=cast(Any, 0))
 
     def test_wrong_image_interpolation_value(self):
         with pytest.raises(ValueError):

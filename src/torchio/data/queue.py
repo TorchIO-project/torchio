@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 from collections.abc import Iterator
+from collections.abc import Sequence
+from collections.abc import Sized
 from itertools import islice
 
 import humanize
@@ -33,16 +35,16 @@ class Queue(Dataset):
     The sampled patches are then stored in a buffer or *queue* until
     the next training iteration, at which point they are loaded onto the GPU
     for inference.
-    For this, TorchIO provides the :class:`~torchio.data.Queue` class, which
-    also inherits from the PyTorch :class:`~torch.utils.data.Dataset`.
+    For this, TorchIO provides the [`Queue`](#torchio.data.Queue) class, which
+    also inherits from the PyTorch [`Dataset`][torch.utils.data.Dataset].
     In this queueing system,
     samplers behave as generators that yield patches from random locations
-    in volumes contained in the :class:`~torchio.data.SubjectsDataset`.
+    in volumes contained in the [`SubjectsDataset`](../../data/dataset/#torchio.data.SubjectsDataset).
 
     The end of a training epoch is defined as the moment after which patches
     from all subjects have been used for training.
     At the beginning of each training epoch,
-    the subjects list in the :class:`~torchio.data.SubjectsDataset` is shuffled,
+    the subjects list in the [`SubjectsDataset`](../../data/dataset/#torchio.data.SubjectsDataset) is shuffled,
     as is typically done in machine learning pipelines to increase variance
     of training instances during model optimization.
     A PyTorch loader queries the datasets copied in each process,
@@ -51,135 +53,128 @@ class Queue(Dataset):
     and the queue is shuffled once it has reached a specified maximum length so
     that batches are composed of patches from different subjects.
     The internal data loader continues querying the
-    :class:`~torchio.data.SubjectsDataset` using multiprocessing.
+    [`SubjectsDataset`](../../data/dataset/#torchio.data.SubjectsDataset) using multiprocessing.
     The patches list, when emptied, is refilled with new patches.
     A second data loader, external to the queue,
     may be used to collate batches of patches stored in the queue,
     which are passed to the neural network.
 
     Args:
-        subjects_dataset: Instance of :class:`~torchio.data.SubjectsDataset`.
+        subjects_dataset: Instance of [`SubjectsDataset`](../../data/dataset/#torchio.data.SubjectsDataset).
         max_length: Maximum number of patches that can be stored in the queue.
             Using a large number means that the queue needs to be filled less
             often, but more CPU memory is needed to store the patches.
         samples_per_volume: Default number of patches to extract from each
-            volume. If a subject contains an attribute :attr:`num_samples`, it
-            will be used instead of :attr:`samples_per_volume`.
+            volume. If a subject contains an attribute `num_samples`, it
+            will be used instead of `samples_per_volume`.
             A small number of patches ensures a large variability in the queue,
             but training will be slower.
-        sampler: A subclass of :class:`~torchio.data.sampler.PatchSampler` used
+        sampler: A subclass of [`PatchSampler`](#torchio.data.PatchSampler) used
             to extract patches from the volumes.
         subject_sampler: Sampler to get subjects from the dataset.
             It should be an instance of
-            :class:`~torch.utils.data.distributed.DistributedSampler` when
-            running `distributed training
-            <https://pytorch.org/tutorials/beginner/dist_overview.html>`_.
+            [`DistributedSampler`][torch.utils.data.distributed.DistributedSampler] when
+            running [distributed training
+            ](https://pytorch.org/tutorials/beginner/dist_overview.html).
         num_workers: Number of subprocesses to use for data loading
-            (as in :class:`torch.utils.data.DataLoader`).
-            ``0`` means that the data will be loaded in the main process.
-        shuffle_subjects: If ``True``, the subjects dataset is shuffled at the
+            (as in [`torch.utils.data.DataLoader`][torch.utils.data.DataLoader]).
+            `0` means that the data will be loaded in the main process.
+        shuffle_subjects: If `True`, the subjects dataset is shuffled at the
             beginning of each epoch, i.e. when all patches from all subjects
             have been processed.
-        shuffle_patches: If ``True``, patches are shuffled after filling the
+        shuffle_patches: If `True`, patches are shuffled after filling the
             queue.
-        start_background: If ``True``, the loader will start working in the
+        start_background: If `True`, the loader will start working in the
             background as soon as the queue is instantiated.
-        verbose: If ``True``, some debugging messages will be printed.
+        verbose: If `True`, some debugging messages will be printed.
 
     This diagram represents the connection between
-    a :class:`~torchio.data.SubjectsDataset`,
-    a :class:`~torchio.data.Queue`
-    and the :class:`~torch.utils.data.DataLoader` used to pop batches from the
+    a [`SubjectsDataset`](../../data/dataset/#torchio.data.SubjectsDataset),
+    a [`Queue`](#torchio.data.Queue)
+    and the [`DataLoader`][torch.utils.data.DataLoader] used to pop batches from the
     queue.
 
-    .. image:: https://raw.githubusercontent.com/TorchIO-project/torchio/main/docs/images/diagram_patches.svg
-        :alt: Training with patches
+    ![Training with patches](https://raw.githubusercontent.com/TorchIO-project/torchio/main/docs/images/diagram_patches.svg)
 
     This sketch can be used to experiment and understand how the queue works.
-    In this case, :attr:`shuffle_subjects` is ``False``
-    and :attr:`shuffle_patches` is ``True``.
+    In this case, `shuffle_subjects` is `False`
+    and `shuffle_patches` is `True`.
 
-    .. raw:: html
+    <iframe style="width: 640px; height: 360px; overflow: hidden;" scrolling="no" frameborder="0" src="https://editor.p5js.org/fepegar/full/DZwjZzkkV"></iframe>
 
-        <embed>
-            <iframe style="width: 640px; height: 360px; overflow: hidden;" scrolling="no" frameborder="0" src="https://editor.p5js.org/fepegar/full/DZwjZzkkV"></iframe>
-        </embed>
-
-    .. note:: :attr:`num_workers` refers to the number of workers used to
+    Note:
+        `num_workers` refers to the number of workers used to
         load and transform the volumes. Multiprocessing is not needed to pop
-        patches from the queue, so you should always use ``num_workers=0`` for
-        the :class:`~torch.utils.data.DataLoader` you instantiate to generate
+        patches from the queue, so you should always use `num_workers=0` for
+        the [`DataLoader`][torch.utils.data.DataLoader] you instantiate to generate
         training batches.
 
-    Example:
+    Examples:
+        >>> import torch
+        >>> import torchio as tio
+        >>> patch_size = 96
+        >>> queue_length = 300
+        >>> samples_per_volume = 10
+        >>> sampler = tio.data.UniformSampler(patch_size)
+        >>> subject = tio.datasets.Colin27()
+        >>> subjects_dataset = tio.SubjectsDataset(10 * [subject])
+        >>> patches_queue = tio.Queue(
+        ...     subjects_dataset,
+        ...     queue_length,
+        ...     samples_per_volume,
+        ...     sampler,
+        ...     num_workers=4,
+        ... )
+        >>> patches_loader = tio.SubjectsLoader(
+        ...     patches_queue,
+        ...     batch_size=16,
+        ...     num_workers=0,  # this must be 0
+        ... )
+        >>> num_epochs = 2
+        >>> model = torch.nn.Identity()
+        >>> for epoch_index in range(num_epochs):
+        ...     for patches_batch in patches_loader:
+        ...         inputs = patches_batch['t1'][tio.DATA]
+        ...         targets = patches_batch['brain'][tio.DATA]
+        ...         logits = model(inputs)
 
-    >>> import torch
-    >>> import torchio as tio
-    >>> patch_size = 96
-    >>> queue_length = 300
-    >>> samples_per_volume = 10
-    >>> sampler = tio.data.UniformSampler(patch_size)
-    >>> subject = tio.datasets.Colin27()
-    >>> subjects_dataset = tio.SubjectsDataset(10 * [subject])
-    >>> patches_queue = tio.Queue(
-    ...     subjects_dataset,
-    ...     queue_length,
-    ...     samples_per_volume,
-    ...     sampler,
-    ...     num_workers=4,
-    ... )
-    >>> patches_loader = tio.SubjectsLoader(
-    ...     patches_queue,
-    ...     batch_size=16,
-    ...     num_workers=0,  # this must be 0
-    ... )
-    >>> num_epochs = 2
-    >>> model = torch.nn.Identity()
-    >>> for epoch_index in range(num_epochs):
-    ...     for patches_batch in patches_loader:
-    ...         inputs = patches_batch['t1'][tio.DATA]  # key 't1' is in subject
-    ...         targets = patches_batch['brain'][tio.DATA]  # key 'brain' is in subject
-    ...         logits = model(inputs)  # model being an instance of torch.nn.Module
-
-
-    Example:
-
-    >>> # Usage with distributed training
-    >>> import torch.distributed as dist
-    >>> from torch.utils.data.distributed import DistributedSampler
-    >>> # Assume a process running on distributed node 3
-    >>> rank = 3
-    >>> patch_sampler = tio.data.UniformSampler(patch_size)
-    >>> subject = tio.datasets.Colin27()
-    >>> subjects_dataset = tio.SubjectsDataset(10 * [subject])
-    >>> subject_sampler = dist.DistributedSampler(
-    ...     subjects_dataset,
-    ...     rank=local_rank,
-    ...     shuffle=True,
-    ...     drop_last=True,
-    ... )
-    >>> # Each process is assigned (len(subjects_dataset) // num_processes) subjects
-    >>> patches_queue = tio.Queue(
-    ...     subjects_dataset,
-    ...     queue_length,
-    ...     samples_per_volume,
-    ...     patch_sampler,
-    ...     num_workers=4,
-    ...     subject_sampler=subject_sampler,
-    ... )
-    >>> patches_loader = tio.SubjectsLoader(
-    ...     patches_queue,
-    ...     batch_size=16,
-    ...     num_workers=0,  # this must be 0
-    ... )
-    >>> num_epochs = 2
-    >>> model = torch.nn.Identity()
-    >>> for epoch_index in range(num_epochs):
-    ...     subject_sampler.set_epoch(epoch_index)
-    ...     for patches_batch in patches_loader:
-    ...         inputs = patches_batch['t1'][tio.DATA]  # key 't1' is in subject
-    ...         targets = patches_batch['brain'][tio.DATA]  # key 'brain' is in subject
-    ...         logits = model(inputs)  # model being an instance of torch.nn.Module
+    Examples:
+        >>> # Usage with distributed training
+        >>> import torch.distributed as dist
+        >>> from torch.utils.data.distributed import DistributedSampler
+        >>> # Assume a process running on distributed node 3
+        >>> rank = 3
+        >>> patch_sampler = tio.data.UniformSampler(patch_size)
+        >>> subject = tio.datasets.Colin27()
+        >>> subjects_dataset = tio.SubjectsDataset(10 * [subject])
+        >>> subject_sampler = dist.DistributedSampler(
+        ...     subjects_dataset,
+        ...     rank=local_rank,
+        ...     shuffle=True,
+        ...     drop_last=True,
+        ... )
+        >>> # Each process is assigned (len(subjects_dataset) // num_processes) subjects
+        >>> patches_queue = tio.Queue(
+        ...     subjects_dataset,
+        ...     queue_length,
+        ...     samples_per_volume,
+        ...     patch_sampler,
+        ...     num_workers=4,
+        ...     subject_sampler=subject_sampler,
+        ... )
+        >>> patches_loader = tio.SubjectsLoader(
+        ...     patches_queue,
+        ...     batch_size=16,
+        ...     num_workers=0,  # this must be 0
+        ... )
+        >>> num_epochs = 2
+        >>> model = torch.nn.Identity()
+        >>> for epoch_index in range(num_epochs):
+        ...     subject_sampler.set_epoch(epoch_index)
+        ...     for patches_batch in patches_loader:
+        ...         inputs = patches_batch['t1'][tio.DATA]
+        ...         targets = patches_batch['brain'][tio.DATA]
+        ...         logits = model(inputs)
     """
 
     def __init__(
@@ -221,7 +216,7 @@ class Queue(Dataset):
     def __len__(self):
         return self.iterations_per_epoch
 
-    def __getitem__(self, _):
+    def __getitem__(self, index):
         # There are probably more elegant ways of doing this
         if not self.patches_list:
             self._print('Patches list is empty.')
@@ -257,12 +252,12 @@ class Queue(Dataset):
     @property
     def num_subjects(self) -> int:
         if self.subject_sampler is not None:
-            if not hasattr(self.subject_sampler, '__len__'):
+            if not isinstance(self.subject_sampler, Sized):
                 raise ValueError(
                     'The subject sampler passed to the queue must have a'
                     ' __len__ method',
                 )
-            num_subjects = len(self.subject_sampler)  # type: ignore[arg-type]
+            num_subjects = len(self.subject_sampler)
         else:
             num_subjects = len(self.subjects_dataset)
         return num_subjects
@@ -274,6 +269,7 @@ class Queue(Dataset):
     @property
     def iterations_per_epoch(self) -> int:
         all_subjects_list = self.subjects_dataset.dry_iter()
+        subjects_list: Sequence[Subject]
         if self.subject_sampler is not None:
             subjects_list = []
             for subject_index in self.subject_sampler:

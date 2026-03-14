@@ -12,8 +12,8 @@ class ZNormalization(NormalizationTransform):
 
     Args:
         masking_method: See
-            :class:`~torchio.transforms.preprocessing.intensity.NormalizationTransform`.
-        **kwargs: See :class:`~torchio.transforms.Transform` for additional
+            [`NormalizationTransform`][torchio.transforms.preprocessing.intensity.NormalizationTransform].
+        **kwargs: See [`Transform`][torchio.transforms.Transform] for additional
             keyword arguments.
     """
 
@@ -27,7 +27,7 @@ class ZNormalization(NormalizationTransform):
         image_name: str,
         mask: torch.Tensor,
     ) -> None:
-        image = subject[image_name]
+        image = subject.get_scalar_image(image_name)
         standardized = self.znorm(
             image.data,
             mask,

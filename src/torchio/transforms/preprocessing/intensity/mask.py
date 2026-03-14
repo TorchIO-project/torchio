@@ -16,12 +16,12 @@ class Mask(IntensityTransform):
 
     Args:
         masking_method: See
-            :class:`~torchio.transforms.preprocessing.intensity.NormalizationTransform`.
+            [`NormalizationTransform`][torchio.transforms.preprocessing.intensity.NormalizationTransform].
         outside_value: Value to set for all voxels outside of the mask.
         labels: If a label map is used to generate the mask,
-            sequence of labels to consider. If ``None``, all values larger than
+            sequence of labels to consider. If `None`, all values larger than
             zero will be used for the mask.
-        **kwargs: See :class:`~torchio.transforms.Transform` for additional
+        **kwargs: See [`Transform`][torchio.transforms.Transform] for additional
             keyword arguments.
 
     Raises:
@@ -29,7 +29,7 @@ class Mask(IntensityTransform):
             be expanded along the channels (first) dimension, and a warning
             will be raised.
 
-    Example:
+    Examples:
         >>> import torchio as tio
         >>> subject = tio.datasets.Colin27()
         >>> subject
@@ -37,15 +37,6 @@ class Mask(IntensityTransform):
         >>> mask = tio.Mask(masking_method='brain')  # Use "brain" image to mask
         >>> transformed = mask(subject)  # Set voxels outside of the brain to 0
 
-    .. plot::
-
-        import torchio as tio
-        subject = tio.datasets.Colin27()
-        subject.remove_image('head')
-        mask = tio.Mask('brain')
-        masked = mask(subject)
-        subject.add_image(masked.t1, 'Masked')
-        subject.plot()
     """
 
     def __init__(

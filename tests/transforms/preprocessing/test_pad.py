@@ -1,3 +1,6 @@
+from typing import Any
+from typing import cast
+
 import pytest
 import SimpleITK as sitk
 import torch
@@ -29,11 +32,12 @@ class TestPad(TorchioTestCase):
         assert not torch.isnan(again.t1.data).any()
 
     def test_padding_modes(self):
-        def padding_func():
-            return
+        def padding_func() -> None:
+            return None
 
-        for padding_mode in [0, *tio.Pad.PADDING_MODES, padding_func]:
+        for padding_mode in [0, *tio.Pad.PADDING_MODES]:
             tio.Pad(0, padding_mode=padding_mode)
+        tio.Pad(0, padding_mode=cast(Any, padding_func))
 
         with self.assertRaises(KeyError):
             tio.Pad(0, padding_mode='abc')

@@ -1,0 +1,194 @@
+[project]
+site_name = "TorchIO"
+site_url = "https://torchio.org"
+site_description = "Tools for medical image processing with PyTorch"
+site_author = "Fernando Pérez-García"
+copyright = "Copyright &copy; 2026 Fernando Pérez-García"
+repo_url = "https://github.com/TorchIO-project/torchio"
+repo_name = "TorchIO-project/torchio"
+edit_uri = "blob/main/docs/"
+
+extra_javascript = [
+  "javascripts/mathjax.js",
+  "https://unpkg.com/mathjax@3/es5/tex-mml-chtml.js",
+  "javascripts/copy-no-prompt.js",
+]
+
+nav = [
+  { Home = "index.md" },
+  { "Getting started" = "getting-started.md" },
+  { "Data structures" = [
+    "data/index.md",
+    "data/image.md",
+    "data/subject.md",
+    "data/dataset.md",
+    "data/loader.md",
+  ] },
+  { "Patch-based pipelines" = [
+    "patches/index.md",
+    "patches/training.md",
+    "patches/inference.md",
+  ] },
+  { Transforms = [
+    "transforms/index.md",
+    { Augmentation = [
+      "transforms/augmentation/index.md",
+      { Composition = [
+        "transforms/augmentation/Compose.md",
+        "transforms/augmentation/OneOf.md",
+      ] },
+      { Spatial = [
+        "transforms/augmentation/RandomFlip.md",
+        "transforms/augmentation/RandomAffine.md",
+        "transforms/augmentation/RandomElasticDeformation.md",
+        "transforms/augmentation/RandomAffineElasticDeformation.md",
+        "transforms/augmentation/RandomAnisotropy.md",
+      ] },
+      { Intensity = [
+        "transforms/augmentation/RandomMotion.md",
+        "transforms/augmentation/RandomGhosting.md",
+        "transforms/augmentation/RandomSpike.md",
+        "transforms/augmentation/RandomBiasField.md",
+        "transforms/augmentation/RandomBlur.md",
+        "transforms/augmentation/RandomNoise.md",
+        "transforms/augmentation/RandomSwap.md",
+        "transforms/augmentation/RandomLabelsToImage.md",
+        "transforms/augmentation/RandomGamma.md",
+      ] },
+    ] },
+    { Preprocessing = [
+      "transforms/preprocessing/index.md",
+      { Intensity = [
+        "transforms/preprocessing/RescaleIntensity.md",
+        "transforms/preprocessing/ZNormalization.md",
+        "transforms/preprocessing/HistogramStandardization.md",
+        "transforms/preprocessing/Mask.md",
+        "transforms/preprocessing/Clamp.md",
+        "transforms/preprocessing/PCA.md",
+        "transforms/preprocessing/To.md",
+      ] },
+      { Spatial = [
+        "transforms/preprocessing/CropOrPad.md",
+        "transforms/preprocessing/Crop.md",
+        "transforms/preprocessing/Pad.md",
+        "transforms/preprocessing/Resize.md",
+        "transforms/preprocessing/Resample.md",
+        "transforms/preprocessing/ToCanonical.md",
+        "transforms/preprocessing/ToOrientation.md",
+        "transforms/preprocessing/ToReferenceSpace.md",
+        "transforms/preprocessing/Transpose.md",
+        "transforms/preprocessing/EnsureShapeMultiple.md",
+        "transforms/preprocessing/CopyAffine.md",
+      ] },
+      { Label = [
+        "transforms/preprocessing/RemapLabels.md",
+        "transforms/preprocessing/RemoveLabels.md",
+        "transforms/preprocessing/SequentialLabels.md",
+        "transforms/preprocessing/OneHot.md",
+        "transforms/preprocessing/Contour.md",
+        "transforms/preprocessing/KeepLargestComponent.md",
+      ] },
+    ] },
+    { Others = [
+      "transforms/others/Lambda.md",
+    ] },
+  ] },
+  { Datasets = "datasets.md" },
+  { Examples = [
+    "examples/index.md",
+    "examples/plot_colin27.md",
+    "examples/plot_include_exclude.md",
+    "examples/plot_custom_z_spacing.md",
+    "examples/plot_3d_to_2d.md",
+    "examples/plot_history.md",
+    "examples/plot_video.md",
+  ] },
+  { Interfaces = [
+    "interfaces/cli.md",
+    "interfaces/slicer.md",
+  ] },
+]
+
+[project.theme]
+logo = "images/torchio_logo_2048x2048.png"
+favicon = "images/favicon.ico"
+language = "en"
+
+features = [
+  "content.code.copy",
+  "navigation.footer",
+  "navigation.instant",
+  "navigation.instant.prefetch",
+  "navigation.path",
+  "navigation.sections",
+  "navigation.tabs",
+  "navigation.top",
+  "navigation.tracking",
+  "search.highlight",
+  "toc.follow",
+]
+
+[[project.theme.palette]]
+media = "(prefers-color-scheme)"
+toggle.icon = "lucide/sun-moon"
+toggle.name = "Switch to light mode"
+
+[[project.theme.palette]]
+media = "(prefers-color-scheme: light)"
+scheme = "default"
+primary = "deep purple"
+accent = "deep purple"
+toggle.icon = "lucide/sun"
+toggle.name = "Switch to dark mode"
+
+[[project.theme.palette]]
+media = "(prefers-color-scheme: dark)"
+scheme = "slate"
+primary = "deep purple"
+accent = "deep purple"
+toggle.icon = "lucide/moon"
+toggle.name = "Switch to system preference"
+
+[[project.extra.social]]
+icon = "fontawesome/brands/github"
+link = "https://github.com/TorchIO-project/torchio"
+
+[[project.extra.social]]
+icon = "fontawesome/brands/python"
+link = "https://pypi.org/project/torchio/"
+
+[project.plugins.mkdocstrings.handlers.python]
+inventories = [
+  "https://docs.python.org/3/objects.inv",
+  "https://pytorch.org/docs/stable/objects.inv",
+  "https://numpy.org/doc/stable/objects.inv",
+  "https://simpleitk.readthedocs.io/en/master/objects.inv",
+  "https://nipy.org/nibabel/objects.inv",
+]
+paths = ["src"]
+
+[project.plugins.mkdocstrings.handlers.python.options]
+docstring_style = "google"
+inherited_members = true
+show_source = false
+show_bases = true
+show_root_heading = true
+show_root_full_path = false
+members_order = "source"
+
+[project.markdown_extensions.admonition]
+
+[project.markdown_extensions.pymdownx.details]
+
+[project.markdown_extensions.pymdownx.highlight]
+anchor_linenums = true
+
+[project.markdown_extensions.pymdownx.superfences]
+
+[project.markdown_extensions.pymdownx.arithmatex]
+generic = true
+
+[project.markdown_extensions.pymdownx.tabbed]
+alternate_style = true
+
+[project.markdown_extensions.md_in_html]

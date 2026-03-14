@@ -1,4 +1,3 @@
-from collections import defaultdict
 from collections.abc import Sequence
 
 import numpy as np
@@ -7,7 +6,6 @@ import torch
 
 from ....data.io import nib_to_sitk
 from ....data.subject import Subject
-from ....types import TypeTripletFloat
 from ...fourier import FourierTransform
 from ...intensity_transform import IntensityTransform
 from .. import RandomTransform
@@ -18,31 +16,32 @@ class RandomMotion(RandomTransform, IntensityTransform, FourierTransform):
 
     Magnetic resonance images suffer from motion artifacts when the subject
     moves during image acquisition. This transform follows
-    `Shaw et al., 2019 <http://proceedings.mlr.press/v102/shaw19a.html>`_ to
+    [Shaw et al., 2019 ](http://proceedings.mlr.press/v102/shaw19a.html) to
     simulate motion artifacts for data augmentation.
 
     Args:
-        degrees: Tuple :math:`(a, b)` defining the rotation range in degrees of
+        degrees: Tuple $(a, b)$ defining the rotation range in degrees of
             the simulated movements. The rotation angles around each axis are
-            :math:`(\theta_1, \theta_2, \theta_3)`,
-            where :math:`\theta_i \sim \mathcal{U}(a, b)`.
-            If only one value :math:`d` is provided,
-            :math:`\theta_i \sim \mathcal{U}(-d, d)`.
+            $(\theta_1, \theta_2, \theta_3)$,
+            where $\theta_i \sim \mathcal{U}(a, b)$.
+            If only one value $d$ is provided,
+            $\theta_i \sim \mathcal{U}(-d, d)$.
             Larger values generate more distorted images.
-        translation: Tuple :math:`(a, b)` defining the translation in mm of
+        translation: Tuple $(a, b)$ defining the translation in mm of
             the simulated movements. The translations along each axis are
-            :math:`(t_1, t_2, t_3)`,
-            where :math:`t_i \sim \mathcal{U}(a, b)`.
-            If only one value :math:`t` is provided,
-            :math:`t_i \sim \mathcal{U}(-t, t)`.
+            $(t_1, t_2, t_3)$,
+            where $t_i \sim \mathcal{U}(a, b)$.
+            If only one value $t$ is provided,
+            $t_i \sim \mathcal{U}(-t, t)$.
             Larger values generate more distorted images.
         num_transforms: Number of simulated movements.
             Larger values generate more distorted images.
-        image_interpolation: See :ref:`Interpolation`.
-        **kwargs: See :class:`~torchio.transforms.Transform` for additional
+        image_interpolation: See Interpolation.
+        **kwargs: See [`Transform`][torchio.transforms.Transform] for additional
             keyword arguments.
 
-    .. warning:: Large numbers of movements lead to longer execution times for
+    Warning:
+        Large numbers of movements lead to longer execution times for
         3D images.
     """
 
@@ -73,7 +72,10 @@ class RandomMotion(RandomTransform, IntensityTransform, FourierTransform):
         if not images_dict:
             return subject
 
-        arguments: dict[str, dict] = defaultdict(dict)
+        times_by_name: dict[str, np.ndarray] = {}
+        degrees_by_name: dict[str, np.ndarray] = {}
+        translation_by_name: dict[str, np.ndarray] = {}
+        interpolation_by_name: dict[str, str] = {}
         for name, image in images_dict.items():
             params = self.get_params(
                 self.degrees_range,
@@ -82,11 +84,17 @@ class RandomMotion(RandomTransform, IntensityTransform, FourierTransform):
                 is_2d=image.is_2d(),
             )
             times_params, degrees_params, translation_params = params
-            arguments['times'][name] = times_params
-            arguments['degrees'][name] = degrees_params
-            arguments['translation'][name] = translation_params
-            arguments['image_interpolation'][name] = self.image_interpolation
-        transform = Motion(**self.add_base_args(arguments))
+            times_by_name[name] = times_params
+            degrees_by_name[name] = degrees_params
+            translation_by_name[name] = translation_params
+            interpolation_by_name[name] = self.image_interpolation
+        transform = Motion(
+            degrees=degrees_by_name,
+            translation=translation_by_name,
+            times=times_by_name,
+            image_interpolation=interpolation_by_name,
+            **self._get_base_args(),
+        )
         transformed = transform(subject)
         assert isinstance(transformed, Subject)
         return transformed
@@ -130,24 +138,24 @@ class Motion(IntensityTransform, FourierTransform):
 
     Magnetic resonance images suffer from motion artifacts when the subject
     moves during image acquisition. This transform follows
-    `Shaw et al., 2019 <http://proceedings.mlr.press/v102/shaw19a.html>`_ to
+    [Shaw et al., 2019 ](http://proceedings.mlr.press/v102/shaw19a.html) to
     simulate motion artifacts for data augmentation.
 
     Args:
-        degrees: Sequence of rotations :math:`(\theta_1, \theta_2, \theta_3)`.
-        translation: Sequence of translations :math:`(t_1, t_2, t_3)` in mm.
+        degrees: Sequence of rotations $(\theta_1, \theta_2, \theta_3)$.
+        translation: Sequence of translations $(t_1, t_2, t_3)$ in mm.
         times: Sequence of times from 0 to 1 at which the motions happen.
-        image_interpolation: See :ref:`Interpolation`.
-        **kwargs: See :class:`~torchio.transforms.Transform` for additional
+        image_interpolation: See Interpolation.
+        **kwargs: See [`Transform`][torchio.transforms.Transform] for additional
             keyword arguments.
     """
 
     def __init__(
         self,
-        degrees: TypeTripletFloat | dict[str, TypeTripletFloat],
-        translation: TypeTripletFloat | dict[str, TypeTripletFloat],
-        times: Sequence[float] | dict[str, Sequence[float]],
-        image_interpolation: Sequence[str] | dict[str, Sequence[str]],
+        degrees: np.ndarray | dict[str, np.ndarray],
+        translation: np.ndarray | dict[str, np.ndarray],
+        times: np.ndarray | dict[str, np.ndarray],
+        image_interpolation: str | dict[str, str],
         **kwargs,
     ):
         super().__init__(**kwargs)
@@ -163,20 +171,13 @@ class Motion(IntensityTransform, FourierTransform):
         ]
 
     def apply_transform(self, subject: Subject) -> Subject:
-        degrees = self.degrees
-        translation = self.translation
-        times = self.times
-        image_interpolation = self.image_interpolation
         for image_name, image in self.get_images_dict(subject).items():
-            if self.arguments_are_dict():
-                assert isinstance(self.degrees, dict)
-                assert isinstance(self.translation, dict)
-                assert isinstance(self.times, dict)
-                assert isinstance(self.image_interpolation, dict)
-                degrees = self.degrees[image_name]
-                translation = self.translation[image_name]
-                times = self.times[image_name]
-                image_interpolation = self.image_interpolation[image_name]
+            degrees = self.get_parameter(self.degrees, image_name)
+            translation = self.get_parameter(self.translation, image_name)
+            times = self.get_parameter(self.times, image_name)
+            image_interpolation = self.get_parameter(
+                self.image_interpolation, image_name
+            )
             result_arrays = []
             for channel in image.data:
                 sitk_image = nib_to_sitk(
@@ -185,15 +186,14 @@ class Motion(IntensityTransform, FourierTransform):
                     force_3d=True,
                 )
                 transforms = self.get_rigid_transforms(
-                    np.asarray(degrees),
-                    np.asarray(translation),
+                    degrees,
+                    translation,
                     sitk_image,
                 )
-                assert isinstance(image_interpolation, str)
                 transformed_channel = self.add_artifact(
                     sitk_image,
                     transforms,
-                    np.asarray(times),
+                    times,
                     image_interpolation,
                 )
                 result_arrays.append(transformed_channel)
@@ -288,7 +288,7 @@ class Motion(IntensityTransform, FourierTransform):
         result_spectrum = torch.empty_like(spectra[0])
         last_index = result_spectrum.shape[2]
         indices_array = (last_index * times).astype(int)
-        indices: list[int] = indices_array.tolist()  # type: ignore[assignment]
+        indices = [int(value) for value in indices_array.tolist()]
         indices.append(last_index)
         ini = 0
         for spectrum, fin in zip(spectra, indices, strict=True):

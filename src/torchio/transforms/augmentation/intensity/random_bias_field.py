@@ -1,4 +1,4 @@
-from collections import defaultdict
+from collections.abc import Sequence
 
 import numpy as np
 import torch
@@ -20,16 +20,16 @@ class RandomBiasField(RandomTransform, IntensityTransform):
     *Automated model-based tissue classification of MR images of the brain*.
 
     It was implemented in NiftyNet by Carole Sudre and used in
-    `Sudre et al., 2017, Longitudinal segmentation of age-related
+    [Sudre et al., 2017, Longitudinal segmentation of age-related
     white matter hyperintensities
-    <https://www.sciencedirect.com/science/article/pii/S1361841517300257?via%3Dihub>`_.
+    ](https://www.sciencedirect.com/science/article/pii/S1361841517300257?via%3Dihub).
 
     Args:
-        coefficients: Maximum magnitude :math:`n` of polynomial coefficients.
-            If a tuple :math:`(a, b)` is specified, then
-            :math:`n \sim \mathcal{U}(a, b)`.
+        coefficients: Maximum magnitude $n$ of polynomial coefficients.
+            If a tuple $(a, b)$ is specified, then
+            $n \sim \mathcal{U}(a, b)$.
         order: Order of the basis polynomial functions.
-        **kwargs: See :class:`~torchio.transforms.Transform` for additional
+        **kwargs: See [`Transform`][torchio.transforms.Transform] for additional
             keyword arguments.
     """
 
@@ -51,12 +51,17 @@ class RandomBiasField(RandomTransform, IntensityTransform):
         if not images_dict:
             return subject
 
-        arguments: dict[str, dict] = defaultdict(dict)
+        coefficients_by_name: dict[str, list[float]] = {}
+        orders_by_name: dict[str, int] = {}
         for image_name in images_dict:
             coefficients = self.get_params(self.order, self.coefficients_range)
-            arguments['coefficients'][image_name] = coefficients
-            arguments['order'][image_name] = self.order
-        transform = BiasField(**self.add_base_args(arguments))
+            coefficients_by_name[image_name] = coefficients
+            orders_by_name[image_name] = self.order
+        transform = BiasField(
+            coefficients=coefficients_by_name,
+            order=orders_by_name,
+            **self._get_base_args(),
+        )
         transformed = transform(subject)
         return transformed
 
@@ -82,7 +87,7 @@ class BiasField(IntensityTransform):
     Args:
         coefficients: Magnitudes of the polinomial coefficients.
         order: Order of the basis polynomial functions.
-        **kwargs: See :class:`~torchio.transforms.Transform` for additional
+        **kwargs: See [`Transform`][torchio.transforms.Transform] for additional
             keyword arguments.
     """
 
@@ -107,17 +112,13 @@ class BiasField(IntensityTransform):
         return coefficients_dict and order_dict
 
     def apply_transform(self, subject: Subject) -> Subject:
-        coefficients, order = self.coefficients, self.order
         for name, image in self.get_images_dict(subject).items():
-            if self.arguments_are_dict():
-                assert isinstance(self.coefficients, dict)
-                assert isinstance(self.order, dict)
-                coefficients, order = self.coefficients[name], self.order[name]
-            assert isinstance(order, int)
+            coefficients = self.get_parameter(self.coefficients, name)
+            order = self.get_parameter(self.order, name)
             bias_field = self.generate_bias_field(
                 image.data,
                 order,
-                coefficients,  # type: ignore[arg-type]
+                coefficients,
             )
             if self.invert_transform:
                 np.divide(1, bias_field, out=bias_field)
@@ -128,7 +129,7 @@ class BiasField(IntensityTransform):
     def generate_bias_field(
         data: TypeData,
         order: int,
-        coefficients: TypeData,
+        coefficients: Sequence[float],
     ) -> np.ndarray:
         # Create the bias field map using a linear combination of polynomial
         # functions and the coefficients previously sampled

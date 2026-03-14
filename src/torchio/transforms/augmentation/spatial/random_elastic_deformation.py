@@ -1,5 +1,6 @@
 import warnings
 from numbers import Number
+from typing import cast
 
 import numpy as np
 import SimpleITK as sitk
@@ -24,57 +25,58 @@ class RandomElasticDeformation(RandomTransform, SpatialTransform):
     and inside the image. The displacement at each voxel is interpolated from
     the coarse grid using cubic B-splines.
 
-    The `'Deformable Registration' <https://www.sciencedirect.com/topics/computer-science/deformable-registration>`_
+    The ['Deformable Registration' ](https://www.sciencedirect.com/topics/computer-science/deformable-registration)
     topic on ScienceDirect contains useful articles explaining interpolation of
     displacement fields using cubic B-splines.
 
-    .. warning:: This transform is slow as it requires expensive computations.
+    Warning:
+        This transform is slow as it requires expensive computations.
         If your images are large you might want to use
-        :class:`~torchio.transforms.RandomAffine` instead.
+        [`RandomAffine`][torchio.transforms.RandomAffine] instead.
 
     Args:
         num_control_points: Number of control points along each dimension of
-            the coarse grid :math:`(n_x, n_y, n_z)`.
-            If a single value :math:`n` is passed,
-            then :math:`n_x = n_y = n_z = n`.
+            the coarse grid $(n_x, n_y, n_z)$.
+            If a single value $n$ is passed,
+            then $n_x = n_y = n_z = n$.
             Smaller numbers generate smoother deformations.
-            The minimum number of control points is ``4`` as this transform
+            The minimum number of control points is `4` as this transform
             uses cubic B-splines to interpolate displacement.
         max_displacement: Maximum displacement along each dimension at each
-            control point :math:`(D_x, D_y, D_z)`.
-            The displacement along dimension :math:`i` at each control point is
-            :math:`d_i \sim \mathcal{U}(0, D_i)`.
-            If a single value :math:`D` is passed,
-            then :math:`D_x = D_y = D_z = D`.
+            control point $(D_x, D_y, D_z)$.
+            The displacement along dimension $i$ at each control point is
+            $d_i \sim \mathcal{U}(0, D_i)$.
+            If a single value $D$ is passed,
+            then $D_x = D_y = D_z = D$.
             Note that the total maximum displacement would actually be
-            :math:`D_{max} = \sqrt{D_x^2 + D_y^2 + D_z^2}`.
-        locked_borders: If ``0``, all displacement vectors are kept.
-            If ``1``, displacement of control points at the
-            border of the coarse grid will be set to ``0``.
-            If ``2``, displacement of control points at the border of the image
-            (red dots in the image below) will also be set to ``0``.
-        image_interpolation: See :ref:`Interpolation`.
+            $D_{max} = \sqrt{D_x^2 + D_y^2 + D_z^2}$.
+        locked_borders: If `0`, all displacement vectors are kept.
+            If `1`, displacement of control points at the
+            border of the coarse grid will be set to `0`.
+            If `2`, displacement of control points at the border of the image
+            (red dots in the image below) will also be set to `0`.
+        image_interpolation: See Interpolation.
             Note that this is the interpolation used to compute voxel
             intensities when resampling using the dense displacement field.
             The value of the dense displacement at each voxel is always
             interpolated with cubic B-splines from the values at the control
             points of the coarse grid.
-        label_interpolation: See :ref:`Interpolation`.
-        **kwargs: See :class:`~torchio.transforms.Transform` for additional
+        label_interpolation: See Interpolation.
+        **kwargs: See [`Transform`][torchio.transforms.Transform] for additional
             keyword arguments.
 
-    `This gist <https://gist.github.com/fepegar/b723d15de620cd2a3a4dbd71e491b59d>`_
+    [This gist ](https://gist.github.com/fepegar/b723d15de620cd2a3a4dbd71e491b59d)
     can also be used to better understand the meaning of the parameters.
 
     This is an example from the
-    `3D Slicer registration FAQ <https://www.slicer.org/wiki/Documentation/4.10/FAQ/Registration#What.27s_the_BSpline_Grid_Size.3F>`_.
+    [3D Slicer registration FAQ ](https://www.slicer.org/wiki/Documentation/4.10/FAQ/Registration#What.27s_the_BSpline_Grid_Size.3F).
 
-    .. image:: https://www.slicer.org/w/img_auth.php/6/6f/RegLib_BSplineGridModel.png
-        :alt: B-spline example from 3D Slicer documentation
+    ![B-spline example from 3D Slicer documentation](https://www.slicer.org/w/img_auth.php/6/6f/RegLib_BSplineGridModel.png)
 
     To generate a similar grid of control points with TorchIO,
-    the transform can be instantiated as follows::
+    the transform can be instantiated as follows:
 
+    Examples:
         >>> from torchio import RandomElasticDeformation
         >>> transform = RandomElasticDeformation(
         ...     num_control_points=(7, 7, 7),  # or just 7
@@ -82,38 +84,40 @@ class RandomElasticDeformation(RandomTransform, SpatialTransform):
         ... )
 
     Note that control points outside the image bounds are not showed in the
-    example image (they would also be red as we set :attr:`locked_borders`
-    to ``2``).
+    example image (they would also be red as we set `locked_borders`
+    to `2`).
 
-    .. warning:: Image folding may occur if the maximum displacement is larger
+    Warning:
+        Image folding may occur if the maximum displacement is larger
         than half the coarse grid spacing. The grid spacing can be computed
-        using the image bounds in physical space [#]_ and the number of control
-        points::
+        using the image bounds in physical space and the number of control
+        points.
 
-            >>> import numpy as np
-            >>> import torchio as tio
-            >>> image = tio.datasets.Slicer().MRHead.as_sitk()
-            >>> image.GetSize()  # in voxels
-            (256, 256, 130)
-            >>> image.GetSpacing()  # in mm
-            (1.0, 1.0, 1.2999954223632812)
-            >>> bounds = np.array(image.GetSize()) * np.array(image.GetSpacing())
-            >>> bounds  # mm
-            array([256.        , 256.        , 168.99940491])
-            >>> num_control_points = np.array((7, 7, 6))
-            >>> grid_spacing = bounds / (num_control_points - 2)
-            >>> grid_spacing
-            array([51.2       , 51.2       , 42.24985123])
-            >>> potential_folding = grid_spacing / 2
-            >>> potential_folding  # mm
-            array([25.6       , 25.6       , 21.12492561])
+        Using a `max_displacement` larger than the computed
+        `potential_folding` will raise a `RuntimeWarning`.
 
-        Using a :attr:`max_displacement` larger than the computed
-        :attr:`potential_folding` will raise a :class:`RuntimeWarning`.
+        Technically, $2 \epsilon$ should be added to the
+        image bounds, where $\epsilon = 2^{-3}$ [according to ITK
+        source code](https://github.com/InsightSoftwareConsortium/ITK/blob/633f84548311600845d54ab2463d3412194690a8/Modules/Core/Transform/include/itkBSplineTransformInitializer.hxx#L116-L138).
 
-        .. [#] Technically, :math:`2 \epsilon` should be added to the
-            image bounds, where :math:`\epsilon = 2^{-3}` `according to ITK
-            source code <https://github.com/InsightSoftwareConsortium/ITK/blob/633f84548311600845d54ab2463d3412194690a8/Modules/Core/Transform/include/itkBSplineTransformInitializer.hxx#L116-L138>`_.
+    Examples:
+        >>> import numpy as np
+        >>> import torchio as tio
+        >>> image = tio.datasets.Slicer().MRHead.as_sitk()
+        >>> image.GetSize()  # in voxels
+        (256, 256, 130)
+        >>> image.GetSpacing()  # in mm
+        (1.0, 1.0, 1.2999954223632812)
+        >>> bounds = np.array(image.GetSize()) * np.array(image.GetSpacing())
+        >>> bounds  # mm
+        array([256.        , 256.        , 168.99940491])
+        >>> num_control_points = np.array((7, 7, 6))
+        >>> grid_spacing = bounds / (num_control_points - 2)
+        >>> grid_spacing
+        array([51.2       , 51.2       , 42.24985123])
+        >>> potential_folding = grid_spacing / 2
+        >>> potential_folding  # mm
+        array([25.6       , 25.6       , 21.12492561])
     """
 
     def __init__(
@@ -127,10 +131,16 @@ class RandomElasticDeformation(RandomTransform, SpatialTransform):
     ):
         super().__init__(**kwargs)
         self._bspline_transformation = None
-        self.num_control_points = to_tuple(num_control_points, length=3)
-        _parse_num_control_points(self.num_control_points)  # type: ignore[arg-type]
-        self.max_displacement = to_tuple(max_displacement, length=3)
-        _parse_max_displacement(self.max_displacement)  # type: ignore[arg-type]
+        self.num_control_points = cast(
+            TypeTripletInt,
+            to_tuple(num_control_points, length=3),
+        )
+        _parse_num_control_points(self.num_control_points)
+        self.max_displacement = cast(
+            TypeTripletFloat,
+            to_tuple(max_displacement, length=3),
+        )
+        _parse_max_displacement(self.max_displacement)
         self.num_locked_borders = locked_borders
         if locked_borders not in (0, 1, 2):
             raise ValueError('locked_borders must be 0, 1, or 2')
@@ -175,19 +185,18 @@ class RandomElasticDeformation(RandomTransform, SpatialTransform):
     def apply_transform(self, subject: Subject) -> Subject:
         subject.check_consistent_spatial_shape()
         control_points = self.get_params(
-            self.num_control_points,  # type: ignore[arg-type]
-            self.max_displacement,  # type: ignore[arg-type]
+            self.num_control_points,
+            self.max_displacement,
             self.num_locked_borders,
         )
 
-        arguments = {
-            'control_points': control_points,
-            'max_displacement': self.max_displacement,
-            'image_interpolation': self.image_interpolation,
-            'label_interpolation': self.label_interpolation,
-        }
-
-        transform = ElasticDeformation(**self.add_base_args(arguments))
+        transform = ElasticDeformation(
+            control_points=control_points,
+            max_displacement=self.max_displacement,
+            image_interpolation=self.image_interpolation,
+            label_interpolation=self.label_interpolation,
+            **self._get_base_args(),
+        )
         transformed = transform(subject)
         assert isinstance(transformed, Subject)
         return transformed
@@ -199,9 +208,9 @@ class ElasticDeformation(SpatialTransform):
     Args:
         control_points:
         max_displacement:
-        image_interpolation: See :ref:`Interpolation`.
-        label_interpolation: See :ref:`Interpolation`.
-        **kwargs: See :class:`~torchio.transforms.Transform` for additional
+        image_interpolation: See Interpolation.
+        label_interpolation: See Interpolation.
+        **kwargs: See [`Transform`][torchio.transforms.Transform] for additional
             keyword arguments.
     """
 
@@ -298,7 +307,7 @@ class ElasticDeformation(SpatialTransform):
             bspline_transform = self.get_bspline_transform(image)
             self.parse_free_form_transform(
                 bspline_transform,
-                self.max_displacement,  # type: ignore[arg-type]
+                self.max_displacement,
             )
             interpolator = self.get_sitk_interpolator(interpolation)
             resampler = sitk.ResampleImageFilter()

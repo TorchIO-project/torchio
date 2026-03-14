@@ -11,14 +11,14 @@ from ..utils import get_torchio_cache_dir
 class MedMNIST(SubjectsDataset):
     """3D MedMNIST v2 datasets.
 
-    Datasets from `MedMNIST v2: A Large-Scale Lightweight Benchmark for 2D and
-    3D Biomedical Image Classification <https://arxiv.org/abs/2110.14795>`_.
+    Datasets from [MedMNIST v2: A Large-Scale Lightweight Benchmark for 2D and
+    3D Biomedical Image Classification ](https://arxiv.org/abs/2110.14795).
 
-    Please check the `MedMNIST website <https://medmnist.com/>`_ for more
+    Please check the [MedMNIST website ](https://medmnist.com/) for more
     information, inclusing the license.
 
     Args:
-        split: Dataset split. Should be ``'train'``, ``'val'`` or ``'test'``.
+        split: Dataset split. Should be `'train'`, `'val'` or `'test'`.
     """
 
     BASE_URL = 'https://zenodo.org/record/5208230/files'

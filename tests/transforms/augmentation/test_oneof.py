@@ -1,3 +1,6 @@
+from typing import Any
+from typing import cast
+
 import pytest
 
 import torchio as tio
@@ -10,10 +13,10 @@ class TestOneOf(TorchioTestCase):
 
     def test_wrong_input_type(self):
         with pytest.raises(ValueError):
-            tio.OneOf(1)
+            tio.OneOf(cast(Any, 1))
 
     def test_negative_probabilities(self):
-        transforms = {
+        transforms: dict[tio.Transform, float] = {
             tio.RandomAffine(): -1,
             tio.RandomElasticDeformation(): 1,
         }
@@ -22,7 +25,7 @@ class TestOneOf(TorchioTestCase):
 
     def test_zero_probabilities(self):
         with pytest.raises(ValueError):
-            transforms = {
+            transforms: dict[tio.Transform, float] = {
                 tio.RandomAffine(): 0,
                 tio.RandomElasticDeformation(): 0,
             }
@@ -30,13 +33,12 @@ class TestOneOf(TorchioTestCase):
 
     def test_not_transform(self):
         with pytest.raises(ValueError):
-            tio.OneOf({tio.RandomAffine: 1, tio.RandomElasticDeformation: 2})
+            tio.OneOf(cast(Any, {tio.RandomAffine: 1, tio.RandomElasticDeformation: 2}))
 
     def test_one_of(self):
-        transform = tio.OneOf(
-            {
-                tio.RandomAffine(): 0.2,
-                tio.RandomElasticDeformation(max_displacement=0.5): 0.8,
-            }
-        )
+        transforms: dict[tio.Transform, float] = {
+            tio.RandomAffine(): 0.2,
+            tio.RandomElasticDeformation(max_displacement=0.5): 0.8,
+        }
+        transform = tio.OneOf(transforms)
         transform(self.sample_subject)

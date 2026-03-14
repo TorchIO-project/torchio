@@ -12,7 +12,7 @@ class UniformSampler(RandomSampler):
     """Randomly extract patches from a volume with uniform probability.
 
     Args:
-        patch_size: See :class:`~torchio.data.PatchSampler`.
+        patch_size: See [`PatchSampler`](#torchio.data.PatchSampler).
     """
 
     def get_probability_map(self, subject: Subject) -> torch.Tensor:

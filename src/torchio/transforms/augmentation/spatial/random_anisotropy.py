@@ -15,25 +15,25 @@ class RandomAnisotropy(RandomTransform):
     This transform simulates an image that has been acquired using anisotropic
     spacing and resampled back to its original spacing.
 
-    Similar to the work by Billot et al.: `Partial Volume Segmentation of Brain
+    Similar to the work by Billot et al.: [Partial Volume Segmentation of Brain
     MRI Scans of any Resolution and
-    Contrast <https://link.springer.com/chapter/10.1007/978-3-030-59728-3_18>`_.
+    Contrast ](https://link.springer.com/chapter/10.1007/978-3-030-59728-3_18).
 
     Args:
         axes: Axis or tuple of axes along which the image will be downsampled.
-        downsampling: Downsampling factor :math:`m \gt 1`. If a tuple
-            :math:`(a, b)` is provided then :math:`m \sim \mathcal{U}(a, b)`.
+        downsampling: Downsampling factor $m \gt 1$. If a tuple
+            $(a, b)$ is provided then $m \sim \mathcal{U}(a, b)$.
         image_interpolation: Image interpolation used to upsample the image
             back to its initial spacing. Downsampling is performed using
-            nearest neighbor interpolation. See :ref:`Interpolation` for
+            nearest neighbor interpolation. See Interpolation for
             supported interpolation types.
-        scalars_only: Apply only to instances of :class:`torchio.ScalarImage`.
+        scalars_only: Apply only to instances of [`torchio.ScalarImage`][torchio.ScalarImage].
             This is useful when the segmentation quality needs to be kept,
-            as in `Billot et al. <https://link.springer.com/chapter/10.1007/978-3-030-59728-3_18>`_.
-        **kwargs: See :class:`~torchio.transforms.Transform` for additional
+            as in [Billot et al. ](https://link.springer.com/chapter/10.1007/978-3-030-59728-3_18).
+        **kwargs: See [`Transform`][torchio.transforms.Transform] for additional
             keyword arguments.
 
-    Example:
+    Examples:
         >>> import torchio as tio
         >>> transform = tio.RandomAnisotropy(axes=1, downsampling=2)
         >>> transform = tio.RandomAnisotropy(
@@ -83,43 +83,51 @@ class RandomAnisotropy(RandomTransform):
 
     def apply_transform(self, subject: Subject) -> Subject:
         is_2d = subject.get_first_image().is_2d()
+        axes = self.axes
         if is_2d and 2 in self.axes:
             warnings.warn(
                 f'Input image is 2D, but "2" is in axes: {self.axes}',
                 RuntimeWarning,
                 stacklevel=2,
             )
-            self.axes = list(self.axes)
-            self.axes.remove(2)
+            axes = tuple(axis for axis in self.axes if axis != 2)
         axis, downsampling = self.get_params(
-            self.axes,
+            axes,
             self.downsampling_range,
         )
         target_spacing = list(subject.spacing)
         target_spacing[axis] *= downsampling
 
-        downsample_args = self.add_base_args(
-            {
-                'target': tuple(target_spacing),  # for mypy
-                'image_interpolation': 'nearest',
-                'scalars_only': self.scalars_only,
-            }
-        )
-
         # NOTE: If copy=False, the underlying image data will be modified in place.
         # We have to obtain the target spatial shape and affine before the transform
         image = subject.get_first_image()
-        upsample_args = self.add_base_args(
-            {
-                'target': (image.spatial_shape, image.affine),
-                'image_interpolation': self.image_interpolation,
-                'scalars_only': self.scalars_only,
-            }
+        downsample = Resample(
+            target=(
+                float(target_spacing[0]),
+                float(target_spacing[1]),
+                float(target_spacing[2]),
+            ),
+            image_interpolation='nearest',
+            scalars_only=self.scalars_only,
+            copy=self.copy,
+            include=self.include,
+            exclude=self.exclude,
+            keep=self.keep,
+            parse_input=self.parse_input,
+            label_keys=self.label_keys,
         )
-
-        downsample = Resample(**downsample_args)
         downsampled = downsample(subject)
-        upsample = Resample(**upsample_args)
+        upsample = Resample(
+            target=(image.spatial_shape, image.affine),
+            image_interpolation=self.image_interpolation,
+            scalars_only=self.scalars_only,
+            copy=self.copy,
+            include=self.include,
+            exclude=self.exclude,
+            keep=self.keep,
+            parse_input=self.parse_input,
+            label_keys=self.label_keys,
+        )
         upsampled = upsample(downsampled)
         assert isinstance(upsampled, Subject)
         return upsampled

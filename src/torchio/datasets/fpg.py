@@ -10,11 +10,11 @@ from ..utils import get_torchio_cache_dir
 
 
 class FPG(Subject):
-    """3T :math:`T_1`-weighted brain MRI and corresponding parcellation.
+    """3T $T_1$-weighted brain MRI and corresponding parcellation.
 
     Args:
-        load_all: If ``True``, three more images will be loaded: a
-            :math:`T_2`-weighted MRI, a diffusion MRI and a functional MRI.
+        load_all: If `True`, three more images will be loaded: a
+            $T_2$-weighted MRI, a diffusion MRI and a functional MRI.
     """
 
     def __init__(self, load_all: bool = False):

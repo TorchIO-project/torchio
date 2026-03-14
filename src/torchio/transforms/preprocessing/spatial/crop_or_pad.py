@@ -21,27 +21,27 @@ class CropOrPad(SpatialTransform):
     physical positions of the voxels are maintained.
 
     Args:
-        target_shape: Tuple :math:`(W, H, D)`. If a single value :math:`N` is
-            provided, then :math:`W = H = D = N`. If ``None``, the shape will
-            be computed from the :attr:`mask_name` (and the :attr:`labels`, if
-            :attr:`labels` is not ``None``).
-        padding_mode: Same as :attr:`padding_mode` in
-            :class:`~torchio.transforms.Pad`.
-        mask_name: If ``None``, the centers of the input and output volumes
+        target_shape: Tuple $(W, H, D)$. If a single value $N$ is
+            provided, then $W = H = D = N$. If `None`, the shape will
+            be computed from the `mask_name` (and the `labels`, if
+            `labels` is not `None`).
+        padding_mode: Same as `padding_mode` in
+            [`Pad`][torchio.transforms.Pad].
+        mask_name: If `None`, the centers of the input and output volumes
             will be the same.
             If a string is given, the output volume center will be the center
             of the bounding box of non-zero values in the image named
-            :attr:`mask_name`.
+            `mask_name`.
         labels: If a label map is used to generate the mask, sequence of labels
             to consider.
-        only_crop: If ``True``, padding will not be applied, only cropping will
-            be done. ``only_crop`` and ``only_pad`` cannot both be ``True``.
-        only_pad: If ``True``, cropping will not be applied, only padding will
-            be done. ``only_crop`` and ``only_pad`` cannot both be ``True``.
-        **kwargs: See :class:`~torchio.transforms.Transform` for additional
+        only_crop: If `True`, padding will not be applied, only cropping will
+            be done. `only_crop` and `only_pad` cannot both be `True`.
+        only_pad: If `True`, cropping will not be applied, only padding will
+            be done. `only_crop` and `only_pad` cannot both be `True`.
+        **kwargs: See [`Transform`][torchio.transforms.Transform] for additional
             keyword arguments.
 
-    Example:
+    Examples:
         >>> import torchio as tio
         >>> subject = tio.Subject(
         ...     chest_ct=tio.ScalarImage('subject_a_ct.nii.gz'),
@@ -57,21 +57,14 @@ class CropOrPad(SpatialTransform):
         >>> transformed.chest_ct.shape
         torch.Size([1, 120, 80, 180])
 
-    .. warning:: If :attr:`target_shape` is ``None``, subjects in the dataset
+    Warning:
+        If `target_shape` is `None`, subjects in the dataset
         will probably have different shapes. This is probably fine if you are
-        using `patch-based training <https://docs.torchio.org/patches/index.html>`_.
+        using [patch-based training ](https://docs.torchio.org/patches/index.html).
         If you are using full volumes for training and a batch size larger than
-        one, an error will be raised by the :class:`~torch.utils.data.DataLoader`
+        one, an error will be raised by the [`DataLoader`][torch.utils.data.DataLoader]
         while trying to collate the batches.
 
-    .. plot::
-
-        import torchio as tio
-        t1 = tio.datasets.Colin27().t1
-        crop_pad = tio.CropOrPad((512, 512, 32))
-        t1_pad_crop = crop_pad(t1)
-        subject = tio.Subject(t1=t1, crop_pad=t1_pad_crop)
-        subject.plot()
     """
 
     def __init__(
@@ -135,7 +128,7 @@ class CropOrPad(SpatialTransform):
     def _bbox_mask(mask_volume: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
         """Return 6 coordinates of a 3D bounding box from a given mask.
 
-        Taken from `this SO question <https://stackoverflow.com/questions/31400769/bounding-box-of-numpy-array>`_.
+        Taken from [this SO question ](https://stackoverflow.com/questions/31400769/bounding-box-of-numpy-array).
 
         Args:
             mask_volume: 3D NumPy array.
@@ -157,15 +150,15 @@ class CropOrPad(SpatialTransform):
         r"""Compute bounds parameters for ITK filters.
 
         Args:
-            parameters: Tuple :math:`(w, h, d)` with the number of voxels to be
+            parameters: Tuple $(w, h, d)$ with the number of voxels to be
                 cropped or padded.
 
         Returns:
-            Tuple :math:`(w_{ini}, w_{fin}, h_{ini}, h_{fin}, d_{ini}, d_{fin})`,
-            where :math:`n_{ini} = \left \lceil \frac{n}{2} \right \rceil` and
-            :math:`n_{fin} = \left \lfloor \frac{n}{2} \right \rfloor`.
+            Tuple $(w_{ini}, w_{fin}, h_{ini}, h_{fin}, d_{ini}, d_{fin})$,
+            where $n_{ini} = \left \lceil \frac{n}{2} \right \rceil$ and
+            $n_{fin} = \left \lfloor \frac{n}{2} \right \rfloor$.
 
-        Example:
+        Examples:
             >>> p = np.array((4, 0, 7))
             >>> CropOrPad._get_six_bounds_parameters(p)
             (2, 2, 0, 0, 4, 3)
@@ -211,6 +204,7 @@ class CropOrPad(SpatialTransform):
         self,
         subject: Subject,
     ) -> tuple[TypeSixBounds | None, TypeSixBounds | None]:
+        assert self.mask_name is not None
         if self.mask_name not in subject:
             message = (
                 f'Mask name "{self.mask_name}"'
@@ -220,10 +214,11 @@ class CropOrPad(SpatialTransform):
             warnings.warn(message, RuntimeWarning, stacklevel=2)
             return self._compute_center_crop_or_pad(subject=subject)
 
+        mask_image = subject.get_image(self.mask_name)
         mask_data = self.get_mask_from_masking_method(
             self.mask_name,
             subject,
-            subject[self.mask_name].data,
+            mask_image.data,
             self.labels,
         ).numpy()
 
@@ -284,23 +279,59 @@ class CropOrPad(SpatialTransform):
         padding_array = np.asarray(padding, dtype=int)
         cropping_array = np.asarray(cropping, dtype=int)
         if padding_array.any():
-            padding_params = tuple(padding_array.tolist())
+            padding_values = [int(value) for value in padding_array.tolist()]
+            padding_params = (
+                padding_values[0],
+                padding_values[1],
+                padding_values[2],
+                padding_values[3],
+                padding_values[4],
+                padding_values[5],
+            )
         else:
             padding_params = None
         if cropping_array.any():
-            cropping_params = tuple(cropping_array.tolist())
+            cropping_values = [int(value) for value in cropping_array.tolist()]
+            cropping_params = (
+                cropping_values[0],
+                cropping_values[1],
+                cropping_values[2],
+                cropping_values[3],
+                cropping_values[4],
+                cropping_values[5],
+            )
         else:
             cropping_params = None
-        return padding_params, cropping_params  # type: ignore[return-value]
+        return padding_params, cropping_params
 
     def apply_transform(self, subject: Subject) -> Subject:
         subject.check_consistent_space()
         padding_params, cropping_params = self.compute_crop_or_pad(subject)
-        padding_kwargs = {'padding_mode': self.padding_mode}
         if padding_params is not None and not self.only_crop:
-            pad = Pad(padding_params, **self.get_base_args(), **padding_kwargs)
-            subject = pad(subject)  # type: ignore[assignment]
+            pad = Pad(
+                padding_params,
+                padding_mode=self.padding_mode,
+                copy=self.copy,
+                include=self.include,
+                exclude=self.exclude,
+                keep=self.keep,
+                parse_input=self.parse_input,
+                label_keys=self.label_keys,
+            )
+            transformed = pad(subject)
+            assert isinstance(transformed, Subject)
+            subject = transformed
         if cropping_params is not None and not self.only_pad:
-            crop = Crop(cropping_params, **self.get_base_args())
-            subject = crop(subject)  # type: ignore[assignment]
+            crop = Crop(
+                cropping_params,
+                copy=self.copy,
+                include=self.include,
+                exclude=self.exclude,
+                keep=self.keep,
+                parse_input=self.parse_input,
+                label_keys=self.label_keys,
+            )
+            transformed = crop(subject)
+            assert isinstance(transformed, Subject)
+            subject = transformed
         return subject

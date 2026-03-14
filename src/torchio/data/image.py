@@ -5,7 +5,11 @@ from collections import Counter
 from collections.abc import Callable
 from collections.abc import Sequence
 from pathlib import Path
+from typing import TYPE_CHECKING
 from typing import Any
+from typing import TypeGuard
+from typing import cast
+from typing import overload
 
 import humanize
 import nibabel as nib
@@ -21,11 +25,13 @@ from ..constants import INTENSITY
 from ..constants import LABEL
 from ..constants import PATH
 from ..constants import STEM
-from ..constants import TENSOR
 from ..constants import TYPE
+from ..types import TypeAffineMatrix
 from ..types import TypeData
 from ..types import TypeDataAffine
 from ..types import TypeDirection3D
+from ..types import TypeImageDataAffine
+from ..types import TypeImageTensor
 from ..types import TypePath
 from ..types import TypeQuartetInt
 from ..types import TypeSlice
@@ -46,6 +52,9 @@ from .io import read_shape
 from .io import sitk_to_nib
 from .io import write_image
 
+if TYPE_CHECKING:
+    from matplotlib.figure import Figure
+
 PROTECTED_KEYS = DATA, AFFINE, TYPE, PATH, STEM
 TypeBound = tuple[float, float]
 TypeBounds = tuple[TypeBound, TypeBound, TypeBound]
@@ -56,55 +65,56 @@ deprecation_message = (
 )
 
 
-class Image(dict):
+class Image(dict[str, object]):
     r"""TorchIO image.
 
-    For information about medical image orientation, check out `NiBabel docs`_,
-    the `3D Slicer wiki`_, `Graham Wideman's website`_, `FSL docs`_ or
-    `SimpleITK docs`_.
+    For information about medical image orientation, check out [NiBabel docs](https://nipy.org/nibabel/image_orientation.html),
+    the [3D Slicer wiki](https://www.slicer.org/wiki/Coordinate_systems), [Graham Wideman's website](http://www.grahamwideman.com/gw/brain/orientation/orientterms.htm), [FSL docs](https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/Orientation%20Explained) or
+    [SimpleITK docs](https://simpleitk.readthedocs.io/en/master/fundamentalConcepts.html).
 
     Args:
         path: Path to a file or sequence of paths to files that can be read by
-            :mod:`SimpleITK` or :mod:`nibabel`, or to a directory containing
-            DICOM files. If :attr:`tensor` is given, the data in
-            :attr:`path` will not be read.
+            [SimpleITK](https://simpleitk.org/doxygen/latest/html/namespaceitk_1_1simple.html)
+            or [nibabel][nibabel], or to a directory containing
+            DICOM files. If `tensor` is given, the data in
+            `path` will not be read.
             If a sequence of paths is given, data
             will be concatenated on the channel dimension so spatial
             dimensions must match.
-        type: Type of image, such as :attr:`torchio.INTENSITY` or
-            :attr:`torchio.LABEL`. This will be used by the transforms to
+        type: Type of image, such as `torchio.INTENSITY` or
+            `torchio.LABEL`. This will be used by the transforms to
             decide whether to apply an operation, or which interpolation to use
-            when resampling. For example, `preprocessing`_ and `augmentation`_
+            when resampling. For example, [preprocessing](https://docs.torchio.org/transforms/preprocessing.html#intensity) and [augmentation](https://docs.torchio.org/transforms/augmentation.html#intensity)
             intensity transforms will only be applied to images with type
-            :attr:`torchio.INTENSITY`. Spatial transforms will be applied to
+            `torchio.INTENSITY`. Spatial transforms will be applied to
             all types, and nearest neighbor interpolation is always used to
-            resample images with type :attr:`torchio.LABEL`.
-            The type :attr:`torchio.SAMPLING_MAP` may be used with instances of
-            :class:`~torchio.data.sampler.weighted.WeightedSampler`.
-        tensor: If :attr:`path` is not given, :attr:`tensor` must be a 4D
-            :class:`torch.Tensor` or NumPy array with dimensions
-            :math:`(C, W, H, D)`.
-        affine: :math:`4 \times 4` matrix to convert voxel coordinates to world
-            coordinates. If ``None``, an identity matrix will be used. See the
-            `NiBabel docs on coordinates`_ for more information.
-        check_nans: If ``True``, issues a warning if NaNs are found
-            in the image. If ``False``, images will not be checked for the
+            resample images with type `torchio.LABEL`.
+            The type `torchio.SAMPLING_MAP` may be used with instances of
+            [`WeightedSampler`](../../patches/training/#torchio.data.WeightedSampler).
+        tensor: If `path` is not given, `tensor` must be a 4D
+            [`torch.Tensor`][torch.Tensor] or NumPy array with dimensions
+            $(C, W, H, D)$.
+        affine: $4 \times 4$ matrix to convert voxel coordinates to world
+            coordinates. If `None`, an identity matrix will be used. See the
+            [NiBabel docs on coordinates](https://nipy.org/nibabel/coordinate_systems.html#the-affine-matrix-as-a-transformation-between-spaces) for more information.
+        check_nans: If `True`, issues a warning if NaNs are found
+            in the image. If `False`, images will not be checked for the
             presence of NaNs.
         reader: Callable object that takes a path and returns a 4D tensor and a
-            2D, :math:`4 \times 4` affine matrix. This can be used if your data
-            is saved in a custom format, such as ``.npy`` (see example below).
-            If the affine matrix is ``None``, an identity matrix will be used.
+            2D, $4 \times 4$ affine matrix. This can be used if your data
+            is saved in a custom format, such as `.npy` (see example below).
+            If the affine matrix is `None`, an identity matrix will be used.
         **kwargs: Items that will be added to the image dictionary, e.g.
             acquisition parameters or image ID.
-        verify_path: If ``True``, the path will be checked to see if it exists. If
-            ``False``, the path will not be verified. This is useful when it is
+        verify_path: If `True`, the path will be checked to see if it exists. If
+            `False`, the path will not be verified. This is useful when it is
             expensive to check the path, e.g., when reading a large dataset from a
             mounted drive.
 
-    TorchIO images are `lazy loaders`_, i.e. the data is only loaded from disk
+    TorchIO images are [lazy loaders](https://en.wikipedia.org/wiki/Lazy_loading), i.e. the data is only loaded from disk
     when needed.
 
-    Example:
+    Examples:
         >>> import torchio as tio
         >>> import numpy as np
         >>> image = tio.ScalarImage('t1.nii.gz')  # subclass of Image
@@ -120,15 +130,6 @@ class Image(dict):
         ...     return data, affine
         >>> image = tio.ScalarImage('t1.npy', reader=numpy_reader)
 
-    .. _lazy loaders: https://en.wikipedia.org/wiki/Lazy_loading
-    .. _preprocessing: https://docs.torchio.org/transforms/preprocessing.html#intensity
-    .. _augmentation: https://docs.torchio.org/transforms/augmentation.html#intensity
-    .. _NiBabel docs: https://nipy.org/nibabel/image_orientation.html
-    .. _NiBabel docs on coordinates: https://nipy.org/nibabel/coordinate_systems.html#the-affine-matrix-as-a-transformation-between-spaces
-    .. _3D Slicer wiki: https://www.slicer.org/wiki/Coordinate_systems
-    .. _FSL docs: https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/Orientation%20Explained
-    .. _SimpleITK docs: https://simpleitk.readthedocs.io/en/master/fundamentalConcepts.html
-    .. _Graham Wideman's website: http://www.grahamwideman.com/gw/brain/orientation/orientterms.htm
     """
 
     def __init__(
@@ -140,7 +141,7 @@ class Image(dict):
         check_nans: bool = False,  # removed by ITK by default
         reader: Callable[[TypePath], TypeDataAffine] = read_image,
         verify_path: bool = True,
-        **kwargs: dict[str, Any],
+        **kwargs: object,
     ):
         self.check_nans = check_nans
         self.reader = reader
@@ -178,7 +179,10 @@ class Image(dict):
             warnings.warn(message, FutureWarning, stacklevel=2)
 
         super().__init__(**kwargs)
-        self.path = self._parse_path(path, verify=verify_path)
+        self.path: Path | list[Path] | None = self._parse_path(
+            path,
+            verify=verify_path,
+        )
 
         self[PATH] = '' if self.path is None else str(self.path)
         self[STEM] = '' if self.path is None else get_stem(self.path)
@@ -204,7 +208,28 @@ class Image(dict):
         string = f'{self.__class__.__name__}({properties})'
         return string
 
-    def __getitem__(self, item):
+    def _repr_html_(self):
+        try:
+            from matplotlib.figure import Figure
+        except ImportError:
+            return self.__repr__()
+
+        fig = self.plot(return_fig=True, show=False)
+        assert isinstance(fig, Figure)
+
+        from ..visualization import _figure_to_html
+
+        return _figure_to_html(fig)
+
+    @overload
+    def __getitem__(self, item: str) -> object: ...
+
+    @overload
+    def __getitem__(self, item: slice | int | tuple[object, ...]) -> Image: ...
+
+    def __getitem__(
+        self, item: str | slice | int | tuple[object, ...]
+    ) -> object | Image:
         if isinstance(item, (slice, int, tuple)):
             return self._crop_from_slices(item)
 
@@ -217,51 +242,54 @@ class Image(dict):
         return self.data.numpy()
 
     def __copy__(self):
-        kwargs = {
-            TYPE: self.type,
-            PATH: self.path,
-        }
-        if self._loaded:
-            kwargs[TENSOR] = self.data
-            kwargs[AFFINE] = self.affine
+        extra_kwargs: dict[str, object] = {}
         for key, value in self.items():
             if key in PROTECTED_KEYS:
                 continue
-            kwargs[key] = value  # should I copy? deepcopy?
+            extra_kwargs[key] = value  # should I copy? deepcopy?
         new_image_class = type(self)
         new_image = new_image_class(
+            path=self.path,
+            type=self.type,
+            tensor=self.data if self._loaded else None,
+            affine=self.affine if self._loaded else None,
             check_nans=self.check_nans,
             reader=self.reader,
-            **kwargs,
+            **cast(dict[str, Any], extra_kwargs),
         )
         return new_image
 
     @property
-    def data(self) -> torch.Tensor:
-        """Tensor data (same as :class:`Image.tensor`)."""
-        return self[DATA]
+    def data(self) -> TypeImageTensor:
+        """Tensor data (same as [Image.tensor][Image.tensor])."""
+        value = self[DATA]
+        if not isinstance(value, torch.Tensor):
+            self.load()
+            value = self[DATA]
+        assert isinstance(value, torch.Tensor)
+        return value
 
-    @data.setter  # type: ignore[misc]
+    @data.setter
     @deprecated(version='0.18.16', reason=deprecation_message)
     def data(self, tensor: TypeData):
         self.set_data(tensor)
 
     def set_data(self, tensor: TypeData):
-        """Store a 4D tensor in the :attr:`data` key and attribute.
+        """Store a 4D tensor in the `data` key and attribute.
 
         Args:
-            tensor: 4D tensor with dimensions :math:`(C, W, H, D)`.
+            tensor: 4D tensor with dimensions $(C, W, H, D)$.
         """
         self[DATA] = self._parse_tensor(tensor, none_ok=False)
         self._loaded = True
 
     @property
-    def tensor(self) -> torch.Tensor:
-        """Tensor data (same as :class:`Image.data`)."""
+    def tensor(self) -> TypeImageTensor:
+        """Tensor data (same as [Image.data][Image.data])."""
         return self.data
 
     @property
-    def affine(self) -> np.ndarray:
+    def affine(self) -> TypeAffineMatrix:
         """Affine matrix to transform voxel indices into world coordinates."""
         # If path is a dir (probably DICOM), just load the data
         # Same if it's a list of paths (used to create a 4D image)
@@ -270,23 +298,29 @@ class Image(dict):
         is_custom_reader = self.reader is not read_image
         if self._loaded or self._is_dir() or self._is_multipath() or is_custom_reader:
             affine = self[AFFINE]
+            if not isinstance(affine, np.ndarray):
+                self.load()
+                affine = self[AFFINE]
         else:
             assert self.path is not None
-            assert isinstance(self.path, (str, Path))
+            assert isinstance(self.path, Path)
             affine = read_affine(self.path)
-        return affine
+        assert isinstance(affine, np.ndarray)
+        return cast(TypeAffineMatrix, affine)
 
     @affine.setter
-    def affine(self, matrix):
+    def affine(self, matrix: TypeData | None):
         self[AFFINE] = self._parse_affine(matrix)
 
     @property
     def type(self) -> str:  # noqa: A003
-        return self[TYPE]
+        value = self[TYPE]
+        assert isinstance(value, str)
+        return value
 
     @property
     def shape(self) -> TypeQuartetInt:
-        """Tensor shape as :math:`(C, W, H, D)`."""
+        """Tensor shape as $(C, W, H, D)$."""
         custom_reader = self.reader is not read_image
         multipath = self._is_multipath()
         if isinstance(self.path, Path):
@@ -302,7 +336,7 @@ class Image(dict):
 
     @property
     def spatial_shape(self) -> TypeTripletInt:
-        """Tensor spatial shape as :math:`(W, H, D)`."""
+        """Tensor spatial shape as $(W, H, D)$."""
         return self.shape[1:]
 
     def check_is_2d(self) -> None:
@@ -338,7 +372,9 @@ class Image(dict):
             self.affine,
             lps=False,
         )
-        return direction  # type: ignore[return-value]
+        if len(direction) != 9:
+            raise RuntimeError(f'Expected a 3D direction, not {direction}')
+        return cast(TypeDirection3D, direction)
 
     @property
     def spacing(self) -> tuple[float, float, float]:
@@ -381,18 +417,20 @@ class Image(dict):
         """Convert an axis name to an axis index.
 
         Args:
-            axis: Possible inputs are ``'Left'``, ``'Right'``, ``'Anterior'``,
-                ``'Posterior'``, ``'Inferior'``, ``'Superior'``. Lower-case
+            axis: Possible inputs are `'Left'`, `'Right'`, `'Anterior'`,
+                `'Posterior'`, `'Inferior'`, `'Superior'`. Lower-case
                 versions and first letters are also valid, as only the first
                 letter will be used.
 
-        .. note:: If you are working with animals, you should probably use
-            ``'Superior'``, ``'Inferior'``, ``'Anterior'`` and ``'Posterior'``
-            for ``'Dorsal'``, ``'Ventral'``, ``'Rostral'`` and ``'Caudal'``,
+        Note:
+            If you are working with animals, you should probably use
+            `'Superior'`, `'Inferior'`, `'Anterior'` and `'Posterior'`
+            for `'Dorsal'`, `'Ventral'`, `'Rostral'` and `'Caudal'`,
             respectively.
 
-        .. note:: If your images are 2D, you can use ``'Top'``, ``'Bottom'``,
-            ``'Left'`` and ``'Right'``.
+        Note:
+            If your images are 2D, you can use `'Top'`, `'Bottom'`,
+            `'Left'` and `'Right'`.
         """
         # Top and bottom are used for the vertical 2D axis as the use of
         # Height vs Horizontal might be ambiguous
@@ -416,10 +454,10 @@ class Image(dict):
 
     @staticmethod
     def flip_axis(axis: str) -> str:
-        """Return the opposite axis label. For example, ``'L'`` -> ``'R'``.
+        """Return the opposite axis label. For example, `'L'` -> `'R'`.
 
         Args:
-            axis: Axis label, such as ``'L'`` or ``'left'``.
+            axis: Axis label, such as `'L'` or `'left'`.
         """
         labels = 'LRPAISTBDV'
         first = labels[::2]
@@ -445,8 +483,11 @@ class Image(dict):
         first_point = apply_affine(self.affine, first_index)
         last_point = apply_affine(self.affine, last_index)
         array = np.array((first_point, last_point))
-        bounds_x, bounds_y, bounds_z = array.T.tolist()  # type: ignore[misc]
-        return bounds_x, bounds_y, bounds_z  # type: ignore[return-value]
+        bounds_x, bounds_y, bounds_z = array.T.tolist()
+        x0, x1 = bounds_x
+        y0, y1 = bounds_y
+        z0, z1 = bounds_z
+        return (x0, x1), (y0, y1), (z0, z1)
 
     def _parse_single_path(
         self,
@@ -491,16 +532,18 @@ class Image(dict):
         elif isinstance(path, dict):
             # https://github.com/TorchIO-project/torchio/pull/838
             raise TypeError('The path argument cannot be a dictionary')
+        elif isinstance(path, (str, Path)):
+            return self._parse_single_path(path, verify=verify)
         elif self._is_paths_sequence(path):
-            return [self._parse_single_path(p, verify=verify) for p in path]  # type: ignore[union-attr]
-        else:
-            return self._parse_single_path(path, verify=verify)  # type: ignore[arg-type]
+            return [self._parse_single_path(p, verify=verify) for p in path]
+        message = f'Input path must be a path or sequence of paths, not {type(path)}'
+        raise TypeError(message)
 
     def _parse_tensor(
         self,
         tensor: TypeData | None,
         none_ok: bool = True,
-    ) -> torch.Tensor | None:
+    ) -> TypeImageTensor | None:
         if tensor is None:
             if none_ok:
                 return None
@@ -525,13 +568,13 @@ class Image(dict):
         return tensor
 
     @staticmethod
-    def _parse_tensor_shape(tensor: torch.Tensor) -> TypeData:
+    def _parse_tensor_shape(tensor: TypeData) -> TypeImageTensor:
         return ensure_4d(tensor)
 
     @staticmethod
-    def _parse_affine(affine: TypeData | None) -> np.ndarray:
+    def _parse_affine(affine: TypeData | None) -> TypeAffineMatrix:
         if affine is None:
-            return np.eye(4)
+            return cast(TypeAffineMatrix, np.eye(4))
         if isinstance(affine, torch.Tensor):
             affine = affine.numpy()
         if not isinstance(affine, np.ndarray):
@@ -540,15 +583,28 @@ class Image(dict):
         if affine.shape != (4, 4):
             bad_shape = affine.shape
             raise ValueError(f'Affine shape must be (4, 4), not {bad_shape}')
-        return affine.astype(np.float64)
+        return cast(TypeAffineMatrix, affine.astype(np.float64))
 
     @staticmethod
-    def _is_paths_sequence(path: TypePath | Sequence[TypePath] | None) -> bool:
-        is_not_string = not isinstance(path, str)
-        return is_not_string and is_iterable(path)
+    def _is_paths_sequence(
+        path: TypePath | Sequence[TypePath] | None,
+    ) -> TypeGuard[Sequence[TypePath]]:
+        return (
+            path is not None and not isinstance(path, (str, Path)) and is_iterable(path)
+        )
 
     def _is_multipath(self) -> bool:
         return self._is_paths_sequence(self.path)
+
+    def _as_path_list(self) -> list[Path]:
+        if self.path is None:
+            raise RuntimeError('Image path is not available')
+        if self._is_multipath():
+            paths = self.path
+            assert isinstance(paths, list)
+            return paths
+        assert isinstance(self.path, Path)
+        return [self.path]
 
     def _is_dir(self) -> bool:
         is_sequence = self._is_multipath()
@@ -564,18 +620,14 @@ class Image(dict):
         r"""Load the image from disk.
 
         Returns:
-            Tuple containing a 4D tensor of size :math:`(C, W, H, D)` and a 2D
-            :math:`4 \times 4` affine matrix to convert voxel indices to world
+            Tuple containing a 4D tensor of size $(C, W, H, D)$ and a 2D
+            $4 \times 4$ affine matrix to convert voxel indices to world
             coordinates.
         """
         if self._loaded:
             return
 
-        paths: list[Path]
-        if self._is_multipath():
-            paths = self.path  # type: ignore[assignment]
-        else:
-            paths = [self.path]  # type: ignore[list-item]
+        paths = self._as_path_list()
         tensor, affine = self.read_and_check(paths[0])
         tensors = [tensor]
         for path in paths[1:]:
@@ -621,13 +673,15 @@ class Image(dict):
         self[AFFINE] = None
         self._loaded = False
 
-    def read_and_check(self, path: TypePath) -> TypeDataAffine:
+    def read_and_check(self, path: TypePath) -> TypeImageDataAffine:
         tensor, affine = self.reader(path)
         # Make sure the data type is compatible with PyTorch
         if self.reader is not read_image and isinstance(tensor, np.ndarray):
             tensor = check_uint_to_int(tensor)
-        tensor = self._parse_tensor_shape(tensor)  # type: ignore[assignment]
-        tensor = self._parse_tensor(tensor)  # type: ignore[assignment]
+        tensor = self._parse_tensor_shape(tensor)
+        parsed_tensor = self._parse_tensor(tensor, none_ok=False)
+        assert parsed_tensor is not None
+        tensor = parsed_tensor
         affine = self._parse_affine(affine)
         if self.check_nans and torch.isnan(tensor).any():
             warnings.warn(
@@ -641,9 +695,9 @@ class Image(dict):
         """Save image to disk.
 
         Args:
-            path: String or instance of :class:`pathlib.Path`.
+            path: String or instance of [pathlib.Path][pathlib.Path].
             squeeze: Whether to remove singleton dimensions before saving.
-                If ``None``, the array will be squeezed if the output format is
+                If `None`, the array will be squeezed if the output format is
                 JP(E)G, PNG, BMP or TIF(F).
         """
         write_image(
@@ -661,14 +715,14 @@ class Image(dict):
         return np.asarray(self)
 
     def as_sitk(self, **kwargs) -> sitk.Image:
-        """Get the image as an instance of :class:`sitk.Image`."""
+        """Get the image as an instance of [sitk.Image][sitk.Image]."""
         return nib_to_sitk(self.data, self.affine, **kwargs)
 
     @classmethod
     def from_sitk(cls, sitk_image):
-        """Instantiate a new TorchIO image from a :class:`sitk.Image`.
+        """Instantiate a new TorchIO image from a [sitk.Image][sitk.Image].
 
-        Example:
+        Examples:
             >>> import torchio as tio
             >>> import SimpleITK as sitk
             >>> sitk_image = sitk.Image(20, 30, 40, sitk.sitkUInt16)
@@ -682,12 +736,14 @@ class Image(dict):
         return cls(tensor=tensor, affine=affine)
 
     def as_pil(self, transpose=True):
-        """Get the image as an instance of :class:`PIL.Image`.
+        """Get the image as an instance of [PIL.Image][PIL.Image].
 
-        .. note:: Values will be clamped to 0-255 and cast to uint8.
+        Note:
+            Values will be clamped to 0-255 and cast to uint8.
 
-        .. note:: To use this method, Pillow needs to be installed:
-            ``pip install Pillow``.
+        Note:
+            To use this method, Pillow needs to be installed:
+            `pip install Pillow`.
         """
         try:
             from PIL import Image as ImagePIL
@@ -727,10 +783,10 @@ class Image(dict):
             duration: Duration of the full animation in seconds.
             output_path: Path to the output GIF file.
             loop: Number of times the GIF should loop.
-                ``0`` means that it will loop forever.
-            rescale: Use :class:`~torchio.transforms.preprocessing.intensity.rescale.RescaleIntensity`
-                to rescale the intensity values to :math:`[0, 255]`.
-            optimize: If ``True``, attempt to compress the palette by
+                `0` means that it will loop forever.
+            rescale: Use [`RescaleIntensity`][torchio.transforms.preprocessing.intensity.rescale.RescaleIntensity]
+                to rescale the intensity values to $[0, 255]$.
+            optimize: If `True`, attempt to compress the palette by
                 eliminating unused colors. This is only useful if the palette
                 can be compressed to the next smaller power of 2 elements.
             reverse: Reverse the temporal order of frames.
@@ -759,7 +815,7 @@ class Image(dict):
         """Get image center in RAS+ or LPS+ coordinates.
 
         Args:
-            lps: If ``True``, the coordinates will be in LPS+ orientation, i.e.
+            lps: If `True`, the coordinates will be in LPS+ orientation, i.e.
                 the first dimension grows towards the left, etc. Otherwise, the
                 coordinates will be in RAS+ orientation.
         """
@@ -841,25 +897,29 @@ class Image(dict):
             new_image.affine = affine
             return new_image
 
-    def plot(self, **kwargs) -> None:
+    def plot(self, return_fig: bool = False, **kwargs) -> None | Figure:
         """Plot image."""
         if self.is_2d():
             self.as_pil().show()
         else:
             from ..visualization import plot_volume  # avoid circular import
 
-            plot_volume(self, **kwargs)
+            figure = plot_volume(self, **kwargs)
+            if return_fig:
+                assert figure is not None
+                return figure
+        return None
 
     def show(self, viewer_path: TypePath | None = None) -> None:
         """Open the image using external software.
 
         Args:
             viewer_path: Path to the application used to view the image. If
-                ``None``, the value of the environment variable
-                ``SITK_SHOW_COMMAND`` will be used. If this variable is also
+                `None`, the value of the environment variable
+                `SITK_SHOW_COMMAND` will be used. If this variable is also
                 not set, TorchIO will try to guess the location of
-                `ITK-SNAP <http://www.itksnap.org/pmwiki/pmwiki.php>`_ and
-                `3D Slicer <https://www.slicer.org/>`_.
+                [ITK-SNAP ](http://www.itksnap.org/pmwiki/pmwiki.php) and
+                [3D Slicer ](https://www.slicer.org/).
 
         Raises:
             RuntimeError: If the viewer is not found.
@@ -887,26 +947,25 @@ class Image(dict):
 
     def _crop_from_slices(
         self,
-        slices: TypeSlice | tuple[TypeSlice, ...],
+        slices: TypeSlice | tuple[object, ...],
     ) -> Image:
         from ..transforms import Crop
 
-        slices_tuple = to_tuple(slices)  # type: ignore[assignment]
+        slices_tuple = tuple(to_tuple(slices))
         cropping: list[int] = []
-        for dim, slice_ in enumerate(slices_tuple):
-            if isinstance(slice_, slice):
-                pass
-            elif slice_ is Ellipsis:
+        for dim, slice_item in enumerate(slices_tuple):
+            if isinstance(slice_item, slice):
+                slice_object = slice_item
+            elif slice_item is Ellipsis:
                 message = 'Ellipsis slicing is not supported yet'
                 raise NotImplementedError(message)
-            elif isinstance(slice_, int):
-                slice_ = slice(slice_, slice_ + 1)  # type: ignore[assignment]
+            elif isinstance(slice_item, int):
+                slice_object = slice(slice_item, slice_item + 1)
             else:
-                message = f'Slice type not understood: "{type(slice_)}"'
+                message = f'Slice type not understood: "{type(slice_item)}"'
                 raise TypeError(message)
             shape_dim = self.spatial_shape[dim]
-            assert isinstance(slice_, slice)
-            start, stop, step = slice_.indices(shape_dim)
+            start, stop, step = slice_object.indices(shape_dim)
             if step != 1:
                 message = (
                     'Slicing with steps different from 1 is not supported yet.'
@@ -921,13 +980,15 @@ class Image(dict):
             dim += 1
         w_ini, w_fin, h_ini, h_fin, d_ini, d_fin = cropping
         cropping_arg = w_ini, w_fin, h_ini, h_fin, d_ini, d_fin  # making mypy happy
-        return Crop(cropping_arg)(self)  # type: ignore[return-value]
+        cropped = Crop(cropping_arg)(self)
+        assert isinstance(cropped, Image)
+        return cropped
 
 
 class ScalarImage(Image):
     """Image whose pixel values represent scalars.
 
-    Example:
+    Examples:
         >>> import torch
         >>> import torchio as tio
         >>> # Loading from a file
@@ -944,7 +1005,7 @@ class ScalarImage(Image):
         >>> type(image.data)
         torch.Tensor
 
-    See :class:`~torchio.Image` for more information.
+    See [`Image`][torchio.Image] for more information.
     """
 
     def __init__(self, *args, **kwargs):
@@ -977,12 +1038,15 @@ class ScalarImage(Image):
             direction:
             verbosity:
 
-        .. note:: Only ``frame_rate`` or ``seconds`` may (and must) be specified.
+        Note:
+            Only `frame_rate` or `seconds` may (and must) be specified.
         """
         from ..visualization import make_video  # avoid circular import
 
+        ras_image = self.to_ras()
+        assert isinstance(ras_image, ScalarImage)
         make_video(
-            self.to_ras(),  # type: ignore[arg-type]
+            ras_image,
             output_path,
             frame_rate=frame_rate,
             seconds=seconds,
@@ -1006,7 +1070,7 @@ class LabelMap(Image):
     independently of the specified interpolation type in the transform
     instantiation.
 
-    Example:
+    Examples:
         >>> import torch
         >>> import torchio as tio
         >>> binary_tensor = torch.rand(1, 128, 128, 68) > 0.5
@@ -1016,7 +1080,7 @@ class LabelMap(Image):
         >>> tissues = 'gray_matter.nii.gz', 'white_matter.nii.gz', 'csf.nii.gz'
         >>> tpm = tio.LabelMap(tissues)
 
-    See :class:`~torchio.Image` for more information.
+    See [`Image`][torchio.Image] for more information.
     """
 
     def __init__(self, *args, **kwargs):

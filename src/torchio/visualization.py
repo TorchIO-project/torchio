@@ -24,6 +24,9 @@ from .transforms.preprocessing.spatial.to_orientation import ToOrientation
 from .types import TypePath
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
+
+    from matplotlib.axes import Axes
     from matplotlib.colors import BoundaryNorm
     from matplotlib.colors import ListedColormap
     from matplotlib.figure import Figure
@@ -36,6 +39,21 @@ def import_mpl_plt():
     except ImportError as e:
         raise ImportError('Install matplotlib for plotting support') from e
     return mpl, plt
+
+
+def _figure_to_html(fig: Figure) -> str:
+    """Convert a matplotlib Figure to an HTML img tag with base64-encoded PNG."""
+    import base64
+    import io
+
+    from matplotlib import pyplot as plt
+
+    buffer = io.BytesIO()
+    fig.savefig(buffer, format='png', bbox_inches='tight')
+    plt.close(fig)
+    buffer.seek(0)
+    img_str = base64.b64encode(buffer.read()).decode('utf-8')
+    return f'<img src="data:image/png;base64,{img_str}"/>'
 
 
 def rotate(image: np.ndarray, *, radiological: bool = True, n: int = -1) -> np.ndarray:
@@ -75,7 +93,7 @@ def plot_volume(
     image: Image,
     radiological=True,
     channel=None,
-    axes=None,
+    axes: Sequence[Axes] | None = None,
     cmap=None,
     output_path=None,
     show=True,
@@ -92,10 +110,11 @@ def plot_volume(
     _, plt = import_mpl_plt()
     fig: Figure | None = None
     if axes is None:
-        fig, axes = plt.subplots(1, 3, figsize=figsize)
+        fig, generated_axes = plt.subplots(1, 3, figsize=figsize)
+        axes = tuple(np.ravel(generated_axes).tolist())
 
     if reorient:
-        image = ToCanonical()(image)  # type: ignore[assignment]
+        image = ToCanonical()(image)
 
     is_label = isinstance(image, LabelMap)
     if is_label:  # probabilistic label map
@@ -103,6 +122,14 @@ def plot_volume(
     elif rgb and image.num_channels == 3:
         data = image.data  # keep image as it is
     elif channel is None:
+        if image.num_channels > 1:
+            message = (
+                'Multiple channels found in the image. '
+                'Plotting the first channel (0). '
+                'To plot a different channel, please specify the channel '
+                'index using the "channel" argument.'
+            )
+            warnings.warn(message, RuntimeWarning, stacklevel=2)
         data = image.data[0:1]  # just use the first channel
     else:
         data = image.data[np.newaxis, channel]
@@ -153,36 +180,17 @@ def plot_volume(
 
     spacing_r, spacing_a, spacing_s = image.spacing
     sag_axis, cor_axis, axi_axis = axes
-    slices_dict = {
-        'Sagittal': {
-            'aspect': spacing_s / spacing_a,
-            'slice': slice_x,
-            'xlabel': 'A',
-            'ylabel': 'S',
-            'axis': sag_axis,
-        },
-        'Coronal': {
-            'aspect': spacing_s / spacing_r,
-            'slice': slice_y,
-            'xlabel': 'R',
-            'ylabel': 'S',
-            'axis': cor_axis,
-        },
-        'Axial': {
-            'aspect': spacing_a / spacing_r,
-            'slice': slice_z,
-            'xlabel': 'R',
-            'ylabel': 'A',
-            'axis': axi_axis,
-        },
-    }
+    slices_data = (
+        ('Sagittal', sag_axis, slice_x, spacing_s / spacing_a, 'A', 'S'),
+        ('Coronal', cor_axis, slice_y, spacing_s / spacing_r, 'R', 'S'),
+        ('Axial', axi_axis, slice_z, spacing_a / spacing_r, 'R', 'A'),
+    )
 
-    for axis_title, info in slices_dict.items():
-        axis = info['axis']
-        axis.imshow(info['slice'], aspect=info['aspect'], **imshow_kwargs)
+    for axis_title, axis, axis_slice, aspect, xlabel, ylabel in slices_data:
+        axis.imshow(axis_slice, aspect=aspect, **imshow_kwargs)
         if xlabels:
-            axis.set_xlabel(info['xlabel'])
-        axis.set_ylabel(info['ylabel'])
+            axis.set_xlabel(xlabel)
+        axis.set_ylabel(ylabel)
         axis.invert_xaxis()
         axis.set_title(axis_title)
 
@@ -206,8 +214,9 @@ def plot_subject(
     output_path=None,
     figsize=None,
     clear_axes=True,
+    savefig_kwargs: dict[str, Any] | None = None,
     **plot_volume_kwargs,
-):
+) -> Figure:
     _, plt = import_mpl_plt()
     num_images = len(subject)
     many_images = num_images > 2
@@ -244,9 +253,12 @@ def plot_subject(
             axis.set_title(f'{name} ({axis_name})')
     plt.tight_layout()
     if output_path is not None:
-        fig.savefig(output_path)
+        if savefig_kwargs is None:
+            savefig_kwargs = {}
+        fig.savefig(output_path, **savefig_kwargs)
     if show:
         plt.show()
+    return fig
 
 
 def get_num_bins(x: np.ndarray) -> int:
@@ -255,7 +267,7 @@ def get_num_bins(x: np.ndarray) -> int:
     This method uses the Freedman–Diaconis rule to compute the histogram that
     minimizes "the integral of the squared difference between the histogram
     (i.e., relative frequency density) and the density of the theoretical
-    probability distribution" (`Wikipedia <https://en.wikipedia.org/wiki/Freedman%E2%80%93Diaconis_rule>`_).
+    probability distribution" ([Wikipedia ](https://en.wikipedia.org/wiki/Freedman%E2%80%93Diaconis_rule)).
 
     Args:
         x: Input values.
@@ -309,7 +321,7 @@ def make_gif(
         message = 'Please install Pillow to use Image.to_gif(): pip install Pillow'
         raise RuntimeError(message) from e
     transform = RescaleIntensity((0, 255))
-    tensor = transform(tensor) if rescale else tensor  # type: ignore[assignment]
+    tensor = transform(tensor) if rescale else tensor
     single_channel = len(tensor) == 1
 
     # Move channels dimension to the end and bring selected axis to 0
@@ -416,7 +428,7 @@ def make_video(
         warnings.warn(message, RuntimeWarning, stacklevel=2)
         spacing_iso = min(spacing_h, spacing_w)
         target_spacing = spacing_f, spacing_iso, spacing_iso
-        image = Resample(target_spacing)(image)  # type: ignore[assignment]
+        image = Resample(target_spacing)(image)
 
     # Check that height and width are multiples of 2 for H.265 encoding
     num_frames, height, width = image.spatial_shape

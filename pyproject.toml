@@ -4,8 +4,9 @@ build-backend = "uv_build"
 
 [project]
 name = "torchio"
-version = "0.21.1"
+version = "0.22.1"
 description = "Tools for medical image processing with PyTorch"
+license = "Apache-2.0"
 readme = "README.md"
 authors = [{ name = "TorchIO contributors" }]
 maintainers = [{ name = "Fernando Perez-Garcia", email = "fepegar@gmail.com" }]
@@ -13,7 +14,6 @@ classifiers = [
     "Development Status :: 4 - Beta",
     "Environment :: Console",
     "Intended Audience :: Science/Research",
-    "License :: OSI Approved :: Apache Software License",
     "Natural Language :: English",
     "Operating System :: OS Independent",
     "Programming Language :: Python",
@@ -23,6 +23,7 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Topic :: Scientific/Engineering",
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
     "Topic :: Scientific/Engineering :: Image Processing",
@@ -35,6 +36,7 @@ dependencies = [
     "deprecated>=1.2",
     "einops>=0.3",
     "humanize>=0.1",
+    "jaxtyping>=0.2",
     "nibabel>=3",
     "numpy>=1.20",
     "packaging>=20",
@@ -75,20 +77,18 @@ dev = [
     "prek",
 ]
 doc = [
+    "colorcet>=3.1.0",
     "distinctipy",
     "einops",
-    "furo",
     "matplotlib",
-    "sphinx",
-    "sphinx-autobuild",
-    "sphinx-copybutton",
-    "sphinx-gallery",
-    "sphinxext-opengraph",
+    "mkdocstrings-python>=2.0.2",
+    "zensical>=0.0.23",
 ]
 maintain = ["bump-my-version"]
 quality = ["ruff"]
 types = [
-    "mypy",
+    "matplotlib",
+    "ty",
     "pandas-stubs",
     "pillow",
     "pip",
@@ -100,13 +100,13 @@ test = [
     "matplotlib",
     "parameterized",
     "pillow",
-    "pytest",
+    "pytest>=9",
     "pytest-sugar",
     "tox-uv",
 ]
 
 [tool.bumpversion]
-current_version = "0.21.1"
+current_version = "0.22.1"
 commit = true
 tag = true
 
@@ -120,34 +120,8 @@ filename = "pyproject.toml"
 search = 'version = "{current_version}"'
 replace = 'version = "{new_version}"'
 
-[tool.mypy]
-pretty = true
-
-[[tool.mypy.overrides]]
-module = "duecredit.*"
-ignore_missing_imports = true
-
-[[tool.mypy.overrides]]
-module = "huggingface_hub.*"
-ignore_missing_imports = true
-
-[[tool.mypy.overrides]]
-module = "matplotlib.*"
-ignore_missing_imports = true
-
-[[tool.mypy.overrides]]
-module = "nibabel.*"
-ignore_missing_imports = true
-
-[[tool.mypy.overrides]]
-module = "scipy.*"
-ignore_missing_imports = true
-
 [tool.pytest.ini_options]
-markers = [
-    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
-    "serial",
-]
+addopts = ["-ra", "--strict-config", "--strict-markers"]
 filterwarnings = [
     # Ignore SimpleITK Swig warnings
     "ignore:builtin type .* has no __module__ attribute",
@@ -155,6 +129,14 @@ filterwarnings = [
     # Raised by SimpleITK on CI
     "ignore:invalid escape sequence",
 ]
+log_level = "INFO"
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "serial",
+]
+minversion = "9"
+testpaths = ["tests"]
+xfail_strict = true
 
 [tool.ruff.format]
 quote-style = 'single'

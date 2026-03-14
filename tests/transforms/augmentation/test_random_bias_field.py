@@ -1,3 +1,6 @@
+from typing import Any
+from typing import cast
+
 import pytest
 import torch
 
@@ -25,7 +28,7 @@ class TestRandomBiasField(TorchioTestCase):
 
     def test_wrong_coefficient_type(self):
         with pytest.raises(ValueError):
-            tio.RandomBiasField(coefficients='wrong')
+            tio.RandomBiasField(coefficients=cast(Any, 'wrong'))
 
     def test_negative_order(self):
         with pytest.raises(ValueError):
@@ -33,7 +36,7 @@ class TestRandomBiasField(TorchioTestCase):
 
     def test_wrong_order_type(self):
         with pytest.raises(TypeError):
-            tio.RandomBiasField(order='wrong')
+            tio.RandomBiasField(order=cast(Any, 'wrong'))
 
     def test_small_image(self):
         # https://github.com/TorchIO-project/torchio/issues/300

@@ -2,31 +2,40 @@ from __future__ import annotations
 
 import copy
 import pprint
+from collections.abc import Mapping
 from collections.abc import Sequence
 from typing import TYPE_CHECKING
 from typing import Any
+from typing import Literal
+from typing import TypeAlias
+from typing import overload
 
 import numpy as np
 
-from ..constants import INTENSITY
-from ..constants import TYPE
 from ..utils import get_subclasses
 from .image import Image
+from .image import LabelMap
+from .image import ScalarImage
 
 if TYPE_CHECKING:
+    from matplotlib.figure import Figure
+
     from ..transforms import Compose
     from ..transforms import Transform
 
 
-class Subject(dict):
+AppliedTransformParameters: TypeAlias = dict[str, object]
+AppliedTransform: TypeAlias = tuple[str, AppliedTransformParameters]
+
+
+class Subject(dict[str, object]):
     """Class to store information about the images corresponding to a subject.
 
     Args:
         *args: If provided, a dictionary of items.
         **kwargs: Items that will be added to the subject sample.
 
-    Example:
-
+    Examples:
         >>> import torchio as tio
         >>> # One way:
         >>> subject = tio.Subject(
@@ -47,9 +56,9 @@ class Subject(dict):
         >>> subject = tio.Subject(subject_dict)
     """
 
-    def __init__(self, *args, **kwargs: dict[str, Any]):
+    def __init__(self, *args: Mapping[str, object], **kwargs: object):
         if args:
-            if len(args) == 1 and isinstance(args[0], dict):
+            if len(args) == 1 and isinstance(args[0], Mapping):
                 kwargs.update(args[0])
             else:
                 message = 'Only one dictionary as positional argument is allowed'
@@ -57,7 +66,7 @@ class Subject(dict):
         super().__init__(**kwargs)
         self._parse_images(self.get_images(intensity_only=False))
         self.update_attributes()  # this allows me to do e.g. subject.t1
-        self.applied_transforms: list[tuple[str, dict]] = []
+        self.applied_transforms: list[AppliedTransform] = []
 
     def __repr__(self):
         num_images = len(self.get_images(intensity_only=False))
@@ -67,10 +76,31 @@ class Subject(dict):
         )
         return string
 
+    def _repr_html_(self):
+        try:
+            from matplotlib.figure import Figure
+        except ImportError:
+            return self.__repr__()
+
+        fig = self.plot(return_fig=True, show=False)
+        assert isinstance(fig, Figure)
+
+        from ..visualization import _figure_to_html
+
+        return _figure_to_html(fig)
+
     def __len__(self):
         return len(self.get_images(intensity_only=False))
 
-    def __getitem__(self, item):
+    @overload
+    def __getitem__(self, item: str) -> object: ...
+
+    @overload
+    def __getitem__(self, item: slice | int | tuple[object, ...]) -> Subject: ...
+
+    def __getitem__(
+        self, item: str | slice | int | tuple[object, ...]
+    ) -> object | Subject:
         if isinstance(item, (slice, int, tuple)):
             try:
                 self.check_consistent_spatial_shape()
@@ -82,10 +112,19 @@ class Subject(dict):
                 raise RuntimeError(message) from e
             copied = copy.deepcopy(self)
             for image_name, image in copied.items():
-                copied[image_name] = image[item]
+                if isinstance(image, Image):
+                    copied[image_name] = image[item]
             return copied
         else:
             return super().__getitem__(item)
+
+    def __getattr__(self, item: str) -> Any:
+        try:
+            return self[item]
+        except KeyError as error:
+            raise AttributeError(
+                f'{self.__class__.__name__!s} has no attribute {item!r}',
+            ) from error
 
     @staticmethod
     def _parse_images(images: list[Image]) -> None:
@@ -99,8 +138,7 @@ class Subject(dict):
 
         Consistency of shapes across images in the subject is checked first.
 
-        Example:
-
+        Examples:
             >>> import torchio as tio
             >>> colin = tio.datasets.Colin27()
             >>> colin.shape
@@ -116,8 +154,7 @@ class Subject(dict):
         Consistency of spatial shapes across images in the subject is checked
         first.
 
-        Example:
-
+        Examples:
             >>> import torchio as tio
             >>> colin = tio.datasets.Colin27()
             >>> colin.spatial_shape
@@ -132,8 +169,7 @@ class Subject(dict):
 
         Consistency of spacings across images in the subject is checked first.
 
-        Example:
-
+        Examples:
             >>> import torchio as tio
             >>> colin = tio.datasets.Slicer()
             >>> colin.spacing
@@ -194,8 +230,8 @@ class Subject(dict):
 
         Args:
             warn: Issue a warning if some transforms are not invertible.
-            ignore_intensity: If ``True``, all instances of
-                :class:`~torchio.transforms.intensity_transform.IntensityTransform`
+            ignore_intensity: If `True`, all instances of
+                `IntensityTransform`
                 will be ignored.
             image_interpolation: Modify interpolation for scalar images inside
                 transforms that perform resampling.
@@ -212,11 +248,10 @@ class Subject(dict):
 
         Args:
             **kwargs: Keyword arguments passed on to
-                :meth:`~torchio.data.subject.Subject.get_inverse_transform`.
+                [`get_inverse_transform()`][torchio.data.subject.Subject.get_inverse_transform].
         """
         inverse_transform = self.get_inverse_transform(**kwargs)
-        transformed: Subject
-        transformed = inverse_transform(self)  # type: ignore[assignment]
+        transformed = inverse_transform(self)
         transformed.clear_history()
         return transformed
 
@@ -234,10 +269,10 @@ class Subject(dict):
 
         Args:
             attribute: Name of the image attribute to check
-            relative_tolerance: Relative tolerance for :func:`numpy.allclose()`
-            absolute_tolerance: Absolute tolerance for :func:`numpy.allclose()`
+            relative_tolerance: Relative tolerance for `numpy.allclose()`
+            absolute_tolerance: Absolute tolerance for `numpy.allclose()`
 
-        Example:
+        Examples:
             >>> import numpy as np
             >>> import torch
             >>> import torchio as tio
@@ -251,14 +286,15 @@ class Subject(dict):
             ... )
             >>> subject.check_consistent_attribute('spacing')  # no error as tolerances are > 0
 
-        .. note:: To check that all values for a specific attribute are close
-            between all images in the subject, :func:`numpy.allclose()` is used.
-            This function returns ``True`` if
-            :math:`|a_i - b_i| \leq t_{abs} + t_{rel} * |b_i|`, where
-            :math:`a_i` and :math:`b_i` are the :math:`i`-th element of the same
+        Note:
+            To check that all values for a specific attribute are close
+            between all images in the subject, `numpy.allclose()` is used.
+            This function returns `True` if
+            $|a_i - b_i| \leq t_{abs} + t_{rel} * |b_i|$, where
+            $a_i$ and $b_i$ are the $i$-th element of the same
             attribute of two images being compared,
-            :math:`t_{abs}` is the ``absolute_tolerance`` and
-            :math:`t_{rel}` is the ``relative_tolerance``.
+            $t_{abs}$ is the `absolute_tolerance` and
+            $t_{rel}$ is the `relative_tolerance`.
         """
         message = (
             f'More than one value for "{attribute}" found in subject images:\n{{}}'
@@ -328,41 +364,113 @@ class Subject(dict):
     def get_images_names(self) -> list[str]:
         return list(self.get_images_dict(intensity_only=False).keys())
 
+    @overload
     def get_images_dict(
         self,
-        intensity_only=True,
+        intensity_only: Literal[True] = True,
         include: Sequence[str] | None = None,
         exclude: Sequence[str] | None = None,
-    ) -> dict[str, Image]:
-        images = {}
+    ) -> dict[str, ScalarImage]: ...
+
+    @overload
+    def get_images_dict(
+        self,
+        intensity_only: Literal[False] = False,
+        include: Sequence[str] | None = None,
+        exclude: Sequence[str] | None = None,
+    ) -> dict[str, Image]: ...
+
+    def get_images_dict(
+        self,
+        intensity_only: bool = True,
+        include: Sequence[str] | None = None,
+        exclude: Sequence[str] | None = None,
+    ) -> dict[str, ScalarImage] | dict[str, Image]:
+        if intensity_only:
+            scalar_images: dict[str, ScalarImage] = {}
+            for image_name, image in self.items():
+                if not isinstance(image, ScalarImage):
+                    continue
+                if include is not None and image_name not in include:
+                    continue
+                if exclude is not None and image_name in exclude:
+                    continue
+                scalar_images[image_name] = image
+            return scalar_images
+
+        all_images: dict[str, Image] = {}
         for image_name, image in self.items():
             if not isinstance(image, Image):
-                continue
-            if intensity_only and not image[TYPE] == INTENSITY:
                 continue
             if include is not None and image_name not in include:
                 continue
             if exclude is not None and image_name in exclude:
                 continue
-            images[image_name] = image
-        return images
+            all_images[image_name] = image
+        return all_images
+
+    @overload
+    def get_images(
+        self,
+        intensity_only: Literal[True] = True,
+        include: Sequence[str] | None = None,
+        exclude: Sequence[str] | None = None,
+    ) -> list[ScalarImage]: ...
+
+    @overload
+    def get_images(
+        self,
+        intensity_only: Literal[False] = False,
+        include: Sequence[str] | None = None,
+        exclude: Sequence[str] | None = None,
+    ) -> list[Image]: ...
+
+    @overload
+    def get_images(
+        self,
+        intensity_only: bool,
+        include: Sequence[str] | None = None,
+        exclude: Sequence[str] | None = None,
+    ) -> list[ScalarImage] | list[Image]: ...
 
     def get_images(
         self,
-        intensity_only=True,
+        intensity_only: bool = True,
         include: Sequence[str] | None = None,
         exclude: Sequence[str] | None = None,
-    ) -> list[Image]:
-        images_dict = self.get_images_dict(
-            intensity_only=intensity_only,
+    ) -> list[ScalarImage] | list[Image]:
+        if intensity_only:
+            scalar_images = self.get_images_dict(
+                intensity_only=True,
+                include=include,
+                exclude=exclude,
+            )
+            return list(scalar_images.values())
+
+        all_images = self.get_images_dict(
+            intensity_only=False,
             include=include,
             exclude=exclude,
         )
-        return list(images_dict.values())
+        return list(all_images.values())
 
     def get_image(self, image_name: str) -> Image:
         """Get a single image by its name."""
         return self.get_images_dict(intensity_only=False)[image_name]
+
+    def get_scalar_image(self, image_name: str) -> ScalarImage:
+        image = self.get_image(image_name)
+        if not isinstance(image, ScalarImage):
+            message = f'Image "{image_name}" is not a scalar image'
+            raise TypeError(message)
+        return image
+
+    def get_label_map(self, image_name: str) -> LabelMap:
+        image = self.get_image(image_name)
+        if not isinstance(image, LabelMap):
+            message = f'Image "{image_name}" is not a label map'
+            raise TypeError(message)
+        return image
 
     def get_first_image(self) -> Image:
         return self.get_images(intensity_only=False)[0]
@@ -370,7 +478,7 @@ class Subject(dict):
     def add_transform(
         self,
         transform: Transform,
-        parameters_dict: dict,
+        parameters_dict: AppliedTransformParameters,
     ) -> None:
         self.applied_transforms.append((transform.name, parameters_dict))
 
@@ -389,7 +497,7 @@ class Subject(dict):
         self.__dict__.update(self)
 
     @staticmethod
-    def _check_image_name(image_name):
+    def _check_image_name(image_name: object) -> str:
         if not isinstance(image_name, str):
             message = (
                 f'The image name must be a string, but it has type "{type(image_name)}"'
@@ -415,13 +523,17 @@ class Subject(dict):
         del self[image_name]
         delattr(self, image_name)
 
-    def plot(self, **kwargs) -> None:
+    def plot(self, return_fig: bool = False, **kwargs) -> None | Figure:
         """Plot images using matplotlib.
 
         Args:
+            return_fig: If ``True``, return the figure instead of showing it.
             **kwargs: Keyword arguments that will be passed on to
-                :meth:`~torchio.Image.plot`.
+                [`plot()`][torchio.Image.plot].
         """
         from ..visualization import plot_subject  # avoid circular import
 
-        plot_subject(self, **kwargs)
+        figure = plot_subject(self, **kwargs)
+        if return_fig:
+            return figure
+        return None

@@ -10,8 +10,9 @@ import gzip
 import hashlib
 import os
 import tarfile
-import urllib
 import zipfile
+from urllib import error
+from urllib import request
 
 from torch.hub import tqdm
 
@@ -134,7 +135,7 @@ def download_url(
         url: URL to download file from
         root: Directory to place downloaded file in
         filename: Name to save the file under.
-            If ``None``, use the basename of the URL
+            If `None`, use the basename of the URL
         md5: MD5 checksum of the download. If None, do not check
     """
 
@@ -147,12 +148,12 @@ def download_url(
     if not check_integrity(fpath, md5):
         try:
             print('Downloading ' + url + ' to ' + fpath)  # noqa: T201
-            urllib.request.urlretrieve(
+            request.urlretrieve(
                 url,
                 fpath,
                 reporthook=gen_bar_updater(),
             )
-        except (urllib.error.URLError, OSError) as e:
+        except (error.URLError, OSError) as e:
             if url[:5] == 'https':
                 url = url.replace('https:', 'http:')
                 message = (
@@ -162,7 +163,7 @@ def download_url(
                     + fpath
                 )
                 print(message)  # noqa: T201
-                urllib.request.urlretrieve(
+                request.urlretrieve(
                     url,
                     fpath,
                     reporthook=gen_bar_updater(),
