@@ -4,10 +4,13 @@ from collections.abc import Iterable
 from collections.abc import Sequence
 from collections.abc import Sized
 from pathlib import Path
+from typing import Any
 from typing import TypeAlias
 from typing import Union
+from typing import cast
 
 import numpy as np
+import numpy.typing as npt
 import SimpleITK as sitk
 import torch
 
@@ -16,13 +19,15 @@ from ....data.image import ScalarImage
 from ....data.io import get_sitk_metadata_from_ras_affine
 from ....data.io import sitk_to_nib
 from ....data.subject import Subject
-from ....types import TypePath
 from ....types import TypeSpacing
 from ....types import TypeTripletFloat
 from ...spatial_transform import SpatialTransform
 
 TypeShapeAffine: TypeAlias = tuple[Sequence[int], np.ndarray]
-TypeTarget = Union[TypeSpacing, str, Path, Image, TypeShapeAffine, None]
+TypeSpacingArray: TypeAlias = npt.NDArray[Any]
+TypeTarget = Union[
+    TypeSpacing, TypeSpacingArray, str, Path, Image, TypeShapeAffine, None
+]
 ONE_MILLIMITER_ISOTROPIC = 1
 
 
@@ -119,10 +124,17 @@ class Resample(SpatialTransform):
         ]
 
     @staticmethod
-    def _parse_spacing(spacing: TypeSpacing) -> tuple[float, float, float]:
-        if isinstance(spacing, (int, float)):
-            result = (float(spacing), float(spacing), float(spacing))
-        elif isinstance(spacing, Sequence):
+    def _parse_spacing(
+        spacing: TypeSpacing | TypeSpacingArray,
+    ) -> tuple[float, float, float]:
+        if isinstance(spacing, (int, float, np.integer, np.floating)):
+            scalar = float(spacing)
+            result = (scalar, scalar, scalar)
+        elif (
+            isinstance(spacing, Sized)
+            and isinstance(spacing, Iterable)
+            and not isinstance(spacing, (str, bytes))
+        ):
             if len(spacing) != 3:
                 message = (
                     'Target must be a string, a positive number'
@@ -131,7 +143,7 @@ class Resample(SpatialTransform):
                 raise ValueError(message)
             values = []
             for value in spacing:
-                if not isinstance(value, (int, float)):
+                if not isinstance(value, (int, float, np.integer, np.floating)):
                     message = (
                         'Target must be a string, a positive number'
                         f' or a sequence of positive numbers, not {type(spacing)}'
@@ -297,8 +309,6 @@ class Resample(SpatialTransform):
         target: TypeTarget,
     ) -> sitk.ResampleImageFilter:
         """Instantiate a SimpleITK resampler."""
-        if target is None:
-            raise TypeError('Target cannot be None')
         resampler = sitk.ResampleImageFilter()
         resampler.SetInterpolator(interpolator)
         self._set_resampler_reference(
@@ -312,7 +322,7 @@ class Resample(SpatialTransform):
     def _set_resampler_reference(
         self,
         resampler: sitk.ResampleImageFilter,
-        target: TypeSpacing | TypePath | Image | TypeShapeAffine,
+        target: TypeTarget,
         floating_sitk,
         subject,
     ):
@@ -373,7 +383,12 @@ class Resample(SpatialTransform):
             and isinstance(target, Iterable)
             and len(target) == 3
         ):
-            self._set_resampler_from_spacing(resampler, target, floating_sitk)
+            spacing_target = cast(TypeSpacing | TypeSpacingArray, target)
+            self._set_resampler_from_spacing(
+                resampler,
+                spacing_target,
+                floating_sitk,
+            )
         else:
             raise RuntimeError(f'Target not understood: "{target}"')
 
@@ -384,7 +399,12 @@ class Resample(SpatialTransform):
         resampler.SetOutputSpacing(spacing)
         resampler.SetSize(shape)
 
-    def _set_resampler_from_spacing(self, resampler, target, floating_sitk):
+    def _set_resampler_from_spacing(
+        self,
+        resampler,
+        target: TypeSpacing | TypeSpacingArray,
+        floating_sitk,
+    ):
         target_spacing = self._parse_spacing(target)
         reference_image = self.get_reference_image(
             floating_sitk,

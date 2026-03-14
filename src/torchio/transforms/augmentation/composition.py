@@ -27,7 +27,7 @@ class Compose(Transform):
     """
 
     def __init__(self, transforms: Sequence[Transform], **kwargs):
-        super().__init__(parse_input=False, **kwargs)
+        super().__init__(**kwargs)
         for transform in transforms:
             if not callable(transform):
                 message = (
@@ -118,7 +118,7 @@ class OneOf(RandomTransform):
     """
 
     def __init__(self, transforms: TypeTransformsDict, **kwargs):
-        super().__init__(parse_input=False, **kwargs)
+        super().__init__(**kwargs)
         self.transforms_dict = self._get_transforms_dict(transforms)
 
     def get_base_args(self) -> dict:

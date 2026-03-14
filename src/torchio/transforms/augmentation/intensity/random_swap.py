@@ -37,7 +37,13 @@ class RandomSwap(RandomTransform, IntensityTransform):
         **kwargs,
     ):
         super().__init__(**kwargs)
-        self.patch_size = np.array(to_tuple(patch_size))
+        patch_size_tuple = to_tuple(patch_size)
+        if len(patch_size_tuple) == 1:
+            patch_size_tuple *= 3
+        elif len(patch_size_tuple) != 3:
+            message = f'Patch size must have length 1 or 3, not {len(patch_size_tuple)}'
+            raise ValueError(message)
+        self.patch_size = np.array(patch_size_tuple)
         self.num_iterations = self._parse_num_iterations(num_iterations)
 
     @staticmethod

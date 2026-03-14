@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 from collections.abc import Sequence
+from typing import cast
 
 import numpy as np
 import torch
@@ -62,15 +63,11 @@ class RandomGhosting(RandomTransform, IntensityTransform):
         **kwargs,
     ):
         super().__init__(**kwargs)
-        if isinstance(axes, (int, str)):
-            axes = (axes,)
-        else:
-            axes = tuple(axes)
-        assert isinstance(axes, Iterable)
-        for axis in axes:
+        axes_tuple = self._parse_axes(axes)
+        for axis in axes_tuple:
             if not isinstance(axis, str) and axis not in (0, 1, 2):
-                raise ValueError(f'Axes must be in (0, 1, 2), not "{axes}"')
-        self.axes = axes
+                raise ValueError(f'Axes must be in (0, 1, 2), not "{axes_tuple}"')
+        self.axes = axes_tuple
         self.num_ghosts_range = self._parse_range(
             num_ghosts,
             'num_ghosts',
@@ -92,6 +89,14 @@ class RandomGhosting(RandomTransform, IntensityTransform):
                 max_constraint=1,
             )
 
+    @staticmethod
+    def _parse_axes(axes: object) -> tuple[int | str, ...]:
+        if isinstance(axes, (int, str)):
+            return (axes,)
+        if isinstance(axes, Iterable):
+            return tuple(cast(Iterable[int | str], axes))
+        return (cast(int | str, axes),)
+
     def apply_transform(self, subject: Subject) -> Subject:
         images_dict = self.get_images_dict(subject)
         if not images_dict:
@@ -110,7 +115,7 @@ class RandomGhosting(RandomTransform, IntensityTransform):
             min_ghosts, max_ghosts = self.num_ghosts_range
             params = self.get_params(
                 (int(min_ghosts), int(max_ghosts)),
-                tuple(int(axis) for axis in axes if not isinstance(axis, str)),
+                tuple(cast(int, axis) for axis in axes if not isinstance(axis, str)),
                 self.intensity_range,
                 self.restore,
             )

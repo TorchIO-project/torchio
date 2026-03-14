@@ -57,7 +57,13 @@ class Resize(SpatialTransform):
         negative_mask = shape_out == -1
         shape_out[negative_mask] = shape_in[negative_mask]
         spacing_in = np.asarray(subject.spacing)
-        spacing_out = shape_in / shape_out * spacing_in
+        spacing_out_array = shape_in / shape_out * spacing_in
+        spacing_values = spacing_out_array.tolist()
+        spacing_out = (
+            float(spacing_values[0]),
+            float(spacing_values[1]),
+            float(spacing_values[2]),
+        )
         resample = Resample(
             spacing_out,
             image_interpolation=self.image_interpolation,

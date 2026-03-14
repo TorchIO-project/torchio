@@ -84,7 +84,7 @@ doc = [
     "zensical>=0.0.23",
 ]
 maintain = ["bump-my-version"]
-quality = ["ruff"]
+quality = ["ruff", "ty"]
 types = [
     "matplotlib",
     "ty",
