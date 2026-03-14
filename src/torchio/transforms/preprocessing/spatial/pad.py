@@ -111,7 +111,12 @@ class Pad(BoundsTransform):
     def apply_transform(self, subject: Subject) -> Subject:
         assert self.bounds_parameters is not None
         low = self.bounds_parameters[::2]
-        for image in self.get_images(subject):
+        images_dict = subject.get_images_dict(
+            intensity_only=False,
+            include=self.include,
+            exclude=self.exclude,
+        )
+        for image_name, image in images_dict.items():
             self._check_truncation(image, self.padding_mode)
             new_origin = apply_affine(image.affine, -np.array(low))
             new_affine = image.affine.copy()
@@ -144,8 +149,14 @@ class Pad(BoundsTransform):
                 )
             else:
                 padded = np.pad(image.data.numpy(), paddings, mode=mode)
-            image.set_data(torch.as_tensor(padded))
-            image.affine = new_affine
+            new_image = image.new_like(
+                tensor=torch.as_tensor(padded),
+                affine=new_affine,
+            )
+            # Replace the image in the subject with the new padded image
+            subject[image_name] = new_image
+        # Update attributes to sync dictionary changes with attribute access
+        subject.update_attributes()
         return subject
 
     def inverse(self):
