@@ -75,7 +75,7 @@ dev = [
     { include-group = "test" },
     "ipykernel",
     "ipywidgets",
-    "monai>=1.5.2",
+    "monai>=1.4",
     "prek",
 ]
 doc = [
