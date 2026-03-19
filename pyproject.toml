@@ -53,6 +53,7 @@ csv = ["pandas>=1"]
 plot = ["colorcet", "matplotlib>=3.4"]
 video = ["ffmpeg-python>=0.2.0"]
 sklearn = ["scikit-learn>=1.6.1"]
+monai = ["monai>=1.4"]
 
 [project.scripts]
 tiohd = "torchio.cli.print_info:app"
@@ -74,6 +75,7 @@ dev = [
     { include-group = "test" },
     "ipykernel",
     "ipywidgets",
+    "monai>=1.5.2",
     "prek",
 ]
 doc = [
