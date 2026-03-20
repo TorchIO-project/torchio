@@ -184,7 +184,7 @@ def _to_meta_tensor(
 ) -> torch.Tensor:
     """Convert a tensor to a MONAI MetaTensor with affine."""
     MetaTensor = monai.data.MetaTensor
-    affine_tensor = torch.as_tensor(affine, dtype=torch.float64)
+    affine_tensor = torch.as_tensor(affine, dtype=torch.float64, device=tensor.device)
     return MetaTensor(tensor, affine=affine_tensor)
 
 
