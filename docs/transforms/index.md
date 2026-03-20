@@ -63,6 +63,26 @@ We can type:
 ... ])
 ```
 
+## Interoperability with MONAI
+
+[MONAI](https://monai.io/) dictionary transforms can be used inside TorchIO
+pipelines via [`MonaiAdapter`][torchio.transforms.MonaiAdapter]. The adapter
+handles conversion between TorchIO's [`Subject`][torchio.Subject] and MONAI's
+expected dictionary format, including affine propagation for spatial transforms.
+
+```python
+>>> import torchio as tio
+>>> from monai.transforms import NormalizeIntensityd, RandSpatialCropd
+>>> pipeline = tio.Compose([
+...     tio.ToCanonical(),
+...     tio.MonaiAdapter(NormalizeIntensityd(keys=["t1"])),
+...     tio.RandomFlip(),
+...     tio.MonaiAdapter(
+...         RandSpatialCropd(keys=["t1", "seg"], roi_size=[64, 64, 64]),
+...     ),
+... ])
+```
+
 ## Reproducibility
 
 When transforms are instantiated, we typically need to pass values that will be
