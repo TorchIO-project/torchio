@@ -30,6 +30,7 @@ from .augmentation.spatial import RandomFlip
 from .fourier import FourierTransform
 from .intensity_transform import IntensityTransform
 from .lambda_transform import Lambda
+from .monai_adapter import MonaiAdapter
 from .preprocessing import PCA
 from .preprocessing import Clamp
 from .preprocessing import Contour
@@ -66,6 +67,7 @@ __all__ = [
     'IntensityTransform',
     'LabelTransform',
     'Lambda',
+    'MonaiAdapter',
     'OneOf',
     'Compose',
     'RandomFlip',

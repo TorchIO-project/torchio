@@ -53,6 +53,14 @@ csv = ["pandas>=1"]
 plot = ["colorcet", "matplotlib>=3.4"]
 video = ["ffmpeg-python>=0.2.0"]
 sklearn = ["scikit-learn>=1.6.1"]
+monai = ["monai>=1.4"]
+all = [
+    "torchio[csv]",
+    "torchio[monai]",
+    "torchio[plot]",
+    "torchio[sklearn]",
+    "torchio[video]",
+]
 
 [project.scripts]
 tiohd = "torchio.cli.print_info:app"
@@ -98,6 +106,7 @@ types = [
 test = [
     "coverage",
     "matplotlib",
+    "monai>=1.4",
     "parameterized",
     "pillow",
     "pytest>=9",

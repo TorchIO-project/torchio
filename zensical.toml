@@ -91,6 +91,7 @@ nav = [
     ] },
     { Others = [
       "transforms/others/Lambda.md",
+      "transforms/others/MonaiAdapter.md",
     ] },
   ] },
   { Datasets = "datasets.md" },
