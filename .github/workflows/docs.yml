@@ -5,6 +5,7 @@ on:
 
 permissions:
   contents: write
+  statuses: write
 
 concurrency:
   group: docs-${{ github.ref }}
@@ -62,6 +63,9 @@ jobs:
           find ./site -type f -size +25M -delete
           find ./site -type f -name '*.gif' -size +2M -delete
           uvx smokeshow upload ./site
+        env:
+          SMOKESHOW_GITHUB_STATUS_DESCRIPTION: Documentation preview
+          SMOKESHOW_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       # Upload to GitHub Pages if on main branch
       - name: Upload artifacts using actions/upload-pages-artifact
