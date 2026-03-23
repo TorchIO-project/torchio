@@ -270,13 +270,16 @@ def _update_subject_from_monai_dict(
         else:
             # New key or non-image key from MONAI output
             if isinstance(value, torch.Tensor):
-                new_affine = _extract_affine(value, monai)
                 tensor = _unwrap_tensor(value, monai)
-                if new_affine is None:
-                    new_affine = np.eye(4)
-                subject[key] = ScalarImage(
-                    tensor=tensor,
-                    affine=new_affine,
-                )
+                if 2 <= tensor.ndim <= 5:
+                    new_affine = _extract_affine(value, monai)
+                    if new_affine is None:
+                        new_affine = np.eye(4)
+                    subject[key] = ScalarImage(
+                        tensor=tensor,
+                        affine=new_affine,
+                    )
+                else:
+                    subject[key] = tensor
             else:
                 subject[key] = value

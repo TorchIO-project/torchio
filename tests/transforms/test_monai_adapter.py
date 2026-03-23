@@ -3,19 +3,17 @@ import warnings
 import numpy as np
 import pytest
 import torch
+from monai.transforms import MapTransform
+from monai.transforms import NormalizeIntensity
+from monai.transforms import NormalizeIntensityd
+from monai.transforms import ScaleIntensity
+from monai.transforms import ScaleIntensityd
+from monai.transforms import SpatialCrop
+from monai.transforms import SpatialCropd
 
 import torchio as tio
 
-monai = pytest.importorskip('monai')
-
-from monai.transforms import NormalizeIntensity  # noqa: E402
-from monai.transforms import NormalizeIntensityd  # noqa: E402
-from monai.transforms import ScaleIntensity  # noqa: E402
-from monai.transforms import ScaleIntensityd  # noqa: E402
-from monai.transforms import SpatialCrop  # noqa: E402
-from monai.transforms import SpatialCropd  # noqa: E402
-
-from ..utils import TorchioTestCase  # noqa: E402
+from ..utils import TorchioTestCase
 
 
 class TestMonaiAdapterDict(TorchioTestCase):
@@ -68,7 +66,7 @@ class TestMonaiAdapterDict(TorchioTestCase):
         )
 
     def test_affine_updated_spatial(self):
-        """Affine should be updated for spatial transforms like cropping."""
+        """Cropping should shift the affine origin but keep the rotation/scale."""
         subject = tio.Subject(
             t1=tio.ScalarImage(tensor=torch.randn(1, 32, 32, 32)),
         )
@@ -78,7 +76,11 @@ class TestMonaiAdapterDict(TorchioTestCase):
         )
         transformed = transform(subject)
         assert transformed.t1.spatial_shape == (16, 16, 16)
-        assert not np.array_equal(transformed.t1.affine, original_affine)
+        new_affine = transformed.t1.affine
+        # Rotation/scale (3×3) should be unchanged
+        np.testing.assert_array_equal(new_affine[:3, :3], original_affine[:3, :3])
+        # Translation (origin) should differ due to cropping offset
+        assert not np.array_equal(new_affine[:3, 3], original_affine[:3, 3])
 
     def test_spatial_shape_changes(self):
         """Tensor shape should be updated by spatial transforms."""
@@ -214,7 +216,7 @@ class TestMonaiAdapterArray(TorchioTestCase):
         )
 
     def test_array_affine_updated_spatial(self):
-        """Affine should be updated for array spatial transforms."""
+        """Cropping should shift the affine origin but keep the rotation/scale."""
         subject = tio.Subject(
             t1=tio.ScalarImage(tensor=torch.randn(1, 32, 32, 32)),
         )
@@ -224,7 +226,9 @@ class TestMonaiAdapterArray(TorchioTestCase):
         )
         transformed = transform(subject)
         assert transformed.t1.spatial_shape == (16, 16, 16)
-        assert not np.array_equal(transformed.t1.affine, original_affine)
+        new_affine = transformed.t1.affine
+        np.testing.assert_array_equal(new_affine[:3, :3], original_affine[:3, :3])
+        assert not np.array_equal(new_affine[:3, 3], original_affine[:3, 3])
 
     def test_array_tensor_input(self):
         """Array MonaiAdapter should work with 4D tensor input."""
@@ -324,7 +328,7 @@ class TestMonaiAdapterEdgeCases(TorchioTestCase):
     def test_multi_sample_transform_raises(self):
         """MONAI transforms returning list[dict] should raise a clear error."""
 
-        class FakeMultiSampleTransform(monai.transforms.MapTransform):
+        class FakeMultiSampleTransform(MapTransform):
             """Simulates a MONAI dict transform returning multiple samples."""
 
             def __init__(self):
@@ -336,3 +340,29 @@ class TestMonaiAdapterEdgeCases(TorchioTestCase):
         transform = tio.MonaiAdapter(FakeMultiSampleTransform())
         with pytest.raises(TypeError, match='single mapping'):
             transform(self.sample_subject)
+
+    def test_new_non_image_tensor_kept_raw(self):
+        """Non-image tensors (0D/1D) from MONAI should not become Images."""
+
+        class FakeStatsTransform(MapTransform):
+            """Adds a scalar stat key to the output dict."""
+
+            def __init__(self):
+                super().__init__(keys=['t1'])
+
+            def __call__(self, data):
+                data = dict(data)
+                data['t1'] = data['t1']
+                data['mean'] = torch.tensor(0.5)
+                data['indices'] = torch.tensor([0, 1, 2])
+                return data
+
+        subject = tio.Subject(
+            t1=tio.ScalarImage(tensor=torch.randn(1, 10, 10, 10)),
+        )
+        transform = tio.MonaiAdapter(FakeStatsTransform())
+        transformed = transform(subject)
+        assert isinstance(transformed['mean'], torch.Tensor)
+        assert not isinstance(transformed['mean'], tio.Image)
+        assert isinstance(transformed['indices'], torch.Tensor)
+        assert not isinstance(transformed['indices'], tio.Image)
