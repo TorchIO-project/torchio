@@ -324,6 +324,8 @@ class TestMonaiAdapterEdgeCases(TorchioTestCase):
         transformed = transform(subject)
         assert 't1_copy' in transformed
         assert isinstance(transformed['t1_copy'], tio.ScalarImage)
+        # New keys should be accessible via attribute syntax
+        assert isinstance(transformed.t1_copy, tio.ScalarImage)
 
     def test_multi_sample_transform_raises(self):
         """MONAI transforms returning list[dict] should raise a clear error."""

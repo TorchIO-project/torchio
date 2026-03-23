@@ -33,11 +33,11 @@ class MonaiAdapter(Transform):
     affine matrix embedded, so spatial transforms (e.g., cropping, resizing)
     correctly propagate affine changes.
 
-    **Dictionary transforms** (with a ``keys`` attribute) operate on the
-    full subject dictionary — only the keys specified in the MONAI transform
-    are modified.
+    **Dictionary transforms** (subclasses of MONAI's ``MapTransform``)
+    operate on the full subject dictionary — only the keys specified in
+    the MONAI transform are modified.
 
-    **Array transforms** (without a ``keys`` attribute) are applied to each
+    **Array transforms** (all other callables) are applied to each
     image in the subject individually, respecting the ``include`` and
     ``exclude`` parameters inherited from
     [`Transform`][torchio.transforms.Transform].
@@ -247,7 +247,7 @@ def _subject_to_monai_dict(
 
 def _update_subject_from_monai_dict(
     subject: Subject,
-    monai_dict: dict[str, object],
+    monai_dict: Mapping[str, object],
     monai: ModuleType,
 ) -> None:
     """Update a Subject in-place from the MONAI transform output.
@@ -271,7 +271,7 @@ def _update_subject_from_monai_dict(
             # New key or non-image key from MONAI output
             if isinstance(value, torch.Tensor):
                 tensor = _unwrap_tensor(value, monai)
-                if 2 <= tensor.ndim <= 5:
+                if tensor.ndim == 4:
                     new_affine = _extract_affine(value, monai)
                     if new_affine is None:
                         new_affine = np.eye(4)
@@ -283,3 +283,4 @@ def _update_subject_from_monai_dict(
                     subject[key] = tensor
             else:
                 subject[key] = value
+    subject.update_attributes()
