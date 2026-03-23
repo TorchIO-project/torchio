@@ -43,8 +43,9 @@ class MonaiAdapter(Transform):
     [`Transform`][torchio.transforms.Transform].
 
     Args:
-        monai_transform: A MONAI transform (dictionary or array) or any
-            callable.
+        monai_transform: A MONAI transform (dictionary or array) or a
+            MONAI-compatible callable. Requires MONAI to be installed,
+            e.g., via ``pip install torchio[monai]``.
         **kwargs: See [`Transform`][torchio.transforms.Transform] for
             additional keyword arguments.
 
@@ -92,6 +93,9 @@ class MonaiAdapter(Transform):
             raise TypeError(message)
         self.monai_transform = monai_transform
 
+    def __repr__(self) -> str:
+        return f'{self.name}({self.monai_transform})'
+
     def add_transform_to_subject_history(self, subject: Subject) -> None:
         """Skip history recording for MONAI adapter transforms.
 
@@ -102,6 +106,18 @@ class MonaiAdapter(Transform):
         This is consistent with how other non-reproducible transforms
         (e.g., ``Compose``, ``OneOf``) handle history.
         """
+
+    def to_hydra_config(self) -> dict[str, object]:
+        """Not supported — MONAI transforms are not serializable.
+
+        Raises:
+            NotImplementedError: Always.
+        """
+        message = (
+            'MonaiAdapter cannot be exported to a Hydra config because'
+            ' the wrapped MONAI transform is not serializable'
+        )
+        raise NotImplementedError(message)
 
     def apply_transform(self, subject: Subject) -> Subject:
         """Apply the wrapped MONAI transform to a subject.
