@@ -192,7 +192,7 @@ class Transform(ABC):
                 transformed.add_image(image, name)
 
         if self.parse_input:
-            self.add_transform_to_subject_history(transformed)
+            self._add_transform_to_subject_history(transformed)
             for image in transformed.get_images(intensity_only=False):
                 ndim = image.data.ndim
                 assert ndim == 4, f'Output of {self.name} is {ndim}D'
@@ -262,7 +262,7 @@ class Transform(ABC):
         """
         raise NotImplementedError
 
-    def add_transform_to_subject_history(self, subject):
+    def _add_transform_to_subject_history(self, subject):
         from . import Compose
         from . import CropOrPad
         from . import EnsureShapeMultiple
