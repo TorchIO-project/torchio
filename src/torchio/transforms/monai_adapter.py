@@ -96,15 +96,14 @@ class MonaiAdapter(Transform):
     def __repr__(self) -> str:
         return f'{self.name}({self.monai_transform})'
 
-    def add_transform_to_subject_history(self, subject: Subject) -> None:
+    def _add_transform_to_subject_history(self, subject: Subject) -> None:
         """Skip history recording for MONAI adapter transforms.
 
         The wrapped MONAI transform object cannot be reliably serialized or
-        reconstructed by
-        [`Subject.get_applied_transforms`][torchio.Subject.get_applied_transforms],
-        so the adapter is omitted from the subject history. This is similar
-        to container transforms such as ``Compose`` and ``OneOf``, which
-        rely on their inner transforms being recorded instead.
+        reconstructed by `Subject.get_applied_transforms()`, so the adapter
+        is omitted from the subject history. This is similar to container
+        transforms such as `Compose` and `OneOf`, which rely on their inner
+        transforms being recorded instead.
         """
 
     def to_hydra_config(self) -> dict[str, object]:

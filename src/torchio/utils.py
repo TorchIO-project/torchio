@@ -316,7 +316,7 @@ def get_subjects_from_batch(batch: dict) -> list:
         if constants.HISTORY in batch:
             applied_transforms = batch[constants.HISTORY][i]
             for transform in applied_transforms:
-                transform.add_transform_to_subject_history(subject)
+                transform._add_transform_to_subject_history(subject)
 
         subjects.append(subject)
     return subjects
