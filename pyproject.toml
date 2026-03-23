@@ -82,7 +82,6 @@ dev = [
     { include-group = "test" },
     "ipykernel",
     "ipywidgets",
-    "monai>=1.4",
     "prek",
 ]
 doc = [
@@ -107,6 +106,7 @@ types = [
 test = [
     "coverage",
     "matplotlib",
+    "monai>=1.4",
     "parameterized",
     "pillow",
     "pytest>=9",
