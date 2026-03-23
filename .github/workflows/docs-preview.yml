@@ -1,0 +1,86 @@
+name: Docs Preview
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  preview:
+    name: Build & Deploy Preview
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install the latest version of uv
+        uses: astral-sh/setup-uv@v7
+
+      - name: Install dependencies
+        run: uv sync --group doc
+
+      - name: Install just
+        uses: extractions/setup-just@v3
+
+      - name: Restore TorchIO cached data
+        id: cache-torchio-data-restore
+        uses: actions/cache/restore@v5
+        with:
+          path: ~/.cache/torchio
+          key: ${{ runner.os }}-torchio-data
+
+      - name: Generate plots
+        run: just generate-plots
+
+      - name: Generate examples gallery
+        run: just generate-gallery
+
+      - name: Build docs
+        run: just build-docs
+
+      - name: Save TorchIO cached data
+        if: steps.cache-torchio-data-restore.outputs.cache-hit != 'true'
+        uses: actions/cache@v5
+        with:
+          path: ~/.cache/torchio
+          key: ${{ steps.cache-torchio-data-restore.outputs.cache-primary-key }}
+
+      - name: Generate Smokeshow key
+        if: env.SMOKESHOW_AUTH_KEY == ''
+        env:
+          SMOKESHOW_AUTH_KEY: ${{ secrets.SMOKESHOW_AUTH_KEY }}
+        run: |
+          KEY=$(uvx smokeshow generate-key 2>/dev/null | tail -1)
+          echo "SMOKESHOW_AUTH_KEY=$KEY" >> "$GITHUB_ENV"
+
+      - name: Deploy to Smokeshow
+        id: smokeshow
+        env:
+          SMOKESHOW_AUTH_KEY: ${{ secrets.SMOKESHOW_AUTH_KEY || env.SMOKESHOW_AUTH_KEY }}
+          SMOKESHOW_GITHUB_STATUS_DESCRIPTION: Docs preview
+          SMOKESHOW_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SMOKESHOW_GITHUB_PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          # Smokeshow limit: 50 MB total, 25 MB per file
+          # Remove large GIFs to stay under the limit
+          find ./site -type f -size +25M -delete
+          find ./site -type f -name '*.gif' -size +2M -delete
+          uvx smokeshow upload ./site 2>&1 | tee /tmp/smokeshow_output.txt
+          URL=$(grep -oE 'https://smokeshow[^ ]+' /tmp/smokeshow_output.txt | tail -1 | sed 's/,$//')
+          echo "preview_url=$URL" >> "$GITHUB_OUTPUT"
+
+      - name: Comment PR with preview URL
+        if: steps.smokeshow.outputs.preview_url != ''
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: docs-preview
+          message: |
+            ## 📖 Docs Preview
+
+            Preview of the documentation for this PR:
+
+            🔗 **${{ steps.smokeshow.outputs.preview_url }}**
+
+            <sub>Built from ${{ github.event.pull_request.head.sha }}</sub>
