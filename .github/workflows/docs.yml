@@ -5,6 +5,8 @@ on:
 
 permissions:
   contents: write
+  pull-requests: write
+  statuses: write
 
 concurrency:
   group: docs-${{ github.ref }}
@@ -55,13 +57,35 @@ jobs:
 
       # Upload to smokeshow if not on main branch
       - name: Upload docs to smokeshow
+        id: smokeshow
         if: github.ref != 'refs/heads/main'
+        env:
+          SMOKESHOW_AUTH_KEY: ${{ secrets.SMOKESHOW_AUTH_KEY || env.SMOKESHOW_AUTH_KEY }}
+          SMOKESHOW_GITHUB_STATUS_DESCRIPTION: Docs preview
+          SMOKESHOW_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SMOKESHOW_GITHUB_PR_HEAD_SHA: ${{ github.sha }}
         run: |
           # Smokeshow limit: 50 MB total, 25 MB per file
           # Remove large GIFs to stay under the limit
           find ./site -type f -size +25M -delete
           find ./site -type f -name '*.gif' -size +2M -delete
-          uvx smokeshow upload ./site
+          uvx smokeshow upload ./site 2>&1 | tee /tmp/smokeshow_output.txt
+          URL=$(grep -oE 'https://smokeshow[^ ]+' /tmp/smokeshow_output.txt | tail -1 | sed 's/,$//')
+          echo "preview_url=$URL" >> "$GITHUB_OUTPUT"
+
+      - name: Comment PR with preview URL
+        if: github.ref != 'refs/heads/main' && steps.smokeshow.outputs.preview_url != ''
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: docs-preview
+          message: |
+            ## 📖 Docs Preview
+
+            Preview of the documentation for this PR:
+
+            🔗 **${{ steps.smokeshow.outputs.preview_url }}**
+
+            <sub>Built from ${{ github.sha }}</sub>
 
       # Upload to GitHub Pages if on main branch
       - name: Upload artifacts using actions/upload-pages-artifact
