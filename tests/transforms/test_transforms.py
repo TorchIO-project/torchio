@@ -740,7 +740,7 @@ class TestComposeCoverage(TorchioTestCase):
 
     def test_inverse_no_invertible_warns(self):
         """Compose.inverse() warns when no transforms are invertible."""
-        compose = tio.Compose([tio.RemoveLabels([1])])
+        compose = tio.Compose([])
         with pytest.warns(RuntimeWarning, match='No invertible transforms'):
             compose.inverse()
 
