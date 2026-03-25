@@ -105,12 +105,14 @@ types = [
 ]
 test = [
     "coverage",
+    "einops",
     "matplotlib",
     "monai>=1.4",
     "parameterized",
     "pillow",
     "pytest>=9",
     "pytest-sugar",
+    "scikit-learn",
     "tox-uv",
 ]
 
