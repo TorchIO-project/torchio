@@ -3,6 +3,7 @@ from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
 from typing import cast
+from unittest.mock import patch
 
 import numpy as np
 import pytest
@@ -12,6 +13,9 @@ from nibabel.nifti1 import Nifti1Image
 
 import torchio as tio
 from torchio.data.io import nib_to_sitk
+from torchio.transforms.data_parser import DataParser
+from torchio.transforms.fourier import FourierTransform
+from torchio.transforms.interpolation import get_sitk_interpolator
 
 from ..utils import TorchioTestCase
 
@@ -442,3 +446,315 @@ class TestTransform(TorchioTestCase):
                 'label_keys',
             ]
         )
+
+    def test_repr_inverted_transform(self):
+        """Repr of an inverted transform should include 'invert=True'."""
+        transform = tio.OneHot()
+        inverted = transform.inverse()
+        repr_str = repr(inverted)
+        assert 'invert=True' in repr_str
+
+    def test_repr_without_args_names(self):
+        """Repr falls back to super().__repr__ when args_names is absent."""
+        compose = tio.Compose([tio.RandomFlip()])
+        repr_str = repr(compose)
+        assert 'Compose' in repr_str
+
+    def test_add_base_args_no_overwrite(self):
+        """Existing keys should not be overwritten by default."""
+        transform = tio.RandomFlip()
+        args: dict[str, object] = {'copy': True, 'custom_key': 42}
+        result = transform._add_base_args(args)
+        assert result['copy'] is True
+        assert result['custom_key'] == 42
+
+    def test_add_base_args_with_overwrite(self):
+        """With overwrite_on_existing=True, existing keys are replaced."""
+        transform = tio.RandomFlip()
+        args: dict[str, object] = {'copy': 'original'}
+        result = transform._add_base_args(args, overwrite_on_existing=True)
+        assert result['copy'] == transform.copy
+
+    def test_parse_params_numpy_array(self):
+        """Parsing a numpy array parameter should work (line 330)."""
+        transform = tio.RandomAffine()
+        result = transform.parse_params(
+            np.array([5.0]),
+            around=0,
+            name='test',
+        )
+        assert len(result) == 6
+
+    def test_parse_params_bad_length_raises(self):
+        """Sequence of length 4 should raise ValueError."""
+        transform = tio.RandomAffine()
+        with pytest.raises(ValueError, match='length 2, 3 or 6'):
+            transform.parse_params(
+                (1.0, 2.0, 3.0, 4.0),
+                around=0,
+                name='scales',
+            )
+
+    def test_parse_range_non_iterable_raises(self):
+        """A non-number, non-iterable input should raise ValueError."""
+        transform = tio.RandomAffine()
+        with pytest.raises(ValueError, match='sequence of len 2'):
+            transform._parse_range(cast(Any, object()), 'test_param')
+
+    def test_parse_range_non_number_values_raises(self):
+        """Sequence with non-numeric values should raise ValueError."""
+        transform = tio.RandomAffine()
+        with pytest.raises(ValueError, match='values must be numbers'):
+            transform._parse_range(cast(Any, ('a', 'b')), 'test_param')
+
+    def test_non_iterable_include_raises(self):
+        """Passing a non-iterable as include should raise ValueError."""
+        with pytest.raises(ValueError, match='must be a sequence of strings'):
+            tio.Transform.parse_include_and_exclude_keys(
+                include=cast(Any, 42),
+                exclude=None,
+                label_keys=None,
+            )
+
+    def test_parse_bounds_none(self):
+        """None should return None."""
+        assert tio.Transform.parse_bounds(None) is None
+
+    def test_parse_bounds_negative_raises(self):
+        """Negative bounds should raise ValueError."""
+        with pytest.raises(ValueError, match='integers greater or equal to zero'):
+            tio.Transform.parse_bounds(-1)
+
+    def test_parse_bounds_float_raises(self):
+        """Float bounds should raise TypeError (not iterable)."""
+        with pytest.raises(TypeError):
+            tio.Transform.parse_bounds(cast(Any, 1.5))
+
+    def test_parse_bounds_bad_length_raises(self):
+        """Bounds of length 2 or 4 should raise ValueError."""
+        with pytest.raises(ValueError, match='3 or 6 integers'):
+            tio.Transform.parse_bounds((1, 2))
+        with pytest.raises(ValueError, match='3 or 6 integers'):
+            tio.Transform.parse_bounds((1, 2, 3, 4))
+
+    def test_masking_method_invalid_type_raises(self):
+        """An invalid masking_method type should raise ValueError."""
+        transform = tio.RandomNoise()
+        tensor = torch.randn(1, 10, 10, 10)
+        subject = self.sample_subject
+        with pytest.raises(ValueError, match='Masking method must be one of'):
+            transform.get_mask_from_masking_method(
+                cast(Any, 3.14),
+                subject,
+                tensor,
+            )
+
+    def test_masking_method_int_bounds(self):
+        """Integer masking_method should create a bounds-based mask."""
+        transform = tio.RandomNoise()
+        tensor = torch.randn(1, 10, 20, 30)
+        mask = transform.get_mask_from_masking_method(
+            2,
+            self.sample_subject,
+            tensor,
+        )
+        assert mask.shape == tensor.shape
+        assert mask.dtype == torch.bool
+
+    def test_masking_method_tuple_bounds(self):
+        """Tuple masking_method should create a bounds-based mask."""
+        transform = tio.RandomNoise()
+        tensor = torch.randn(1, 10, 20, 30)
+        mask = transform.get_mask_from_masking_method(
+            (1, 1, 1),
+            self.sample_subject,
+            tensor,
+        )
+        assert mask.shape == tensor.shape
+        assert mask.dtype == torch.bool
+
+    def test_get_name_with_module(self):
+        """_get_name_with_module returns 'module.ClassName' string."""
+        transform = tio.RandomFlip()
+        name = transform._get_name_with_module()
+        assert 'RandomFlip' in name
+        assert '.' in name
+
+    def test_to_hydra_config(self):
+        """to_hydra_config returns a dict with _target_ key."""
+        transform = tio.RandomFlip(axes=(0, 1))
+        config = transform.to_hydra_config()
+        assert '_target_' in config
+        assert 'RandomFlip' in config['_target_']
+
+    def test_tuples_to_lists(self):
+        """_tuples_to_lists recursively converts tuples inside dicts/lists."""
+        data: dict[str, object] = {
+            'a': (1, 2, 3),
+            'b': [(4, 5), 6],
+            'c': 'keep',
+        }
+        result = tio.Transform._tuples_to_lists(data)
+        assert isinstance(result['a'], list)
+        assert isinstance(result['b'], list)
+        assert isinstance(result['b'][0], list)
+        assert result['c'] == 'keep'
+
+
+class TestFourierTransformFallback(TorchioTestCase):
+    """Tests for the NumPy FFT fallback in FourierTransform."""
+
+    def test_fourier_transform_numpy_fallback(self):
+        """Ensure forward FFT works via NumPy when torch.fft raises."""
+        tensor = torch.randn(4, 4, 4)
+        with patch('torch.fft.fftn', side_effect=ModuleNotFoundError):
+            result = FourierTransform.fourier_transform(tensor)
+        assert isinstance(result, torch.Tensor)
+        assert result.shape == tensor.shape
+
+    def test_inv_fourier_transform_numpy_fallback(self):
+        """Ensure inverse FFT works via NumPy when torch.fft raises."""
+        tensor = torch.randn(4, 4, 4).to(torch.complex64)
+        with patch('torch.fft.ifftshift', side_effect=ModuleNotFoundError):
+            result = FourierTransform.inv_fourier_transform(tensor)
+        assert isinstance(result, torch.Tensor)
+        assert result.shape == tensor.shape
+
+    def test_fourier_roundtrip(self):
+        """Verify that forward then inverse FFT approximately recovers input."""
+        tensor = torch.randn(4, 4, 4)
+        freq = FourierTransform.fourier_transform(tensor)
+        recovered = FourierTransform.inv_fourier_transform(freq)
+        torch.testing.assert_close(
+            recovered.real.float(),
+            tensor,
+            atol=1e-5,
+            rtol=1e-5,
+        )
+
+
+class TestGetSitkInterpolator(TorchioTestCase):
+    """Tests for interpolation type validation."""
+
+    def test_non_string_interpolation_raises(self):
+        """Passing a non-string to get_sitk_interpolator raises ValueError."""
+        with pytest.raises(ValueError, match='Interpolation must be a string'):
+            get_sitk_interpolator(cast(Any, 42))
+
+    def test_non_string_list_interpolation_raises(self):
+        """Passing a list to get_sitk_interpolator raises ValueError."""
+        with pytest.raises(ValueError, match='Interpolation must be a string'):
+            get_sitk_interpolator(cast(Any, ['linear']))
+
+
+class TestIntensityTransform(TorchioTestCase):
+    """Tests for IntensityTransform.get_parameter static method."""
+
+    def test_get_parameter_from_dict(self):
+        """Retrieve a per-image parameter from a mapping."""
+        result = tio.transforms.IntensityTransform.get_parameter(
+            {'image': 0.5},
+            'image',
+        )
+        assert result == 0.5
+
+    def test_get_parameter_scalar_passthrough(self):
+        """A non-mapping value should be returned directly."""
+        result = tio.transforms.IntensityTransform.get_parameter(0.7, 'image')
+        assert result == 0.7
+
+
+class TestDataParser(TorchioTestCase):
+    """Tests for DataParser edge cases."""
+
+    def test_unrecognized_input_type_raises(self):
+        """Passing an unsupported type should raise ValueError."""
+        parser = DataParser(data=cast(Any, 12345))
+        with pytest.raises(ValueError, match='Input type not recognized'):
+            parser.get_subject()
+
+    def test_dict_with_non_tensor_image_value_raises(self):
+        """Dict values selected as images must be tensors or arrays."""
+        parser = DataParser(
+            data={'image': 'not_a_tensor', 'other': 42},
+            keys=['image'],
+        )
+        with pytest.raises(TypeError, match='tensors or arrays'):
+            parser.get_subject()
+
+    def test_dict_with_valid_tensor_value(self):
+        """Dict with tensor values should parse correctly."""
+        tensor = torch.randn(1, 10, 10, 10)
+        parser = DataParser(
+            data={'image': tensor, 'metadata': 'info'},
+            keys=['image'],
+        )
+        subject = parser.get_subject()
+        assert 'image' in subject
+        assert 'metadata' in subject
+
+    def test_dict_with_label_keys(self):
+        """Dict with label_keys should create LabelMap images."""
+        tensor = torch.randint(0, 3, (1, 10, 10, 10)).float()
+        parser = DataParser(
+            data={'seg': tensor},
+            keys=['seg'],
+            label_keys=['seg'],
+        )
+        subject = parser.get_subject()
+        assert isinstance(subject['seg'], tio.LabelMap)
+
+
+class TestComposeCoverage(TorchioTestCase):
+    """Tests for Compose edge cases and utility methods."""
+
+    def test_non_callable_raises(self):
+        """Non-callable objects in Compose should raise TypeError."""
+        with pytest.raises(TypeError, match='not callable'):
+            tio.Compose([cast(Any, 'not_a_transform')])
+
+    def test_len(self):
+        """__len__ returns the number of transforms."""
+        compose = tio.Compose([tio.RandomFlip(), tio.RandomNoise()])
+        assert len(compose) == 2
+
+    def test_getitem(self):
+        """__getitem__ returns the transform at the given index."""
+        flip = tio.RandomFlip()
+        noise = tio.RandomNoise()
+        compose = tio.Compose([flip, noise])
+        assert compose[0] is flip
+        assert compose[1] is noise
+
+    def test_repr(self):
+        """__repr__ contains the class name and transforms."""
+        compose = tio.Compose([tio.RandomFlip()])
+        repr_str = repr(compose)
+        assert 'Compose' in repr_str
+
+    def test_is_invertible_all(self):
+        """is_invertible returns True when all transforms are invertible."""
+        compose = tio.Compose([tio.OneHot()])
+        assert compose.is_invertible()
+
+    def test_inverse_no_invertible_warns(self):
+        """Compose.inverse() warns when no transforms are invertible."""
+        compose = tio.Compose([tio.RemoveLabels([1])])
+        with pytest.warns(RuntimeWarning, match='No invertible transforms'):
+            compose.inverse()
+
+    def test_inverse_skips_non_invertible_warns(self):
+        """Compose.inverse() warns about non-invertible transforms."""
+        compose = tio.Compose([tio.OneHot(), tio.RemoveLabels([1])])
+        with pytest.warns(RuntimeWarning, match='Skipping'):
+            inverted = compose.inverse()
+        assert len(inverted) == 1
+
+    def test_compose_to_hydra_config(self):
+        """to_hydra_config returns a nested Hydra configuration dict."""
+        compose = tio.Compose([tio.RandomFlip(), tio.RandomNoise()])
+        config = compose.to_hydra_config()
+        assert '_target_' in config
+        assert 'transforms' in config
+        assert len(config['transforms']) == 2
+        assert all('_target_' in t for t in config['transforms'])
