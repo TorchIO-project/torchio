@@ -456,9 +456,10 @@ class TestTransform(TorchioTestCase):
 
     def test_repr_without_args_names(self):
         """Repr falls back to super().__repr__ when args_names is absent."""
-        compose = tio.Compose([tio.RandomFlip()])
-        repr_str = repr(compose)
-        assert 'Compose' in repr_str
+        transform = tio.RandomFlip()
+        delattr(transform, 'args_names')
+        repr_str = repr(transform)
+        assert 'RandomFlip' in repr_str
 
     def test_add_base_args_no_overwrite(self):
         """Existing keys should not be overwritten by default."""
@@ -476,7 +477,7 @@ class TestTransform(TorchioTestCase):
         assert result['copy'] == transform.copy
 
     def test_parse_params_numpy_array(self):
-        """Parsing a numpy array parameter should work (line 330)."""
+        """Parsing a numpy array parameter supports np.ravel conversion."""
         transform = tio.RandomAffine()
         result = transform.parse_params(
             np.array([5.0]),
