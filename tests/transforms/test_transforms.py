@@ -453,7 +453,7 @@ class TestTransform(TorchioTestCase):
     def test_repr_without_args_names(self):
         """Repr falls back to super().__repr__ when args_names is absent."""
         transform = tio.RandomFlip()
-        delattr(transform, 'args_names')
+        del transform.args_names
         repr_str = repr(transform)
         assert 'RandomFlip' in repr_str
 
