@@ -19,3 +19,14 @@ class TestTranspose(TorchioTestCase):
         image = tio.ScalarImage(self.get_image_path('image'))
         transformed = transform(image)
         self.assertEqual(transformed.orientation_str, image.orientation_str[::-1])
+
+    def test_is_invertible(self):
+        """Transpose.is_invertible() returns True."""
+        transform = tio.Transpose()
+        assert transform.is_invertible()
+
+    def test_inverse_is_self(self):
+        """Transpose.inverse() returns self (it is its own inverse)."""
+        transform = tio.Transpose()
+        inverse = transform.inverse()
+        assert inverse is transform

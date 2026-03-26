@@ -129,3 +129,13 @@ class TestRescaleIntensity(TorchioTestCase):
 
         assert rescale(img2).data.flatten().tolist() == [0, 1]
         assert rescale(img1).data.flatten().tolist() == [0, 1]
+
+    def test_rescale_zero_range(self):
+        """Rescaling an image where all values are the same warns."""
+        image = tio.ScalarImage(tensor=torch.ones(1, 10, 10, 10) * 5.0)
+        transform = tio.RescaleIntensity(out_min_max=(0, 1))
+        with pytest.warns(
+            RuntimeWarning, match='all the intensity values are the same'
+        ):
+            transformed = transform(image)
+        self.assert_tensor_equal(transformed.data, image.data)

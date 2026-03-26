@@ -80,3 +80,13 @@ class TestPad(TorchioTestCase):
         pad = tio.Pad(1, padding_mode='mean')
         with pytest.warns(RuntimeWarning):
             pad(x)
+
+    def test_pad_inverse(self):
+        """Pad.inverse() returns a Crop with the same padding."""
+        padding = (1, 2, 3, 4, 5, 6)
+        pad = tio.Pad(padding)
+        inverse = pad.inverse()
+        image = tio.ScalarImage(tensor=torch.rand(1, 10, 20, 30))
+        padded = pad(image)
+        unpadded = inverse(padded)
+        assert unpadded.spatial_shape == image.spatial_shape
