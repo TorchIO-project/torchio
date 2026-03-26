@@ -1,0 +1,66 @@
+[tools]
+uv = "latest"
+
+[tasks.setup]
+description = "Install all dependencies and pre-commit hooks"
+run = """
+uv sync --all-groups
+uv run prek install
+"""
+
+[tasks.test]
+description = "Run tests with pytest"
+run = "uv run --group quality -- tox -e pytest"
+
+[tasks.lint]
+description = "Lint with ruff"
+run = "uv run --group quality -- tox -e lint"
+
+[tasks.format]
+description = "Format with ruff"
+run = "uv run --group quality -- ruff format src tests"
+
+[tasks.format-check]
+description = "Check formatting with ruff"
+run = "uv run --group quality -- tox -e format"
+
+[tasks.types]
+description = "Type check with ty"
+run = "uv run --group quality -- tox -e types"
+
+[tasks.quality]
+description = "Run all quality checks (lint, format, types)"
+depends = ["lint", "format-check", "types"]
+
+[tasks.bump]
+description = "Bump version (usage: mise run bump -- patch|minor|major)"
+run = "uv run --group quality -- bump-my-version bump ${1:-patch} --verbose"
+
+[tasks.bump-dry]
+description = "Dry-run version bump"
+run = "uv run --group quality -- bump-my-version bump ${1:-patch} --dry-run --verbose --allow-dirty"
+
+[tasks.push]
+description = "Push commits and tags"
+run = "git push && git push --tags"
+
+[tasks.docs]
+description = "Serve documentation locally"
+run = "uv run --group doc -- zensical serve --open"
+
+[tasks.docs-build]
+description = "Build documentation"
+run = "uv run --group doc -- zensical build"
+
+[tasks.clean]
+description = "Remove build artifacts and caches"
+run = """
+rm -rf .pytest_cache
+rm -rf .ruff_cache
+rm -rf .tox
+rm -rf dist
+rm -rf **/__pycache__
+rm -rf src/*.egg-info
+rm -f .coverage
+rm -f coverage.*
+"""

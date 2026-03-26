@@ -1,164 +1,94 @@
-[build-system]
-requires = ["uv_build"]
-build-backend = "uv_build"
-
 [project]
 name = "torchio"
 version = "0.23.1"
-description = "Tools for medical image processing with PyTorch"
-license = "Apache-2.0"
-readme = "README.md"
-authors = [{ name = "TorchIO contributors" }]
-maintainers = [{ name = "Fernando Perez-Garcia", email = "fepegar@gmail.com" }]
-classifiers = [
-    "Development Status :: 4 - Beta",
-    "Environment :: Console",
-    "Intended Audience :: Science/Research",
-    "Natural Language :: English",
-    "Operating System :: OS Independent",
-    "Programming Language :: Python",
-    "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3 :: Only",
-    "Programming Language :: Python :: 3.10",
-    "Programming Language :: Python :: 3.11",
-    "Programming Language :: Python :: 3.12",
-    "Programming Language :: Python :: 3.13",
-    "Programming Language :: Python :: 3.14",
-    "Topic :: Scientific/Engineering",
-    "Topic :: Scientific/Engineering :: Artificial Intelligence",
-    "Topic :: Scientific/Engineering :: Image Processing",
-    "Topic :: Scientific/Engineering :: Medical Science Apps.",
-    "Typing :: Typed",
-]
-keywords = ["medical", "image processing", "pytorch", "augmentation", "mri"]
-requires-python = ">=3.10"
+description = "Medical image preprocessing, augmentation, and patch-based training (v2)"
+requires-python = ">=3.11"
 dependencies = [
-    "deprecated>=1.2",
-    "einops>=0.3",
-    "humanize>=0.1",
-    "jaxtyping>=0.2",
-    "nibabel>=3",
-    "numpy>=1.20",
-    "packaging>=20",
-    "rich>=10",
-    "scipy>=1.7",
-    "simpleitk >=1.3, !=2.0.*, !=2.1.1.1",
-    "torch>=1.9",
-    "tqdm>=4.40",
-    "typer>=0.1",
-]
-
-[project.optional-dependencies]
-csv = ["pandas>=1"]
-plot = ["colorcet", "matplotlib>=3.4"]
-video = ["ffmpeg-python>=0.2.0"]
-sklearn = ["scikit-learn>=1.6.1"]
-monai = ["monai>=1.4"]
-all = [
-    "torchio[csv]",
-    "torchio[monai]",
-    "torchio[plot]",
-    "torchio[sklearn]",
-    "torchio[video]",
-]
-
-[project.scripts]
-tiohd = "torchio.cli.print_info:app"
-tiotr = "torchio.cli.apply_transform:app"
-torchio-transform = "torchio.cli.apply_transform:app"
-
-[project.urls]
-Homepage = "https://torchio.org"
-Source = "https://github.com/TorchIO-project/torchio"
-"Issue tracker" = "https://github.com/TorchIO-project/torchio/issues"
-Documentation = "https://docs.torchio.org"
-"Release notes" = "https://github.com/TorchIO-project/torchio/releases"
-
-[dependency-groups]
-dev = [
-    { include-group = "doc" },
-    { include-group = "maintain" },
-    { include-group = "quality" },
-    { include-group = "test" },
-    "ipykernel",
-    "ipywidgets",
-    "prek",
-]
-doc = [
-    "colorcet>=3.1.0",
-    "distinctipy",
     "einops",
-    "matplotlib",
-    "mkdocstrings-python>=2.0.2",
-    "zensical>=0.0.23",
-]
-maintain = ["bump-my-version"]
-quality = ["ruff"]
-types = [
-    "matplotlib",
-    "ty",
-    "pandas-stubs",
-    "pillow",
-    "pip",
-    "types-deprecated",
-    "types-tqdm",
-]
-test = [
-    "coverage",
-    "einops",
-    "matplotlib",
-    "monai>=1.4",
-    "parameterized",
-    "pillow",
-    "pytest>=9",
-    "pytest-sugar",
-    "scikit-learn",
-    "tox-uv",
+    "jaxtyping>=0.3.9",
+    "nibabel",
+    "numpy",
+    "simpleitk",
+    "tensordict",
+    "torch>=2.0",
 ]
 
-[tool.bumpversion]
-current_version = "0.23.1"
-commit = true
-tag = true
-
-[[tool.bumpversion.files]]
-filename = "src/torchio/__init__.py"
-search = "__version__ = '{current_version}'"
-replace = "__version__ = '{new_version}'"
-
-[[tool.bumpversion.files]]
-filename = "pyproject.toml"
-search = 'version = "{current_version}"'
-replace = 'version = "{new_version}"'
+[build-system]
+requires = ["uv_build>=0.11.1,<0.12.0"]
+build-backend = "uv_build"
 
 [tool.pytest.ini_options]
-addopts = ["-ra", "--strict-config", "--strict-markers"]
-filterwarnings = [
-    # Ignore SimpleITK Swig warnings
-    "ignore:builtin type .* has no __module__ attribute",
-    "ignore:Casting complex values to real discards the imaginary part",
-    # Raised by SimpleITK on CI
-    "ignore:invalid escape sequence",
-]
-log_level = "INFO"
-markers = [
-    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
-    "serial",
-]
-minversion = "9"
 testpaths = ["tests"]
-xfail_strict = true
 
-[tool.ruff.format]
-quote-style = 'single'
+[tool.coverage.run]
+source = ["torchio"]
+
+[tool.coverage.report]
+fail_under = 100
+show_missing = true
+skip_empty = true
+
+[tool.ruff]
+src = ["src"]
 
 [tool.ruff.lint]
-preview = true
-select = ["B", "E", "F", "I", "W"]
-ignore = ["E203", "E501", "N813"]
+select = [
+    "A",
+    "B",
+    "C4",
+    "E",
+    "F",
+    "I",
+    "N",
+    "PT",
+    "RUF",
+    "SIM",
+    "UP",
+    "W",
+]
 
 [tool.ruff.lint.isort]
 force-single-line = true
 
-[tool.coverage.run]
-omit = ["**/_remote_module_non_scriptable.py"]
+[tool.ruff.lint.per-file-ignores]
+"src/torchio/data/image.py" = [
+    "N813",  # https://docs.astral.sh/ruff/rules/camelcase-imported-as-lowercase/
+]
+"tests/**" = [
+    "B018",  # https://docs.astral.sh/ruff/rules/useless-expression/
+    "N813",  # https://docs.astral.sh/ruff/rules/camelcase-imported-as-lowercase/
+]
+
+[tool.bump-my-version]
+current_version = "0.23.1"
+commit = true
+tag = true
+
+[[tool.bump-my-version.files]]
+filename = "pyproject.toml"
+search = 'version = "{current_version}"'
+replace = 'version = "{new_version}"'
+
+[dependency-groups]
+dev = [
+    "ipykernel>=7.2.0",
+    "ipywidgets>=8.1.8",
+    "nbconvert>=7.17.0",
+    "rich>=14.3.3",
+]
+test = [
+    "pytest",
+    "pytest-cov",
+    "pytest-sugar",
+]
+doc = [
+    "mkdocstrings-python>=2.0.2",
+    "zensical>=0.0.23",
+]
+quality = [
+    "bump-my-version",
+    "prek",
+    "ruff",
+    "tox-uv",
+    "ty",
+]
