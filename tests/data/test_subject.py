@@ -2,6 +2,7 @@ import copy
 import sys
 import tempfile
 from typing import cast
+from unittest.mock import patch
 
 import numpy as np
 import pytest
@@ -216,3 +217,103 @@ class TestSubject(TorchioTestCase):
         # The data of the original subject should not be modified
         assert not torch.allclose(sub_copy_t1.data, sample_t1.data)
         assert not torch.allclose(copy_original_t1.data, sample_t1.data)
+
+    def test_getitem_with_int(self):
+        """Integer indexing returns cropped Subject along first spatial dim."""
+        subject = self.sample_subject
+        result = subject[0]
+        assert isinstance(result, tio.Subject)
+
+    def test_getitem_with_slice(self):
+        """Slice indexing returns cropped Subject."""
+        subject = self.sample_subject
+        result = subject[0:5]
+        assert isinstance(result, tio.Subject)
+
+    def test_getitem_with_tuple(self):
+        """Tuple indexing crops multiple spatial dimensions."""
+        subject = self.sample_subject
+        result = subject[0:5, 0:5, 0:5]
+        assert isinstance(result, tio.Subject)
+
+    def test_getitem_inconsistent_shapes_raises(self):
+        """Indexing with inconsistent image shapes raises RuntimeError."""
+        subject = self.get_inconsistent_shape_subject()
+        with pytest.raises(RuntimeError, match='same spatial shape'):
+            subject[0:5]
+
+    def test_get_applied_transforms_ignore_intensity(self):
+        """ignore_intensity=True filters out intensity transforms."""
+        subject = copy.deepcopy(self.sample_subject)
+        transform = tio.RandomNoise()
+        transformed = transform(subject)
+        transforms = transformed.get_applied_transforms(ignore_intensity=True)
+        assert len(transforms) == 0
+
+    def test_check_consistent_affine_raises(self):
+        """Inconsistent affines raise RuntimeError."""
+        t1 = tio.ScalarImage(tensor=torch.rand(1, 5, 5, 5))
+        affine = np.eye(4)
+        affine[0, 0] = 2.0
+        t2 = tio.ScalarImage(tensor=torch.rand(1, 5, 5, 5), affine=affine)
+        subject = tio.Subject(t1=t1, t2=t2)
+        with pytest.raises(RuntimeError):
+            subject.check_consistent_affine()
+
+    def test_check_consistent_space_raises(self):
+        """Inconsistent spacing raises RuntimeError with helpful message."""
+        t1 = tio.ScalarImage(tensor=torch.rand(1, 5, 5, 5))
+        affine = np.diag([2.0, 1.0, 1.0, 1.0])
+        t2 = tio.ScalarImage(tensor=torch.rand(1, 5, 5, 5), affine=affine)
+        subject = tio.Subject(t1=t1, t2=t2)
+        with pytest.raises(RuntimeError, match='ToCanonical'):
+            subject.check_consistent_space()
+
+    def test_get_scalar_image_on_label_raises(self):
+        """get_scalar_image on a LabelMap raises TypeError."""
+        subject = self.sample_subject
+        with pytest.raises(TypeError, match='not a scalar image'):
+            subject.get_scalar_image('label')
+
+    def test_get_label_map_on_scalar_raises(self):
+        """get_label_map on a ScalarImage raises TypeError."""
+        subject = self.sample_subject
+        with pytest.raises(TypeError, match='not a label map'):
+            subject.get_label_map('t1')
+
+    def test_check_image_name_non_string(self):
+        """_check_image_name raises ValueError for non-string input."""
+        with pytest.raises(ValueError, match='must be a string'):
+            tio.Subject._check_image_name(123)
+
+    def test_add_image_non_image(self):
+        """add_image raises ValueError for non-Image objects."""
+        subject = self.sample_subject
+        with pytest.raises(ValueError, match='instance of torchio.Image'):
+            subject.add_image('not_an_image', 'bad')
+
+    def test_repr_html_returns_html(self):
+        """_repr_html_ returns HTML string when matplotlib is available."""
+        subject = self.sample_subject
+        html = subject._repr_html_()
+        assert isinstance(html, str)
+        assert '<' in html
+
+    def test_repr_html_fallback_without_matplotlib(self):
+        """_repr_html_ falls back to __repr__ when matplotlib is absent."""
+        subject = self.sample_subject
+        with patch.dict('sys.modules', {'matplotlib': None, 'matplotlib.figure': None}):
+            result = subject._repr_html_()
+        assert 'Subject' in result
+
+    def test_plot_returns_none_by_default(self):
+        """plot() returns None when return_fig is False."""
+        result = self.sample_subject.plot(return_fig=False, show=False)
+        assert result is None
+
+    def test_plot_returns_figure(self):
+        """plot(return_fig=True) returns a matplotlib Figure."""
+        from matplotlib.figure import Figure
+
+        result = self.sample_subject.plot(return_fig=True, show=False)
+        assert isinstance(result, Figure)

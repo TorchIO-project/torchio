@@ -79,3 +79,72 @@ class TestQueue(TorchioTestCase):
         queue = self.run_queue()
         memory_string = queue.get_max_memory_pretty()
         assert isinstance(memory_string, str)
+
+    def test_shuffle_subjects_with_sampler_raises(self):
+        """Cannot use shuffle_subjects and subject_sampler together."""
+        dataset = tio.SubjectsDataset(self.subjects_list)
+        with pytest.raises(ValueError, match='shuffle_subjects'):
+            tio.Queue(
+                dataset,
+                max_length=6,
+                samples_per_volume=2,
+                sampler=UniformSampler(5),
+                shuffle_subjects=True,
+                subject_sampler=range(3),
+                start_background=False,
+            )
+
+    def test_verbose_print(self):
+        """Verbose queue prints messages to stdout."""
+        dataset = tio.SubjectsDataset(self.subjects_list)
+        queue = tio.Queue(
+            dataset,
+            max_length=6,
+            samples_per_volume=2,
+            sampler=UniformSampler(5),
+            verbose=True,
+            start_background=False,
+        )
+        queue._print('test message')
+
+    def test_subject_sampler_without_len_raises(self):
+        """Subject sampler without __len__ raises ValueError."""
+
+        class NoLenSampler:
+            def __iter__(self):
+                return iter([0, 1])
+
+        dataset = tio.SubjectsDataset(self.subjects_list)
+        queue = tio.Queue(
+            dataset,
+            max_length=6,
+            samples_per_volume=2,
+            sampler=UniformSampler(5),
+            subject_sampler=NoLenSampler(),
+            shuffle_subjects=False,
+            start_background=False,
+        )
+        with pytest.raises(ValueError, match='__len__'):
+            _ = queue.num_subjects
+
+    def test_subject_sampler_iterations(self):
+        """Custom subject sampler determines iterations_per_epoch."""
+
+        class SubsetSampler:
+            def __len__(self):
+                return 2
+
+            def __iter__(self):
+                return iter([0, 1])
+
+        dataset = tio.SubjectsDataset(self.subjects_list)
+        queue = tio.Queue(
+            dataset,
+            max_length=6,
+            samples_per_volume=2,
+            sampler=UniformSampler(5),
+            subject_sampler=SubsetSampler(),
+            shuffle_subjects=False,
+            start_background=False,
+        )
+        assert queue.iterations_per_epoch > 0

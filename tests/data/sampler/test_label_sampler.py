@@ -79,3 +79,25 @@ class TestLabelSampler(TorchioTestCase):
         sampler = tio.LabelSampler(4)
         with pytest.raises(RuntimeError):
             next(sampler(subject))
+
+    def test_missing_label_map_raises(self):
+        """Missing probability map name raises KeyError."""
+        im = tio.ScalarImage(tensor=torch.rand(1, 6, 6, 6))
+        subject = tio.Subject(image=im)
+        sampler = tio.LabelSampler(1, label_name='nonexistent')
+        with pytest.raises(KeyError, match='nonexistent'):
+            next(sampler(subject))
+
+    def test_patch_larger_than_label_map_raises(self):
+        """Patch size larger than label map raises RuntimeError."""
+        label_map = torch.zeros(1, 4, 4, 4)
+        label_map[0, 2, 2, 2] = 1
+        sampler = tio.LabelSampler(1)
+        import numpy as np
+
+        with pytest.raises(RuntimeError, match='larger than'):
+            sampler.get_probabilities_from_label_map(
+                label_map.float(),
+                {0: 0, 1: 1},
+                np.array([100, 100, 100]),
+            )

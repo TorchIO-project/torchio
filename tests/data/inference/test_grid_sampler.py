@@ -65,3 +65,9 @@ class TestGridSampler(TorchioTestCase):
         )
         final_shape = self.sample_subject.shape
         assert initial_shape == final_shape
+
+    def test_num_patches_raises(self):
+        """GridSampler does not support num_patches parameter."""
+        sampler = tio.GridSampler(self.sample_subject, (5, 20, 5))
+        with pytest.raises(ValueError, match='does not support'):
+            next(sampler(self.sample_subject, num_patches=5))
