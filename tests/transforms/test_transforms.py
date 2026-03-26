@@ -442,3 +442,157 @@ class TestTransform(TorchioTestCase):
                 'label_keys',
             ]
         )
+
+    def test_repr_inverted_transform(self):
+        """Repr of an inverted transform should include 'invert=True'."""
+        transform = tio.OneHot()
+        inverted = transform.inverse()
+        repr_str = repr(inverted)
+        assert 'invert=True' in repr_str
+
+    def test_repr_without_args_names(self):
+        """Repr falls back to super().__repr__ when args_names is absent."""
+        transform = tio.RandomFlip()
+        del transform.args_names
+        repr_str = repr(transform)
+        assert 'RandomFlip' in repr_str
+
+    def test_add_base_args_no_overwrite(self):
+        """Existing keys should not be overwritten by default."""
+        transform = tio.RandomFlip()
+        args: dict[str, object] = {'copy': True, 'custom_key': 42}
+        result = transform._add_base_args(args)
+        assert result['copy'] is True
+        assert result['custom_key'] == 42
+
+    def test_add_base_args_with_overwrite(self):
+        """With overwrite_on_existing=True, existing keys are replaced."""
+        transform = tio.RandomFlip()
+        args: dict[str, object] = {'copy': 'original'}
+        result = transform._add_base_args(args, overwrite_on_existing=True)
+        assert result['copy'] == transform.copy
+
+    def test_parse_params_numpy_array(self):
+        """Parsing a numpy array parameter supports np.ravel conversion."""
+        transform = tio.RandomAffine()
+        result = transform.parse_params(
+            np.array([5.0]),
+            around=0,
+            name='test',
+        )
+        assert len(result) == 6
+
+    def test_parse_params_bad_length_raises(self):
+        """Sequence of length 4 should raise ValueError."""
+        transform = tio.RandomAffine()
+        with pytest.raises(ValueError, match='length 2, 3 or 6'):
+            transform.parse_params(
+                (1.0, 2.0, 3.0, 4.0),
+                around=0,
+                name='scales',
+            )
+
+    def test_parse_range_non_iterable_raises(self):
+        """A non-number, non-iterable input should raise ValueError."""
+        transform = tio.RandomAffine()
+        with pytest.raises(ValueError, match='sequence of len 2'):
+            transform._parse_range(cast(Any, object()), 'test_param')
+
+    def test_parse_range_non_number_values_raises(self):
+        """Sequence with non-numeric values should raise ValueError."""
+        transform = tio.RandomAffine()
+        with pytest.raises(ValueError, match='values must be numbers'):
+            transform._parse_range(cast(Any, ('a', 'b')), 'test_param')
+
+    def test_non_iterable_include_raises(self):
+        """Passing a non-iterable as include should raise ValueError."""
+        with pytest.raises(ValueError, match='must be a sequence of strings'):
+            tio.Transform.parse_include_and_exclude_keys(
+                include=cast(Any, 42),
+                exclude=None,
+                label_keys=None,
+            )
+
+    def test_parse_bounds_none(self):
+        """None should return None."""
+        assert tio.Transform.parse_bounds(None) is None
+
+    def test_parse_bounds_negative_raises(self):
+        """Negative bounds should raise ValueError."""
+        with pytest.raises(ValueError, match='integers greater or equal to zero'):
+            tio.Transform.parse_bounds(-1)
+
+    def test_parse_bounds_float_raises(self):
+        """Float bounds should raise TypeError (not iterable)."""
+        with pytest.raises(TypeError):
+            tio.Transform.parse_bounds(cast(Any, 1.5))
+
+    def test_parse_bounds_bad_length_raises(self):
+        """Bounds of length 2 or 4 should raise ValueError."""
+        with pytest.raises(ValueError, match='3 or 6 integers'):
+            tio.Transform.parse_bounds((1, 2))
+        with pytest.raises(ValueError, match='3 or 6 integers'):
+            tio.Transform.parse_bounds((1, 2, 3, 4))
+
+    def test_masking_method_invalid_type_raises(self):
+        """An invalid masking_method type should raise ValueError."""
+        transform = tio.RandomNoise()
+        tensor = torch.randn(1, 10, 10, 10)
+        subject = self.sample_subject
+        with pytest.raises(ValueError, match='Masking method must be one of'):
+            transform.get_mask_from_masking_method(
+                cast(Any, 3.14),
+                subject,
+                tensor,
+            )
+
+    def test_masking_method_int_bounds(self):
+        """Integer masking_method should create a bounds-based mask."""
+        transform = tio.RandomNoise()
+        tensor = torch.randn(1, 10, 20, 30)
+        mask = transform.get_mask_from_masking_method(
+            2,
+            self.sample_subject,
+            tensor,
+        )
+        assert mask.shape == tensor.shape
+        assert mask.dtype == torch.bool
+
+    def test_masking_method_tuple_bounds(self):
+        """Tuple masking_method should create a bounds-based mask."""
+        transform = tio.RandomNoise()
+        tensor = torch.randn(1, 10, 20, 30)
+        mask = transform.get_mask_from_masking_method(
+            (1, 1, 1),
+            self.sample_subject,
+            tensor,
+        )
+        assert mask.shape == tensor.shape
+        assert mask.dtype == torch.bool
+
+    def test_get_name_with_module(self):
+        """_get_name_with_module returns 'module.ClassName' string."""
+        transform = tio.RandomFlip()
+        name = transform._get_name_with_module()
+        assert 'RandomFlip' in name
+        assert '.' in name
+
+    def test_to_hydra_config(self):
+        """to_hydra_config returns a dict with _target_ key."""
+        transform = tio.RandomFlip(axes=(0, 1))
+        config = transform.to_hydra_config()
+        assert '_target_' in config
+        assert 'RandomFlip' in config['_target_']
+
+    def test_tuples_to_lists(self):
+        """_tuples_to_lists recursively converts tuples inside dicts/lists."""
+        data: dict[str, object] = {
+            'a': (1, 2, 3),
+            'b': [(4, 5), 6],
+            'c': 'keep',
+        }
+        result = tio.Transform._tuples_to_lists(data)
+        assert isinstance(result['a'], list)
+        assert isinstance(result['b'], list)
+        assert isinstance(result['b'][0], list)
+        assert result['c'] == 'keep'
