@@ -100,12 +100,6 @@ class CropOrPad(SpatialTransform):
                 raise ValueError(message)
             self.compute_crop_or_pad = self._compute_center_crop_or_pad
         else:
-            if not isinstance(mask_name, str):
-                message = (
-                    'If mask_name is not None, it must be a string,'
-                    f' not {type(mask_name)}'
-                )
-                raise ValueError(message)
             self.compute_crop_or_pad = self._compute_mask_center_crop_or_pad
         self.mask_name = mask_name
         self.labels = labels
