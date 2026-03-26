@@ -21,11 +21,13 @@ nav = [
     "tutorials/index.md",
     "tutorials/first-pipeline.md",
     "tutorials/large-volumes.md",
+    "tutorials/annotations.md",
   ] },
   { "How-to guides" = [
     "how-to/index.md",
     "how-to/custom-reader.md",
     "how-to/save-nii-zarr.md",
+    "how-to/annotations.md",
   ] },
   { Explanation = [
     "explanation/index.md",
@@ -37,7 +39,10 @@ nav = [
     { "Data structures" = [
       "reference/image.md",
       "reference/subject.md",
+      "reference/points.md",
+      "reference/bboxes.md",
       "reference/affine.md",
+      "reference/axes.md",
     ] },
   ] },
 ]

@@ -53,7 +53,7 @@ channels and `I, J, K` are the spatial dimensions.
 
 ## Step 3: Create a Subject
 
-A `Subject` groups related images and metadata:
+A `Subject` groups related images, annotations, and metadata:
 
 ```python
 import torch
@@ -76,6 +76,11 @@ subject.seg         # the LabelMap
 subject.age         # 30
 subject.spatial_shape  # (64, 64, 64) -- checked across all images
 ```
+
+!!! tip "Annotations"
+
+    You can also add `Points` and `BoundingBoxes` to a Subject.
+    See the [annotations tutorial](annotations.md) for details.
 
 ## Step 4: Slice a region
 

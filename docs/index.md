@@ -7,12 +7,14 @@ in deep learning, following the design of PyTorch.
 ## Quick example
 
 ```python
+import torch
 import torchio as tio
 
 # Load images lazily (no data read yet)
 subject = tio.Subject(
     t1=tio.ScalarImage("t1.nii.gz"),
     seg=tio.LabelMap("seg.nii.gz"),
+    landmarks=tio.Points(torch.tensor([[128.0, 100.0, 90.0]])),
     age=45,
 )
 

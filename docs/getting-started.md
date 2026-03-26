@@ -69,17 +69,27 @@ patch.data.mean()  # reads only this region
 The affine origin is updated automatically so the patch stays in the
 correct world coordinates.
 
-### Grouping images into a Subject
+### Grouping data into a Subject
+
+A `Subject` holds images, spatial annotations, and metadata:
 
 ```python
+import torch
+
 subject = tio.Subject(
     t1=tio.ScalarImage("t1.nii.gz"),
     seg=tio.LabelMap("seg.nii.gz"),
+    landmarks=tio.Points(torch.tensor([[64.0, 64.0, 32.0]])),
+    tumors=tio.BoundingBoxes(
+        torch.tensor([[10, 20, 30, 50, 60, 70]]),
+        format=tio.BoundingBoxFormat.IJKIJK,
+    ),
     age=45,
-    diagnosis="healthy",
 )
 
 subject.t1           # Image access
+subject.landmarks    # Points access
+subject.tumors       # BoundingBoxes access
 subject["seg"]       # dict-style access
 subject.age          # metadata access (returns 45)
 ```

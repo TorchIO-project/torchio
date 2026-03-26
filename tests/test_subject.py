@@ -14,6 +14,9 @@ from einops import rearrange
 from torchio import LabelMap
 from torchio import ScalarImage
 from torchio import Subject
+from torchio.data.bboxes import BoundingBoxes
+from torchio.data.bboxes import BoundingBoxFormat
+from torchio.data.points import Points
 
 
 class TestSubjectCreation:
@@ -215,3 +218,139 @@ class TestSubjectIteration:
         assert "t1" in keys
         assert "seg" in keys
         assert "age" not in keys
+
+    def test_iter_yields_all_spatial_keys(self):
+        subject = Subject(
+            t1=ScalarImage.from_tensor(torch.randn(1, 10, 10, 10)),
+            landmarks=Points(torch.randn(5, 3)),
+            tumors=BoundingBoxes(
+                torch.randn(2, 6),
+                format=BoundingBoxFormat.IJKIJK,
+            ),
+            age=45,
+        )
+        keys = list(subject)
+        assert "t1" in keys
+        assert "landmarks" in keys
+        assert "tumors" in keys
+        assert "age" not in keys
+
+
+class TestSubjectWithPoints:
+    def test_points_access(self):
+        pts = Points(torch.randn(5, 3))
+        subject = Subject(
+            t1=ScalarImage.from_tensor(torch.randn(1, 10, 10, 10)),
+            landmarks=pts,
+        )
+        assert subject.landmarks is pts
+        assert subject["landmarks"] is pts
+
+    def test_points_dict(self):
+        subject = Subject(
+            t1=ScalarImage.from_tensor(torch.randn(1, 10, 10, 10)),
+            lm1=Points(torch.randn(3, 3)),
+            lm2=Points(torch.randn(7, 3)),
+        )
+        pts = subject.points()
+        assert len(pts) == 2
+        assert "lm1" in pts
+        assert "lm2" in pts
+
+    def test_contains_points(self):
+        subject = Subject(
+            t1=ScalarImage.from_tensor(torch.randn(1, 10, 10, 10)),
+            landmarks=Points(torch.randn(5, 3)),
+        )
+        assert "landmarks" in subject
+
+    def test_len_includes_points(self):
+        subject = Subject(
+            t1=ScalarImage.from_tensor(torch.randn(1, 10, 10, 10)),
+            landmarks=Points(torch.randn(5, 3)),
+        )
+        assert len(subject) == 2
+
+
+class TestSubjectWithBoundingBoxes:
+    def test_bboxes_access(self):
+        boxes = BoundingBoxes(
+            torch.randn(3, 6),
+            format=BoundingBoxFormat.IJKIJK,
+        )
+        subject = Subject(
+            t1=ScalarImage.from_tensor(torch.randn(1, 10, 10, 10)),
+            tumors=boxes,
+        )
+        assert subject.tumors is boxes
+        assert subject["tumors"] is boxes
+
+    def test_bboxes_dict(self):
+        subject = Subject(
+            t1=ScalarImage.from_tensor(torch.randn(1, 10, 10, 10)),
+            tumors=BoundingBoxes(
+                torch.randn(3, 6),
+                format=BoundingBoxFormat.IJKIJK,
+            ),
+            organs=BoundingBoxes(
+                torch.randn(5, 6),
+                format=BoundingBoxFormat.IJKWHD,
+            ),
+        )
+        bb = subject.bounding_boxes()
+        assert len(bb) == 2
+        assert "tumors" in bb
+        assert "organs" in bb
+
+    def test_contains_bboxes(self):
+        subject = Subject(
+            t1=ScalarImage.from_tensor(torch.randn(1, 10, 10, 10)),
+            tumors=BoundingBoxes(
+                torch.randn(1, 6),
+                format=BoundingBoxFormat.IJKIJK,
+            ),
+        )
+        assert "tumors" in subject
+
+    def test_len_includes_bboxes(self):
+        subject = Subject(
+            t1=ScalarImage.from_tensor(torch.randn(1, 10, 10, 10)),
+            tumors=BoundingBoxes(
+                torch.randn(1, 6),
+                format=BoundingBoxFormat.IJKIJK,
+            ),
+        )
+        assert len(subject) == 2
+
+
+class TestSubjectMixed:
+    def test_all_types(self):
+        subject = Subject(
+            t1=ScalarImage.from_tensor(torch.randn(1, 10, 10, 10)),
+            seg=LabelMap.from_tensor(torch.randint(0, 5, (1, 10, 10, 10))),
+            landmarks=Points(torch.randn(5, 3)),
+            tumors=BoundingBoxes(
+                torch.randn(2, 6),
+                format=BoundingBoxFormat.IJKIJK,
+            ),
+            age=45,
+        )
+        assert len(subject.images()) == 2
+        assert len(subject.points()) == 1
+        assert len(subject.bounding_boxes()) == 1
+        assert subject.metadata["age"] == 45
+        assert len(subject) == 4  # 2 images + 1 points + 1 bboxes
+
+    def test_repr_with_all_types(self):
+        subject = Subject(
+            t1=ScalarImage.from_tensor(torch.randn(1, 10, 10, 10)),
+            landmarks=Points(torch.randn(5, 3)),
+            tumors=BoundingBoxes(
+                torch.randn(2, 6),
+                format=BoundingBoxFormat.IJKIJK,
+            ),
+        )
+        r = repr(subject)
+        assert "images" in r
+        assert "points" in r
+        assert "bboxes" in r
