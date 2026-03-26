@@ -6,6 +6,7 @@ requires-python = ">=3.11"
 dependencies = [
     "einops",
     "jaxtyping>=0.3.9",
+    "loguru>=0.7.3",
     "nibabel",
     "numpy",
     "simpleitk",
@@ -46,17 +47,16 @@ select = [
     "UP",
     "W",
 ]
+ignore = [
+    "N813",  # https://docs.astral.sh/ruff/rules/camelcase-imported-as-lowercase/
+]
 
 [tool.ruff.lint.isort]
 force-single-line = true
 
 [tool.ruff.lint.per-file-ignores]
-"src/torchio/data/image.py" = [
-    "N813",  # https://docs.astral.sh/ruff/rules/camelcase-imported-as-lowercase/
-]
 "tests/**" = [
     "B018",  # https://docs.astral.sh/ruff/rules/useless-expression/
-    "N813",  # https://docs.astral.sh/ruff/rules/camelcase-imported-as-lowercase/
 ]
 
 [tool.bump-my-version]

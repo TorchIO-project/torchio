@@ -1,5 +1,6 @@
 """TorchIO: Medical image preprocessing, augmentation, and patch-based training."""
 
+from . import datasets
 from .data.affine import Affine
 from .data.bboxes import BoundingBoxes
 from .data.bboxes import BoundingBoxFormat
@@ -9,6 +10,9 @@ from .data.image import LabelMap
 from .data.image import ScalarImage
 from .data.points import Points
 from .data.subject import Subject
+from .io import read_matrix
+from .io import write_matrix
+from .logging import enable_logging
 from .types import TypeAffineMatrix
 from .types import TypeDirection
 from .types import TypeImageData
@@ -40,4 +44,8 @@ __all__ = [
     "TypeSpatialShape",
     "TypeTensorShape",
     "TypeWorldPoints",
+    "datasets",
+    "enable_logging",
+    "read_matrix",
+    "write_matrix",
 ]

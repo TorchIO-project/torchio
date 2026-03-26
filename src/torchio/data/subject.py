@@ -68,8 +68,8 @@ class Subject:
             else:
                 metadata[k] = v
 
-        if not images:
-            msg = "A Subject must contain at least one Image"
+        if not images and not points and not bounding_boxes and not metadata:
+            msg = "A Subject must contain at least one entry"
             raise ValueError(msg)
 
         self._images: dict[str, Image] = images
@@ -91,11 +91,44 @@ class Subject:
         msg = f"{type(self).__name__} has no attribute {name!r}"
         raise AttributeError(msg)
 
-    def __getitem__(self, name: str) -> _SpatialData:
-        for store in (self._images, self._points, self._bounding_boxes):
-            if name in store:
-                return store[name]
-        raise KeyError(name)
+    def __getitem__(
+        self,
+        item: str | int | slice | tuple[int | slice, ...],
+    ) -> _SpatialData | Subject:
+        """Look up a named entry, or spatially slice all images.
+
+        When *item* is a ``str``, the corresponding data entry is
+        returned (image, points, or bounding boxes).
+
+        When *item* is an ``int``, ``slice``, or ``tuple`` of
+        slices/ints, a **new** :class:`Subject` is returned with every
+        image sliced identically.  All images must be spatially
+        consistent (same ``spatial_shape``).  Only the **spatial**
+        dimensions ``(I, J, K)`` are sliced — the channel dimension of
+        each image is preserved.
+
+        Args:
+            item: A string key, or an int/slice/tuple for spatial
+                indexing.
+
+        Returns:
+            A single data entry (when *item* is ``str``), or a new
+            :class:`Subject` with sliced images.
+
+        Examples:
+            >>> subject["t1"]                # lookup by name
+            >>> subject[10:20]               # slice dim I
+            >>> subject[10:20, 30:60]        # slice I and J
+            >>> subject[..., 50:100]         # slice dim K
+            >>> subject[10:20, 10:20, 10:20] # all three spatial dims
+        """
+        if isinstance(item, str):
+            for store in (self._images, self._points, self._bounding_boxes):
+                if item in store:
+                    return store[item]
+            raise KeyError(item)
+
+        return self._spatial_slice(item)
 
     def __contains__(self, name: object) -> bool:
         return any(
@@ -228,6 +261,43 @@ class Subject:
             if not np.allclose(ref, val, rtol=rtol, atol=atol):
                 msg = f"Inconsistent {attribute}: {names[0]}={ref}, {names[i]}={val}"
                 raise RuntimeError(msg)
+
+    def _spatial_slice(
+        self,
+        item: int | slice | tuple[int | slice, ...],
+    ) -> Subject:
+        """Slice all images along spatial dimensions (I, J, K).
+
+        The channel dimension of each image is preserved. All images
+        must have the same ``spatial_shape``.
+        """
+        if not self._images:
+            msg = "Cannot spatially slice a Subject with no images"
+            raise RuntimeError(msg)
+
+        self._check_consistent_attribute("spatial_shape")
+
+        # Normalise to tuple
+        if isinstance(item, (int, slice)) or item is Ellipsis:
+            items: tuple[int | slice | type(Ellipsis), ...] = (item,)
+        elif isinstance(item, tuple):
+            items = item
+        else:
+            msg = f"Index type {type(item).__name__} not understood"
+            raise TypeError(msg)
+
+        # Slice each image, prepending slice(None) for channels
+        sliced_images: dict[str, Image] = {}
+        for name, image in self._images.items():
+            sliced_images[name] = image[(slice(None), *items)]
+
+        kwargs: dict[str, Any] = dict(sliced_images)
+        kwargs.update(self._points)
+        kwargs.update(self._bounding_boxes)
+        kwargs.update(self._metadata)
+        new = type(self)(**kwargs)
+        new.applied_transforms = list(self.applied_transforms)
+        return new
 
     def __repr__(self) -> str:
         parts = []

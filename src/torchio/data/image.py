@@ -150,12 +150,14 @@ class Image:
         *,
         reader: Callable[[Path], tuple[TypeImageData, np.ndarray]] | None = None,
         affine: Affine | npt.ArrayLike | None = None,
+        channels_last: bool = False,
         points: dict[str, Points] | None = None,
         bounding_boxes: dict[str, BoundingBoxes] | None = None,
         metadata: dict[str, Any] | None = None,
     ):
         self._path: Path | None = Path(path)
         self._reader = reader or _default_reader
+        self._channels_last = channels_last
         self._metadata: dict[str, Any] = dict(metadata) if metadata else {}
         self._data: Tensor | None = None
         self._backend: ImageDataBackend | None = None
@@ -174,6 +176,7 @@ class Image:
         tensor: TypeImageData | np.ndarray,
         *,
         affine: Affine | npt.ArrayLike | None = None,
+        channels_last: bool = False,
         points: dict[str, Points] | None = None,
         bounding_boxes: dict[str, BoundingBoxes] | None = None,
         metadata: dict[str, Any] | None = None,
@@ -182,9 +185,13 @@ class Image:
 
         Args:
             tensor: 4D [`torch.Tensor`][torch.Tensor] or NumPy array
-                with shape $(C, I, J, K)$.
+                with shape $(C, I, J, K)$, or $(I, J, K, C)$ if
+                *channels_last* is ``True``.
             affine: $4 \times 4$ affine matrix or
                 [`Affine`][torchio.Affine] instance. Identity if `None`.
+            channels_last: If ``True``, the tensor is assumed to have
+                shape $(I, J, K, C)$ and will be permuted to
+                $(C, I, J, K)$.
             points: Named sets of [`Points`][torchio.Points] attached to
                 this image.
             bounding_boxes: Named sets of
@@ -195,8 +202,12 @@ class Image:
         instance = object.__new__(cls)
         instance._path = None
         instance._reader = _default_reader
+        instance._channels_last = False  # already permuted below
         instance._metadata = dict(metadata) if metadata else {}
-        instance._data = Image._parse_tensor(tensor)
+        parsed = Image._parse_tensor(tensor)
+        if channels_last:
+            parsed = parsed.permute(3, 0, 1, 2)
+        instance._data = parsed
         parsed_affine = Image._parse_affine(affine)
         instance._affine = parsed_affine
         instance._backend = NumpyBackend(
@@ -396,6 +407,7 @@ class Image:
             self._data = self._backend.to_tensor()
             if self._affine is None:
                 self._affine = Affine(self._backend.affine)
+            self._apply_channels_last()
             return
         # For NIfTI-Zarr or NIfTI with default reader, create backend first
         if self._reader is _default_reader and (
@@ -406,12 +418,20 @@ class Image:
                 self._data = self._backend.to_tensor()
                 if self._affine is None:
                     self._affine = Affine(self._backend.affine)
+                self._apply_channels_last()
                 return
         # Otherwise use the reader (custom reader or non-NIfTI formats)
         tensor, affine_array = self._reader(self._path)
         self._data = tensor
         if self._affine is None:
             self._affine = Affine(affine_array)
+        self._apply_channels_last()
+
+    def _apply_channels_last(self) -> None:
+        """Permute data from (I, J, K, C) to (C, I, J, K) if needed."""
+        if self._channels_last and self._data is not None:
+            self._data = self._data.permute(3, 0, 1, 2)
+            self._channels_last = False  # only do it once
 
     def set_data(self, tensor: TypeImageData | np.ndarray) -> None:
         """Replace the image data with a new tensor.

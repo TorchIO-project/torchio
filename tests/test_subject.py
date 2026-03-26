@@ -48,9 +48,16 @@ class TestSubjectCreation:
         with pytest.raises(ValueError, match="at least one"):
             Subject()
 
-    def test_no_images_raises(self):
-        with pytest.raises(ValueError, match="at least one"):
-            Subject(age=45)
+    def test_metadata_only_subject(self):
+        subject = Subject(age=45, name="patient_1")
+        assert subject.age == 45
+        assert subject.name == "patient_1"
+        assert len(subject.images) == 0
+
+    def test_points_only_subject(self):
+        pts = Points(torch.randn(5, 3))
+        subject = Subject(landmarks=pts)
+        assert len(subject.points) == 1
 
 
 class TestSubjectAccess:
@@ -354,3 +361,96 @@ class TestSubjectMixed:
         assert "images" in r
         assert "points" in r
         assert "bboxes" in r
+
+
+class TestSubjectSlicing:
+    @pytest.fixture
+    def subject(self) -> Subject:
+        return Subject(
+            t1=ScalarImage.from_tensor(torch.randn(1, 20, 30, 40)),
+            seg=LabelMap.from_tensor(torch.randint(0, 3, (1, 20, 30, 40))),
+            age=42,
+        )
+
+    def test_slice_single_dim(self, subject: Subject):
+        cropped = subject[5:15]
+        assert cropped.t1.spatial_shape == (10, 30, 40)
+        assert cropped.seg.spatial_shape == (10, 30, 40)
+
+    def test_slice_two_dims(self, subject: Subject):
+        cropped = subject[5:15, 10:20]
+        assert cropped.t1.spatial_shape == (10, 10, 40)
+        assert cropped.seg.spatial_shape == (10, 10, 40)
+
+    def test_slice_three_dims(self, subject: Subject):
+        cropped = subject[2:12, 5:25, 10:30]
+        assert cropped.t1.spatial_shape == (10, 20, 20)
+
+    def test_slice_with_ellipsis(self, subject: Subject):
+        cropped = subject[..., 10:30]
+        assert cropped.t1.spatial_shape == (20, 30, 20)
+
+    def test_slice_with_int(self, subject: Subject):
+        cropped = subject[5]
+        assert cropped.t1.spatial_shape == (1, 30, 40)
+
+    def test_preserves_metadata(self, subject: Subject):
+        cropped = subject[5:15]
+        assert cropped.age == 42
+
+    def test_preserves_channels(self):
+        subject = Subject(
+            rgb=ScalarImage.from_tensor(torch.randn(3, 20, 30, 40)),
+        )
+        cropped = subject[5:15]
+        assert cropped.rgb.shape == (3, 10, 30, 40)
+
+    def test_preserves_points(self):
+        subject = Subject(
+            t1=ScalarImage.from_tensor(torch.randn(1, 20, 30, 40)),
+            landmarks=Points(torch.randn(5, 3)),
+        )
+        cropped = subject[5:15]
+        assert len(cropped.points) == 1
+        assert "landmarks" in cropped.points
+
+    def test_preserves_bboxes(self):
+        subject = Subject(
+            t1=ScalarImage.from_tensor(torch.randn(1, 20, 30, 40)),
+            tumors=BoundingBoxes(
+                torch.tensor([[1, 2, 3, 4, 5, 6]]),
+                format=BoundingBoxFormat.IJKIJK,
+            ),
+        )
+        cropped = subject[5:15]
+        assert len(cropped.bounding_boxes) == 1
+
+    def test_preserves_transform_history(self):
+        subject = Subject(
+            t1=ScalarImage.from_tensor(torch.randn(1, 20, 30, 40)),
+        )
+        subject.applied_transforms.append({"name": "RandomFlip"})
+        cropped = subject[5:15]
+        assert len(cropped.applied_transforms) == 1
+
+    def test_inconsistent_shapes_raises(self):
+        subject = Subject(
+            t1=ScalarImage.from_tensor(torch.randn(1, 20, 30, 40)),
+            t2=ScalarImage.from_tensor(torch.randn(1, 10, 30, 40)),
+        )
+        with pytest.raises(RuntimeError, match="Inconsistent"):
+            subject[5:10]
+
+    def test_string_key_still_works(self, subject: Subject):
+        img = subject["t1"]
+        assert isinstance(img, ScalarImage)
+
+    def test_no_images_slice_raises(self):
+        subject = Subject(landmarks=Points(torch.randn(5, 3)))
+        with pytest.raises(RuntimeError, match="no images"):
+            subject[5:15]
+
+    def test_is_new_subject(self, subject: Subject):
+        cropped = subject[5:15]
+        assert isinstance(cropped, Subject)
+        assert cropped is not subject
