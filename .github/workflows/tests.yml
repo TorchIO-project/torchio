@@ -48,13 +48,19 @@ jobs:
       - name: Setup test suite
         run: tox run -v --notest --skip-missing-interpreters false -e ${{ matrix.python }}
 
-      # Run all tests on schedule, but only non-slow tests on push
+      # Run all tests on schedule, but only non-slow tests on push.
+      # Use the coverage env on ubuntu/3.14 to generate coverage.xml for Codecov.
       - name: Run pytest
         run: |
-          if [ "${{ github.event_name }}" == "schedule" ]; then
-            tox -e pytest
+          if [ "${{ matrix.os }}" == "ubuntu-latest" ] && [ "${{ matrix.python }}" == "3.14" ]; then
+            TOX_ENV=coverage
           else
-            tox -e pytest -- -m "not slow"
+            TOX_ENV=pytest
+          fi
+          if [ "${{ github.event_name }}" == "schedule" ]; then
+            tox -e $TOX_ENV
+          else
+            tox -e $TOX_ENV -- -m "not slow"
           fi
         shell: bash # this wouldn't work on Powershell
 
