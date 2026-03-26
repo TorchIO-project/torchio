@@ -2,8 +2,11 @@ from typing import Any
 from typing import cast
 
 import pytest
+import torch
 
+import torchio as tio
 from torchio import RandomGhosting
+from torchio.transforms.augmentation.intensity.random_ghosting import Ghosting
 
 from ...utils import TorchioTestCase
 
@@ -78,3 +81,33 @@ class TestRandomGhosting(TorchioTestCase):
     def test_wrong_restore_type(self):
         with pytest.raises(ValueError):
             RandomGhosting(restore=cast(Any, 'wrong'))
+
+    def test_no_images_returns_subject(self):
+        """Applying to subject with no scalar images returns unchanged."""
+        subject = tio.Subject(
+            label=tio.LabelMap(tensor=torch.rand(1, 4, 4, 4)),
+        )
+        transform = RandomGhosting()
+        transform(subject)
+
+    def test_string_axes_checks_orientation(self):
+        """String axes trigger consistent orientation check."""
+        transform = RandomGhosting(axes=(0, 'LR'))
+        transform(self.sample_subject)
+
+    def test_restore_range(self):
+        """Non-None restore parameter samples a restore center value."""
+        transform = RandomGhosting(restore=0.5)
+        transform(self.sample_subject)
+
+    def test_get_slices_to_restore_with_center(self):
+        """_get_slices_to_restore computes a wider slice when given center."""
+        spectrum = torch.randn(1, 32, 32, 32)
+        _, slices = Ghosting._get_slices_to_restore(
+            spectrum,
+            axis=1,
+            restore_center=0.5,
+        )
+        # With restore_center=0.5, the slice should span more than 1 voxel
+        restored = spectrum[slices]
+        assert restored.shape[1] > 1

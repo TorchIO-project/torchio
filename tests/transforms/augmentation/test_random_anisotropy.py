@@ -4,6 +4,7 @@ from typing import cast
 import pytest
 import torch
 
+import torchio as tio
 from torchio import RandomAnisotropy
 from torchio import ScalarImage
 
@@ -44,3 +45,11 @@ class TestRandomAnisotropy(TorchioTestCase):
     def test_2d_rgb(self):
         image = ScalarImage(tensor=torch.rand(3, 4, 5, 6))
         RandomAnisotropy()(image)
+
+    def test_2d_with_axis_2_warns(self):
+        """Applying to 2D image with axis 2 in axes warns and excludes it."""
+        image = ScalarImage(tensor=torch.rand(1, 10, 10, 1))
+        subject = tio.Subject(t1=image)
+        transform = RandomAnisotropy(axes=(0, 1, 2))
+        with pytest.warns(RuntimeWarning, match='2D'):
+            transform(subject)

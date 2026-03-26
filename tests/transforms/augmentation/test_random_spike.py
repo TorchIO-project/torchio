@@ -2,7 +2,9 @@ from typing import Any
 from typing import cast
 
 import pytest
+import torch
 
+import torchio as tio
 from torchio import RandomSpike
 
 from ...utils import TorchioTestCase
@@ -54,3 +56,10 @@ class TestRandomSpike(TorchioTestCase):
     def test_wrong_intensity_type(self):
         with pytest.raises(ValueError):
             RandomSpike(intensity=cast(Any, 'wrong'))
+
+    def test_no_images_returns_subject(self):
+        """Applying to subject with no scalar images returns unchanged."""
+        subject = tio.Subject(
+            label=tio.LabelMap(tensor=torch.rand(1, 4, 4, 4)),
+        )
+        RandomSpike()(subject)

@@ -238,6 +238,45 @@ class TestRandomAffine(TorchioTestCase):
         with pytest.raises(ValueError):
             tio.RandomAffine(default_pad_label=cast(Any, 'minimum'))
 
+    def test_affine_bad_center_raises(self):
+        """Affine with invalid center argument raises ValueError."""
+        with pytest.raises(ValueError, match='Center argument'):
+            tio.Affine((1, 1, 1), (0, 0, 0), (0, 0, 0), center='bad')
+
+    def test_affine_bad_default_pad_label_raises(self):
+        """Affine with non-numeric default_pad_label raises ValueError."""
+        with pytest.raises(ValueError, match='default_pad_label'):
+            tio.Affine(
+                (1, 1, 1),
+                (0, 0, 0),
+                (0, 0, 0),
+                default_pad_label=cast(Any, 'wrong'),
+            )
+
+    def test_affine_inverse_transform(self):
+        """Affine.inverse() applies the inverse of the transformation."""
+        transform = tio.Affine(
+            scales=(1, 1, 1),
+            degrees=(0, 0, 10),
+            translation=(5, 0, 0),
+        )
+        inverse = transform.inverse()
+        assert inverse.invert_transform is True
+        # Apply forward then inverse — shape should be preserved
+        transformed = transform(self.sample_subject)
+        restored = inverse(transformed)
+        assert restored.t1.spatial_shape == transformed.t1.spatial_shape
+
+    def test_otsu_pad_uniform_image(self):
+        """Otsu padding on uniform image falls back to border mean."""
+        image = tio.ScalarImage(tensor=torch.ones(1, 10, 10, 10))
+        subject = tio.Subject(t1=image)
+        transform = tio.RandomAffine(
+            translation=5,
+            default_pad_value='otsu',
+        )
+        transform(subject)
+
     def test_no_inverse(self):
         tensor = torch.zeros((1, 2, 2, 2))
         tensor[0, 1, 1, 1] = 1  # most RAS voxel

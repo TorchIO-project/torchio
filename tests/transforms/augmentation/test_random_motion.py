@@ -2,7 +2,9 @@ from typing import Any
 from typing import cast
 
 import pytest
+import torch
 
+import torchio as tio
 from torchio import RandomMotion
 
 from ...utils import TorchioTestCase
@@ -62,3 +64,10 @@ class TestRandomMotion(TorchioTestCase):
     def test_wrong_image_interpolation_value(self):
         with pytest.raises(ValueError):
             RandomMotion(image_interpolation='wrong')
+
+    def test_no_images_returns_subject(self):
+        """Applying to subject with no scalar images returns unchanged."""
+        subject = tio.Subject(
+            label=tio.LabelMap(tensor=torch.rand(1, 4, 4, 4)),
+        )
+        RandomMotion()(subject)

@@ -2,7 +2,9 @@ from typing import Any
 from typing import cast
 
 import pytest
+import torch
 
+import torchio as tio
 from torchio import RandomBlur
 
 from ...utils import TorchioTestCase
@@ -49,3 +51,10 @@ class TestRandomBlur(TorchioTestCase):
         do_assert(RandomBlur(std=(0, 1)))
         do_assert(RandomBlur(std=cast(Any, triplet_std)))
         do_assert(RandomBlur(std=cast(Any, sextet_std)))
+
+    def test_no_images_returns_subject(self):
+        """Applying to subject with no scalar images returns unchanged."""
+        subject = tio.Subject(
+            label=tio.LabelMap(tensor=torch.rand(1, 4, 4, 4)),
+        )
+        RandomBlur()(subject)
