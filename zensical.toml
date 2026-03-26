@@ -17,96 +17,28 @@ extra_javascript = [
 nav = [
   { Home = "index.md" },
   { "Getting started" = "getting-started.md" },
-  { "Data structures" = [
-    "data/index.md",
-    "data/image.md",
-    "data/subject.md",
-    "data/dataset.md",
-    "data/loader.md",
+  { Tutorials = [
+    "tutorials/index.md",
+    "tutorials/first-pipeline.md",
+    "tutorials/large-volumes.md",
   ] },
-  { "Patch-based pipelines" = [
-    "patches/index.md",
-    "patches/training.md",
-    "patches/inference.md",
+  { "How-to guides" = [
+    "how-to/index.md",
+    "how-to/custom-reader.md",
+    "how-to/save-nii-zarr.md",
   ] },
-  { Transforms = [
-    "transforms/index.md",
-    { Augmentation = [
-      "transforms/augmentation/index.md",
-      { Composition = [
-        "transforms/augmentation/Compose.md",
-        "transforms/augmentation/OneOf.md",
-      ] },
-      { Spatial = [
-        "transforms/augmentation/RandomFlip.md",
-        "transforms/augmentation/RandomAffine.md",
-        "transforms/augmentation/RandomElasticDeformation.md",
-        "transforms/augmentation/RandomAffineElasticDeformation.md",
-        "transforms/augmentation/RandomAnisotropy.md",
-      ] },
-      { Intensity = [
-        "transforms/augmentation/RandomMotion.md",
-        "transforms/augmentation/RandomGhosting.md",
-        "transforms/augmentation/RandomSpike.md",
-        "transforms/augmentation/RandomBiasField.md",
-        "transforms/augmentation/RandomBlur.md",
-        "transforms/augmentation/RandomNoise.md",
-        "transforms/augmentation/RandomSwap.md",
-        "transforms/augmentation/RandomLabelsToImage.md",
-        "transforms/augmentation/RandomGamma.md",
-      ] },
+  { Explanation = [
+    "explanation/index.md",
+    "explanation/data-model.md",
+    "explanation/lazy-loading.md",
+  ] },
+  { Reference = [
+    "reference/index.md",
+    { "Data structures" = [
+      "reference/image.md",
+      "reference/subject.md",
+      "reference/affine.md",
     ] },
-    { Preprocessing = [
-      "transforms/preprocessing/index.md",
-      { Intensity = [
-        "transforms/preprocessing/RescaleIntensity.md",
-        "transforms/preprocessing/ZNormalization.md",
-        "transforms/preprocessing/HistogramStandardization.md",
-        "transforms/preprocessing/Mask.md",
-        "transforms/preprocessing/Clamp.md",
-        "transforms/preprocessing/PCA.md",
-        "transforms/preprocessing/To.md",
-      ] },
-      { Spatial = [
-        "transforms/preprocessing/CropOrPad.md",
-        "transforms/preprocessing/Crop.md",
-        "transforms/preprocessing/Pad.md",
-        "transforms/preprocessing/Resize.md",
-        "transforms/preprocessing/Resample.md",
-        "transforms/preprocessing/ToCanonical.md",
-        "transforms/preprocessing/ToOrientation.md",
-        "transforms/preprocessing/ToReferenceSpace.md",
-        "transforms/preprocessing/Transpose.md",
-        "transforms/preprocessing/EnsureShapeMultiple.md",
-        "transforms/preprocessing/CopyAffine.md",
-      ] },
-      { Label = [
-        "transforms/preprocessing/RemapLabels.md",
-        "transforms/preprocessing/RemoveLabels.md",
-        "transforms/preprocessing/SequentialLabels.md",
-        "transforms/preprocessing/OneHot.md",
-        "transforms/preprocessing/Contour.md",
-        "transforms/preprocessing/KeepLargestComponent.md",
-      ] },
-    ] },
-    { Others = [
-      "transforms/others/Lambda.md",
-      "transforms/others/MonaiAdapter.md",
-    ] },
-  ] },
-  { Datasets = "datasets.md" },
-  { Examples = [
-    "examples/index.md",
-    "examples/plot_colin27.md",
-    "examples/plot_include_exclude.md",
-    "examples/plot_custom_z_spacing.md",
-    "examples/plot_3d_to_2d.md",
-    "examples/plot_history.md",
-    "examples/plot_video.md",
-  ] },
-  { Interfaces = [
-    "interfaces/cli.md",
-    "interfaces/slicer.md",
   ] },
 ]
 
@@ -185,6 +117,9 @@ members_order = "source"
 anchor_linenums = true
 
 [project.markdown_extensions.pymdownx.superfences]
+custom_fences = [
+  { name = "mermaid", class = "mermaid", format = "pymdownx.superfences.fence_code_format" },
+]
 
 [project.markdown_extensions.pymdownx.arithmatex]
 generic = true

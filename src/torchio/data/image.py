@@ -21,11 +21,18 @@ from ..types import TypePath
 from ..types import TypeSpatialShape
 from ..types import TypeTensorShape
 from .affine import Affine
+from .backends import ImageDataBackend
+from .backends import NibabelBackend
+from .backends import NumpyBackend
 
 
 def _is_nifti(path: Path) -> bool:
     name = path.name.lower()
     return name.endswith(".nii") or name.endswith(".nii.gz")
+
+
+def _is_nifti_zarr(path: Path) -> bool:
+    return str(path).endswith(".nii.zarr")
 
 
 def _read_nibabel(path: Path) -> tuple[TypeImageData, np.ndarray]:
@@ -76,6 +83,25 @@ def _default_reader(path: Path) -> tuple[TypeImageData, np.ndarray]:
     return _read_sitk(path)
 
 
+def _expand_ellipsis(
+    items: tuple[int | slice | type(Ellipsis), ...],
+    *,
+    ndim: int,
+) -> tuple[int | slice, ...]:
+    """Replace a single `Ellipsis` with enough `slice(None)` to fill *ndim*."""
+    n_ellipsis = sum(1 for s in items if s is Ellipsis)
+    if n_ellipsis == 0:
+        return items  # type: ignore[return-value]
+    if n_ellipsis > 1:
+        msg = "Only one ellipsis is allowed"
+        raise IndexError(msg)
+    idx = items.index(Ellipsis)
+    n_explicit = len(items) - 1
+    n_fill = max(ndim - n_explicit, 0)
+    expanded = items[:idx] + (slice(None),) * n_fill + items[idx + 1 :]
+    return expanded  # type: ignore[return-value]
+
+
 class Image:
     r"""Base image class.
 
@@ -122,6 +148,7 @@ class Image:
         self._reader = reader or _default_reader
         self._metadata: dict[str, Any] = dict(metadata) if metadata else {}
         self._data: Tensor | None = None
+        self._backend: ImageDataBackend | None = None
         self._affine: Affine | None = (
             self._parse_affine(affine) if affine is not None else None
         )
@@ -148,7 +175,12 @@ class Image:
         instance._reader = _default_reader
         instance._metadata = dict(metadata) if metadata else {}
         instance._data = Image._parse_tensor(tensor)
-        instance._affine = Image._parse_affine(affine)
+        parsed_affine = Image._parse_affine(affine)
+        instance._affine = parsed_affine
+        instance._backend = NumpyBackend(
+            instance._data.numpy(),
+            affine=parsed_affine.numpy(),
+        )
         return instance
 
     @staticmethod
@@ -192,7 +224,13 @@ class Image:
     def affine(self) -> Affine:
         """4x4 affine matrix mapping voxel indices to world coordinates."""
         if self._affine is None:
-            self.load()
+            # Try backend first to avoid full data load
+            if self._path is not None and self._reader is _default_reader:
+                self._ensure_backend()
+                if self._backend is not None:
+                    self._affine = Affine(self._backend.affine)
+            if self._affine is None:
+                self.load()
         assert self._affine is not None
         return self._affine
 
@@ -202,16 +240,38 @@ class Image:
         return self._metadata
 
     @property
+    def dataobj(self) -> ImageDataBackend:
+        """Lazy data backend for advanced operations like slicing.
+
+        Returns the underlying backend without materializing the full tensor.
+        For NIfTI files this is a `NibabelBackend`; for NIfTI-Zarr files a
+        `ZarrBackend`; for in-memory images a `NumpyBackend`.
+        """
+        if self._backend is None:
+            self._ensure_backend()
+        assert self._backend is not None
+        return self._backend
+
+    @property
     def shape(self) -> TypeTensorShape:
         """Tensor shape as (C, I, J, K)."""
         if self._data is not None:
             c, si, sj, sk = self._data.shape
             return (c, si, sj, sk)
+        if self._backend is not None:
+            s = self._backend.shape
+            return (int(s[0]), int(s[1]), int(s[2]), int(s[3]))
         if self._path is not None:
             if self._reader is not _default_reader:
                 self.load()
                 return self.shape
-            return self._read_shape_from_header()
+            # Try to create a lazy backend (NIfTI, Zarr)
+            self._ensure_backend()
+            if self._backend is not None:
+                s = self._backend.shape
+                return (int(s[0]), int(s[1]), int(s[2]), int(s[3]))
+            # Non-NIfTI: read shape from header via SimpleITK
+            return self._read_shape_sitk(self._path)
         msg = "Cannot determine shape: no data or path"
         raise RuntimeError(msg)
 
@@ -256,6 +316,23 @@ class Image:
         if self._path is None:
             msg = "Cannot load: no path set"
             raise RuntimeError(msg)
+        # If we already have a lazy backend, materialize from it
+        if self._backend is not None:
+            self._data = self._backend.to_tensor()
+            if self._affine is None:
+                self._affine = Affine(self._backend.affine)
+            return
+        # For NIfTI-Zarr or NIfTI with default reader, create backend first
+        if self._reader is _default_reader and (
+            _is_nifti_zarr(self._path) or _is_nifti(self._path)
+        ):
+            self._ensure_backend()
+            if self._backend is not None:
+                self._data = self._backend.to_tensor()
+                if self._affine is None:
+                    self._affine = Affine(self._backend.affine)
+                return
+        # Otherwise use the reader (custom reader or non-NIfTI formats)
         tensor, affine_array = self._reader(self._path)
         self._data = tensor
         if self._affine is None:
@@ -297,14 +374,22 @@ class Image:
         )
 
     def save(self, path: str | Path) -> None:
-        """Save the image using SimpleITK.
+        """Save the image to a file.
 
-        Supports any format SimpleITK can write (NIfTI, NRRD, MHA, etc.).
+        NIfTI-Zarr (`.nii.zarr`) files are written via `niizarr`
+        (requires the `zarr` extra). All other formats are written
+        with [SimpleITK](https://simpleitk.org/).
 
         Args:
             path: Output file path. The format is inferred from the extension.
         """
         path = Path(path)
+        if _is_nifti_zarr(path):
+            self._save_nii_zarr(path)
+        else:
+            self._save_sitk(path)
+
+    def _save_sitk(self, path: Path) -> None:
         data = self.data.numpy()
         n_channels = data.shape[0]
         if n_channels == 1:
@@ -318,34 +403,44 @@ class Image:
         sitk_image.SetDirection(self.affine.direction.flatten().tolist())
         sitk.WriteImage(sitk_image, str(path))
 
-    def _read_shape_from_header(self) -> TypeTensorShape:
-        """Read shape from file metadata without loading data."""
-        assert self._path is not None
-        if _is_nifti(self._path):
-            return self._read_shape_nibabel()
-        return self._read_shape_sitk()
+    def _save_nii_zarr(self, path: Path) -> None:
+        from ..imports import get_niizarr
 
-    def _read_shape_nibabel(self) -> TypeTensorShape:
-        assert self._path is not None
-        img = cast(nib.Nifti1Image, nib.load(self._path))
-        header_shape = img.header.get_data_shape()
-        if len(header_shape) == 3:
-            si, sj, sk = header_shape
-            return (1, int(si), int(sj), int(sk))
-        elif len(header_shape) == 4:
-            si, sj, sk, c = header_shape
-            return (int(c), int(si), int(sj), int(sk))
-        elif len(header_shape) == 5 and header_shape[3] == 1:
-            # 5D vector NIfTI written by SimpleITK: (I, J, K, 1, C)
-            si, sj, sk, _, c = header_shape
-            return (int(c), int(si), int(sj), int(sk))
-        msg = f"Expected 3D or 4D shape, got {len(header_shape)}D"
-        raise ValueError(msg)
+        niizarr = get_niizarr()
+        data = self.data.numpy()
+        n_channels = data.shape[0]
+        if n_channels == 1:
+            array = rearrange(data, "1 i j k -> i j k")
+        else:
+            array = rearrange(data, "c i j k -> i j k c")
+        nii = nib.Nifti1Image(array, self.affine.numpy())
+        niizarr.nii2zarr(nii, str(path))
 
-    def _read_shape_sitk(self) -> TypeTensorShape:
-        assert self._path is not None
+    def _ensure_backend(self) -> None:
+        """Create the lazy backend from path, without loading data.
+
+        For NIfTI and NIfTI-Zarr files, creates a lazy backend that supports
+        header-only reads. For other formats (NRRD, MHA, etc.), no lazy
+        backend is available — callers should fall back to other methods.
+        """
+        if self._backend is not None:
+            return
+        if self._path is None:
+            msg = "Cannot create backend: no path set"
+            raise RuntimeError(msg)
+        if _is_nifti_zarr(self._path):
+            from .backends import ZarrBackend
+
+            self._backend = ZarrBackend(self._path)
+        elif _is_nifti(self._path):
+            nii = nib.load(self._path)
+            self._backend = NibabelBackend(nii)
+
+    @staticmethod
+    def _read_shape_sitk(path: Path) -> TypeTensorShape:
+        """Read shape from a SimpleITK-readable file without loading data."""
         reader = sitk.ImageFileReader()
-        reader.SetFileName(str(self._path))
+        reader.SetFileName(str(path))
         reader.ReadImageInformation()
         size = reader.GetSize()
         n_components = reader.GetNumberOfComponents()
@@ -354,6 +449,101 @@ class Image:
             return (n_components, size[0], size[1], size[2])
         msg = f"Expected 3D image, got {ndim}D"
         raise ValueError(msg)
+
+    def __getitem__(self, item: int | slice | tuple[int | slice, ...]) -> Self:
+        """Slice the image along channel and/or spatial dimensions.
+
+        Indexing follows the tensor layout `(C, I, J, K)`. Up to four
+        indices may be provided; unspecified trailing dimensions keep
+        their full extent. The affine origin is updated to reflect the
+        spatial crop. Ellipsis (`...`) expands to fill unspecified
+        dimensions with full slices. Negative indices and steps are
+        supported.
+
+        When the image has not been loaded yet, slicing reads only the
+        requested region through the lazy backend — the full tensor is
+        never materialized. For uncompressed NIfTI (`.nii`) this uses
+        memory-mapping; for NIfTI-Zarr (`.nii.zarr`) chunked reads.
+        Even for compressed NIfTI (`.nii.gz`), nibabel's proxy avoids
+        materializing the full array, so slicing a small region from a
+        large volume is much faster than loading everything first.
+
+        Args:
+            item: Integer, slice, or tuple of slices/ints/ellipsis for
+                the C, I, J, K dimensions.
+
+        Returns:
+            A new image of the same class containing the sliced data.
+
+        Examples:
+            >>> image = tio.ScalarImage.from_tensor(torch.randn(3, 256, 256, 176))
+            >>> image[0].shape              # first channel
+            (1, 256, 256, 176)
+            >>> image[:, 100:200].shape     # spatial range, all channels
+            (3, 100, 256, 176)
+            >>> image[..., 50:100].shape    # last spatial dim
+            (3, 256, 256, 50)
+            >>> image[1:3, 10:20, 10:20, 10:20].shape
+            (2, 10, 10, 10)
+        """
+        if isinstance(item, (int, slice)) or item is Ellipsis:
+            items: tuple[int | slice | type(Ellipsis), ...] = (item,)
+        elif isinstance(item, tuple):
+            items = item
+        else:
+            msg = f"Index type {type(item).__name__} not understood"
+            raise TypeError(msg)
+
+        # Expand ellipsis
+        items = _expand_ellipsis(items, ndim=4)
+
+        if len(items) > 4:
+            msg = f"Too many indices: expected at most 4 (C, I, J, K), got {len(items)}"
+            raise IndexError(msg)
+
+        full_shape = self.shape  # (C, I, J, K)
+        parsed: list[slice] = []
+        for dim, s in enumerate(items):
+            if isinstance(s, int):
+                idx = s if s >= 0 else full_shape[dim] + s
+                s = slice(idx, idx + 1)
+            if not isinstance(s, slice):
+                msg = f"Index type {type(s).__name__} not understood"
+                raise TypeError(msg)
+            parsed.append(s)
+
+        # Pad with full slices for unspecified dimensions
+        while len(parsed) < 4:
+            parsed.append(slice(None))
+
+        sc, si, sj, sk = parsed
+
+        # Use backend for lazy slicing when possible (avoids full load)
+        if self._data is not None:
+            cropped_data = self._data[sc, si, sj, sk]
+        else:
+            self._ensure_backend()
+            if self._backend is not None:
+                array = self._backend[sc, si, sj, sk]
+                cropped_data = torch.as_tensor(
+                    np.asarray(array).copy(),
+                    dtype=torch.float32,
+                )
+            else:
+                cropped_data = self.data[sc, si, sj, sk]
+
+        # Update affine origin: shift by the spatial start offset
+        affine_array = self.affine.numpy().copy()
+        i_start, _, _ = si.indices(full_shape[1])
+        j_start, _, _ = sj.indices(full_shape[2])
+        k_start, _, _ = sk.indices(full_shape[3])
+        start_voxel = np.array(
+            [i_start, j_start, k_start],
+            dtype=np.float64,
+        )
+        affine_array[:3, 3] += affine_array[:3, :3] @ start_voxel
+
+        return self.new_like(data=cropped_data, affine=affine_array)
 
     def __repr__(self) -> str:
         cls_name = type(self).__name__
@@ -391,6 +581,7 @@ class Image:
             if self._data is not None:
                 new._data = self._data.clone()
                 new._affine = affine_copy
+            # Backend will be lazily recreated from path when needed
         elif self._data is not None:
             new = type(self).from_tensor(
                 self._data.clone(),
@@ -401,6 +592,7 @@ class Image:
             new = object.__new__(type(self))
             new._path = None
             new._data = None
+            new._backend = None
             new._affine = affine_copy
             new._reader = self._reader
             new._metadata = meta_copy

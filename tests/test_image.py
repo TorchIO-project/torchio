@@ -296,6 +296,7 @@ class TestImageLoad:
         image = ScalarImage.from_tensor(torch.randn(1, 10, 10, 10))
         image._data = None
         image._path = None
+        image._backend = None
         with pytest.raises(RuntimeError, match="Cannot determine shape"):
             image.shape
 
@@ -538,3 +539,162 @@ class TestImageIO:
 
         image = ScalarImage(path, reader=npy_reader)
         assert image.shape == (1, 10, 10, 10)
+
+    def test_save_nii_zarr(self, tmp_path: Path):
+        tensor = torch.randn(1, 10, 12, 14)
+        affine = np.diag([2.0, 3.0, 4.0, 1.0])
+        image = ScalarImage.from_tensor(tensor, affine=affine)
+        path = tmp_path / "output.nii.zarr"
+        image.save(path)
+
+        loaded = ScalarImage(path)
+        assert loaded.shape == (1, 10, 12, 14)
+        np.testing.assert_allclose(loaded.spacing, (2.0, 3.0, 4.0), atol=1e-5)
+        np.testing.assert_allclose(
+            loaded.data.numpy(),
+            tensor.numpy(),
+            atol=1e-5,
+        )
+
+    def test_save_nii_zarr_multichannel(self, tmp_path: Path):
+        tensor = torch.randn(3, 8, 8, 8)
+        image = ScalarImage.from_tensor(tensor)
+        path = tmp_path / "multi.nii.zarr"
+        image.save(path)
+
+        loaded = ScalarImage(path)
+        assert loaded.shape == (3, 8, 8, 8)
+
+
+class TestImageSlicing:
+    def test_slice_channel_int(self):
+        tensor = torch.randn(3, 20, 20, 20)
+        image = ScalarImage.from_tensor(tensor)
+        sliced = image[0]
+        assert sliced.shape == (1, 20, 20, 20)
+        torch.testing.assert_close(sliced.data, tensor[0:1])
+
+    def test_slice_channel_range(self):
+        tensor = torch.randn(5, 20, 20, 20)
+        image = ScalarImage.from_tensor(tensor)
+        sliced = image[1:3]
+        assert sliced.shape == (2, 20, 20, 20)
+        torch.testing.assert_close(sliced.data, tensor[1:3])
+
+    def test_slice_spatial_via_tuple(self):
+        tensor = torch.randn(1, 20, 20, 20)
+        image = ScalarImage.from_tensor(tensor)
+        sliced = image[:, 5:10]
+        assert sliced.shape == (1, 5, 20, 20)
+        torch.testing.assert_close(sliced.data, tensor[:, 5:10, :, :])
+
+    def test_slice_all_four_dims(self):
+        tensor = torch.randn(3, 20, 20, 20)
+        image = ScalarImage.from_tensor(tensor)
+        sliced = image[0:2, 2:8, 3:7, 4:10]
+        assert sliced.shape == (2, 6, 4, 6)
+        torch.testing.assert_close(sliced.data, tensor[0:2, 2:8, 3:7, 4:10])
+
+    def test_slice_preserves_class(self):
+        tensor = torch.randn(1, 20, 20, 20)
+        image = LabelMap.from_tensor(tensor)
+        sliced = image[:, 5:10]
+        assert isinstance(sliced, LabelMap)
+
+    def test_slice_updates_affine_origin(self):
+        affine = np.diag([2.0, 3.0, 4.0, 1.0])
+        tensor = torch.randn(1, 20, 20, 20)
+        image = ScalarImage.from_tensor(tensor, affine=affine)
+        sliced = image[:, 5:10]
+        # New origin should be shifted by 5 voxels * 2mm spacing in I direction
+        expected_origin = (10.0, 0.0, 0.0)
+        np.testing.assert_allclose(sliced.origin, expected_origin)
+
+    def test_slice_channel_does_not_affect_origin(self):
+        affine = np.diag([2.0, 3.0, 4.0, 1.0])
+        tensor = torch.randn(5, 20, 20, 20)
+        image = ScalarImage.from_tensor(tensor, affine=affine)
+        sliced = image[1:3]
+        np.testing.assert_allclose(sliced.origin, (0.0, 0.0, 0.0))
+
+    def test_slice_partial_dims(self):
+        tensor = torch.randn(1, 20, 20, 20)
+        image = ScalarImage.from_tensor(tensor)
+        sliced = image[:, 5:10, 3:7]
+        assert sliced.shape == (1, 5, 4, 20)
+
+    def test_slice_negative_indices(self):
+        tensor = torch.randn(1, 20, 20, 20)
+        image = ScalarImage.from_tensor(tensor)
+        sliced = image[:, -5:]
+        assert sliced.shape == (1, 5, 20, 20)
+        torch.testing.assert_close(sliced.data, tensor[:, 15:, :, :])
+
+    def test_slice_with_step(self):
+        tensor = torch.randn(1, 20, 20, 20)
+        image = ScalarImage.from_tensor(tensor)
+        sliced = image[:, ::2]
+        assert sliced.shape == (1, 10, 20, 20)
+        torch.testing.assert_close(sliced.data, tensor[:, ::2, :, :])
+
+    def test_slice_ellipsis_trailing(self):
+        tensor = torch.randn(3, 20, 20, 20)
+        image = ScalarImage.from_tensor(tensor)
+        sliced = image[..., 5:10]
+        assert sliced.shape == (3, 20, 20, 5)
+        torch.testing.assert_close(sliced.data, tensor[..., 5:10])
+
+    def test_slice_ellipsis_leading(self):
+        tensor = torch.randn(3, 20, 20, 20)
+        image = ScalarImage.from_tensor(tensor)
+        sliced = image[0, ...]
+        assert sliced.shape == (1, 20, 20, 20)
+        torch.testing.assert_close(sliced.data, tensor[0:1])
+
+    def test_slice_ellipsis_middle(self):
+        tensor = torch.randn(3, 20, 20, 20)
+        image = ScalarImage.from_tensor(tensor)
+        sliced = image[0:2, ..., 5:10]
+        assert sliced.shape == (2, 20, 20, 5)
+        torch.testing.assert_close(sliced.data, tensor[0:2, :, :, 5:10])
+
+    def test_slice_bare_ellipsis(self):
+        tensor = torch.randn(1, 20, 20, 20)
+        image = ScalarImage.from_tensor(tensor)
+        sliced = image[...]
+        assert sliced.shape == (1, 20, 20, 20)
+        torch.testing.assert_close(sliced.data, tensor)
+
+    def test_slice_double_ellipsis_raises(self):
+        image = ScalarImage.from_tensor(torch.randn(1, 20, 20, 20))
+        with pytest.raises(IndexError, match="one ellipsis"):
+            image[..., ...]
+
+    def test_slice_float_raises(self):
+        image = ScalarImage.from_tensor(torch.randn(1, 20, 20, 20))
+        with pytest.raises(TypeError, match="not understood"):
+            image[1.5]
+
+    def test_slice_too_many_dims_raises(self):
+        image = ScalarImage.from_tensor(torch.randn(1, 20, 20, 20))
+        with pytest.raises(IndexError, match="Too many"):
+            image[:, :, :, :, :]
+
+    def test_slice_lazy_does_not_load(self, tmp_path: Path):
+        data = np.random.randn(10, 12, 14).astype(np.float32)
+        nii = nib.Nifti1Image(data, np.eye(4))
+        path = tmp_path / "test.nii.gz"
+        nib.save(nii, path)
+
+        image = ScalarImage(path)
+        sliced = image[:, 2:5, 3:7, 4:8]
+        assert not image.is_loaded  # parent not loaded
+        assert sliced.shape == (1, 3, 4, 4)
+
+    def test_slice_preserves_metadata(self):
+        image = ScalarImage.from_tensor(
+            torch.randn(1, 20, 20, 20),
+            metadata={"modality": "T1"},
+        )
+        sliced = image[:, 5:10]
+        assert sliced.metadata["modality"] == "T1"

@@ -92,3 +92,6 @@ quality = [
     "tox-uv",
     "ty",
 ]
+zarr = [
+    "nifti-zarr>=1.0.0rc6",
+]
