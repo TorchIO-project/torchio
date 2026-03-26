@@ -2,7 +2,9 @@ from typing import Any
 from typing import cast
 
 import pytest
+import torch
 
+import torchio as tio
 from torchio.transforms import RandomLabelsToImage
 
 from ...utils import TorchioTestCase
@@ -300,3 +302,70 @@ class TestRandomLabelsToImage(TorchioTestCase):
         transform = RandomLabelsToImage()
         with pytest.raises(RuntimeError):
             transform(self.sample_subject.t1)
+
+    def test_discretize_with_missing_labels_removes_sentinel(self):
+        """Discretizing a PV label map with all-zero voxels removes -1."""
+        # 2 channels: some voxels have both channels = 0 → discretize → -1
+        pv = torch.zeros(2, 4, 4, 4)
+        pv[0, 0:2] = 1.0  # label 0 in first two slices
+        pv[1, 3:4] = 1.0  # label 1 in last slice
+        # Slice 2 has all zeros → becomes -1 after discretization
+        subject = tio.Subject(label=tio.LabelMap(tensor=pv))
+        transform = RandomLabelsToImage(label_key='label', discretize=True)
+        transform(subject)
+
+    def test_ignore_background(self):
+        """ignore_background=True skips label 0 during image generation."""
+        subject = self.get_subject_with_labels([0, 1, 2])
+        transform = RandomLabelsToImage(
+            label_key='label',
+            ignore_background=True,
+        )
+        transform(subject)
+
+    def test_partial_volume_used_labels_with_fill(self):
+        """Partial-volume label map with used_labels and image fill."""
+        from torchio.transforms.augmentation.intensity.random_labels_to_image import (
+            LabelsToImage,
+        )
+
+        subject = self.get_subject_with_partial_volume_label_map(components=3)
+        transform = LabelsToImage(
+            label_key='label',
+            image_key='t1',
+            used_labels=[1],
+            mean=[0.3, 0.5, 0.7],
+            std=[0.1, 0.1, 0.1],
+        )
+        transform(subject)
+
+    def test_labels_to_image_discretize_with_missing_labels(self):
+        """LabelsToImage also removes -1 from discretized PV with zeros."""
+        from torchio.transforms.augmentation.intensity.random_labels_to_image import (
+            LabelsToImage,
+        )
+
+        pv = torch.zeros(2, 4, 4, 4)
+        pv[0, 0:2] = 1.0
+        pv[1, 3:4] = 1.0
+        subject = tio.Subject(label=tio.LabelMap(tensor=pv))
+        transform = LabelsToImage(
+            label_key='label',
+            mean=[0.3, 0.7],
+            std=[0.1, 0.1],
+            discretize=True,
+        )
+        transform(subject)
+
+    def test_label_key_auto_detect(self):
+        """Auto-detect label_key when not provided (uses first LabelMap)."""
+        subject = self.get_subject_with_labels([0, 1])
+        transform = RandomLabelsToImage(label_key=None)
+        transform(subject)
+
+    def test_get_named_arguments(self):
+        """_get_named_arguments returns dict with expected keys."""
+        transform = RandomLabelsToImage(label_key='label')
+        args = transform._get_named_arguments()
+        assert 'label_key' in args
+        assert args['label_key'] == 'label'

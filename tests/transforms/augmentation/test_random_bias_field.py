@@ -41,3 +41,35 @@ class TestRandomBiasField(TorchioTestCase):
     def test_small_image(self):
         # https://github.com/TorchIO-project/torchio/issues/300
         tio.RandomBiasField()(torch.rand(1, 2, 3, 4))
+
+    def test_no_images_returns_subject(self):
+        """Applying to a subject with no scalar images returns it unchanged."""
+        subject = tio.Subject(label=tio.LabelMap(tensor=torch.rand(1, 4, 4, 4)))
+        transform = tio.RandomBiasField()
+        result = transform(subject)
+        assert result is not subject  # deepcopy still occurs
+
+    def test_arguments_are_dict_mismatch_raises(self):
+        """BiasField raises when only one of coefficients/order is a dict."""
+        from torchio.transforms.augmentation.intensity.random_bias_field import (
+            BiasField,
+        )
+
+        transform = BiasField(
+            coefficients=cast(Any, {'t1': [0.1]}),
+            order=3,
+        )
+        with pytest.raises(ValueError, match='all must be'):
+            transform.arguments_are_dict()
+
+    def test_arguments_are_dict_both_dicts(self):
+        """BiasField.arguments_are_dict returns True when both are dicts."""
+        from torchio.transforms.augmentation.intensity.random_bias_field import (
+            BiasField,
+        )
+
+        transform = BiasField(
+            coefficients=cast(Any, {'t1': [0.1]}),
+            order=cast(Any, {'t1': 3}),
+        )
+        assert transform.arguments_are_dict() is True
