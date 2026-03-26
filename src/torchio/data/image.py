@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import copy
 from collections.abc import Callable
 from pathlib import Path
 from typing import Any
@@ -24,6 +25,8 @@ from .affine import Affine
 from .backends import ImageDataBackend
 from .backends import NibabelBackend
 from .backends import NumpyBackend
+from .bboxes import BoundingBoxes
+from .points import Points
 
 
 def _is_nifti(path: Path) -> bool:
@@ -125,6 +128,11 @@ class Image:
         affine: $4 \times 4$ affine matrix or
             [`Affine`][torchio.Affine] instance. If given, overrides
             the affine read from the file.
+        points: Named sets of [`Points`][torchio.Points] attached to this
+            image. Keys are names, values are `Points` instances.
+        bounding_boxes: Named sets of
+            [`BoundingBoxes`][torchio.BoundingBoxes] attached to this
+            image.
         metadata: Arbitrary metadata dict.
 
     Examples:
@@ -142,6 +150,8 @@ class Image:
         *,
         reader: Callable[[Path], tuple[TypeImageData, np.ndarray]] | None = None,
         affine: Affine | npt.ArrayLike | None = None,
+        points: dict[str, Points] | None = None,
+        bounding_boxes: dict[str, BoundingBoxes] | None = None,
         metadata: dict[str, Any] | None = None,
     ):
         self._path: Path | None = Path(path)
@@ -152,6 +162,11 @@ class Image:
         self._affine: Affine | None = (
             self._parse_affine(affine) if affine is not None else None
         )
+        self._points = self._parse_annotations(points, "Points")
+        self._bounding_boxes = self._parse_annotations(
+            bounding_boxes,
+            "BoundingBoxes",
+        )
 
     @classmethod
     def from_tensor(
@@ -159,6 +174,8 @@ class Image:
         tensor: TypeImageData | np.ndarray,
         *,
         affine: Affine | npt.ArrayLike | None = None,
+        points: dict[str, Points] | None = None,
+        bounding_boxes: dict[str, BoundingBoxes] | None = None,
         metadata: dict[str, Any] | None = None,
     ) -> Self:
         r"""Create an image from an in-memory tensor.
@@ -168,6 +185,11 @@ class Image:
                 with shape $(C, I, J, K)$.
             affine: $4 \times 4$ affine matrix or
                 [`Affine`][torchio.Affine] instance. Identity if `None`.
+            points: Named sets of [`Points`][torchio.Points] attached to
+                this image.
+            bounding_boxes: Named sets of
+                [`BoundingBoxes`][torchio.BoundingBoxes] attached to this
+                image.
             metadata: Arbitrary metadata dict.
         """
         instance = object.__new__(cls)
@@ -180,6 +202,11 @@ class Image:
         instance._backend = NumpyBackend(
             instance._data.numpy(),
             affine=parsed_affine.numpy(),
+        )
+        instance._points = Image._parse_annotations(points, "Points")
+        instance._bounding_boxes = Image._parse_annotations(
+            bounding_boxes,
+            "BoundingBoxes",
         )
         return instance
 
@@ -199,6 +226,44 @@ class Image:
         if isinstance(affine, Affine):
             return affine
         return Affine(affine)
+
+    @staticmethod
+    def _parse_annotations(
+        annotations: dict[str, Points | BoundingBoxes] | None,
+        type_name: str,
+    ) -> dict[str, Points | BoundingBoxes]:
+        """Validate and copy an annotation dict.
+
+        Args:
+            annotations: Mapping of names to annotation objects, or ``None``.
+            type_name: Expected class name (``"Points"`` or
+                ``"BoundingBoxes"``) used for validation and error messages.
+
+        Returns:
+            A shallow copy of the dict, or an empty dict if *annotations*
+            is ``None``.
+
+        Raises:
+            TypeError: If any value is not an instance of the expected class.
+        """
+        if annotations is None:
+            return {}
+        expected_type = Points if type_name == "Points" else BoundingBoxes
+        for key, value in annotations.items():
+            if not isinstance(value, expected_type):
+                msg = (
+                    f"Expected {type_name} for key {key!r}, got {type(value).__name__}"
+                )
+                raise TypeError(msg)
+        return dict(annotations)
+
+    def _deep_copy_annotations(
+        self,
+    ) -> tuple[dict[str, Points], dict[str, BoundingBoxes]]:
+        """Deep-copy both annotation dicts."""
+        points_copy = {k: copy.deepcopy(v) for k, v in self._points.items()}
+        bboxes_copy = {k: copy.deepcopy(v) for k, v in self._bounding_boxes.items()}
+        return points_copy, bboxes_copy
 
     # --- Properties ---
 
@@ -307,6 +372,16 @@ class Image:
         """Orientation codes from the affine."""
         return self.affine.orientation
 
+    @property
+    def points(self) -> dict[str, Points]:
+        """Named sets of points attached to this image."""
+        return self._points
+
+    @property
+    def bounding_boxes(self) -> dict[str, BoundingBoxes]:
+        """Named sets of bounding boxes attached to this image."""
+        return self._bounding_boxes
+
     # --- Methods ---
 
     def load(self) -> None:
@@ -354,8 +429,9 @@ class Image:
     ) -> Self:
         r"""Create a new image of the same class with new data.
 
-        Preserves metadata and affine. Uses the existing affine
-        unless a new one is provided. Works correctly with custom subclasses.
+        Preserves metadata, annotations, and affine. Uses the existing
+        affine unless a new one is provided. Works correctly with custom
+        subclasses.
 
         Args:
             data: New 4D [`torch.Tensor`][torch.Tensor] with shape
@@ -367,9 +443,12 @@ class Image:
             if affine is not None
             else Affine(self.affine.numpy().copy())
         )
+        points_copy, bboxes_copy = self._deep_copy_annotations()
         return type(self).from_tensor(
             data,
             affine=new_affine,
+            points=points_copy,
+            bounding_boxes=bboxes_copy,
             metadata=dict(self._metadata),
         )
 
@@ -547,35 +626,38 @@ class Image:
 
     def __repr__(self) -> str:
         cls_name = type(self).__name__
+        parts: list[str] = []
         if self.is_loaded:
             sp = ", ".join(f"{s:.2f}" for s in self.spacing)
             orient = "".join(self.orientation)
-            return (
-                f"{cls_name}("
-                f"shape: {self.shape}; "
-                f"spacing: ({sp}); "
-                f"orientation: {orient}+)"
-            )
-        if self._path is not None:
-            return f'{cls_name}(path: "{self._path}")'
-        return f"{cls_name}()"
+            parts.append(f"shape: {self.shape}")
+            parts.append(f"spacing: ({sp})")
+            parts.append(f"orientation: {orient}+")
+        elif self._path is not None:
+            parts.append(f'path: "{self._path}"')
+        if self._points:
+            names = ", ".join(self._points)
+            parts.append(f"points: {{{names}}}")
+        if self._bounding_boxes:
+            names = ", ".join(self._bounding_boxes)
+            parts.append(f"bounding_boxes: {{{names}}}")
+        return f"{cls_name}({'; '.join(parts)})"
 
     def __copy__(self) -> Self:
         return self.new_like(data=self.data.clone())
 
     def __deepcopy__(self, memo: dict) -> Self:
-        import copy as copy_mod
-
-        affine_copy = (
-            copy_mod.deepcopy(self._affine) if self._affine is not None else None
-        )
+        affine_copy = copy.deepcopy(self._affine) if self._affine is not None else None
         meta_copy = dict(self._metadata)
+        points_copy, bboxes_copy = self._deep_copy_annotations()
 
         if self._path is not None:
             new = type(self)(
                 self._path,
                 reader=self._reader,
                 affine=affine_copy,
+                points=points_copy,
+                bounding_boxes=bboxes_copy,
                 metadata=meta_copy,
             )
             if self._data is not None:
@@ -586,6 +668,8 @@ class Image:
             new = type(self).from_tensor(
                 self._data.clone(),
                 affine=affine_copy,
+                points=points_copy,
+                bounding_boxes=bboxes_copy,
                 metadata=meta_copy,
             )
         else:
@@ -596,6 +680,8 @@ class Image:
             new._affine = affine_copy
             new._reader = self._reader
             new._metadata = meta_copy
+            new._points = points_copy
+            new._bounding_boxes = bboxes_copy
         memo[id(self)] = new
         return new
 

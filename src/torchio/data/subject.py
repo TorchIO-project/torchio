@@ -142,17 +142,56 @@ class Subject:
 
     # --- Methods ---
 
+    @property
     def images(self) -> dict[str, Image]:
-        """Return dict of all `Image` entries."""
+        """Dict of all `Image` entries."""
         return dict(self._images)
 
+    @property
     def points(self) -> dict[str, Points]:
-        """Return dict of all `Points` entries."""
+        """Dict of all `Points` entries."""
         return dict(self._points)
 
+    @property
     def bounding_boxes(self) -> dict[str, BoundingBoxes]:
-        """Return dict of all `BoundingBoxes` entries."""
+        """Dict of all `BoundingBoxes` entries."""
         return dict(self._bounding_boxes)
+
+    def all_points(self) -> dict[str | tuple[str, str], Points]:
+        """Collect points from both subject-level and image-level.
+
+        Subject-level points are keyed by their name (``str``).
+        Image-level points are keyed by a ``(image_name, points_name)``
+        tuple.
+
+        Returns:
+            Merged dict of all points across both levels.
+        """
+        result: dict[str | tuple[str, str], Points] = dict(self._points)
+        for image_name, image in self._images.items():
+            for points_name, pts in image.points.items():
+                result[(image_name, points_name)] = pts
+        return result
+
+    def all_bounding_boxes(
+        self,
+    ) -> dict[str | tuple[str, str], BoundingBoxes]:
+        """Collect bounding boxes from both subject-level and image-level.
+
+        Subject-level boxes are keyed by their name (``str``).
+        Image-level boxes are keyed by a ``(image_name, boxes_name)``
+        tuple.
+
+        Returns:
+            Merged dict of all bounding boxes across both levels.
+        """
+        result: dict[str | tuple[str, str], BoundingBoxes] = dict(
+            self._bounding_boxes,
+        )
+        for image_name, image in self._images.items():
+            for box_name, boxes in image.bounding_boxes.items():
+                result[(image_name, box_name)] = boxes
+        return result
 
     def load(self) -> None:
         """Load all images from disk."""

@@ -25,7 +25,7 @@ class TestSubjectCreation:
             t1=ScalarImage.from_tensor(torch.randn(1, 10, 10, 10)),
             seg=LabelMap.from_tensor(torch.randint(0, 5, (1, 10, 10, 10))),
         )
-        assert len(subject.images()) == 2
+        assert len(subject.images) == 2
 
     def test_create_from_unpacked_dict(self):
         data = {
@@ -33,7 +33,7 @@ class TestSubjectCreation:
             "seg": LabelMap.from_tensor(torch.randint(0, 5, (1, 10, 10, 10))),
         }
         subject = Subject(**data)
-        assert len(subject.images()) == 2
+        assert len(subject.images) == 2
 
     def test_metadata_from_kwargs(self):
         subject = Subject(
@@ -82,7 +82,7 @@ class TestSubjectAccess:
             subject["nonexistent"]
 
     def test_images_returns_only_images(self, subject: Subject):
-        images = subject.images()
+        images = subject.images
         assert len(images) == 2
         assert "t1" in images
         assert "seg" in images
@@ -252,7 +252,7 @@ class TestSubjectWithPoints:
             lm1=Points(torch.randn(3, 3)),
             lm2=Points(torch.randn(7, 3)),
         )
-        pts = subject.points()
+        pts = subject.points
         assert len(pts) == 2
         assert "lm1" in pts
         assert "lm2" in pts
@@ -297,7 +297,7 @@ class TestSubjectWithBoundingBoxes:
                 format=BoundingBoxFormat.IJKWHD,
             ),
         )
-        bb = subject.bounding_boxes()
+        bb = subject.bounding_boxes
         assert len(bb) == 2
         assert "tumors" in bb
         assert "organs" in bb
@@ -335,9 +335,9 @@ class TestSubjectMixed:
             ),
             age=45,
         )
-        assert len(subject.images()) == 2
-        assert len(subject.points()) == 1
-        assert len(subject.bounding_boxes()) == 1
+        assert len(subject.images) == 2
+        assert len(subject.points) == 1
+        assert len(subject.bounding_boxes) == 1
         assert subject.metadata["age"] == 45
         assert len(subject) == 4  # 2 images + 1 points + 1 bboxes
 
