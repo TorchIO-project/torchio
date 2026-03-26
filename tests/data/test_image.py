@@ -5,6 +5,7 @@ import copy
 import sys
 import tempfile
 from pathlib import Path
+from unittest.mock import patch
 
 import nibabel as nib
 import numpy as np
@@ -335,3 +336,153 @@ class TestImage(TorchioTestCase):
 
         with pytest.raises(FileNotFoundError):
             tio.ScalarImage(fake_path, verify_path=True)
+
+    def test_channels_last_deprecation_warning(self):
+        """Passing channels_last kwarg emits a FutureWarning."""
+        tensor = torch.rand(1, 10, 10, 10)
+        with pytest.warns(FutureWarning, match='channels_last'):
+            tio.ScalarImage(tensor=tensor, channels_last=True)
+
+    def test_repr_html_returns_html(self):
+        """_repr_html_ returns HTML string when matplotlib is available."""
+        image = self.sample_subject.get_scalar_image('t1')
+        html = image._repr_html_()
+        assert isinstance(html, str)
+        assert '<' in html
+
+    def test_repr_html_fallback_without_matplotlib(self):
+        """_repr_html_ falls back to __repr__ when matplotlib is absent."""
+        image = self.sample_subject.get_scalar_image('t1')
+        with patch.dict('sys.modules', {'matplotlib': None, 'matplotlib.figure': None}):
+            result = image._repr_html_()
+        assert 'ScalarImage' in result
+
+    def test_lazy_load_data(self):
+        """Accessing .data triggers lazy loading from path."""
+        path = self.get_image_path('lazy_data')
+        image = tio.ScalarImage(path)
+        assert not image._loaded
+        _ = image.data
+        assert image._loaded
+
+    def test_lazy_load_affine(self):
+        """Accessing .affine when using custom reader triggers full load."""
+        path = self.get_image_path('lazy_affine')
+
+        def custom_reader(p):
+            img = tio.ScalarImage(path=p)
+            img.load()
+            return img.data, np.eye(4)
+
+        image = tio.ScalarImage(path, reader=custom_reader)
+        assert not image._loaded
+        _ = image.affine
+        assert image._loaded
+
+    def test_bounds_property(self):
+        """bounds returns world positions of corner voxels."""
+        image = self.sample_subject.get_scalar_image('t1')
+        bounds = image.bounds
+        assert bounds.shape == (2, 3)
+        np.testing.assert_array_equal(bounds[0], [0, 0, 0])
+
+    def test_get_bounds(self):
+        """get_bounds returns min/max world coordinates with half-voxel offset."""
+        image = self.sample_subject.get_scalar_image('t1')
+        bounds = image.get_bounds()
+        assert len(bounds) == 3
+        for axis_bounds in bounds:
+            assert len(axis_bounds) == 2
+
+    def test_axis_name_to_index_non_string(self):
+        """axis_name_to_index raises ValueError for non-string input."""
+        image = self.sample_subject.get_scalar_image('t1')
+        with pytest.raises(ValueError, match='string'):
+            image.axis_name_to_index(123)
+
+    def test_flip_axis_invalid_label(self):
+        """flip_axis raises ValueError for unrecognized axis label."""
+        with pytest.raises(ValueError, match='Axis not understood'):
+            tio.ScalarImage.flip_axis('X')
+
+    def test_tensor_as_path_raises(self):
+        """Passing tensor as positional path argument gives helpful error."""
+        with pytest.raises(TypeError, match='tensor=your_tensor'):
+            tio.ScalarImage(torch.rand(1, 10, 10, 10))
+
+    def test_numpy_as_path_raises(self):
+        """Passing numpy array as path gives helpful error."""
+        with pytest.raises(TypeError, match='tensor=your_tensor'):
+            tio.ScalarImage(np.random.rand(1, 10, 10, 10))
+
+    def test_bad_path_type_int(self):
+        """Non-string/non-Path path types raise TypeError."""
+        with pytest.raises(TypeError, match='path'):
+            tio.ScalarImage(path=12345)
+
+    def test_dict_as_path_raises(self):
+        """Passing dict as path raises TypeError."""
+        with pytest.raises(TypeError, match='cannot be a dictionary'):
+            tio.ScalarImage(path={'file': 'a.nii'})
+
+    def test_none_tensor_raises(self):
+        """None tensor when not allowed raises RuntimeError."""
+        image = tio.ScalarImage(tensor=torch.rand(1, 10, 10, 10))
+        with pytest.raises(RuntimeError, match='cannot be None'):
+            image._parse_tensor(None, none_ok=False)
+
+    def test_invalid_tensor_type_raises(self):
+        """Non-tensor/non-array types raise TypeError."""
+        image = tio.ScalarImage(tensor=torch.rand(1, 10, 10, 10))
+        with pytest.raises(TypeError, match='PyTorch tensor or NumPy'):
+            image._parse_tensor([1, 2, 3])
+
+    def test_non_4d_tensor_raises(self):
+        """Non-4D tensors raise ValueError."""
+        image = tio.ScalarImage(tensor=torch.rand(1, 10, 10, 10))
+        with pytest.raises(ValueError, match='4D'):
+            image._parse_tensor(torch.rand(10, 10, 10))
+
+    def test_bool_tensor_converted_to_uint8(self):
+        """Boolean tensors are automatically converted to uint8."""
+        tensor = torch.randint(0, 2, (1, 5, 5, 5), dtype=torch.bool)
+        image = tio.ScalarImage(tensor=tensor)
+        assert image.data.dtype == torch.uint8
+
+    def test_nan_warning_from_tensor(self):
+        """NaN tensor with check_nans=True emits RuntimeWarning."""
+        tensor = torch.full((1, 5, 5, 5), float('nan'))
+        with pytest.warns(RuntimeWarning, match='NaNs found in tensor'):
+            tio.ScalarImage(tensor=tensor, check_nans=True)
+
+    def test_path_not_available_raises(self):
+        """_as_path_list raises RuntimeError for tensor-only image."""
+        image = tio.ScalarImage(tensor=torch.rand(1, 5, 5, 5))
+        with pytest.raises(RuntimeError, match='path is not available'):
+            image._as_path_list()
+
+    def test_is_dir_none_path(self):
+        """_is_dir returns False for tensor-only image."""
+        image = tio.ScalarImage(tensor=torch.rand(1, 5, 5, 5))
+        assert image._is_dir() is False
+
+    def test_as_pil_no_transpose(self):
+        """as_pil with transpose=False permutes differently from default."""
+        tensor = torch.randint(0, 255, (1, 10, 10, 1), dtype=torch.float32)
+        image = tio.ScalarImage(tensor=tensor)
+        pil_image = image.as_pil(transpose=False)
+        assert pil_image.size == (10, 10)
+
+    def test_slice_type_error(self):
+        """Unsupported slice types raise TypeError."""
+        image = self.sample_subject.get_scalar_image('t1')
+        with pytest.raises(TypeError, match='Slice type not understood'):
+            image[0.5, :]  # float is invalid
+
+    def test_multipath_as_path_list(self):
+        """_as_path_list returns list for multipath images."""
+        path1 = Path(self.get_image_path('multi1'))
+        path2 = Path(self.get_image_path('multi2'))
+        image = tio.ScalarImage(path=[path1, path2])
+        paths = image._as_path_list()
+        assert len(paths) == 2

@@ -187,3 +187,26 @@ class TestAggregator(TorchioTestCase):
         output = aggregator.get_output_tensor()
         expected_shape = (embedding_dim,) + (image_size // downsampling_factor,) * 3
         self.assertEqual(output.shape, expected_shape)
+
+    def test_invalid_overlap_mode_raises(self):
+        """Invalid overlap mode raises ValueError."""
+        subject = tio.Subject(img=tio.ScalarImage(tensor=torch.ones(1, 4, 4, 4)))
+        sampler = tio.GridSampler(subject, 2)
+        with pytest.raises(ValueError, match='Overlap mode'):
+            tio.data.GridAggregator(sampler, overlap_mode='invalid')
+
+    def test_hann_with_non_float_tensor(self):
+        """Hann mode converts non-float32 tensors to float."""
+        image_shape = 1, 6, 6, 6
+        tensor = torch.ones(image_shape)
+        image_name = 'img'
+        subject = tio.Subject({image_name: tio.ScalarImage(tensor=tensor)})
+        sampler = tio.GridSampler(subject, 4, 2)
+        aggregator = tio.data.GridAggregator(sampler, overlap_mode='hann')
+        sampler_dataset = cast(Dataset[tio.Subject], sampler)
+        loader = tio.SubjectsLoader(sampler_dataset, batch_size=1)
+        for batch in loader:
+            patch = batch[image_name][tio.DATA].to(torch.float64)
+            aggregator.add_batch(patch, batch[tio.LOCATION])
+        output = aggregator.get_output_tensor()
+        assert output.dtype == torch.float32

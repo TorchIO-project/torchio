@@ -1,6 +1,8 @@
 import tempfile
 from pathlib import Path
+from unittest.mock import patch as mock_patch
 
+import nibabel as nib
 import numpy as np
 import pytest
 import SimpleITK as sitk
@@ -214,3 +216,103 @@ class TestNibabelToSimpleITK(TorchioTestCase):
         assert image.GetDimension() == 3
         assert image.GetSize() == (8, 10, 12)
         assert image.GetNumberOfComponentsPerPixel() == 5
+
+
+class TestIOCoverage(TorchioTestCase):
+    """Additional coverage tests for io module."""
+
+    def test_read_shape_2d(self):
+        """read_shape handles 2D images by setting depth to 1."""
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / 'img2d.png'
+            image_2d = sitk.Image(10, 12, sitk.sitkUInt8)
+            sitk.WriteImage(image_2d, str(path))
+            shape = io.read_shape(path)
+            assert shape == (1, 10, 12, 1)
+
+    def test_write_nibabel_hdr_img(self):
+        """_write_nibabel writes Nifti1Pair for .img extension."""
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / 'test.img'
+            tensor = torch.rand(1, 5, 5, 5)
+            affine = np.eye(4)
+            io._write_nibabel(tensor, affine, path)
+            assert path.exists()
+            hdr_path = path.with_suffix('.hdr')
+            assert hdr_path.exists()
+
+    def test_write_nibabel_unsupported_suffix(self):
+        """_write_nibabel raises error for unsupported extensions."""
+        from nibabel.filebasedimages import ImageFileError
+
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / 'test.xyz'
+            tensor = torch.rand(1, 5, 5, 5)
+            affine = np.eye(4)
+            with pytest.raises(ImageFileError):
+                io._write_nibabel(tensor, affine, path)
+
+    def test_write_image_nibabel_fallback(self):
+        """write_image falls back to nibabel when sitk write fails."""
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / 'test.nii.gz'
+            tensor = torch.rand(1, 5, 5, 5)
+            affine = np.eye(4)
+            with mock_patch('torchio.data.io._write_sitk', side_effect=RuntimeError):
+                io.write_image(tensor, affine, path)
+            assert path.exists()
+
+    def test_write_sitk_squeeze(self):
+        """_write_sitk respects explicit squeeze parameter."""
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / 'test.nii.gz'
+            tensor = torch.rand(1, 5, 5, 1)
+            affine = np.eye(4)
+            io._write_sitk(tensor, affine, path, squeeze=False)
+            reader = sitk.ImageFileReader()
+            reader.SetFileName(str(path))
+            reader.ReadImageInformation()
+            assert reader.GetDimension() == 3
+
+    def test_read_matrix_unsupported_suffix(self):
+        """read_matrix raises ValueError for unsupported file extension."""
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / 'matrix.mat'
+            path.touch()
+            with pytest.raises(ValueError, match='Unknown suffix'):
+                io.read_matrix(path)
+
+    def test_ensure_4d_1d_raises(self):
+        """ensure_4d raises ValueError for 1D tensors."""
+        with pytest.raises(ValueError, match='not supported'):
+            io.ensure_4d(torch.tensor([1, 2, 3]))
+
+    def test_ensure_4d_6d_raises(self):
+        """ensure_4d raises ValueError for 6D tensors."""
+        with pytest.raises(ValueError, match='not supported'):
+            io.ensure_4d(torch.randn(1, 2, 3, 4, 5, 6))
+
+    def test_sitk_to_nib_4d_bad_nifti(self):
+        """sitk_to_nib handles 4D images (bad NIfTI encoding)."""
+        with tempfile.TemporaryDirectory() as tmp:
+            # Create a 4D NIfTI with channels as 4th spatial dim
+            array = np.random.rand(5, 5, 5, 3).astype(np.float32)
+            nii = nib.nifti1.Nifti1Image(array, np.eye(4))
+            path = Path(tmp) / 'bad4d.nii.gz'
+            nib.save(nii, str(path))
+            sitk_image = sitk.ReadImage(str(path))
+            data, affine = io.sitk_to_nib(sitk_image)
+            assert data.shape[0] == 3
+
+    def test_get_ras_affine_4d_direction(self):
+        """get_ras_affine_from_sitk handles 16-element direction (4D)."""
+        with tempfile.TemporaryDirectory() as tmp:
+            # Create a 4D NIfTI to get a 4D SITK image
+            array = np.random.rand(5, 5, 5, 2).astype(np.float32)
+            nii = nib.nifti1.Nifti1Image(array, np.eye(4))
+            path = Path(tmp) / 'dir4d.nii.gz'
+            nib.save(nii, str(path))
+            sitk_image = sitk.ReadImage(str(path))
+            if sitk_image.GetDimension() == 4:
+                affine = io.get_ras_affine_from_sitk(sitk_image)
+                assert affine.shape == (4, 4)
