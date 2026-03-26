@@ -120,3 +120,79 @@ class TestResample(TorchioTestCase):
             flipped_and_resampled.data,
             resampled_and_flipped.data,
         )
+
+    def test_wrong_spacing_type_raises(self):
+        """Passing a completely invalid type to _parse_spacing raises."""
+        with pytest.raises(ValueError, match='Target must be'):
+            tio.Resample._parse_spacing(cast(Any, object()))
+
+    def test_negative_spacing_value_raises(self):
+        """Negative spacing values should raise ValueError."""
+        with pytest.raises(ValueError, match='strictly positive'):
+            tio.Resample(-1)(self.sample_subject)
+
+    def test_ndarray_wrong_length_raises(self):
+        """NumPy array with != 3 elements as target raises ValueError."""
+        with pytest.raises(ValueError, match='Target must be'):
+            tio.Resample._parse_spacing(np.array([1.0, 2.0]))
+
+    def test_sequence_wrong_length_raises(self):
+        """Sequence with != 3 elements as target raises ValueError."""
+        with pytest.raises(ValueError, match='Target must be'):
+            tio.Resample._parse_spacing([1.0, 2.0])
+
+    def test_sequence_non_numeric_element_raises(self):
+        """Sequence containing a non-numeric element raises ValueError."""
+        with pytest.raises(ValueError, match='Target must be'):
+            tio.Resample(cast(Any, [1.0, 'bad', 3.0]))(self.sample_subject)
+
+    def test_antialias_downsampling(self):
+        """Anti-aliasing should be applied during downsampling."""
+        image = tio.ScalarImage(tensor=torch.rand(1, 20, 20, 20))
+        resample = tio.Resample(2, antialias=True)
+        resampled = resample(image)
+        assert resampled.spatial_shape == (10, 10, 10)
+
+    def test_pre_affine_as_torch_tensor(self):
+        """Pre-affine matrix as a torch.Tensor should be converted to numpy."""
+        subject = tio.Subject(
+            t1=tio.ScalarImage(
+                self.get_image_path('t1_torch_aff'),
+                pre_affine=torch.eye(4),
+            ),
+        )
+        transform = tio.Resample(1, pre_affine_name='pre_affine')
+        transform(subject)
+
+    def test_check_affine_non_string_name_raises(self):
+        """Non-string affine_name raises TypeError in check_affine."""
+        image = tio.ScalarImage(tensor=torch.rand(1, 4, 4, 4))
+        with pytest.raises(TypeError, match='must be a string'):
+            tio.Resample.check_affine(cast(Any, 123), image)
+
+    def test_check_affine_wrong_type_raises(self):
+        """Affine matrix that is not ndarray or Tensor raises TypeError."""
+        image = tio.ScalarImage(tensor=torch.rand(1, 4, 4, 4))
+        image['my_affine'] = [[1, 0], [0, 1]]
+        with pytest.raises(TypeError, match='must be a NumPy array'):
+            tio.Resample.check_affine('my_affine', image)
+
+    def test_check_affine_wrong_shape_raises(self):
+        """Affine matrix with shape != (4, 4) raises ValueError."""
+        image = tio.ScalarImage(tensor=torch.rand(1, 4, 4, 4))
+        image['my_affine'] = np.eye(3)
+        with pytest.raises(ValueError, match='must be .4, 4.'):
+            tio.Resample.check_affine('my_affine', image)
+
+    def test_target_is_same_image_skips_resampling(self):
+        """When target is the same Image object, it is skipped."""
+        image = tio.ScalarImage(tensor=torch.rand(1, 10, 10, 10))
+        subject = tio.Subject(t1=image)
+        transform = tio.Resample(target=image, copy=False)
+        transformed = transform(subject)
+        assert transformed['t1'].spatial_shape == image.spatial_shape
+
+    def test_unrecognized_target_raises_runtime_error(self):
+        """A target that doesn't match any dispatch branch raises RuntimeError."""
+        with pytest.raises(RuntimeError, match='Target not understood'):
+            tio.Resample(cast(Any, object()))(self.sample_subject)

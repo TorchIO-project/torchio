@@ -1,3 +1,4 @@
+from typing import Any
 from typing import cast
 
 import numpy as np
@@ -253,3 +254,8 @@ class TestCropOrPad(TorchioTestCase):
         for image in transformed.get_images(intensity_only=False):
             result_shape = image.spatial_shape
             assert result_shape == expected_shape
+
+    def test_mask_name_non_string_raises(self):
+        """Non-string mask_name should raise ValueError."""
+        with pytest.raises(ValueError, match='must be a string'):
+            tio.CropOrPad((8, 16, 24), mask_name=cast(Any, 123))
