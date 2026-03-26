@@ -27,3 +27,8 @@ class TestRemoveLabels(TorchioTestCase):
             original_values = subject.label.data[original_mask]
             output_values = transformed.label.data[original_mask]
             self.assert_tensor_equal(original_values, output_values)
+
+    def test_not_invertible(self):
+        """RemoveLabels.is_invertible() returns False."""
+        transform = tio.RemoveLabels([1])
+        assert not transform.is_invertible()

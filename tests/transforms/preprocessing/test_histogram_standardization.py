@@ -99,3 +99,40 @@ class TestHistogramStandardization(TorchioTestCase):
         landmarks_dict = {'image': self.dir / 'landmarks.npy'}
         transform = HistogramStandardization(landmarks_dict)
         transform(self.dataset[0])
+
+    def test_invalid_landmarks_extension(self):
+        """Loading landmarks from a file with bad extension raises ValueError."""
+        path = self.dir / 'landmarks.json'
+        path.touch()
+        with pytest.raises(ValueError, match='extension .pt or .pth'):
+            HistogramStandardization(path)
+
+    def test_landmarks_from_pt_file(self):
+        """Loading landmarks from a .pt file parses correctly."""
+        landmarks = torch.from_numpy(np.linspace(0, 100, 13))
+        landmarks_dict = {'image': landmarks}
+        path = self.dir / 'landmarks.pt'
+        torch.save(landmarks_dict, path)
+        transform = HistogramStandardization(path)
+        assert 'image' in transform.landmarks_dict
+
+    def test_train_without_mask(self):
+        """Training without masking_function or mask_path uses all voxels."""
+        paths = [self.get_image_path(f'train_{i}') for i in range(3)]
+        landmarks = HistogramStandardization.train(
+            paths,
+            masking_function=None,
+            output_path=None,
+        )
+        assert isinstance(landmarks, np.ndarray)
+
+    def test_normalize_with_none_mask(self):
+        """Internal _normalize creates an all-ones mask when mask is None."""
+        from torchio.transforms.preprocessing.intensity.histogram_standardization import (
+            _normalize,
+        )
+
+        landmarks = np.linspace(0, 100, 13)
+        tensor = torch.rand(1, 4, 4, 4) * 100
+        result = _normalize(tensor, landmarks, mask=None)
+        assert result.shape == tensor.shape
