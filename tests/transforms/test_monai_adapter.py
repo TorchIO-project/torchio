@@ -368,3 +368,49 @@ class TestMonaiAdapterEdgeCases(TorchioTestCase):
         assert not isinstance(transformed['mean'], tio.Image)
         assert isinstance(transformed['indices'], torch.Tensor)
         assert not isinstance(transformed['indices'], tio.Image)
+
+    def test_repr(self):
+        """__repr__ includes the adapter name and wrapped transform."""
+        transform = tio.MonaiAdapter(NormalizeIntensityd(keys=['t1']))
+        result = repr(transform)
+        assert 'MonaiAdapter' in result
+        assert 'NormalizeIntensityd' in result
+
+    def test_to_hydra_config_raises(self):
+        """to_hydra_config raises NotImplementedError."""
+        transform = tio.MonaiAdapter(NormalizeIntensityd(keys=['t1']))
+        with pytest.raises(NotImplementedError, match='Hydra'):
+            transform.to_hydra_config()
+
+    def test_array_transform_non_tensor_result_raises(self):
+        """Array transform returning non-tensor raises TypeError."""
+
+        class BadArrayTransform:
+            def __call__(self, x):
+                return 'not a tensor'
+
+        subject = tio.Subject(
+            t1=tio.ScalarImage(tensor=torch.randn(1, 10, 10, 10)),
+        )
+        transform = tio.MonaiAdapter(BadArrayTransform())
+        with pytest.raises(TypeError, match='Expected a torch.Tensor'):
+            transform(subject)
+
+    def test_dict_transform_non_tensor_for_image_raises(self):
+        """Dict transform returning non-tensor for image key raises TypeError."""
+
+        class BadDictTransform(MapTransform):
+            def __init__(self):
+                super().__init__(keys=['t1'])
+
+            def __call__(self, data):
+                data = dict(data)
+                data['t1'] = 'not a tensor'
+                return data
+
+        subject = tio.Subject(
+            t1=tio.ScalarImage(tensor=torch.randn(1, 10, 10, 10)),
+        )
+        transform = tio.MonaiAdapter(BadDictTransform())
+        with pytest.raises(TypeError, match='Expected a torch.Tensor'):
+            transform(subject)
