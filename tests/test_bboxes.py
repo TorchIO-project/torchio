@@ -66,16 +66,22 @@ class TestBoundingBoxFormat:
         assert "corners" in r
 
     def test_predefined_ijkijk(self):
-        assert BoundingBoxFormat(
-            "IJK",
-            Representation.CORNERS,
-        ) == BoundingBoxFormat.IJKIJK
+        assert (
+            BoundingBoxFormat(
+                "IJK",
+                Representation.CORNERS,
+            )
+            == BoundingBoxFormat.IJKIJK
+        )
 
     def test_predefined_ijkwhd(self):
-        assert BoundingBoxFormat(
-            "IJK",
-            Representation.CENTER_SIZE,
-        ) == BoundingBoxFormat.IJKWHD
+        assert (
+            BoundingBoxFormat(
+                "IJK",
+                Representation.CENTER_SIZE,
+            )
+            == BoundingBoxFormat.IJKWHD
+        )
 
 
 class TestBoundingBoxesCreation:

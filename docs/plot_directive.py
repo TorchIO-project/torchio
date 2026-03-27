@@ -19,15 +19,15 @@ from pathlib import Path
 
 import matplotlib
 
-matplotlib.use('Agg')
+matplotlib.use("Agg")
 
-import matplotlib.pyplot as plt  # noqa: E402
+import matplotlib.pyplot as plt
 
-_DOCS_DIR = Path('docs')
-_PLOT_DIR = _DOCS_DIR / 'images' / 'plots'
+_DOCS_DIR = Path("docs")
+_PLOT_DIR = _DOCS_DIR / "images" / "plots"
 
 _FENCE_RE = re.compile(
-    r'^(\s*)(`{3,})python\s+plot\s*$\n(.*?)^\1\2\s*$',
+    r"^(\s*)(`{3,})python\s+plot\s*$\n(.*?)^\1\2\s*$",
     re.MULTILINE | re.DOTALL,
 )
 
@@ -35,7 +35,7 @@ _FENCE_RE = re.compile(
 def process_file(md_path: Path) -> bool:
     """Process a single markdown file. Returns True if modified."""
     text = md_path.read_text()
-    if 'python plot' not in text:
+    if "python plot" not in text:
         return False
 
     page_dir = str(md_path.parent.relative_to(_DOCS_DIR))
@@ -44,41 +44,41 @@ def process_file(md_path: Path) -> bool:
     def _replace(match: re.Match) -> str:
         indent = match.group(1)
         code = textwrap.dedent(match.group(3))
-        digest = hashlib.md5(code.encode()).hexdigest()[:12]  # noqa: S324
-        fname = f'plot_{digest}.png'
+        digest = hashlib.md5(code.encode()).hexdigest()[:12]
+        fname = f"plot_{digest}.png"
         fpath = _PLOT_DIR / fname
 
         if not fpath.exists():
-            plt.close('all')
+            plt.close("all")
             try:
-                exec(code, {'__name__': '__main__'})  # noqa: S102
+                exec(code, {"__name__": "__main__"})
             except Exception as exc:
-                msg = f'{type(exc).__name__}: {exc}'
-                print(f'  WARNING: Plot failed: {msg}', file=sys.stderr)
+                msg = f"{type(exc).__name__}: {exc}"
+                print(f"  WARNING: Plot failed: {msg}", file=sys.stderr)
                 return (
                     f'{indent}!!! warning "Plot generation failed"\n{indent}    {msg}\n'
                 )
             fig = plt.gcf()
-            fig.savefig(fpath, bbox_inches='tight', dpi=150)
-            plt.close('all')
-            print(f'  Generated {fpath}', file=sys.stderr)
+            fig.savefig(fpath, bbox_inches="tight", dpi=150)
+            plt.close("all")
+            print(f"  Generated {fpath}", file=sys.stderr)
         else:
-            print(f'  Cached    {fpath}', file=sys.stderr)
+            print(f"  Cached    {fpath}", file=sys.stderr)
 
         img_rel = os.path.relpath(
             str(fpath.relative_to(_DOCS_DIR)),
             page_dir,
-        ).replace(os.sep, '/')
+        ).replace(os.sep, "/")
 
-        bt = '`' * 3
-        indented_code = textwrap.indent(code.rstrip(), indent + '    ')
+        bt = "`" * 3
+        indented_code = textwrap.indent(code.rstrip(), indent + "    ")
         return (
-            f'{indent}![plot]({img_rel})\n'
-            f'\n'
+            f"{indent}![plot]({img_rel})\n"
+            f"\n"
             f'{indent}??? note "Source code"\n'
-            f'{indent}    {bt}python\n'
-            f'{indented_code}\n'
-            f'{indent}    {bt}\n'
+            f"{indent}    {bt}python\n"
+            f"{indented_code}\n"
+            f"{indent}    {bt}\n"
         )
 
     new_text = _FENCE_RE.sub(_replace, text)
@@ -89,14 +89,14 @@ def process_file(md_path: Path) -> bool:
 
 
 def main() -> None:
-    md_files = sorted(_DOCS_DIR.rglob('*.md'))
+    md_files = sorted(_DOCS_DIR.rglob("*.md"))
     modified = 0
     for md_path in md_files:
-        print(f'Processing {md_path}', file=sys.stderr)
+        print(f"Processing {md_path}", file=sys.stderr)
         if process_file(md_path):
             modified += 1
-    print(f'Modified {modified} file(s)', file=sys.stderr)
+    print(f"Modified {modified} file(s)", file=sys.stderr)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

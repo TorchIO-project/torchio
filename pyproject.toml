@@ -125,6 +125,8 @@ quality = [
     "bump-my-version",
     "prek",
     "ruff",
+]
+types = [
     "ty",
 ]
 zarr = [

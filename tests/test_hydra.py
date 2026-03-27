@@ -27,10 +27,12 @@ class TestToHydra:
         assert cfg["axes"] == [0, 1]
 
     def test_compose(self) -> None:
-        pipeline = tio.Compose([
-            tio.Flip(axes=(0,), p=0.5),
-            tio.Noise(std=0.1),
-        ])
+        pipeline = tio.Compose(
+            [
+                tio.Flip(axes=(0,), p=0.5),
+                tio.Noise(std=0.1),
+            ]
+        )
         cfg = pipeline.to_hydra()
         assert cfg["_target_"] == "torchio.Compose"
         assert len(cfg["transforms"]) == 2
@@ -38,9 +40,11 @@ class TestToHydra:
         assert cfg["transforms"][1]["_target_"] == "torchio.Noise"
 
     def test_nested_compose(self) -> None:
-        pipeline = tio.Compose([
-            tio.OneOf([tio.Noise(), tio.Flip()]),
-        ])
+        pipeline = tio.Compose(
+            [
+                tio.OneOf([tio.Noise(), tio.Flip()]),
+            ]
+        )
         cfg = pipeline.to_hydra()
         inner = cfg["transforms"][0]
         assert inner["_target_"] == "torchio.OneOf"

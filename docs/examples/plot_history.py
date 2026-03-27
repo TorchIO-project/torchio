@@ -19,7 +19,7 @@ torch.manual_seed(0)
 
 batch_size = 4
 subject = tio.datasets.FPG()
-subject.remove_image('seg')
+subject.remove_image("seg")
 subjects = 4 * [subject]
 
 transform = tio.Compose(
@@ -35,12 +35,12 @@ transform = tio.Compose(
 dataset = tio.SubjectsDataset(subjects, transform=transform)
 
 transformed = dataset[0]
-print('Applied transforms:')  # noqa: T201
-pprint.pprint(transformed.history)  # noqa: T203
-print('\nComposed transform to reproduce history:')  # noqa: T201
-print(transformed.get_composed_history())  # noqa: T201
-print('\nComposed transform to invert applied transforms when possible:')
-print(transformed.get_inverse_transform(ignore_intensity=False))  # noqa: T201
+print("Applied transforms:")
+pprint.pprint(transformed.history)
+print("\nComposed transform to reproduce history:")
+print(transformed.get_composed_history())
+print("\nComposed transform to invert applied transforms when possible:")
+print(transformed.get_inverse_transform(ignore_intensity=False))
 
 loader = tio.SubjectsLoader(
     dataset,
@@ -49,16 +49,16 @@ loader = tio.SubjectsLoader(
 )
 
 batch = tio.utils.get_first_item(loader)
-print('\nTransforms applied to subjects in batch:')  # noqa: T201
-pprint.pprint(batch[tio.HISTORY])  # noqa: T203
+print("\nTransforms applied to subjects in batch:")
+pprint.pprint(batch[tio.HISTORY])
 
 for i in range(batch_size):
-    tensor = batch['t1'][tio.DATA][i]
-    affine = batch['t1'][tio.AFFINE][i]
+    tensor = batch["t1"][tio.DATA][i]
+    affine = batch["t1"][tio.AFFINE][i]
     image = tio.ScalarImage(tensor=tensor, affine=affine)
     image.plot(show=False)
     history = batch[tio.HISTORY][i]
-    title = ', '.join(t.name for t in history)
+    title = ", ".join(t.name for t in history)
     plt.suptitle(title)
     plt.tight_layout()
 

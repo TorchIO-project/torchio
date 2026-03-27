@@ -3,12 +3,11 @@
 from __future__ import annotations
 
 import torch
-from torch.utils.data import DataLoader
 from torch.utils.data import Dataset
 
 import torchio as tio
-from torchio.data.bboxes import BoundingBoxFormat
 from torchio.data.bboxes import BoundingBoxes
+from torchio.data.bboxes import BoundingBoxFormat
 from torchio.data.points import Points
 
 
@@ -84,15 +83,10 @@ class TestImageTensorDict:
         td = image.to_tensordict()
         restored = tio.Image.from_tensordict(td)
         assert "roi" in restored.bounding_boxes
-        torch.testing.assert_close(
-            restored.bounding_boxes["roi"].data, boxes.data
-        )
+        torch.testing.assert_close(restored.bounding_boxes["roi"].data, boxes.data)
 
     def test_stacking(self) -> None:
-        images = [
-            tio.ScalarImage.from_tensor(torch.rand(1, 8, 8, 8))
-            for _ in range(4)
-        ]
+        images = [tio.ScalarImage.from_tensor(torch.rand(1, 8, 8, 8)) for _ in range(4)]
         tds = [img.to_tensordict() for img in images]
         batch = torch.stack(tds)
         assert batch.batch_size == torch.Size([4])
@@ -191,10 +185,7 @@ class TestCollate:
         assert batch["t1", "data"].shape == (4, 1, 16, 16, 16)
 
     def test_collate_images(self) -> None:
-        images = [
-            tio.ScalarImage.from_tensor(torch.rand(1, 8, 8, 8))
-            for _ in range(4)
-        ]
+        images = [tio.ScalarImage.from_tensor(torch.rand(1, 8, 8, 8)) for _ in range(4)]
         tds = [img.to_tensordict() for img in images]
         batch = tio.collate_images(tds)
         assert batch.batch_size == torch.Size([4])

@@ -183,16 +183,22 @@ class TestZarrBackend:
     """Tests for ZarrBackend using nifti-zarr."""
 
     @pytest.fixture
-    def zarr_path(self) -> Path | None:
-        path = Path("/Users/fernando/git/torchio/colin.nii.zarr")
-        if not path.exists():
-            pytest.skip("colin.nii.zarr not available")
-        return path
+    def zarr_path(self, tmp_path: Path) -> Path:
+        try:
+            import niizarr
+        except ImportError:
+            pytest.skip("nifti-zarr not installed")
+        data = np.random.rand(16, 16, 16).astype(np.float32)
+        nii = nib.Nifti1Image(data, np.eye(4))
+        nii_path = tmp_path / "test.nii.gz"
+        nib.save(nii, nii_path)
+        zarr_path = tmp_path / "test.nii.zarr"
+        niizarr.nii2zarr(str(nii_path), str(zarr_path))
+        return zarr_path
 
     def test_zarr_image_shape(self, zarr_path: Path):
         image = ScalarImage(zarr_path)
-        assert len(image.shape) == 4
-        assert image.shape[0] >= 1
+        assert image.shape == (1, 16, 16, 16)
 
     def test_zarr_lazy_load(self, zarr_path: Path):
         from torchio.data.backends import ZarrBackend
@@ -205,7 +211,7 @@ class TestZarrBackend:
     def test_zarr_slice(self, zarr_path: Path):
         image = ScalarImage(zarr_path)
         backend = image.dataobj
-        sliced = backend[:, 50:60, 50:60, 50:60]
+        sliced = backend[:, 2:12, 2:12, 2:12]
         assert sliced.shape == (1, 10, 10, 10)
         assert image._data is None
 
@@ -213,4 +219,4 @@ class TestZarrBackend:
         image = ScalarImage(zarr_path)
         tensor = image.data
         assert isinstance(tensor, torch.Tensor)
-        assert tensor.ndim == 4
+        assert tensor.shape == (1, 16, 16, 16)

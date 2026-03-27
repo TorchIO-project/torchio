@@ -6,8 +6,8 @@ import pytest
 import torch
 
 import torchio as tio
-from torchio.data.bboxes import BoundingBoxFormat
 from torchio.data.bboxes import BoundingBoxes
+from torchio.data.bboxes import BoundingBoxFormat
 from torchio.data.points import Points
 
 HAS_CUDA = torch.cuda.is_available()

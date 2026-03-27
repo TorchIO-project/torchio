@@ -6,9 +6,6 @@ import pytest
 import torch
 
 import torchio as tio
-from torchio.data.bboxes import BoundingBoxFormat
-from torchio.data.bboxes import BoundingBoxes
-from torchio.data.points import Points
 
 HAS_MPS = torch.backends.mps.is_available()
 

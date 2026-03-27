@@ -16,7 +16,7 @@ max_queue_length = 16
 patches_per_volume = 2
 
 subject = tio.datasets.Colin27()
-subject.remove_image('head')
+subject.remove_image("head")
 
 subjects = 50 * [subject]
 max_side = max(subject.shape)
@@ -37,8 +37,8 @@ def plot_batch(sampler):
     batch = tio.utils.get_first_item(loader)
 
     _, axes = plt.subplots(4, 4, figsize=(12, 10))
-    for ax, im in zip(axes.flatten(), batch['t1']['data'], strict=True):
-        ax.imshow(im.squeeze(), cmap='gray')
+    for ax, im in zip(axes.flatten(), batch["t1"]["data"], strict=True):
+        ax.imshow(im.squeeze(), cmap="gray")
     plt.suptitle(sampler.__class__.__name__)
     plt.tight_layout()
 
@@ -59,7 +59,7 @@ plot_batch(sampler)
 # for a :class:`torchio.WeightedSampler`. That way, we ensure that the center
 # of all patches correspond to brain tissue.
 
-sampler = tio.WeightedSampler(patch_size, probability_map='brain')
+sampler = tio.WeightedSampler(patch_size, probability_map="brain")
 plot_batch(sampler)
 
 plt.show()

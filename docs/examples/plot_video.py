@@ -23,10 +23,10 @@ def read_clip(path, undersample=4):
     frames = []
     for i in range(gif.n_frames):
         gif.seek(i)
-        frames.append(np.array(gif.convert('RGB')))
+        frames.append(np.array(gif.convert("RGB")))
     frames = frames[::undersample]
     array = np.stack(frames).transpose(3, 1, 2, 0)
-    delay = gif.info['duration']
+    delay = gif.info["duration"]
     return array, delay
 
 
@@ -39,19 +39,19 @@ def plot_gif(image):
     def get_frame(image, i):
         return image.data[..., i].permute(1, 2, 0).byte()
 
-    plt.rcParams['animation.embed_limit'] = 25
+    plt.rcParams["animation.embed_limit"] = 25
     fig, ax = plt.subplots()
     im = ax.imshow(get_frame(image, 0))
     return animation.FuncAnimation(
         fig,
         _update_frame,
-        repeat_delay=image['delay'],
+        repeat_delay=image["delay"],
         frames=image.shape[-1],
     )
 
 
 # Source: https://thehigherlearning.wordpress.com/2014/06/25/watching-a-cell-divide-under-an-electron-microscope-is-mesmerizing-gif/
-array, delay = read_clip('nBTu3oi.gif')
+array, delay = read_clip("nBTu3oi.gif")
 plt.imshow(array[..., 0].transpose(1, 2, 0))
 plt.plot()
 image = tio.ScalarImage(tensor=array, delay=delay)

@@ -122,7 +122,7 @@ class TestNoise:
         torch.testing.assert_close(result1.t1.data, result2.t1.data)
 
     def test_negative_std_raises(self) -> None:
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match="non-negative"):
             tio.Noise(std=-1.0)
 
     def test_random_std_range(self) -> None:

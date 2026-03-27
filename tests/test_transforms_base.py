@@ -2,9 +2,7 @@
 
 from __future__ import annotations
 
-import copy
 from dataclasses import asdict
-from typing import Any
 
 import nibabel as nib
 import numpy as np
@@ -13,10 +11,9 @@ import SimpleITK as sitk
 import torch
 
 import torchio as tio
-from torchio.data.bboxes import BoundingBoxFormat
 from torchio.data.bboxes import BoundingBoxes
+from torchio.data.bboxes import BoundingBoxFormat
 from torchio.data.points import Points
-
 
 # ── Helpers ──────────────────────────────────────────────────────────
 

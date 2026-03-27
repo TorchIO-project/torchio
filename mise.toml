@@ -1,4 +1,5 @@
 [tools]
+prek = "latest"
 uv = "latest"
 
 [tasks.setup]
