@@ -4,17 +4,19 @@ version = "0.23.1"
 description = "Medical image preprocessing, augmentation, and patch-based training."
 requires-python = ">=3.11"
 dependencies = [
-    "attrs>=26.1.0",
+    "attrs",
     "einops",
-    "fsspec[http]>=2026.2.0",
-    "humanize>=4.15.0",
-    "jaxtyping>=0.3.9",
-    "loguru>=0.7.3",
+    "fsspec[http]",
+    "humanize",
+    "jaxtyping",
+    "loguru",
     "nibabel",
     "numpy",
+    "pyyaml>=6.0.3",
+    "rich",
     "simpleitk",
     "tensordict",
-    "torch>=2.0",
+    "torch",
 ]
 
 [project.urls]
@@ -103,36 +105,40 @@ dev = [
     "ipywidgets>=8.1.8",
     "nbconvert>=7.17.0",
     "rich>=14.3.3",
+    "tox-uv",
 ]
 test = [
+    "colorcet",
+    "ffmpeg-python",
+    "matplotlib",
+    "monai",
+    "nifti-zarr",
     "pytest",
     "pytest-cov",
     "pytest-sugar",
 ]
 doc = [
-    "mkdocstrings-python>=2.0.2",
-    "zensical>=0.0.23",
+    "mkdocstrings-python",
+    "zensical",
 ]
 quality = [
     "bump-my-version",
     "prek",
     "ruff",
-    "tox-uv",
     "ty",
 ]
 zarr = [
-    "nifti-zarr>=1.0.0rc6",
+    "nifti-zarr",
 ]
 plot = [
-    "matplotlib>=3.7",
+    "matplotlib",
     "colorcet",
-    "pillow",
 ]
 video = [
-    "ffmpeg-python>=0.2",
+    "ffmpeg-python",
 ]
 monai = [
-    "monai>=1.4",
+    "monai",
 ]
 s3 = [
     "s3fs",

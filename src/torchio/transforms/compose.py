@@ -58,6 +58,11 @@ class Compose(Transform):
             transform.copy = old_copy
         return unwrap(subject)
 
+    def to_hydra(self) -> dict[str, Any]:
+        cfg = super().to_hydra()
+        cfg["transforms"] = [t.to_hydra() for t in self.transforms]
+        return cfg
+
 
 @attrs.define(slots=False, eq=False, kw_only=True, repr=False)
 class OneOf(Transform):
@@ -100,6 +105,11 @@ class OneOf(Transform):
         ).item()
         subject = self.transforms[idx](subject)
         return unwrap(subject)
+
+    def to_hydra(self) -> dict[str, Any]:
+        cfg = super().to_hydra()
+        cfg["transforms"] = [t.to_hydra() for t in self.transforms]
+        return cfg
 
 
 @attrs.define(slots=False, eq=False, kw_only=True, repr=False)
@@ -161,3 +171,8 @@ class SomeOf(Transform):
         for idx in indices:
             subject = self.transforms[idx](subject)
         return unwrap(subject)
+
+    def to_hydra(self) -> dict[str, Any]:
+        cfg = super().to_hydra()
+        cfg["transforms"] = [t.to_hydra() for t in self.transforms]
+        return cfg

@@ -158,6 +158,55 @@ class Transform(nn.Module):
         """
         raise NotImplementedError
 
+    def to_hydra(self) -> dict[str, Any]:
+        """Export as a Hydra-compatible config dict.
+
+        Returns a dict with ``_target_`` set to the fully qualified
+        class name and only non-default field values included.
+        Values are plain Python types (no ParameterRange, no Tensor).
+
+        Returns:
+            Dict suitable for ``hydra.utils.instantiate()``.
+        """
+        from .parameter_range import ParameterRange
+
+        cls = type(self)
+        # Use the public torchio.ClassName path for Hydra
+        target = f"torchio.{cls.__qualname__}"
+        cfg: dict[str, Any] = {"_target_": target}
+
+        for f in attrs.fields(cls):
+            value = getattr(self, f.name)
+            default = f.default
+            if isinstance(default, attrs.Factory):
+                default = default.factory()
+            if isinstance(value, ParameterRange):
+                if value._original == default:
+                    continue
+                value = _hydra_value(value._original)
+            elif value == default:
+                continue
+            else:
+                value = _hydra_value(value)
+            cfg[f.name] = value
+        return cfg
+
+    def to_yaml(self) -> str:
+        """Export as a YAML string for Hydra.
+
+        Requires PyYAML (part of the standard scientific stack).
+
+        Returns:
+            YAML string.
+        """
+        import yaml
+
+        return yaml.dump(
+            self.to_hydra(),
+            default_flow_style=False,
+            sort_keys=False,
+        )
+
     def _get_images(self, subject: Subject) -> dict[str, Image]:
         """Get images filtered by include/exclude."""
         images = subject.images
@@ -213,6 +262,17 @@ class Transform(nn.Module):
             f" SimpleITK Image, or NIfTI, got {type(data).__name__}"
         )
         raise TypeError(msg)
+
+
+def _hydra_value(value: Any) -> Any:
+    """Convert a value to a plain Python type for Hydra/YAML."""
+    if isinstance(value, tuple):
+        return list(value)
+    if isinstance(value, Tensor):
+        return value.tolist()
+    if isinstance(value, np.ndarray):
+        return value.tolist()
+    return value
 
 
 def _unwrap_subject(subject: Subject) -> Subject:

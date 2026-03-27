@@ -132,6 +132,32 @@ noise = tio.Noise(std=0.1)
 replayed = noise.apply(new_subject, params)
 ```
 
+## Hydra configuration
+
+Transforms can export themselves as Hydra-compatible YAML configs
+for reproducible experiment management:
+
+```python
+pipeline = tio.Compose([
+    tio.Flip(axes=(0, 1), p=0.5),
+    tio.Noise(std=(0.05, 0.2)),
+])
+print(pipeline.to_yaml())
+```
+
+```yaml
+_target_: torchio.Compose
+transforms:
+- _target_: torchio.Flip
+  p: 0.5
+  axes: [0, 1]
+- _target_: torchio.Noise
+  std: [0.05, 0.2]
+```
+
+Use `to_hydra()` for a dict, or `to_yaml()` for a YAML string.
+Instantiate with `hydra.utils.instantiate(cfg)`.
+
 ## GPU and differentiability
 
 All transforms are pure PyTorch operations. Spatial transforms use
