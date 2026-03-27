@@ -4,6 +4,7 @@ Goal-oriented recipes. Each guide solves a specific problem.
 
 | Guide | Problem |
 |-------|---------|
+| [Load subjects with a DataLoader](dataloader.md) | Batch subjects for training with PyTorch's DataLoader |
 | [Use a custom reader](custom-reader.md) | Load images from a format TorchIO does not support natively |
 | [Save as NIfTI-Zarr](save-nii-zarr.md) | Convert volumes to chunked format for lazy access |
 | [Add annotations to a Subject](annotations.md) | Attach points and bounding boxes to images |

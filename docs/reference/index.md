@@ -10,3 +10,7 @@ Auto-generated documentation from source code docstrings.
 - [BoundingBoxes](bboxes.md) -- 3D bounding boxes with format conversion
 - [Affine](affine.md) -- affine matrix class
 - [Axes](axes.md) -- axis validation and conversion utilities
+
+## Data loading
+
+- [SubjectsLoader, ImagesLoader](loader.md) -- batching subjects and images for training

@@ -12,6 +12,10 @@ from .data.points import Points
 from .data.subject import Subject
 from .io import read_matrix
 from .io import write_matrix
+from .loader import ImagesLoader
+from .loader import SubjectsLoader
+from .loader import collate_images
+from .loader import collate_subjects
 from .logging import enable_logging
 from .types import TypeAffineMatrix
 from .types import TypeDirection
@@ -29,11 +33,13 @@ __all__ = [
     "BoundingBoxFormat",
     "BoundingBoxes",
     "Image",
+    "ImagesLoader",
     "LabelMap",
     "Points",
     "Representation",
     "ScalarImage",
     "Subject",
+    "SubjectsLoader",
     "TypeAffineMatrix",
     "TypeDirection",
     "TypeImageData",
@@ -44,6 +50,8 @@ __all__ = [
     "TypeSpatialShape",
     "TypeTensorShape",
     "TypeWorldPoints",
+    "collate_images",
+    "collate_subjects",
     "datasets",
     "enable_logging",
     "read_matrix",

@@ -104,3 +104,32 @@ image.save("output.nrrd")
 # NIfTI-Zarr (chunked, lazy-loadable)
 image.save("output.nii.zarr")
 ```
+
+### Batching with a DataLoader
+
+```python
+from torch.utils.data import Dataset
+
+class BrainDataset(Dataset):
+    def __init__(self, paths):
+        self.subjects = [
+            tio.Subject(
+                t1=tio.ScalarImage(p / "t1.nii.gz"),
+                seg=tio.LabelMap(p / "seg.nii.gz"),
+            )
+            for p in paths
+        ]
+
+    def __len__(self):
+        return len(self.subjects)
+
+    def __getitem__(self, idx):
+        return self.subjects[idx]
+
+loader = tio.SubjectsLoader(BrainDataset(paths), batch_size=4)
+batch = next(iter(loader))
+batch["t1", "data"].shape  # (4, 1, 256, 256, 176)
+```
+
+See the [DataLoader how-to guide](how-to/dataloader.md) for more
+details.

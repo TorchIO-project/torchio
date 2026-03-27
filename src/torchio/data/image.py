@@ -15,6 +15,7 @@ import numpy.typing as npt
 import SimpleITK as sitk
 import torch
 from einops import rearrange
+from tensordict import TensorDict
 from torch import Tensor
 
 from ..types import TypeImageData
@@ -26,6 +27,8 @@ from .backends import ImageDataBackend
 from .backends import NibabelBackend
 from .backends import NumpyBackend
 from .bboxes import BoundingBoxes
+from .bboxes import BoundingBoxFormat
+from .bboxes import Representation
 from .points import Points
 
 
@@ -643,6 +646,116 @@ class Image:
         affine_array[:3, 3] += affine_array[:3, :3] @ start_voxel
 
         return self.new_like(data=cropped_data, affine=affine_array)
+
+    def to_tensordict(self) -> TensorDict:
+        """Convert this Image to a TensorDict for batching.
+
+        The ``data`` and ``affine`` tensors are stored as regular entries
+        so they stack efficiently. The image class name, metadata,
+        points, and bounding boxes are stored as non-tensor entries.
+
+        Returns:
+            A TensorDict with ``batch_size=[]``.
+        """
+        td = TensorDict(
+            {
+                "data": self.data,
+                "affine": torch.as_tensor(self.affine.numpy()),
+            },
+            batch_size=[],
+        )
+        td.set_non_tensor("_class", type(self).__name__)
+
+        if self._metadata:
+            td.set_non_tensor("_metadata", dict(self._metadata))
+
+        for name, pts in self._points.items():
+            td.set_non_tensor(f"_points_{name}", {
+                "data": pts.data,
+                "axes": pts.axes,
+                "affine": pts.affine.numpy().copy(),
+                "metadata": dict(pts.metadata),
+            })
+
+        for name, boxes in self._bounding_boxes.items():
+            td.set_non_tensor(f"_bboxes_{name}", {
+                "data": boxes.data,
+                "format_axes": boxes.format.axes,
+                "format_repr": boxes.format.representation.value,
+                "labels": boxes.labels,
+                "affine": boxes.affine.numpy().copy(),
+                "metadata": dict(boxes.metadata),
+            })
+
+        return td
+
+    @classmethod
+    def from_tensordict(cls, td: TensorDict) -> Image:
+        """Reconstruct an Image from a TensorDict.
+
+        This is the inverse of
+        [`to_tensordict`][torchio.Image.to_tensordict].
+
+        Args:
+            td: TensorDict produced by ``to_tensordict()``.
+
+        Returns:
+            Reconstructed Image (ScalarImage, LabelMap, or Image).
+        """
+        image_classes: dict[str, type[Image]] = {
+            "ScalarImage": ScalarImage,
+            "LabelMap": LabelMap,
+            "Image": Image,
+        }
+
+        class_name = td.get_non_tensor("_class")
+        image_cls = image_classes.get(class_name, ScalarImage)
+
+        data = td["data"]
+        affine = Affine(td["affine"].numpy())
+
+        # Reconstruct annotations from non-tensor entries
+        non_tensor = {k: v.data for k, v in td.non_tensor_items()}
+
+        metadata = non_tensor.get("_metadata")
+
+        points: dict[str, Points] | None = None
+        bounding_boxes: dict[str, BoundingBoxes] | None = None
+
+        for key, value in non_tensor.items():
+            if key.startswith("_points_"):
+                if points is None:
+                    points = {}
+                name = key[len("_points_"):]
+                points[name] = Points(
+                    value["data"],
+                    axes=value["axes"],
+                    affine=Affine(value["affine"]),
+                    metadata=value["metadata"],
+                )
+            elif key.startswith("_bboxes_"):
+                if bounding_boxes is None:
+                    bounding_boxes = {}
+                name = key[len("_bboxes_"):]
+                fmt = BoundingBoxFormat(
+                    value["format_axes"],
+                    Representation(value["format_repr"]),
+                )
+                bounding_boxes[name] = BoundingBoxes(
+                    value["data"],
+                    format=fmt,
+                    labels=value["labels"],
+                    affine=Affine(value["affine"]),
+                    metadata=value["metadata"],
+                )
+
+        return image_cls.from_tensor(
+            data,
+            affine=affine,
+            points=points,
+            bounding_boxes=bounding_boxes,
+            metadata=metadata,
+        )
 
     def __repr__(self) -> str:
         cls_name = type(self).__name__

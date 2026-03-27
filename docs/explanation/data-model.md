@@ -242,3 +242,30 @@ A typical workflow:
 4. Apply transforms to the `Subject` -- this triggers loading and
    produces a new `Subject` with transformed data.
 5. Access `.data` tensors for training.
+
+## Batching with tensordict
+
+When training a model, you need to stack subjects into batches.
+TorchIO uses PyTorch's `tensordict` library for this:
+
+```python
+td = subject.to_tensordict()    # Subject → TensorDict
+restored = Subject.from_tensordict(td)  # TensorDict → Subject
+```
+
+Under the hood:
+
+- Image tensors and affines become regular tensor entries that stack
+  efficiently.
+- Points, bounding boxes, and metadata are stored as *non-tensor*
+  entries -- these can have different sizes per subject (e.g.,
+  different numbers of landmarks).
+
+`SubjectsLoader` wraps `DataLoader` and performs this conversion
+automatically:
+
+```python
+loader = tio.SubjectsLoader(dataset, batch_size=4)
+for batch in loader:
+    batch["t1", "data"]  # (4, C, I, J, K)
+```
