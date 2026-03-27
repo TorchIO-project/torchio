@@ -111,12 +111,12 @@ class Crop(BoundsTransform):
         if copy_patch:
             # Create a new image with the cropped data
             cropped_data = image.data[:, i0:i1, j0:j1, k0:k1].clone()
-            new_image = type(image)(
+            new_image = image.new_like(
                 tensor=cropped_data,
                 affine=new_affine,
-                type=image.type,
-                path=image.path,
             )
+            # Preserve path for the new image
+            new_image.path = image.path
             return new_image
         else:
             image.set_data(image.data[:, i0:i1, j0:j1, k0:k1].clone())
