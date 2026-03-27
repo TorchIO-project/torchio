@@ -25,9 +25,7 @@ ANATOMICAL_PAIRS: tuple[tuple[str, str], ...] = (
 )
 
 # Flat set of all anatomical letters.
-_ANATOMICAL_LETTERS = frozenset(
-    letter for pair in ANATOMICAL_PAIRS for letter in pair
-)
+_ANATOMICAL_LETTERS = frozenset(letter for pair in ANATOMICAL_PAIRS for letter in pair)
 
 # Map each anatomical letter to its opposite.
 _OPPOSITE: dict[str, str] = {}

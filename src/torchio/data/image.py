@@ -214,7 +214,7 @@ class Image:
         parsed_affine = Image._parse_affine(affine)
         instance._affine = parsed_affine
         instance._backend = NumpyBackend(
-            instance._data.numpy(),
+            instance._data.detach().numpy(),
             affine=parsed_affine.numpy(),
         )
         instance._points = Image._parse_annotations(points, "Points")
@@ -444,6 +444,22 @@ class Image:
         """
         self._data = self._parse_tensor(tensor)
 
+    @property
+    def device(self) -> torch.device:
+        """Device the image data resides on."""
+        return self.data.device
+
+    def to(self, *args: Any, **kwargs: Any) -> Self:
+        """Move image data to a device and/or cast to a dtype.
+
+        Accepts the same arguments as ``torch.Tensor.to()``.
+
+        Returns:
+            ``self`` (modified in-place).
+        """
+        self._data = self.data.to(*args, **kwargs)
+        return self
+
     def new_like(
         self,
         *,
@@ -670,22 +686,28 @@ class Image:
             td.set_non_tensor("_metadata", dict(self._metadata))
 
         for name, pts in self._points.items():
-            td.set_non_tensor(f"_points_{name}", {
-                "data": pts.data,
-                "axes": pts.axes,
-                "affine": pts.affine.numpy().copy(),
-                "metadata": dict(pts.metadata),
-            })
+            td.set_non_tensor(
+                f"_points_{name}",
+                {
+                    "data": pts.data,
+                    "axes": pts.axes,
+                    "affine": pts.affine.numpy().copy(),
+                    "metadata": dict(pts.metadata),
+                },
+            )
 
         for name, boxes in self._bounding_boxes.items():
-            td.set_non_tensor(f"_bboxes_{name}", {
-                "data": boxes.data,
-                "format_axes": boxes.format.axes,
-                "format_repr": boxes.format.representation.value,
-                "labels": boxes.labels,
-                "affine": boxes.affine.numpy().copy(),
-                "metadata": dict(boxes.metadata),
-            })
+            td.set_non_tensor(
+                f"_bboxes_{name}",
+                {
+                    "data": boxes.data,
+                    "format_axes": boxes.format.axes,
+                    "format_repr": boxes.format.representation.value,
+                    "labels": boxes.labels,
+                    "affine": boxes.affine.numpy().copy(),
+                    "metadata": dict(boxes.metadata),
+                },
+            )
 
         return td
 
@@ -726,7 +748,7 @@ class Image:
             if key.startswith("_points_"):
                 if points is None:
                     points = {}
-                name = key[len("_points_"):]
+                name = key[len("_points_") :]
                 points[name] = Points(
                     value["data"],
                     axes=value["axes"],
@@ -736,7 +758,7 @@ class Image:
             elif key.startswith("_bboxes_"):
                 if bounding_boxes is None:
                     bounding_boxes = {}
-                name = key[len("_bboxes_"):]
+                name = key[len("_bboxes_") :]
                 fmt = BoundingBoxFormat(
                     value["format_axes"],
                     Representation(value["format_repr"]),

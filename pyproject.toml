@@ -4,6 +4,7 @@ version = "0.23.1"
 description = "Medical image preprocessing, augmentation, and patch-based training (v2)"
 requires-python = ">=3.11"
 dependencies = [
+    "attrs>=26.1.0",
     "einops",
     "humanize>=4.15.0",
     "jaxtyping>=0.3.9",
@@ -103,4 +104,7 @@ plot = [
 ]
 video = [
     "ffmpeg-python>=0.2",
+]
+monai = [
+    "monai>=1.4",
 ]

@@ -53,3 +53,7 @@ def get_pillow() -> ModuleType:
 
 def get_ffmpeg() -> ModuleType:
     return _check_and_import(module="ffmpeg", extra="video", package="ffmpeg-python")
+
+
+def get_monai() -> ModuleType:
+    return _check_and_import(module="monai", extra="monai")

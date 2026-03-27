@@ -17,6 +17,17 @@ from .loader import SubjectsLoader
 from .loader import collate_images
 from .loader import collate_subjects
 from .logging import enable_logging
+from .transforms import AppliedTransform
+from .transforms import Compose
+from .transforms import Flip
+from .transforms import IntensityTransform
+from .transforms import MonaiAdapter
+from .transforms import Noise
+from .transforms import OneOf
+from .transforms import SomeOf
+from .transforms import SpatialTransform
+from .transforms import To
+from .transforms import Transform
 from .types import TypeAffineMatrix
 from .types import TypeDirection
 from .types import TypeImageData
@@ -30,16 +41,27 @@ from .types import TypeWorldPoints
 
 __all__ = [
     "Affine",
+    "AppliedTransform",
     "BoundingBoxFormat",
     "BoundingBoxes",
+    "Compose",
+    "Flip",
     "Image",
     "ImagesLoader",
+    "IntensityTransform",
     "LabelMap",
+    "MonaiAdapter",
+    "Noise",
+    "OneOf",
     "Points",
     "Representation",
     "ScalarImage",
+    "SomeOf",
+    "SpatialTransform",
     "Subject",
     "SubjectsLoader",
+    "To",
+    "Transform",
     "TypeAffineMatrix",
     "TypeDirection",
     "TypeImageData",

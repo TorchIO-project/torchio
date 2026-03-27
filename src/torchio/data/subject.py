@@ -7,6 +7,7 @@ from typing import Any
 from typing import Self
 
 import numpy as np
+import torch
 from tensordict import TensorDict
 
 from ..types import TypeSpacing
@@ -177,6 +178,24 @@ class Subject:
         self._check_consistent_attribute("spacing")
         return self._first_image().spacing
 
+    @property
+    def device(self) -> torch.device:
+        """Device of the data, checked for consistency across all entries."""
+        devices: list[torch.device] = []
+        for image in self._images.values():
+            devices.append(image.device)
+        for pts in self._points.values():
+            devices.append(pts.device)
+        for boxes in self._bounding_boxes.values():
+            devices.append(boxes.device)
+        if not devices:
+            return torch.device("cpu")
+        ref = devices[0]
+        if not all(d == ref for d in devices):
+            msg = f"Inconsistent devices: {devices}"
+            raise RuntimeError(msg)
+        return ref
+
     # --- Methods ---
 
     @property
@@ -238,6 +257,22 @@ class Subject:
     def clear_history(self) -> None:
         """Remove all applied transform records."""
         self.applied_transforms = []
+
+    def to(self, *args: Any, **kwargs: Any) -> Self:
+        """Move all data to a device and/or cast to a dtype.
+
+        Calls ``.to()`` on every Image, Points, and BoundingBoxes.
+
+        Returns:
+            ``self`` (modified in-place).
+        """
+        for image in self._images.values():
+            image.to(*args, **kwargs)
+        for pts in self._points.values():
+            pts.to(*args, **kwargs)
+        for boxes in self._bounding_boxes.values():
+            boxes.to(*args, **kwargs)
+        return self
 
     def to_tensordict(self) -> TensorDict:
         """Convert this Subject to a TensorDict for batching.

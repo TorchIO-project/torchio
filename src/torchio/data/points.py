@@ -102,6 +102,20 @@ class Points:
         """Number of points."""
         return self._data.shape[0]
 
+    @property
+    def device(self) -> torch.device:
+        """Device the point data resides on."""
+        return self._data.device
+
+    def to(self, *args: Any, **kwargs: Any) -> Self:
+        """Move point data to a device and/or cast to a dtype.
+
+        Returns:
+            ``self`` (modified in-place).
+        """
+        self._data = self._data.to(*args, **kwargs)
+        return self
+
     # --- Methods ---
 
     def to_world(self) -> Tensor:

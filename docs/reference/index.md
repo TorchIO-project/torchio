@@ -14,3 +14,10 @@ Auto-generated documentation from source code docstrings.
 ## Data loading
 
 - [SubjectsLoader, ImagesLoader](loader.md) -- batching subjects and images for training
+
+## Transforms
+
+- [Transform, SpatialTransform, IntensityTransform](transforms.md) -- base classes and history
+- [Compose, OneOf, SomeOf](compose.md) -- pipeline composition
+- [Spatial transforms](spatial.md) -- Flip and other spatial transforms
+- [Intensity transforms](intensity.md) -- Noise and other intensity transforms

@@ -34,6 +34,7 @@ nav = [
     "explanation/index.md",
     "explanation/data-model.md",
     "explanation/lazy-loading.md",
+    "explanation/transforms.md",
   ] },
   { Reference = [
     "reference/index.md",
@@ -47,6 +48,12 @@ nav = [
     ] },
     { "Data loading" = [
       "reference/loader.md",
+    ] },
+    { "Transforms" = [
+      "reference/transforms.md",
+      "reference/compose.md",
+      "reference/spatial.md",
+      "reference/intensity.md",
     ] },
   ] },
 ]

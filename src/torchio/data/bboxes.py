@@ -88,8 +88,7 @@ class BoundingBoxFormat:
         if not isinstance(other, BoundingBoxFormat):
             return NotImplemented
         return (
-            self._axes == other._axes
-            and self._representation == other._representation
+            self._axes == other._axes and self._representation == other._representation
         )
 
     def __hash__(self) -> int:
@@ -310,6 +309,22 @@ class BoundingBoxes:
     def num_boxes(self) -> int:
         """Number of bounding boxes."""
         return self._data.shape[0]
+
+    @property
+    def device(self) -> torch.device:
+        """Device the bounding box data resides on."""
+        return self._data.device
+
+    def to(self, *args: Any, **kwargs: Any) -> Self:
+        """Move bounding box data to a device and/or cast to a dtype.
+
+        Returns:
+            ``self`` (modified in-place).
+        """
+        self._data = self._data.to(*args, **kwargs)
+        if self._labels is not None:
+            self._labels = self._labels.to(*args, **kwargs)
+        return self
 
     # --- Methods ---
 

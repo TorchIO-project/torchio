@@ -87,10 +87,7 @@ def image_to_html(image: Image) -> str:
     for name, boxes in image.bounding_boxes.items():
         rows.append(_row(f"BBoxes '{name}'", _pluralize("box", boxes.num_boxes)))
 
-    table = (
-        f"{_STYLE}\n"
-        '<table class="tio-table">\n' + "\n".join(rows) + "\n</table>"
-    )
+    table = f'{_STYLE}\n<table class="tio-table">\n' + "\n".join(rows) + "\n</table>"
     return table
 
 

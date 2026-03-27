@@ -64,8 +64,7 @@ def collate_images(batch: Sequence[Any]) -> TensorDict:
             tds.append(item)
         else:
             msg = (
-                f"collate_images expects Image or TensorDict, "
-                f"got {type(item).__name__}"
+                f"collate_images expects Image or TensorDict, got {type(item).__name__}"
             )
             raise TypeError(msg)
     return torch.stack(tds)
