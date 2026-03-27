@@ -299,7 +299,7 @@ class Subject:
                 {
                     "data": pts.data,
                     "axes": pts.axes,
-                    "affine": pts.affine.numpy().copy(),
+                    "affine": pts.affine.numpy(),
                     "metadata": dict(pts.metadata),
                 },
             )
@@ -312,7 +312,7 @@ class Subject:
                     "format_axes": boxes.format.axes,
                     "format_repr": boxes.format.representation.value,
                     "labels": boxes.labels,
-                    "affine": boxes.affine.numpy().copy(),
+                    "affine": boxes.affine.numpy(),
                     "metadata": dict(boxes.metadata),
                 },
             )

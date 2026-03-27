@@ -2,33 +2,31 @@
 
 from __future__ import annotations
 
+import contextlib
+from typing import Any
+
 import nibabel as nib
 import numpy as np
 import numpy.typing as npt
+import torch
+from torch import Tensor
 
-from ..types import TypeAffineMatrix
 from ..types import TypeDirection
 from ..types import TypeOrientationCodes
 from ..types import TypeOrigin
 from ..types import TypeSpacing
-from ..types import TypeWorldPoints
 
 
 class Affine:
     r"""$4 \times 4$ affine matrix mapping voxel indices to world coordinates.
 
-    Thin wrapper around a numpy array providing named access to spacing,
-    origin, direction, and orientation, plus composition and inversion.
-
-    Supports the `__array__` protocol, so it can be used directly with
-    numpy operations (e.g., `np.asarray(affine)`).
-
-    Composition is supported via the `@` operator:
-
-        combined = affine_a @ affine_b
+    Stores the matrix as a ``torch.Tensor`` so it can live on the same
+    device as the image data. Named properties expose spacing, origin,
+    direction, and orientation. Composition uses the ``@`` operator.
 
     Args:
-        matrix: $4 \times 4$ array-like. Defaults to the identity matrix.
+        matrix: $4 \times 4$ array-like, ``torch.Tensor``, or ``None``
+            (identity). NumPy arrays are converted to tensors.
 
     Examples:
         >>> import torchio as tio
@@ -43,16 +41,21 @@ class Affine:
 
     def __init__(
         self,
-        matrix: npt.ArrayLike | None = None,
+        matrix: Tensor | npt.ArrayLike | None = None,
     ) -> None:
         if matrix is None:
-            self._matrix: npt.NDArray[np.float64] = np.eye(4)
+            self._matrix = torch.eye(4, dtype=torch.float64)
+        elif isinstance(matrix, Tensor):
+            if matrix.shape != (4, 4):
+                msg = f"Affine must be 4x4, got {tuple(matrix.shape)}"
+                raise ValueError(msg)
+            self._matrix = matrix.to(torch.float64).clone()
         else:
             m = np.asarray(matrix, dtype=np.float64)
             if m.shape != (4, 4):
                 msg = f"Affine must be 4x4, got {m.shape}"
                 raise ValueError(msg)
-            self._matrix = m.copy()
+            self._matrix = torch.as_tensor(m.copy(), dtype=torch.float64)
 
     # --- Construction helpers ---
 
@@ -62,7 +65,7 @@ class Affine:
         spacing: TypeSpacing,
         *,
         origin: TypeOrigin = (0.0, 0.0, 0.0),
-        direction: npt.ArrayLike | None = None,
+        direction: npt.ArrayLike | Tensor | None = None,
     ) -> Affine:
         """Create an affine from spacing, origin, and direction.
 
@@ -71,20 +74,36 @@ class Affine:
             origin: World coordinates of the first voxel center.
             direction: 3x3 rotation/direction matrix. Identity if not given.
         """
-        matrix = np.eye(4, dtype=np.float64)
+        matrix = torch.eye(4, dtype=torch.float64)
         if direction is not None:
-            matrix[:3, :3] = np.asarray(direction, dtype=np.float64)
-        matrix[:3, :3] *= np.asarray(spacing, dtype=np.float64)
-        matrix[:3, 3] = origin
+            if isinstance(direction, Tensor):
+                matrix[:3, :3] = direction.to(torch.float64)
+            else:
+                matrix[:3, :3] = torch.as_tensor(
+                    np.asarray(direction, dtype=np.float64),
+                )
+        sp = torch.as_tensor(spacing, dtype=torch.float64)
+        matrix[:3, :3] *= sp
+        matrix[:3, 3] = torch.as_tensor(origin, dtype=torch.float64)
         return cls(matrix)
 
     # --- Properties ---
 
     @property
+    def data(self) -> Tensor:
+        """The underlying 4x4 tensor."""
+        return self._matrix
+
+    @property
+    def device(self) -> torch.device:
+        """Device the affine matrix resides on."""
+        return self._matrix.device
+
+    @property
     def spacing(self) -> TypeSpacing:
         """Voxel spacing in mm, derived from the rotation-zoom block."""
         rz = self._matrix[:3, :3]
-        sp = np.sqrt(np.sum(rz**2, axis=0))
+        sp = torch.sqrt(torch.sum(rz**2, dim=0))
         return (float(sp[0]), float(sp[1]), float(sp[2]))
 
     @property
@@ -97,20 +116,38 @@ class Affine:
     def direction(self) -> TypeDirection:
         """3x3 direction (rotation) matrix, with spacing factored out."""
         rz = self._matrix[:3, :3]
-        sp = np.sqrt(np.sum(rz**2, axis=0))
-        return rz / sp
+        sp = torch.sqrt(torch.sum(rz**2, dim=0))
+        return (rz / sp).cpu().numpy()
 
     @property
     def orientation(self) -> TypeOrientationCodes:
         """Anatomical orientation codes (e.g., `('R', 'A', 'S')`)."""
-        codes = nib.orientations.aff2axcodes(self._matrix)
+        codes = nib.orientations.aff2axcodes(self._matrix.cpu().numpy())
         return (codes[0], codes[1], codes[2])
 
     # --- Methods ---
 
+    def to(self, *args: Any, **kwargs: Any) -> Affine:
+        """Move the affine to a device.
+
+        The affine always stays in float64 for precision. On devices
+        that don't support float64 (e.g., MPS), it remains on CPU.
+
+        Returns:
+            ``self`` (modified in-place).
+        """
+        with contextlib.suppress(TypeError):
+            # MPS doesn't support float64 — keep on CPU
+            self._matrix = self._matrix.to(*args, **kwargs).to(torch.float64)
+        return self
+
+    def clone(self) -> Affine:
+        """Return a deep copy."""
+        return Affine(self._matrix.clone())
+
     def inverse(self) -> Affine:
         """Return the inverse affine."""
-        return Affine(np.linalg.inv(self._matrix))
+        return Affine(torch.linalg.inv(self._matrix))
 
     def compose(self, other: Affine) -> Affine:
         """Return `self @ other` as a new `Affine`.
@@ -119,24 +156,31 @@ class Affine:
         """
         return Affine(self._matrix @ other._matrix)
 
-    def apply(self, points: npt.ArrayLike) -> TypeWorldPoints:
-        """Apply the affine to an (N, 3) array of points.
+    def apply(self, points: Tensor | npt.ArrayLike) -> Tensor:
+        """Apply the affine to an (N, 3) set of points.
 
         Args:
-            points: Array of shape (N, 3) in the source coordinate system.
+            points: Tensor or array of shape (N, 3).
 
         Returns:
-            Transformed points, shape (N, 3).
+            Transformed points as a tensor, shape (N, 3).
         """
-        pts = np.asarray(points, dtype=np.float64)
-        ones = np.ones((pts.shape[0], 1), dtype=np.float64)
-        homogeneous = np.hstack([pts, ones])
+        if not isinstance(points, Tensor):
+            pts = torch.as_tensor(
+                np.asarray(points, dtype=np.float64),
+                dtype=torch.float64,
+            )
+        else:
+            pts = points.to(torch.float64)
+        pts = pts.to(self._matrix.device)
+        ones = torch.ones(pts.shape[0], 1, dtype=torch.float64, device=pts.device)
+        homogeneous = torch.cat([pts, ones], dim=1)
         transformed = (self._matrix @ homogeneous.T).T
         return transformed[:, :3]
 
-    def numpy(self) -> TypeAffineMatrix:
+    def numpy(self) -> npt.NDArray[np.float64]:
         """Return the underlying 4x4 matrix as a numpy array."""
-        return self._matrix
+        return self._matrix.cpu().numpy()
 
     # --- Dunder methods ---
 
@@ -151,11 +195,12 @@ class Affine:
         dtype: npt.DTypeLike | None = None,
         copy: bool | None = None,
     ) -> npt.NDArray[np.float64]:
+        arr = self._matrix.cpu().numpy()
         if dtype is not None:
-            return np.array(self._matrix, dtype=dtype, copy=copy)
+            return np.array(arr, dtype=dtype, copy=copy)
         if copy:
-            return self._matrix.copy()
-        return self._matrix
+            return arr.copy()
+        return arr
 
     def __repr__(self) -> str:
         sp = ", ".join(f"{s:.2f}" for s in self.spacing)
@@ -166,12 +211,12 @@ class Affine:
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, Affine):
             return NotImplemented
-        return np.array_equal(self._matrix, other._matrix)
+        return torch.equal(self._matrix, other._matrix)
 
     def __copy__(self) -> Affine:
-        return Affine(self._matrix)
+        return self.clone()
 
     def __deepcopy__(self, memo: dict) -> Affine:
-        new = Affine(self._matrix)
+        new = self.clone()
         memo[id(self)] = new
         return new

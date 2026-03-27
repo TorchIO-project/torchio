@@ -24,6 +24,7 @@ from .transforms import IntensityTransform
 from .transforms import MonaiAdapter
 from .transforms import Noise
 from .transforms import OneOf
+from .transforms import ParameterRange
 from .transforms import SomeOf
 from .transforms import SpatialTransform
 from .transforms import To
@@ -53,6 +54,7 @@ __all__ = [
     "MonaiAdapter",
     "Noise",
     "OneOf",
+    "ParameterRange",
     "Points",
     "Representation",
     "ScalarImage",

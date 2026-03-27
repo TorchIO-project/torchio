@@ -60,6 +60,9 @@ force-single-line = true
 "tests/**" = [
     "B018",  # https://docs.astral.sh/ruff/rules/useless-expression/
 ]
+"src/torchio/data/bboxes.py" = [
+    "A002",  # `format` parameter shadows builtin — canonical name for this concept
+]
 
 [tool.bump-my-version]
 current_version = "0.23.1"

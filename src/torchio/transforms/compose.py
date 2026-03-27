@@ -15,7 +15,7 @@ from ..data.subject import Subject
 from .transform import Transform
 
 
-@attrs.define(slots=False, eq=False, kw_only=True)
+@attrs.define(slots=False, eq=False, kw_only=True, repr=False)
 class Compose(Transform):
     """Apply a sequence of transforms.
 
@@ -53,11 +53,15 @@ class Compose(Transform):
         if self.copy:
             subject = copy.deepcopy(subject)
         for transform in self.transforms:
+            # Skip child copying — Compose already copied
+            old_copy = transform.copy
+            transform.copy = False
             subject = transform(subject)
+            transform.copy = old_copy
         return unwrap(subject)
 
 
-@attrs.define(slots=False, eq=False, kw_only=True)
+@attrs.define(slots=False, eq=False, kw_only=True, repr=False)
 class OneOf(Transform):
     """Randomly pick one transform from a collection.
 
@@ -100,7 +104,7 @@ class OneOf(Transform):
         return unwrap(subject)
 
 
-@attrs.define(slots=False, eq=False, kw_only=True)
+@attrs.define(slots=False, eq=False, kw_only=True, repr=False)
 class SomeOf(Transform):
     """Randomly pick N transforms from a collection.
 

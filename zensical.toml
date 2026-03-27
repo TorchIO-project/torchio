@@ -26,6 +26,7 @@ nav = [
   { "How-to guides" = [
     "how-to/index.md",
     "how-to/dataloader.md",
+    "how-to/monai.md",
     "how-to/custom-reader.md",
     "how-to/save-nii-zarr.md",
     "how-to/annotations.md",
@@ -51,6 +52,7 @@ nav = [
     ] },
     { "Transforms" = [
       "reference/transforms.md",
+      "reference/parameter_range.md",
       "reference/compose.md",
       "reference/spatial.md",
       "reference/intensity.md",

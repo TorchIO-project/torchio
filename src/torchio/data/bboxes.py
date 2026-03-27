@@ -181,14 +181,8 @@ def _ijk_corners_to_world(
     """Convert (N, 6) corners from IJK voxel to world (RAS) coordinates."""
     c1 = data[:, :3]
     c2 = data[:, 3:]
-    w1 = torch.as_tensor(
-        affine.apply(c1.numpy()),
-        dtype=torch.float32,
-    )
-    w2 = torch.as_tensor(
-        affine.apply(c2.numpy()),
-        dtype=torch.float32,
-    )
+    w1 = affine.apply(c1).to(torch.float32)
+    w2 = affine.apply(c2).to(torch.float32)
     # After affine, min/max might swap — normalize.
     lo = torch.min(w1, w2)
     hi = torch.max(w1, w2)
@@ -203,8 +197,8 @@ def _world_corners_to_ijk(
     inv = affine.inverse()
     c1 = data[:, :3]
     c2 = data[:, 3:]
-    v1 = torch.as_tensor(inv.apply(c1.numpy()), dtype=torch.float32)
-    v2 = torch.as_tensor(inv.apply(c2.numpy()), dtype=torch.float32)
+    v1 = inv.apply(c1).to(torch.float32)
+    v2 = inv.apply(c2).to(torch.float32)
     lo = torch.min(v1, v2)
     hi = torch.max(v1, v2)
     return torch.cat([lo, hi], dim=-1)
@@ -239,7 +233,7 @@ class BoundingBoxes:
         self,
         data: Tensor | npt.ArrayLike,
         *,
-        format: BoundingBoxFormat,  # noqa: A002
+        format: BoundingBoxFormat,
         labels: Tensor | None = None,
         affine: Affine | npt.ArrayLike | None = None,
         metadata: dict[str, Any] | None = None,
@@ -328,7 +322,7 @@ class BoundingBoxes:
 
     # --- Methods ---
 
-    def to_format(self, format: BoundingBoxFormat) -> Self:  # noqa: A002
+    def to_format(self, format: BoundingBoxFormat) -> Self:
         """Convert to a different bounding box format.
 
         Handles representation changes (corners ↔ center-size), axis
@@ -394,9 +388,7 @@ class BoundingBoxes:
             affine: New affine. If ``None``, uses ``self.affine``.
         """
         new_affine = (
-            self._parse_affine(affine)
-            if affine is not None
-            else Affine(self._affine.numpy().copy())
+            self._parse_affine(affine) if affine is not None else self._affine.clone()
         )
         return type(self)(
             data,
@@ -412,13 +404,13 @@ class BoundingBoxes:
         self,
         *,
         data: Tensor | None = None,
-        format: BoundingBoxFormat | None = None,  # noqa: A002
+        format: BoundingBoxFormat | None = None,
     ) -> Self:
         return type(self)(
             data if data is not None else self._data.clone(),
             format=format if format is not None else self._format,
             labels=self._labels.clone() if self._labels is not None else None,
-            affine=Affine(self._affine.numpy().copy()),
+            affine=self._affine.clone(),
             metadata=dict(self._metadata),
         )
 
@@ -477,7 +469,7 @@ class BoundingBoxes:
             self._data.clone(),
             format=self._format,
             labels=self._labels.clone() if self._labels is not None else None,
-            affine=Affine(self._affine.numpy().copy()),
+            affine=self._affine.clone(),
             metadata=dict(self._metadata),
         )
         memo[id(self)] = new

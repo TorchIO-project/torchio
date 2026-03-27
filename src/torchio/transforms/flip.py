@@ -13,7 +13,7 @@ from .transform import SpatialTransform
 
 def _validate_axes(
     instance: Any,
-    attribute: attrs.Attribute,  # type: ignore[type-arg]
+    attribute: Any,
     value: tuple[int, ...],
 ) -> None:
     for axis in value:
@@ -22,7 +22,7 @@ def _validate_axes(
             raise ValueError(msg)
 
 
-@attrs.define(slots=False, eq=False, kw_only=True)
+@attrs.define(slots=False, eq=False, kw_only=True, repr=False)
 class Flip(SpatialTransform):
     """Flip (reverse) voxel data along one or more spatial axes.
 

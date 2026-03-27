@@ -10,7 +10,7 @@ from ..data.subject import Subject
 from .transform import Transform
 
 
-@attrs.define(slots=False, eq=False, kw_only=True)
+@attrs.define(slots=False, eq=False, kw_only=True, repr=False)
 class To(Transform):
     """Move all data to a device and/or cast to a dtype.
 

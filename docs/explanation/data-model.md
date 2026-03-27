@@ -77,6 +77,15 @@ Images are **lazy**: data is not read from disk until first accessed.
 This means you can create thousands of `Image` objects cheaply and
 only load what you need.
 
+Images can be created from multiple sources:
+
+```python
+image = tio.ScalarImage("t1.nii.gz")              # from file (lazy)
+image = tio.ScalarImage.from_tensor(tensor)        # from PyTorch tensor
+image = tio.ScalarImage.from_sitk(sitk_image)      # from SimpleITK
+image = tio.ScalarImage.from_nifti(nifti_image)    # from NiBabel
+```
+
 ### ScalarImage vs LabelMap
 
 `ScalarImage` and `LabelMap` are subclasses of `Image`. They carry no

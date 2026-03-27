@@ -107,20 +107,57 @@ class TestNoise:
         assert result.t1.data.abs().sum() > 0
 
     def test_seed_reproducibility(self) -> None:
-        subject = tio.Subject(
+        """Replaying with saved params reproduces the same noise."""
+        subject1 = tio.Subject(
             t1=tio.ScalarImage.from_tensor(torch.zeros(1, 8, 8, 8)),
         )
-        result = tio.Noise(std=1.0)(subject)
-        seed = result.applied_transforms[0].params["seed"]
-        # Replay with same seed
         subject2 = tio.Subject(
             t1=tio.ScalarImage.from_tensor(torch.zeros(1, 8, 8, 8)),
         )
         noise = tio.Noise(std=1.0)
-        params = {"mean": 0.0, "std": 1.0, "seed": seed}
+        # Replay twice with same params (both use CPU generator path)
+        params = {"mean": 0.0, "std": 1.0, "seed": 42}
+        result1 = noise.apply(subject1, params)
         result2 = noise.apply(subject2, params)
-        torch.testing.assert_close(result2.t1.data, result.t1.data)
+        torch.testing.assert_close(result1.t1.data, result2.t1.data)
 
     def test_negative_std_raises(self) -> None:
         with pytest.raises(ValueError):
             tio.Noise(std=-1.0)
+
+    def test_random_std_range(self) -> None:
+        """std=(lo, hi) samples uniformly each call."""
+        subject = tio.Subject(
+            t1=tio.ScalarImage.from_tensor(torch.zeros(1, 8, 8, 8)),
+        )
+        noise = tio.Noise(std=(0.5, 1.5))
+        stds = set()
+        for _ in range(10):
+            result = noise(subject)
+            sampled_std = result.applied_transforms[-1].params["std"]
+            assert 0.5 <= sampled_std <= 1.5
+            stds.add(round(sampled_std, 4))
+        # Should have sampled different values
+        assert len(stds) > 1
+
+    def test_random_mean_range(self) -> None:
+        noise = tio.Noise(mean=(-1.0, 1.0), std=0.0)
+        subject = tio.Subject(
+            t1=tio.ScalarImage.from_tensor(torch.zeros(1, 8, 8, 8)),
+        )
+        means = set()
+        for _ in range(10):
+            result = noise(subject)
+            sampled_mean = result.applied_transforms[-1].params["mean"]
+            assert -1.0 <= sampled_mean <= 1.0
+            means.add(round(sampled_mean, 4))
+        assert len(means) > 1
+
+    def test_deterministic_scalar(self) -> None:
+        """Scalar std is always the same."""
+        noise = tio.Noise(std=0.5)
+        subject = tio.Subject(
+            t1=tio.ScalarImage.from_tensor(torch.zeros(1, 4, 4, 4)),
+        )
+        result = noise(subject)
+        assert result.applied_transforms[0].params["std"] == 0.5

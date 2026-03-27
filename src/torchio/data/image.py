@@ -97,7 +97,8 @@ def _expand_ellipsis(
     """Replace a single `Ellipsis` with enough `slice(None)` to fill *ndim*."""
     n_ellipsis = sum(1 for s in items if s is Ellipsis)
     if n_ellipsis == 0:
-        return items  # type: ignore[return-value]
+        result: tuple[int | slice, ...] = tuple(s for s in items if s is not Ellipsis)
+        return result
     if n_ellipsis > 1:
         msg = "Only one ellipsis is allowed"
         raise IndexError(msg)
@@ -105,7 +106,8 @@ def _expand_ellipsis(
     n_explicit = len(items) - 1
     n_fill = max(ndim - n_explicit, 0)
     expanded = items[:idx] + (slice(None),) * n_fill + items[idx + 1 :]
-    return expanded  # type: ignore[return-value]
+    result = tuple(s for s in expanded if s is not Ellipsis)
+    return result
 
 
 class Image:
@@ -214,7 +216,7 @@ class Image:
         parsed_affine = Image._parse_affine(affine)
         instance._affine = parsed_affine
         instance._backend = NumpyBackend(
-            instance._data.detach().numpy(),
+            instance._data.detach().cpu().numpy(),
             affine=parsed_affine.numpy(),
         )
         instance._points = Image._parse_annotations(points, "Points")
@@ -223,6 +225,49 @@ class Image:
             "BoundingBoxes",
         )
         return instance
+
+    @classmethod
+    def from_sitk(cls, sitk_image: sitk.Image, **kwargs: Any) -> Self:
+        """Create an image from a SimpleITK Image.
+
+        Preserves spacing, origin, and direction.
+
+        Args:
+            sitk_image: A SimpleITK Image.
+            **kwargs: Forwarded to ``from_tensor`` (``points``,
+                ``bounding_boxes``, ``metadata``).
+        """
+        data = sitk.GetArrayFromImage(sitk_image)
+        n_components = sitk_image.GetNumberOfComponentsPerPixel()
+        data = data[np.newaxis] if n_components == 1 else np.moveaxis(data, -1, 0)
+        tensor = torch.as_tensor(data.copy(), dtype=torch.float32)
+        spacing = np.array(sitk_image.GetSpacing())
+        origin = np.array(sitk_image.GetOrigin())
+        direction = np.array(sitk_image.GetDirection()).reshape(3, 3)
+        affine_matrix = np.eye(4)
+        affine_matrix[:3, :3] = direction * spacing
+        affine_matrix[:3, 3] = origin
+        return cls.from_tensor(tensor, affine=Affine(affine_matrix), **kwargs)
+
+    @classmethod
+    def from_nifti(cls, nifti_image: nib.Nifti1Image, **kwargs: Any) -> Self:
+        """Create an image from a NiBabel Nifti1Image.
+
+        Preserves the affine matrix.
+
+        Args:
+            nifti_image: A NiBabel Nifti1Image.
+            **kwargs: Forwarded to ``from_tensor`` (``points``,
+                ``bounding_boxes``, ``metadata``).
+        """
+        data = np.asarray(nifti_image.dataobj)
+        if data.ndim == 3:
+            data = data[np.newaxis]
+        elif data.ndim == 4:
+            data = np.moveaxis(data, -1, 0)
+        tensor = torch.as_tensor(data.copy(), dtype=torch.float32)
+        affine_matrix = np.asarray(nifti_image.affine)
+        return cls.from_tensor(tensor, affine=Affine(affine_matrix), **kwargs)
 
     @staticmethod
     def _parse_tensor(tensor: Tensor | np.ndarray) -> Tensor:
@@ -450,7 +495,7 @@ class Image:
         return self.data.device
 
     def to(self, *args: Any, **kwargs: Any) -> Self:
-        """Move image data to a device and/or cast to a dtype.
+        """Move image data and affine to a device and/or cast to a dtype.
 
         Accepts the same arguments as ``torch.Tensor.to()``.
 
@@ -458,6 +503,8 @@ class Image:
             ``self`` (modified in-place).
         """
         self._data = self.data.to(*args, **kwargs)
+        if self._affine is not None:
+            self._affine.to(*args, **kwargs)
         return self
 
     def new_like(
@@ -478,9 +525,7 @@ class Image:
             affine: New $4 \times 4$ affine. If `None`, uses `self.affine`.
         """
         new_affine = (
-            self._parse_affine(affine)
-            if affine is not None
-            else Affine(self.affine.numpy().copy())
+            self._parse_affine(affine) if affine is not None else self.affine.clone()
         )
         points_copy, bboxes_copy = self._deep_copy_annotations()
         return type(self).from_tensor(
@@ -651,17 +696,17 @@ class Image:
                 cropped_data = self.data[sc, si, sj, sk]
 
         # Update affine origin: shift by the spatial start offset
-        affine_array = self.affine.numpy().copy()
+        affine_matrix = self.affine.data.clone()
         i_start, _, _ = si.indices(full_shape[1])
         j_start, _, _ = sj.indices(full_shape[2])
         k_start, _, _ = sk.indices(full_shape[3])
-        start_voxel = np.array(
+        start_voxel = torch.tensor(
             [i_start, j_start, k_start],
-            dtype=np.float64,
+            dtype=torch.float64,
         )
-        affine_array[:3, 3] += affine_array[:3, :3] @ start_voxel
+        affine_matrix[:3, 3] += affine_matrix[:3, :3] @ start_voxel
 
-        return self.new_like(data=cropped_data, affine=affine_array)
+        return self.new_like(data=cropped_data, affine=Affine(affine_matrix))
 
     def to_tensordict(self) -> TensorDict:
         """Convert this Image to a TensorDict for batching.
@@ -676,7 +721,7 @@ class Image:
         td = TensorDict(
             {
                 "data": self.data,
-                "affine": torch.as_tensor(self.affine.numpy()),
+                "affine": self.affine.data,
             },
             batch_size=[],
         )
@@ -691,7 +736,7 @@ class Image:
                 {
                     "data": pts.data,
                     "axes": pts.axes,
-                    "affine": pts.affine.numpy().copy(),
+                    "affine": pts.affine.numpy(),
                     "metadata": dict(pts.metadata),
                 },
             )
@@ -704,7 +749,7 @@ class Image:
                     "format_axes": boxes.format.axes,
                     "format_repr": boxes.format.representation.value,
                     "labels": boxes.labels,
-                    "affine": boxes.affine.numpy().copy(),
+                    "affine": boxes.affine.numpy(),
                     "metadata": dict(boxes.metadata),
                 },
             )
@@ -734,7 +779,7 @@ class Image:
         image_cls = image_classes.get(class_name, ScalarImage)
 
         data = td["data"]
-        affine = Affine(td["affine"].numpy())
+        affine = Affine(td["affine"])
 
         # Reconstruct annotations from non-tensor entries
         non_tensor = {k: v.data for k, v in td.non_tensor_items()}

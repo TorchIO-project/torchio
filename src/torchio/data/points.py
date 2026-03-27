@@ -128,10 +128,7 @@ class Points:
         Returns:
             $(N, 3)$ tensor in world (mm) coordinates.
         """
-        return torch.as_tensor(
-            self._affine.apply(self._data.numpy()),
-            dtype=torch.float32,
-        )
+        return self._affine.apply(self._data).to(torch.float32)
 
     def to_axes(self, target: str) -> Self:
         """Convert points to a different axis convention.
@@ -174,9 +171,7 @@ class Points:
             affine: New affine. If ``None``, uses ``self.affine``.
         """
         new_affine = (
-            self._parse_affine(affine)
-            if affine is not None
-            else Affine(self._affine.numpy().copy())
+            self._parse_affine(affine) if affine is not None else self._affine.clone()
         )
         return type(self)(
             data,
@@ -196,7 +191,7 @@ class Points:
         return type(self)(
             data if data is not None else self._data.clone(),
             axes=axes if axes is not None else self._axes,
-            affine=Affine(self._affine.numpy().copy()),
+            affine=self._affine.clone(),
             metadata=dict(self._metadata),
         )
 
@@ -226,10 +221,7 @@ class Points:
                 perm, _ = get_axis_mapping(self._axes, "IJK")
                 data = data[:, list(perm)]
             # Apply affine → world.
-            world = torch.as_tensor(
-                self._affine.apply(data.numpy()),
-                dtype=torch.float32,
-            )
+            world = self._affine.apply(data).to(torch.float32)
             # World system is the affine's orientation.
             world_axes = "".join(self._affine.orientation)
             if world_axes != tgt_axes:
@@ -245,10 +237,7 @@ class Points:
                 data = self._permute_and_flip(data, perm, flips)
             # Inverse affine → IJK.
             inv = self._affine.inverse()
-            ijk = torch.as_tensor(
-                inv.apply(data.numpy()),
-                dtype=torch.float32,
-            )
+            ijk = inv.apply(data).to(torch.float32)
             # Reorder to target voxel axes.
             if tgt_axes != "IJK":
                 perm, _ = get_axis_mapping("IJK", tgt_axes)
@@ -267,7 +256,7 @@ class Points:
         new = type(self)(
             self._data.clone(),
             axes=self._axes,
-            affine=Affine(self._affine.numpy().copy()),
+            affine=self._affine.clone(),
             metadata=dict(self._metadata),
         )
         memo[id(self)] = new

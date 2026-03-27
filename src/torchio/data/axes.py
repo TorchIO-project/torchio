@@ -146,7 +146,8 @@ def _voxel_mapping(
 ) -> tuple[tuple[int, int, int], tuple[bool, bool, bool]]:
     perm = tuple(src.index(c) for c in tgt)
     flips = (False, False, False)
-    return perm, flips  # type: ignore[return-value]
+    assert len(perm) == 3
+    return (perm[0], perm[1], perm[2]), flips
 
 
 def _anatomical_mapping(
@@ -163,4 +164,6 @@ def _anatomical_mapping(
                 perm.append(src_idx)
                 flips.append(src_letter != tgt_letter)
                 break
-    return tuple(perm), tuple(flips)  # type: ignore[return-value]
+    assert len(perm) == 3
+    assert len(flips) == 3
+    return (perm[0], perm[1], perm[2]), (flips[0], flips[1], flips[2])

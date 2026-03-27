@@ -9,7 +9,6 @@ from types import ModuleType
 from typing import Any
 
 import attrs
-import numpy as np
 import torch
 
 from ..data.image import Image
@@ -19,7 +18,7 @@ from ..imports import get_monai
 from .transform import Transform
 
 
-@attrs.define(slots=False, eq=False, kw_only=True)
+@attrs.define(slots=False, eq=False, kw_only=True, repr=False)
 class MonaiAdapter(Transform):
     """Wrap a MONAI transform for use in TorchIO pipelines.
 
@@ -99,11 +98,7 @@ def _image_to_meta_tensor(
     image: Image,
     monai: ModuleType,
 ) -> torch.Tensor:
-    affine_tensor = torch.as_tensor(
-        image.affine.numpy(),
-        dtype=torch.float64,
-        device=image.data.device,
-    )
+    affine_tensor = image.affine.data.to(device=image.data.device)
     return monai.data.MetaTensor(image.data, affine=affine_tensor)
 
 
@@ -115,8 +110,8 @@ def _update_image_from_result(
     meta_tensor_cls = monai.data.MetaTensor
     if isinstance(result, meta_tensor_cls):
         image.set_data(result.as_tensor())
-        new_affine = result.affine.cpu().numpy()
-        if not np.array_equal(new_affine, image.affine.numpy()):
+        new_affine = result.affine
+        if not torch.equal(new_affine.cpu().to(torch.float64), image.affine.data.cpu()):
             from ..data.affine import Affine
 
             image._affine = Affine(new_affine)

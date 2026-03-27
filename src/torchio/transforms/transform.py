@@ -2,11 +2,15 @@
 
 from __future__ import annotations
 
+import copy as _copy
 from dataclasses import dataclass
 from dataclasses import field
 from typing import Any
 
 import attrs
+import nibabel as nib
+import numpy as np
+import SimpleITK as sitk
 import torch
 from torch import Tensor
 from torch import nn
@@ -15,10 +19,13 @@ from ..data.image import Image
 from ..data.image import ScalarImage
 from ..data.subject import Subject
 
+#: All types accepted by ``Transform.forward()``.
+TransformInput = Subject | Image | Tensor | np.ndarray | sitk.Image | nib.Nifti1Image
+
 
 def _validate_probability(
     instance: Any,
-    attribute: attrs.Attribute,  # type: ignore[type-arg]
+    attribute: Any,
     value: float,
 ) -> None:
     if not 0 <= value <= 1:
@@ -39,7 +46,7 @@ class AppliedTransform:
     params: dict[str, Any] = field(default_factory=dict)
 
 
-@attrs.define(slots=False, eq=False, kw_only=True)
+@attrs.define(slots=False, eq=False, kw_only=True, repr=False)
 class Transform(nn.Module):
     """Base class for all TorchIO transforms.
 
@@ -49,30 +56,59 @@ class Transform(nn.Module):
 
     Args:
         p: Probability of applying the transform.
+        copy: Deep-copy the input before transforming. Set to ``False``
+            for in-place operation (e.g., inside a ``Compose`` that
+            already copied).
         include: Image names to include (``None`` = all).
         exclude: Image names to exclude (``None`` = none).
     """
 
     p: float = attrs.field(default=1.0, validator=_validate_probability)
+    copy: bool = True
     include: list[str] | None = None
     exclude: list[str] | None = None
 
     def __attrs_post_init__(self) -> None:
         nn.Module.__init__(self)
 
+    def __repr__(self) -> str:
+        """Show only non-default fields for a compact repr."""
+        cls = type(self)
+        fields = attrs.fields(cls)
+        parts = []
+        for f in fields:
+            value = getattr(self, f.name)
+            default = f.default
+            if isinstance(default, attrs.Factory):
+                default = default.factory()
+            # Compare original value for ParameterRange fields
+            from .parameter_range import ParameterRange
+
+            if isinstance(value, ParameterRange):
+                if value._original == default:
+                    continue
+            elif value == default:
+                continue
+            parts.append(f"{f.name}={value!r}")
+        inner = ", ".join(parts)
+        return f"{cls.__name__}({inner})"
+
     def forward(
         self,
-        data: Subject | Image | Tensor,
-    ) -> Subject | Image | Tensor:
+        data: TransformInput,
+    ) -> TransformInput:
         """Apply the transform.
 
         Args:
-            data: A Subject, Image, or 4D Tensor.
+            data: A Subject, Image, 4D Tensor, NumPy array,
+                SimpleITK Image, or NiBabel Nifti1Image.
 
         Returns:
             Transformed data of the same type as input.
         """
         subject, unwrap = self._wrap(data)
+        if self.copy:
+            subject = _copy.deepcopy(subject)
         if torch.rand(1).item() > self.p:
             return unwrap(subject)
         params = self.make_params(subject)
@@ -123,7 +159,7 @@ class Transform(nn.Module):
 
     @staticmethod
     def _wrap(
-        data: Subject | Image | Tensor,
+        data: TransformInput,
     ) -> tuple[Subject, Any]:
         """Wrap non-Subject input into a Subject; return (subject, unwrap_fn)."""
         if isinstance(data, Subject):
@@ -135,7 +171,25 @@ class Transform(nn.Module):
             img = ScalarImage.from_tensor(data)
             sub = Subject(tio_default_image=img)
             return sub, _unwrap_tensor
-        msg = f"Expected Subject, Image, or Tensor, got {type(data).__name__}"
+        if isinstance(data, np.ndarray):
+            tensor = torch.as_tensor(data.copy(), dtype=torch.float32)
+            if tensor.ndim == 3:
+                tensor = tensor.unsqueeze(0)
+            img = ScalarImage.from_tensor(tensor)
+            sub = Subject(tio_default_image=img)
+            return sub, _unwrap_ndarray
+        if isinstance(data, sitk.Image):
+            img = ScalarImage.from_sitk(data)
+            sub = Subject(tio_default_image=img)
+            return sub, _unwrap_sitk
+        if isinstance(data, nib.Nifti1Image):
+            img = ScalarImage.from_nifti(data)
+            sub = Subject(tio_default_image=img)
+            return sub, _unwrap_nifti
+        msg = (
+            "Expected Subject, Image, Tensor, ndarray,"
+            f" SimpleITK Image, or NIfTI, got {type(data).__name__}"
+        )
         raise TypeError(msg)
 
 
@@ -151,7 +205,33 @@ def _unwrap_tensor(subject: Subject) -> Tensor:
     return subject.tio_default_image.data
 
 
-@attrs.define(slots=False, eq=False, kw_only=True)
+def _unwrap_ndarray(subject: Subject) -> np.ndarray:
+    return subject.tio_default_image.data.numpy()
+
+
+def _unwrap_sitk(subject: Subject) -> sitk.Image:
+    image = subject.tio_default_image
+    data = image.data
+    affine = image.affine
+    array = data.numpy()
+    array = array[0] if data.shape[0] == 1 else np.moveaxis(array, 0, -1)
+    sitk_image = sitk.GetImageFromArray(array)
+    if data.shape[0] > 1:
+        sitk_image = sitk.GetImageFromArray(array, isVector=True)
+    sitk_image.SetSpacing(affine.spacing)
+    sitk_image.SetOrigin(affine.origin)
+    sitk_image.SetDirection(affine.direction.flatten().tolist())
+    return sitk_image
+
+
+def _unwrap_nifti(subject: Subject) -> nib.Nifti1Image:
+    image = subject.tio_default_image
+    array = image.data.numpy()
+    array = array[0] if array.shape[0] == 1 else np.moveaxis(array, 0, -1)
+    return nib.Nifti1Image(array, image.affine.numpy())
+
+
+@attrs.define(slots=False, eq=False, kw_only=True, repr=False)
 class SpatialTransform(Transform):
     """Base for transforms that modify spatial geometry.
 
@@ -161,7 +241,7 @@ class SpatialTransform(Transform):
     """
 
 
-@attrs.define(slots=False, eq=False, kw_only=True)
+@attrs.define(slots=False, eq=False, kw_only=True, repr=False)
 class IntensityTransform(Transform):
     """Base for transforms that modify voxel intensities.
 

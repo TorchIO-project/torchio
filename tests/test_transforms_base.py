@@ -6,7 +6,10 @@ import copy
 from dataclasses import asdict
 from typing import Any
 
+import nibabel as nib
+import numpy as np
 import pytest
+import SimpleITK as sitk
 import torch
 
 import torchio as tio
@@ -75,6 +78,39 @@ class TestTransformBase:
         result = _IdentityTransform()(tensor)
         assert isinstance(result, torch.Tensor)
         assert result.shape == (1, 8, 8, 8)
+
+    def test_forward_accepts_ndarray(self) -> None:
+        array = np.random.rand(1, 8, 8, 8).astype(np.float32)
+        result = _IdentityTransform()(array)
+        assert isinstance(result, np.ndarray)
+        assert result.shape == (1, 8, 8, 8)
+
+    def test_forward_accepts_ndarray_3d(self) -> None:
+        array = np.random.rand(8, 8, 8).astype(np.float32)
+        result = _IdentityTransform()(array)
+        assert isinstance(result, np.ndarray)
+
+    def test_forward_accepts_sitk(self) -> None:
+        sitk_image = sitk.Image(8, 8, 8, sitk.sitkFloat32)
+        result = _IdentityTransform()(sitk_image)
+        assert isinstance(result, sitk.Image)
+
+    def test_forward_accepts_nifti(self) -> None:
+        nifti = nib.Nifti1Image(np.zeros((8, 8, 8)), np.eye(4))
+        result = _IdentityTransform()(nifti)
+        assert isinstance(result, nib.Nifti1Image)
+
+    def test_sitk_preserves_spacing(self) -> None:
+        sitk_image = sitk.Image(8, 8, 8, sitk.sitkFloat32)
+        sitk_image.SetSpacing((2.0, 2.0, 2.0))
+        result = _IdentityTransform()(sitk_image)
+        assert result.GetSpacing() == pytest.approx((2.0, 2.0, 2.0))
+
+    def test_nifti_preserves_affine(self) -> None:
+        affine = np.diag([2.0, 2.0, 2.0, 1.0])
+        nifti = nib.Nifti1Image(np.zeros((8, 8, 8)), affine)
+        result = _IdentityTransform()(nifti)
+        np.testing.assert_array_almost_equal(result.affine, affine)
 
     def test_probability_zero_skips(self) -> None:
         subject = _make_subject()

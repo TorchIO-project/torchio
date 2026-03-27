@@ -55,6 +55,21 @@ tensor = torch.randn(1, 128, 128, 128)
 image = tio.ScalarImage.from_tensor(tensor)
 ```
 
+### Creating from SimpleITK or NiBabel
+
+```python
+import SimpleITK as sitk
+import nibabel as nib
+
+# From a SimpleITK Image (preserves spacing, origin, direction)
+sitk_image = sitk.ReadImage("t1.nii.gz")
+image = tio.ScalarImage.from_sitk(sitk_image)
+
+# From a NiBabel Nifti1Image (preserves affine)
+nifti = nib.load("t1.nii.gz")
+image = tio.ScalarImage.from_nifti(nifti)
+```
+
 ### Slicing
 
 Slicing follows the `(C, I, J, K)` layout and keeps things lazy -- only
@@ -133,3 +148,26 @@ batch["t1", "data"].shape  # (4, 1, 256, 256, 176)
 
 See the [DataLoader how-to guide](how-to/dataloader.md) for more
 details.
+
+### Applying transforms
+
+Transforms accept Subjects, Images, Tensors, NumPy arrays,
+SimpleITK Images, or NiBabel images — and return the same type:
+
+```python
+# Single deterministic transform
+flipped = tio.Flip(axes=(0,))(subject)
+
+# Random augmentation pipeline
+augment = tio.Compose([
+    tio.Flip(axes=(0, 1, 2), p=0.5),
+    tio.Noise(std=(0.01, 0.1)),   # random std each call
+])
+augmented = augment(subject)
+
+# Works directly on tensors too
+noisy_tensor = tio.Noise(std=0.05)(tensor)
+```
+
+See the [transform design explanation](explanation/transforms.md) for
+the full picture.

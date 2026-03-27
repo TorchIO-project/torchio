@@ -6,6 +6,7 @@ from .compose import SomeOf
 from .flip import Flip
 from .monai_adapter import MonaiAdapter
 from .noise import Noise
+from .parameter_range import ParameterRange
 from .to import To
 from .transform import AppliedTransform
 from .transform import IntensityTransform
@@ -20,6 +21,7 @@ __all__ = [
     "MonaiAdapter",
     "Noise",
     "OneOf",
+    "ParameterRange",
     "SomeOf",
     "SpatialTransform",
     "To",

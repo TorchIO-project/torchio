@@ -14,40 +14,43 @@ Every transform has two methods:
 
 This separation (inspired by Torchvision V2) means the same random
 parameters are applied consistently to all images, points, and bounding
-boxes in a Subject.
+boxes in a Subject. Params are saved in history for replay.
+
+## Scalar or range — one class for both
+
+Transform parameters accept a scalar (deterministic) or a
+``(lo, hi)`` tuple (random). No separate ``RandomNoise`` class:
 
 ```python
-class Noise(tio.IntensityTransform):
-    def __init__(self, std=0.1, **kwargs):
-        super().__init__(**kwargs)
-        self.std = std
+# Deterministic: always std=0.1
+tio.Noise(std=0.1)
 
-    def make_params(self, subject):
-        return {"std": self.std}
+# Random: sample std ~ U(0.05, 0.2) each call
+tio.Noise(std=(0.05, 0.2))
 
-    def apply(self, subject, params):
-        for name, image in self._get_images(subject).items():
-            noise = torch.randn_like(image.data) * params["std"]
-            image.set_data(image.data + noise)
-        return subject
+# Both random
+tio.Noise(mean=(-0.1, 0.1), std=(0.05, 0.2))
 ```
+
+This is powered by `ParameterRange`, which handles all the parsing
+and sampling.
 
 ## Input flexibility
 
-Transforms accept three input types and return the same type:
+Transforms accept multiple input types and return the same type:
 
 ```python
-# Subject → Subject
-result = transform(subject)
-
-# Image → Image
-result = transform(image)
-
-# 4D Tensor → 4D Tensor
-result = transform(tensor)
+result = transform(subject)      # Subject → Subject
+result = transform(image)        # Image → Image
+result = transform(tensor)       # 4D Tensor → 4D Tensor
+result = transform(ndarray)      # NumPy array → NumPy array
+result = transform(sitk_image)   # SimpleITK → SimpleITK
+result = transform(nifti_image)  # NiBabel → NiBabel
 ```
 
 Non-Subject inputs are wrapped in a temporary Subject internally.
+Spatial metadata (spacing, affine) is preserved through the
+round-trip.
 
 ## Transform types
 
@@ -88,7 +91,7 @@ augment = tio.SomeOf(
 )
 ```
 
-## History and traceability
+## History, traceability, and replay
 
 Every transform records an `AppliedTransform` in the Subject's
 `applied_transforms` list:
@@ -99,8 +102,16 @@ for trace in result.applied_transforms:
     print(trace.name, trace.params)
 ```
 
-This enables replay (apply the same augmentation to different data)
-and inversion (undo spatial transforms for test-time augmentation).
+**Replay** applies the exact same augmentation to different data:
+
+```python
+# Get the params from history
+params = result.applied_transforms[0].params
+
+# Replay on a new subject
+noise = tio.Noise(std=0.1)
+replayed = noise.apply(new_subject, params)
+```
 
 ## GPU and differentiability
 
