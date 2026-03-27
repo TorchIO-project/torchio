@@ -1,11 +1,12 @@
 [project]
 name = "torchio"
 version = "0.23.1"
-description = "Medical image preprocessing, augmentation, and patch-based training (v2)"
+description = "Medical image preprocessing, augmentation, and patch-based training."
 requires-python = ">=3.11"
 dependencies = [
     "attrs>=26.1.0",
     "einops",
+    "fsspec[http]>=2026.2.0",
     "humanize>=4.15.0",
     "jaxtyping>=0.3.9",
     "loguru>=0.7.3",
@@ -16,12 +17,34 @@ dependencies = [
     "torch>=2.0",
 ]
 
+[project.urls]
+Homepage = "https://torchio.org"
+Source = "https://github.com/TorchIO-project/torchio"
+"Issue tracker" = "https://github.com/TorchIO-project/torchio/issues"
+Documentation = "https://docs.torchio.org"
+"Release notes" = "https://github.com/TorchIO-project/torchio/releases"
+
 [build-system]
 requires = ["uv_build>=0.11.1,<0.12.0"]
 build-backend = "uv_build"
 
 [tool.pytest.ini_options]
+addopts = ["-ra", "--strict-config", "--strict-markers"]
+filterwarnings = [
+    # Ignore SimpleITK Swig warnings
+    "ignore:builtin type .* has no __module__ attribute",
+    "ignore:Casting complex values to real discards the imaginary part",
+    # Raised by SimpleITK on CI
+    "ignore:invalid escape sequence",
+]
+log_level = "INFO"
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "serial",
+]
+minversion = "9"
 testpaths = ["tests"]
+xfail_strict = true
 
 [tool.coverage.run]
 source = ["torchio"]
@@ -110,4 +133,13 @@ video = [
 ]
 monai = [
     "monai>=1.4",
+]
+s3 = [
+    "s3fs",
+]
+azure = [
+    "adlfs",
+]
+gcs = [
+    "gcsfs",
 ]

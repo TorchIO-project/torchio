@@ -7,7 +7,6 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 from typing import Self
-from typing import cast
 
 import nibabel as nib
 import numpy as np
@@ -19,7 +18,6 @@ from tensordict import TensorDict
 from torch import Tensor
 
 from ..types import TypeImageData
-from ..types import TypePath
 from ..types import TypeSpatialShape
 from ..types import TypeTensorShape
 from .affine import Affine
@@ -29,64 +27,12 @@ from .backends import NumpyBackend
 from .bboxes import BoundingBoxes
 from .bboxes import BoundingBoxFormat
 from .bboxes import Representation
+from .io import ImageSource
+from .io import default_reader
+from .io import is_nifti
+from .io import is_nifti_zarr
+from .io import resolve_source
 from .points import Points
-
-
-def _is_nifti(path: Path) -> bool:
-    name = path.name.lower()
-    return name.endswith(".nii") or name.endswith(".nii.gz")
-
-
-def _is_nifti_zarr(path: Path) -> bool:
-    return str(path).endswith(".nii.zarr")
-
-
-def _read_nibabel(path: Path) -> tuple[TypeImageData, np.ndarray]:
-    """Read a NIfTI image using NiBabel."""
-    img = cast(nib.Nifti1Image, nib.load(path))
-    data = np.asarray(img.dataobj)
-    affine = np.asarray(img.affine)
-    if data.ndim == 3:
-        data = rearrange(data, "i j k -> 1 i j k")
-    elif data.ndim == 4:
-        data = rearrange(data, "i j k c -> c i j k")
-    elif data.ndim == 5 and data.shape[3] == 1:
-        # 5D vector NIfTI written by SimpleITK: (I, J, K, 1, C)
-        data = rearrange(data, "i j k 1 c -> c i j k")
-    else:
-        msg = f"Expected 3D or 4D data, got {data.ndim}D"
-        raise ValueError(msg)
-    tensor = torch.as_tensor(data.copy(), dtype=torch.float32)
-    return tensor, affine
-
-
-def _read_sitk(path: Path) -> tuple[TypeImageData, np.ndarray]:
-    """Read an image using SimpleITK (for non-NIfTI formats)."""
-    sitk_image = sitk.ReadImage(str(path))
-    data = sitk.GetArrayFromImage(sitk_image)
-    n_components = sitk_image.GetNumberOfComponentsPerPixel()
-    if data.ndim == 3 and n_components == 1:
-        data = rearrange(data, "k j i -> 1 i j k")
-    elif data.ndim == 4 and n_components > 1:
-        data = rearrange(data, "k j i c -> c i j k")
-    else:
-        msg = f"Expected 3D data, got {data.ndim}D with {n_components} components"
-        raise ValueError(msg)
-    spacing = np.array(sitk_image.GetSpacing())
-    origin = np.array(sitk_image.GetOrigin())
-    direction = np.array(sitk_image.GetDirection()).reshape(3, 3)
-    affine = np.eye(4, dtype=np.float64)
-    affine[:3, :3] = direction * spacing
-    affine[:3, 3] = origin
-    tensor = torch.as_tensor(data.copy(), dtype=torch.float32)
-    return tensor, affine
-
-
-def _default_reader(path: Path) -> tuple[TypeImageData, np.ndarray]:
-    """Read an image, dispatching to NiBabel or SimpleITK by extension."""
-    if _is_nifti(path):
-        return _read_nibabel(path)
-    return _read_sitk(path)
 
 
 def _expand_ellipsis(
@@ -151,17 +97,18 @@ class Image:
 
     def __init__(
         self,
-        path: TypePath,
+        path: ImageSource,
         *,
         reader: Callable[[Path], tuple[TypeImageData, np.ndarray]] | None = None,
         affine: Affine | npt.ArrayLike | None = None,
         channels_last: bool = False,
+        suffix: str | None = None,
         points: dict[str, Points] | None = None,
         bounding_boxes: dict[str, BoundingBoxes] | None = None,
         metadata: dict[str, Any] | None = None,
     ):
-        self._path: Path | None = Path(path)
-        self._reader = reader or _default_reader
+        self._path: Path | None = resolve_source(path, suffix=suffix)
+        self._reader = reader or default_reader
         self._channels_last = channels_last
         self._metadata: dict[str, Any] = dict(metadata) if metadata else {}
         self._data: Tensor | None = None
@@ -206,7 +153,7 @@ class Image:
         """
         instance = object.__new__(cls)
         instance._path = None
-        instance._reader = _default_reader
+        instance._reader = default_reader
         instance._channels_last = False  # already permuted below
         instance._metadata = dict(metadata) if metadata else {}
         parsed = Image._parse_tensor(tensor)
@@ -349,7 +296,7 @@ class Image:
         """4x4 affine matrix mapping voxel indices to world coordinates."""
         if self._affine is None:
             # Try backend first to avoid full data load
-            if self._path is not None and self._reader is _default_reader:
+            if self._path is not None and self._reader is default_reader:
                 self._ensure_backend()
                 if self._backend is not None:
                     self._affine = Affine(self._backend.affine)
@@ -386,7 +333,7 @@ class Image:
             s = self._backend.shape
             return (int(s[0]), int(s[1]), int(s[2]), int(s[3]))
         if self._path is not None:
-            if self._reader is not _default_reader:
+            if self._reader is not default_reader:
                 self.load()
                 return self.shape
             # Try to create a lazy backend (NIfTI, Zarr)
@@ -458,8 +405,8 @@ class Image:
             self._apply_channels_last()
             return
         # For NIfTI-Zarr or NIfTI with default reader, create backend first
-        if self._reader is _default_reader and (
-            _is_nifti_zarr(self._path) or _is_nifti(self._path)
+        if self._reader is default_reader and (
+            is_nifti_zarr(self._path) or is_nifti(self._path)
         ):
             self._ensure_backend()
             if self._backend is not None:
@@ -547,7 +494,7 @@ class Image:
             path: Output file path. The format is inferred from the extension.
         """
         path = Path(path)
-        if _is_nifti_zarr(path):
+        if is_nifti_zarr(path):
             self._save_nii_zarr(path)
         else:
             self._save_sitk(path)
@@ -591,11 +538,11 @@ class Image:
         if self._path is None:
             msg = "Cannot create backend: no path set"
             raise RuntimeError(msg)
-        if _is_nifti_zarr(self._path):
+        if is_nifti_zarr(self._path):
             from .backends import ZarrBackend
 
             self._backend = ZarrBackend(self._path)
-        elif _is_nifti(self._path):
+        elif is_nifti(self._path):
             nii = nib.load(self._path)
             self._backend = NibabelBackend(nii)
 

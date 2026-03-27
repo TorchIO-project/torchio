@@ -448,7 +448,7 @@ class TestSimpleITKReader:
 class TestReaderErrors:
     def test_sitk_reader_invalid_ndim(self, tmp_path: Path):
         """SimpleITK reader raises for unexpected dimensions."""
-        from torchio.data.image import _read_sitk
+        from torchio.data.io import read_sitk
 
         data_2d = np.zeros((10, 10), dtype=np.float32)
         sitk_image = sitk.GetImageFromArray(data_2d)
@@ -456,7 +456,7 @@ class TestReaderErrors:
         sitk.WriteImage(sitk_image, str(path))
 
         with pytest.raises(ValueError, match="Expected 3D"):
-            _read_sitk(path)
+            read_sitk(path)
 
     def test_sitk_shape_reader_invalid_ndim(self, tmp_path: Path):
         """SimpleITK shape reader raises for non-3D images."""

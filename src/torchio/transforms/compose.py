@@ -8,10 +8,8 @@ from typing import Any
 
 import attrs
 import torch
-from torch import Tensor
 
-from ..data.image import Image
-from ..data.subject import Subject
+from .transform import T
 from .transform import Transform
 
 
@@ -47,8 +45,8 @@ class Compose(Transform):
 
     def forward(
         self,
-        data: Subject | Image | Tensor,
-    ) -> Subject | Image | Tensor:
+        data: T,
+    ) -> T:
         subject, unwrap = self._wrap(data)
         if self.copy:
             subject = copy.deepcopy(subject)
@@ -91,8 +89,8 @@ class OneOf(Transform):
 
     def forward(
         self,
-        data: Subject | Image | Tensor,
-    ) -> Subject | Image | Tensor:
+        data: T,
+    ) -> T:
         subject, unwrap = self._wrap(data)
         if torch.rand(1).item() > self.p:
             return unwrap(subject)
@@ -148,8 +146,8 @@ class SomeOf(Transform):
 
     def forward(
         self,
-        data: Subject | Image | Tensor,
-    ) -> Subject | Image | Tensor:
+        data: T,
+    ) -> T:
         subject, unwrap = self._wrap(data)
         if torch.rand(1).item() > self.p:
             return unwrap(subject)

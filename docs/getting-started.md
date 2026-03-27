@@ -30,6 +30,26 @@
         pip install "torchio[zarr]"
         ```
 
+    For cloud storage (HTTP/HTTPS URLs work out of the box):
+
+    === "S3"
+
+        ```
+        pip install "torchio[s3]"
+        ```
+
+    === "Azure Blob"
+
+        ```
+        pip install "torchio[azure]"
+        ```
+
+    === "Google Cloud"
+
+        ```
+        pip install "torchio[gcs]"
+        ```
+
 ## Quick tour
 
 ### Loading an image
@@ -44,6 +64,15 @@ print(image.spacing)  # (1.0, 1.0, 1.0)
 
 # Data is loaded on first access
 tensor = image.data   # shape: (1, 256, 256, 176), dtype: float32
+
+# From a URL or cloud path
+image = tio.ScalarImage("https://example.com/t1.nii.gz")
+image = tio.ScalarImage("s3://bucket/t1.nii.gz")
+
+# From a file-like object
+import io
+buf = io.BytesIO(open("t1.nii.gz", "rb").read())
+image = tio.ScalarImage(buf, suffix=".nii.gz")
 ```
 
 ### Creating from a tensor
@@ -152,7 +181,8 @@ details.
 ### Applying transforms
 
 Transforms accept Subjects, Images, Tensors, NumPy arrays,
-SimpleITK Images, or NiBabel images — and return the same type:
+SimpleITK Images, NiBabel images, or MONAI-style dicts — and return
+the same type:
 
 ```python
 # Single deterministic transform
@@ -167,6 +197,10 @@ augmented = augment(subject)
 
 # Works directly on tensors too
 noisy_tensor = tio.Noise(std=0.05)(tensor)
+
+# Works with MONAI-style dicts
+data = {"image": tensor, "label": label_tensor}
+augmented = tio.Noise(std=0.1)(data)  # returns dict
 ```
 
 See the [transform design explanation](explanation/transforms.md) for

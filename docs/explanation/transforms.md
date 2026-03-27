@@ -1,7 +1,8 @@
 # Transform design
 
-TorchIO transforms are `torch.nn.Module` subclasses that operate on
-Subjects, Images, or raw Tensors.
+TorchIO transforms are `torch.nn.Module` subclasses. They accept
+Subjects, Images, Tensors, NumPy arrays, SimpleITK images, NiBabel
+images, or MONAI-style dicts — and always return the same type.
 
 ## The `make_params` / `apply` split
 
@@ -46,11 +47,29 @@ result = transform(tensor)       # 4D Tensor → 4D Tensor
 result = transform(ndarray)      # NumPy array → NumPy array
 result = transform(sitk_image)   # SimpleITK → SimpleITK
 result = transform(nifti_image)  # NiBabel → NiBabel
+result = transform(data_dict)    # dict → dict (MONAI-compatible)
 ```
 
 Non-Subject inputs are wrapped in a temporary Subject internally.
 Spatial metadata (spacing, affine) is preserved through the
 round-trip.
+
+### MONAI interoperability
+
+Dict input makes TorchIO transforms usable in MONAI pipelines:
+
+```python
+# MONAI-style dict
+data = {"image": tensor, "label": label_tensor, "age": 42}
+
+# TorchIO transforms work directly
+augmented = tio.Noise(std=0.1)(data)   # returns dict
+augmented = tio.Flip(axes=(0,))(data)  # returns dict
+```
+
+Tensor values are treated as images; non-tensor values pass through
+unchanged. See also [`MonaiAdapter`](../how-to/monai.md) for wrapping
+MONAI transforms in TorchIO pipelines.
 
 ## Transform types
 
@@ -120,9 +139,9 @@ All transforms are pure PyTorch operations. Spatial transforms use
 GPU-compatible:
 
 ```python
-# Augmentation on GPU
-subject = subject.to("cuda")
-result = transform(subject)  # stays on GPU
+# Augmentation on GPU or MPS
+subject = subject.to("cuda")  # or "mps" on Apple Silicon
+result = transform(subject)   # stays on device
 
 # Gradients flow through
 with torch.enable_grad():

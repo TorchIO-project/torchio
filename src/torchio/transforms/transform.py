@@ -6,6 +6,7 @@ import copy as _copy
 from dataclasses import dataclass
 from dataclasses import field
 from typing import Any
+from typing import TypeVar
 
 import attrs
 import nibabel as nib
@@ -19,8 +20,17 @@ from ..data.image import Image
 from ..data.image import ScalarImage
 from ..data.subject import Subject
 
-#: All types accepted by ``Transform.forward()``.
-TransformInput = Subject | Image | Tensor | np.ndarray | sitk.Image | nib.Nifti1Image
+#: TypeVar preserving the input type through transforms.
+T = TypeVar(
+    "T",
+    Subject,
+    Image,
+    Tensor,
+    np.ndarray,
+    sitk.Image,
+    nib.Nifti1Image,
+    dict,
+)
 
 
 def _validate_probability(
@@ -95,8 +105,8 @@ class Transform(nn.Module):
 
     def forward(
         self,
-        data: TransformInput,
-    ) -> TransformInput:
+        data: T,
+    ) -> T:
         """Apply the transform.
 
         Args:
@@ -159,7 +169,7 @@ class Transform(nn.Module):
 
     @staticmethod
     def _wrap(
-        data: TransformInput,
+        data: T,
     ) -> tuple[Subject, Any]:
         """Wrap non-Subject input into a Subject; return (subject, unwrap_fn)."""
         if isinstance(data, Subject):
@@ -186,8 +196,20 @@ class Transform(nn.Module):
             img = ScalarImage.from_nifti(data)
             sub = Subject(tio_default_image=img)
             return sub, _unwrap_nifti
+        if isinstance(data, dict):
+            kwargs: dict[str, Any] = {}
+            for k, v in data.items():
+                if isinstance(v, Image):
+                    kwargs[k] = v
+                elif isinstance(v, Tensor):
+                    kwargs[k] = ScalarImage.from_tensor(v)
+                else:
+                    kwargs[k] = v
+            sub = Subject(**kwargs)
+            keys = list(data.keys())
+            return sub, lambda s: _unwrap_dict(s, keys)
         msg = (
-            "Expected Subject, Image, Tensor, ndarray,"
+            "Expected Subject, Image, Tensor, ndarray, dict,"
             f" SimpleITK Image, or NIfTI, got {type(data).__name__}"
         )
         raise TypeError(msg)
@@ -229,6 +251,17 @@ def _unwrap_nifti(subject: Subject) -> nib.Nifti1Image:
     array = image.data.numpy()
     array = array[0] if array.shape[0] == 1 else np.moveaxis(array, 0, -1)
     return nib.Nifti1Image(array, image.affine.numpy())
+
+
+def _unwrap_dict(subject: Subject, keys: list[str]) -> dict[str, Tensor]:
+    result: dict[str, Tensor] = {}
+    for k in keys:
+        entry = getattr(subject, k, None)
+        if isinstance(entry, Image):
+            result[k] = entry.data
+        else:
+            result[k] = entry
+    return result
 
 
 @attrs.define(slots=False, eq=False, kw_only=True, repr=False)

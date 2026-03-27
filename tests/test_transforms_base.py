@@ -112,6 +112,32 @@ class TestTransformBase:
         result = _IdentityTransform()(nifti)
         np.testing.assert_array_almost_equal(result.affine, affine)
 
+    def test_forward_accepts_dict(self) -> None:
+        data = {
+            "t1": torch.rand(1, 8, 8, 8),
+            "seg": torch.randint(0, 3, (1, 8, 8, 8)),
+        }
+        result = _IdentityTransform()(data)
+        assert isinstance(result, dict)
+        assert set(result.keys()) == {"t1", "seg"}
+        assert isinstance(result["t1"], torch.Tensor)
+
+    def test_dict_transform_modifies_data(self) -> None:
+        data = {
+            "t1": torch.rand(1, 8, 8, 8),
+        }
+        original = data["t1"].clone()
+        result = _DoubleIntensity()(data)
+        torch.testing.assert_close(result["t1"], original * 2)
+
+    def test_dict_metadata_passthrough(self) -> None:
+        data = {
+            "t1": torch.rand(1, 8, 8, 8),
+            "age": 42,
+        }
+        result = _IdentityTransform()(data)
+        assert result["age"] == 42
+
     def test_probability_zero_skips(self) -> None:
         subject = _make_subject()
         original_data = subject.t1.data.clone()

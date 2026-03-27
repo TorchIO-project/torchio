@@ -15,6 +15,7 @@ from ..data.image import Image
 from ..data.image import ScalarImage
 from ..data.subject import Subject
 from ..imports import get_monai
+from .transform import T
 from .transform import Transform
 
 
@@ -55,8 +56,8 @@ class MonaiAdapter(Transform):
 
     def forward(
         self,
-        data: Subject | Image | torch.Tensor,
-    ) -> Subject | Image | torch.Tensor:
+        data: T,
+    ) -> T:
         """Apply without recording history (MONAI transforms are opaque)."""
         subject, unwrap = self._wrap(data)
         if torch.rand(1).item() > self.p:

@@ -81,6 +81,9 @@ Images can be created from multiple sources:
 
 ```python
 image = tio.ScalarImage("t1.nii.gz")              # from file (lazy)
+image = tio.ScalarImage("s3://bucket/t1.nii.gz")   # from cloud (via fsspec)
+image = tio.ScalarImage("https://example.com/t1.nii.gz")  # from URL
+image = tio.ScalarImage(buf, suffix=".nii.gz")     # from file-like object
 image = tio.ScalarImage.from_tensor(tensor)        # from PyTorch tensor
 image = tio.ScalarImage.from_sitk(sitk_image)      # from SimpleITK
 image = tio.ScalarImage.from_nifti(nifti_image)    # from NiBabel
