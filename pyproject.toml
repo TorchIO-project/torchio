@@ -95,3 +95,11 @@ quality = [
 zarr = [
     "nifti-zarr>=1.0.0rc6",
 ]
+plot = [
+    "matplotlib>=3.7",
+    "colorcet",
+    "pillow",
+]
+video = [
+    "ffmpeg-python>=0.2",
+]

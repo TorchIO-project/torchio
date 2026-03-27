@@ -29,3 +29,27 @@ def get_niizarr() -> ModuleType:
         extra="zarr",
         package="nifti-zarr",
     )
+
+
+def get_matplotlib() -> ModuleType:
+    return _check_and_import(module="matplotlib", extra="plot")
+
+
+def get_matplotlib_pyplot() -> ModuleType:
+    _check_module(module="matplotlib", extra="plot")
+    return import_module("matplotlib.pyplot")
+
+
+def get_colorcet() -> ModuleType | None:
+    """Return colorcet if installed, else None (fallback to tab10)."""
+    if find_spec("colorcet") is None:
+        return None
+    return import_module("colorcet")
+
+
+def get_pillow() -> ModuleType:
+    return _check_and_import(module="PIL", extra="plot", package="Pillow")
+
+
+def get_ffmpeg() -> ModuleType:
+    return _check_and_import(module="ffmpeg", extra="video", package="ffmpeg-python")
