@@ -308,3 +308,9 @@ class Subject:
         if self._bounding_boxes:
             parts.append(f"bboxes: {tuple(self._bounding_boxes.keys())}")
         return f"{type(self).__name__}({'; '.join(parts)})"
+
+    def _repr_html_(self) -> str:
+        """Rich HTML representation for Jupyter notebooks."""
+        from ..repr_html import subject_to_html
+
+        return subject_to_html(self)

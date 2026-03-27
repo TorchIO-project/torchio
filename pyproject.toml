@@ -5,6 +5,7 @@ description = "Medical image preprocessing, augmentation, and patch-based traini
 requires-python = ">=3.11"
 dependencies = [
     "einops",
+    "humanize>=4.15.0",
     "jaxtyping>=0.3.9",
     "loguru>=0.7.3",
     "nibabel",

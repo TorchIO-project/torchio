@@ -663,6 +663,12 @@ class Image:
             parts.append(f"bounding_boxes: {{{names}}}")
         return f"{cls_name}({'; '.join(parts)})"
 
+    def _repr_html_(self) -> str:
+        """Rich HTML representation for Jupyter notebooks."""
+        from ..repr_html import image_to_html
+
+        return image_to_html(self)
+
     def __copy__(self) -> Self:
         return self.new_like(data=self.data.clone())
 
