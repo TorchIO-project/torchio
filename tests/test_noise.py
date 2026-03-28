@@ -117,8 +117,8 @@ class TestNoise:
         noise = tio.Noise(std=1.0)
         # Replay twice with same params (both use CPU generator path)
         params = {"mean": 0.0, "std": 1.0, "seed": 42}
-        result1 = noise.apply(subject1, params)
-        result2 = noise.apply(subject2, params)
+        result1 = noise.apply_transform(subject1, params)
+        result2 = noise.apply_transform(subject2, params)
         torch.testing.assert_close(result1.t1.data, result2.t1.data)
 
     def test_negative_std_raises(self) -> None:

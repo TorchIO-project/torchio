@@ -5,6 +5,7 @@ from __future__ import annotations
 import copy as _copy
 from dataclasses import dataclass
 from dataclasses import field
+from typing import TYPE_CHECKING
 from typing import Any
 from typing import TypeVar
 
@@ -13,12 +14,16 @@ import nibabel as nib
 import numpy as np
 import SimpleITK as sitk
 import torch
+from einops import rearrange
 from torch import Tensor
 from torch import nn
 
 from ..data.image import Image
 from ..data.image import ScalarImage
 from ..data.subject import Subject
+
+# Runtime class for isinstance checks (ty sees attrs.Factory as overloaded)
+_ATTRS_FACTORY_TYPE: type = type(attrs.Factory(list))
 
 #: TypeVar preserving the input type through transforms.
 T = TypeVar(
@@ -78,6 +83,10 @@ class Transform(nn.Module):
     include: list[str] | None = None
     exclude: list[str] | None = None
 
+    if TYPE_CHECKING:
+
+        def __attrs_init__(self, **kwargs: Any) -> None: ...
+
     def __attrs_post_init__(self) -> None:
         nn.Module.__init__(self)
 
@@ -89,7 +98,7 @@ class Transform(nn.Module):
         for f in fields:
             value = getattr(self, f.name)
             default = f.default
-            if isinstance(default, attrs.Factory):
+            if isinstance(default, _ATTRS_FACTORY_TYPE):
                 default = default.factory()
             # Compare original value for ParameterRange fields
             from .parameter_range import ParameterRange
@@ -122,7 +131,7 @@ class Transform(nn.Module):
         if torch.rand(1).item() > self.p:
             return unwrap(subject)
         params = self.make_params(subject)
-        subject = self.apply(subject, params)
+        subject = self.apply_transform(subject, params)
         subject.applied_transforms.append(
             AppliedTransform(
                 name=type(self).__name__,
@@ -144,7 +153,7 @@ class Transform(nn.Module):
         """
         return {}
 
-    def apply(self, subject: Subject, params: dict[str, Any]) -> Subject:
+    def apply_transform(self, subject: Subject, params: dict[str, Any]) -> Subject:
         """Apply the transform with the given parameters.
 
         Must be overridden by subclasses.
@@ -178,7 +187,7 @@ class Transform(nn.Module):
         for f in attrs.fields(cls):
             value = getattr(self, f.name)
             default = f.default
-            if isinstance(default, attrs.Factory):
+            if isinstance(default, _ATTRS_FACTORY_TYPE):
                 default = default.factory()
             if isinstance(value, ParameterRange):
                 if value._original == default:
@@ -233,7 +242,7 @@ class Transform(nn.Module):
         if isinstance(data, np.ndarray):
             tensor = torch.as_tensor(data.copy(), dtype=torch.float32)
             if tensor.ndim == 3:
-                tensor = tensor.unsqueeze(0)
+                tensor = rearrange(tensor, "i j k -> 1 i j k")
             img = ScalarImage.from_tensor(tensor)
             sub = Subject(tio_default_image=img)
             return sub, _unwrap_ndarray
@@ -302,7 +311,7 @@ def _unwrap_sitk(subject: Subject) -> sitk.Image:
         sitk_image = sitk.GetImageFromArray(array, isVector=True)
     sitk_image.SetSpacing(affine.spacing)
     sitk_image.SetOrigin(affine.origin)
-    sitk_image.SetDirection(affine.direction.flatten().tolist())
+    sitk_image.SetDirection(rearrange(affine.direction, "i j -> (i j)").tolist())
     return sitk_image
 
 
@@ -314,7 +323,7 @@ def _unwrap_nifti(subject: Subject) -> nib.Nifti1Image:
 
 
 def _unwrap_dict(subject: Subject, keys: list[str]) -> dict[str, Tensor]:
-    result: dict[str, Tensor] = {}
+    result: dict[str, Any] = {}
     for k in keys:
         entry = getattr(subject, k, None)
         if isinstance(entry, Image):
@@ -344,7 +353,9 @@ class IntensityTransform(Transform):
 
     def _get_images(self, subject: Subject) -> dict[str, Image]:
         """Filter to ScalarImage only, then apply include/exclude."""
-        images = {k: v for k, v in subject.images.items() if isinstance(v, ScalarImage)}
+        images: dict[str, Image] = {
+            k: v for k, v in subject.images.items() if isinstance(v, ScalarImage)
+        }
         if self.include is not None:
             images = {k: v for k, v in images.items() if k in self.include}
         if self.exclude is not None:

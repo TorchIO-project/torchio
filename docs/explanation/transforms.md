@@ -129,7 +129,7 @@ params = result.applied_transforms[0].params
 
 # Replay on a new subject
 noise = tio.Noise(std=0.1)
-replayed = noise.apply(new_subject, params)
+replayed = noise.apply_transform(new_subject, params)
 ```
 
 ## Hydra configuration

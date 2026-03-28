@@ -34,11 +34,11 @@ class Noise(IntensityTransform):
         >>> tio.Noise(mean=(-0.1, 0.1), std=(0.05, 0.2))  # both random
     """
 
-    mean: ParameterRange = attrs.field(
+    mean: ParameterRange = attrs.field(  # ty: ignore[invalid-assignment]
         default=0.0,
         converter=to_range,
     )
-    std: ParameterRange = attrs.field(
+    std: ParameterRange = attrs.field(  # ty: ignore[invalid-assignment]
         default=0.25,
         converter=to_nonneg_range,
     )
@@ -52,7 +52,7 @@ class Noise(IntensityTransform):
             "_replay": False,
         }
 
-    def apply(self, subject: Subject, params: dict[str, Any]) -> Subject:
+    def apply_transform(self, subject: Subject, params: dict[str, Any]) -> Subject:
         mean = params["mean"]
         std = params["std"]
         seed = params["seed"]

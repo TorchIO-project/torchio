@@ -41,10 +41,12 @@ class Affine:
 
     def __init__(
         self,
-        matrix: Tensor | npt.ArrayLike | None = None,
+        matrix: Affine | Tensor | npt.ArrayLike | None = None,
     ) -> None:
         if matrix is None:
             self._matrix = torch.eye(4, dtype=torch.float64)
+        elif isinstance(matrix, Affine):
+            self._matrix = matrix._matrix.clone()
         elif isinstance(matrix, Tensor):
             if matrix.shape != (4, 4):
                 msg = f"Affine must be 4x4, got {tuple(matrix.shape)}"

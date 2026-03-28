@@ -48,7 +48,7 @@ class Flip(SpatialTransform):
     def make_params(self, subject: Subject) -> dict[str, Any]:
         return {"axes": self.axes}
 
-    def apply(self, subject: Subject, params: dict[str, Any]) -> Subject:
+    def apply_transform(self, subject: Subject, params: dict[str, Any]) -> Subject:
         axes = params["axes"]
         # torch.flip dims are 1-indexed for (C, I, J, K) layout
         dims = [a + 1 for a in axes]

@@ -38,6 +38,6 @@ class To(Transform):
     def make_params(self, subject: Subject) -> dict[str, Any]:
         return {"to_args": self.to_args, "to_kwargs": self.to_kwargs}
 
-    def apply(self, subject: Subject, params: dict[str, Any]) -> Subject:
+    def apply_transform(self, subject: Subject, params: dict[str, Any]) -> Subject:
         subject.to(*params["to_args"], **params["to_kwargs"])
         return subject

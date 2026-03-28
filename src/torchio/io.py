@@ -7,6 +7,7 @@ from pathlib import Path
 import numpy as np
 import SimpleITK as sitk
 import torch
+from einops import rearrange
 from torch import Tensor
 
 from .types import TypePath
@@ -82,9 +83,9 @@ def _read_itk_matrix(path: TypePath) -> Tensor:
     transform = sitk.ReadTransform(str(path))
     parameters = transform.GetParameters()
     rotation_parameters = parameters[:9]
-    rotation_matrix = np.array(rotation_parameters).reshape(3, 3)
+    rotation_matrix = rearrange(np.array(rotation_parameters), "(i j) -> i j", i=3)
     translation_parameters = parameters[9:]
-    translation_vector = np.array(translation_parameters).reshape(3, 1)
+    translation_vector = rearrange(np.array(translation_parameters), "i -> i 1")
     matrix = np.hstack([rotation_matrix, translation_vector])
     homogeneous_matrix_lps = np.vstack([matrix, [0, 0, 0, 1]])
     homogeneous_matrix_ras = _from_itk_convention(homogeneous_matrix_lps)

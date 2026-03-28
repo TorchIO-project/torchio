@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from typing import Any
+from typing import cast
 
 import torch
 from tensordict import TensorDict
@@ -38,7 +39,7 @@ def collate_subjects(batch: Sequence[Any]) -> TensorDict:
                 f"got {type(item).__name__}"
             )
             raise TypeError(msg)
-    return torch.stack(tds)
+    return cast(TensorDict, torch.stack(tds))
 
 
 def collate_images(batch: Sequence[Any]) -> TensorDict:
@@ -67,7 +68,7 @@ def collate_images(batch: Sequence[Any]) -> TensorDict:
                 f"collate_images expects Image or TensorDict, got {type(item).__name__}"
             )
             raise TypeError(msg)
-    return torch.stack(tds)
+    return cast(TensorDict, torch.stack(tds))
 
 
 class SubjectsLoader(DataLoader):

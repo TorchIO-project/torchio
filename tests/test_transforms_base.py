@@ -34,14 +34,14 @@ def _make_subject() -> tio.Subject:
 class _IdentityTransform(tio.Transform):
     """Transform that does nothing — for testing the base flow."""
 
-    def apply(self, subject: tio.Subject, params: dict) -> tio.Subject:
+    def apply_transform(self, subject: tio.Subject, params: dict) -> tio.Subject:
         return subject
 
 
 class _DoubleIntensity(tio.IntensityTransform):
     """Doubles intensity of ScalarImages — for testing IntensityTransform."""
 
-    def apply(self, subject: tio.Subject, params: dict) -> tio.Subject:
+    def apply_transform(self, subject: tio.Subject, params: dict) -> tio.Subject:
         for _name, image in self._get_images(subject).items():
             image.set_data(image.data * 2)
         return subject
@@ -50,7 +50,7 @@ class _DoubleIntensity(tio.IntensityTransform):
 class _FlipSpatial(tio.SpatialTransform):
     """Flips along axis 0 — for testing SpatialTransform."""
 
-    def apply(self, subject: tio.Subject, params: dict) -> tio.Subject:
+    def apply_transform(self, subject: tio.Subject, params: dict) -> tio.Subject:
         for _name, image in self._get_images(subject).items():
             image.set_data(torch.flip(image.data, [1]))
         return subject

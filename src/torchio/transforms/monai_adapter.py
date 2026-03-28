@@ -62,10 +62,10 @@ class MonaiAdapter(Transform):
         subject, unwrap = self._wrap(data)
         if torch.rand(1).item() > self.p:
             return unwrap(subject)
-        self.apply(subject, {})
+        self.apply_transform(subject, {})
         return unwrap(subject)
 
-    def apply(self, subject: Subject, params: dict[str, Any]) -> Subject:
+    def apply_transform(self, subject: Subject, params: dict[str, Any]) -> Subject:
         monai = get_monai()
         is_dict = isinstance(
             self.monai_transform,
@@ -84,7 +84,9 @@ class MonaiAdapter(Transform):
 
     def _get_images(self, subject: Subject) -> dict[str, Image]:
         """Filter to ScalarImage, then apply include/exclude."""
-        images = {k: v for k, v in subject.images.items() if isinstance(v, ScalarImage)}
+        images: dict[str, Image] = {
+            k: v for k, v in subject.images.items() if isinstance(v, ScalarImage)
+        }
         if self.include is not None:
             images = {k: v for k, v in images.items() if k in self.include}
         if self.exclude is not None:

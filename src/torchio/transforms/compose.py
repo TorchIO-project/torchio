@@ -5,6 +5,7 @@ from __future__ import annotations
 import copy
 from collections.abc import Sequence
 from typing import Any
+from typing import cast
 
 import attrs
 import torch
@@ -82,9 +83,10 @@ class OneOf(Transform):
         **kwargs: Any,
     ) -> None:
         if isinstance(transforms, dict):
-            t_list = list(transforms.keys())
-            w_list = list(transforms.values())
-            total = sum(w_list)
+            weight_dict = cast(dict[Transform, float], transforms)
+            t_list = list(weight_dict.keys())
+            w_list: list[float] = list(weight_dict.values())
+            total: float = sum(w_list)
             w_list = [w / total for w in w_list]
         else:
             t_list = list(transforms)
@@ -99,10 +101,12 @@ class OneOf(Transform):
         subject, unwrap = self._wrap(data)
         if torch.rand(1).item() > self.p:
             return unwrap(subject)
-        idx = torch.multinomial(
-            torch.tensor(self.weights),
-            num_samples=1,
-        ).item()
+        idx = int(
+            torch.multinomial(
+                torch.tensor(self.weights),
+                num_samples=1,
+            ).item()
+        )
         subject = self.transforms[idx](subject)
         return unwrap(subject)
 
@@ -161,7 +165,7 @@ class SomeOf(Transform):
         subject, unwrap = self._wrap(data)
         if torch.rand(1).item() > self.p:
             return unwrap(subject)
-        n = torch.randint(self._min_n, self._max_n + 1, (1,)).item()
+        n = int(torch.randint(self._min_n, self._max_n + 1, size=(1,)).item())
         n_transforms = len(self.transforms)
         if self.replace:
             indices = torch.randint(0, n_transforms, (n,))

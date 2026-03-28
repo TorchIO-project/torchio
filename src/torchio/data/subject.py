@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import types
 from collections.abc import Iterator
 from typing import Any
 from typing import Self
@@ -81,7 +82,7 @@ class Subject:
         self._points: dict[str, Points] = points
         self._bounding_boxes: dict[str, BoundingBoxes] = bounding_boxes
         self._metadata: dict[str, Any] = metadata
-        self.applied_transforms: list[dict[str, Any]] = []
+        self.applied_transforms: list[Any] = []
 
     # --- Access ---
 
@@ -223,7 +224,8 @@ class Subject:
         Returns:
             Merged dict of all points across both levels.
         """
-        result: dict[str | tuple[str, str], Points] = dict(self._points)
+        result: dict[str | tuple[str, str], Points] = {}
+        result.update(self._points)
         for image_name, image in self._images.items():
             for points_name, pts in image.points.items():
                 result[(image_name, points_name)] = pts
@@ -241,9 +243,8 @@ class Subject:
         Returns:
             Merged dict of all bounding boxes across both levels.
         """
-        result: dict[str | tuple[str, str], BoundingBoxes] = dict(
-            self._bounding_boxes,
-        )
+        result: dict[str | tuple[str, str], BoundingBoxes] = {}
+        result.update(self._bounding_boxes)
         for image_name, image in self._images.items():
             for box_name, boxes in image.bounding_boxes.items():
                 result[(image_name, box_name)] = boxes
@@ -343,7 +344,7 @@ class Subject:
         kwargs: dict[str, Any] = {}
 
         # Collect all keys to classify them
-        tensor_keys = list(td.keys(include_nested=False))
+        tensor_keys = [k for k in td.keys(include_nested=False) if isinstance(k, str)]
         non_tensor_items = {k: v.data for k, v in td.non_tensor_items()}
 
         # Reconstruct images (nested TensorDicts with 'data' and 'affine')
@@ -433,7 +434,7 @@ class Subject:
 
         # Normalise to tuple
         if isinstance(item, (int, slice)) or item is Ellipsis:
-            items: tuple[int | slice | type(Ellipsis), ...] = (item,)
+            items: tuple[int | slice | types.EllipsisType, ...] = (item,)
         elif isinstance(item, tuple):
             items = item
         else:

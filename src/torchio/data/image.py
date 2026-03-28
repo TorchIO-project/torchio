@@ -3,12 +3,16 @@
 from __future__ import annotations
 
 import copy
+import types
 from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 from typing import Self
+from typing import TypeVar
+from typing import cast
 
 import nibabel as nib
+import nibabel.spatialimages
 import numpy as np
 import numpy.typing as npt
 import SimpleITK as sitk
@@ -34,9 +38,11 @@ from .io import is_nifti_zarr
 from .io import resolve_source
 from .points import Points
 
+_AnnotationType = TypeVar("_AnnotationType", Points, BoundingBoxes)
+
 
 def _expand_ellipsis(
-    items: tuple[int | slice | type(Ellipsis), ...],
+    items: tuple[int | slice | types.EllipsisType, ...],
     *,
     ndim: int,
 ) -> tuple[int | slice, ...]:
@@ -158,7 +164,7 @@ class Image:
         instance._metadata = dict(metadata) if metadata else {}
         parsed = Image._parse_tensor(tensor)
         if channels_last:
-            parsed = parsed.permute(3, 0, 1, 2)
+            parsed = rearrange(parsed, "i j k c -> c i j k")
         instance._data = parsed
         parsed_affine = Image._parse_affine(affine)
         instance._affine = parsed_affine
@@ -190,7 +196,7 @@ class Image:
         tensor = torch.as_tensor(data.copy(), dtype=torch.float32)
         spacing = np.array(sitk_image.GetSpacing())
         origin = np.array(sitk_image.GetOrigin())
-        direction = np.array(sitk_image.GetDirection()).reshape(3, 3)
+        direction = rearrange(np.array(sitk_image.GetDirection()), "(i j) -> i j", i=3)
         affine_matrix = np.eye(4)
         affine_matrix[:3, :3] = direction * spacing
         affine_matrix[:3, 3] = origin
@@ -235,9 +241,9 @@ class Image:
 
     @staticmethod
     def _parse_annotations(
-        annotations: dict[str, Points | BoundingBoxes] | None,
+        annotations: dict[str, _AnnotationType] | None,
         type_name: str,
-    ) -> dict[str, Points | BoundingBoxes]:
+    ) -> dict[str, _AnnotationType]:
         """Validate and copy an annotation dict.
 
         Args:
@@ -267,8 +273,12 @@ class Image:
         self,
     ) -> tuple[dict[str, Points], dict[str, BoundingBoxes]]:
         """Deep-copy both annotation dicts."""
-        points_copy = {k: copy.deepcopy(v) for k, v in self._points.items()}
-        bboxes_copy = {k: copy.deepcopy(v) for k, v in self._bounding_boxes.items()}
+        points_copy: dict[str, Points] = {
+            k: copy.deepcopy(v) for k, v in self._points.items()
+        }
+        bboxes_copy: dict[str, BoundingBoxes] = {
+            k: copy.deepcopy(v) for k, v in self._bounding_boxes.items()
+        }
         return points_copy, bboxes_copy
 
     # --- Properties ---
@@ -425,7 +435,7 @@ class Image:
     def _apply_channels_last(self) -> None:
         """Permute data from (I, J, K, C) to (C, I, J, K) if needed."""
         if self._channels_last and self._data is not None:
-            self._data = self._data.permute(3, 0, 1, 2)
+            self._data = rearrange(self._data, "i j k c -> c i j k")
             self._channels_last = False  # only do it once
 
     def set_data(self, tensor: TypeImageData | np.ndarray) -> None:
@@ -510,7 +520,9 @@ class Image:
             sitk_image = sitk.GetImageFromArray(array, isVector=True)
         sitk_image.SetSpacing(self.affine.spacing)
         sitk_image.SetOrigin(self.affine.origin)
-        sitk_image.SetDirection(self.affine.direction.flatten().tolist())
+        sitk_image.SetDirection(
+            rearrange(self.affine.direction, "i j -> (i j)").tolist()
+        )
         sitk.WriteImage(sitk_image, str(path))
 
     def _save_nii_zarr(self, path: Path) -> None:
@@ -544,6 +556,7 @@ class Image:
             self._backend = ZarrBackend(self._path)
         elif is_nifti(self._path):
             nii = nib.load(self._path)
+            assert isinstance(nii, nib.spatialimages.SpatialImage)
             self._backend = NibabelBackend(nii)
 
     @staticmethod
@@ -597,7 +610,7 @@ class Image:
             (2, 10, 10, 10)
         """
         if isinstance(item, (int, slice)) or item is Ellipsis:
-            items: tuple[int | slice | type(Ellipsis), ...] = (item,)
+            items: tuple[int | slice | types.EllipsisType, ...] = (item,)
         elif isinstance(item, tuple):
             items = item
         else:
@@ -725,8 +738,8 @@ class Image:
         class_name = td.get_non_tensor("_class")
         image_cls = image_classes.get(class_name, ScalarImage)
 
-        data = td["data"]
-        affine = Affine(td["affine"])
+        data = cast(Tensor, td["data"])
+        affine = Affine(cast(Tensor, td["affine"]))
 
         # Reconstruct annotations from non-tensor entries
         non_tensor = {k: v.data for k, v in td.non_tensor_items()}

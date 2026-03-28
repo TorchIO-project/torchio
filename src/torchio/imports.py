@@ -5,6 +5,7 @@ from __future__ import annotations
 from importlib import import_module
 from importlib.util import find_spec
 from types import ModuleType
+from typing import Any
 
 
 def _check_module(*, module: str, extra: str, package: str | None = None) -> None:
@@ -18,7 +19,7 @@ def _check_module(*, module: str, extra: str, package: str | None = None) -> Non
         raise ImportError(msg)
 
 
-def _check_and_import(module: str, extra: str, **kwargs: object) -> ModuleType:
+def _check_and_import(module: str, extra: str, **kwargs: Any) -> ModuleType:
     _check_module(module=module, extra=extra, **kwargs)
     return import_module(module)
 

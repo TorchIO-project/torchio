@@ -111,7 +111,7 @@ def read_sitk(path: Path) -> tuple[TypeImageData, np.ndarray]:
         raise ValueError(msg)
     spacing = np.array(sitk_image.GetSpacing())
     origin = np.array(sitk_image.GetOrigin())
-    direction = np.array(sitk_image.GetDirection()).reshape(3, 3)
+    direction = rearrange(np.array(sitk_image.GetDirection()), "(i j) -> i j", i=3)
     affine = np.eye(4, dtype=np.float64)
     affine[:3, :3] = direction * spacing
     affine[:3, 3] = origin

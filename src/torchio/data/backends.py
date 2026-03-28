@@ -8,10 +8,12 @@ and `.dataobj` (lazy backend for advanced use like slicing).
 
 from __future__ import annotations
 
+from typing import Any
 from typing import Protocol
 from typing import runtime_checkable
 
 import nibabel as nib
+import nibabel.spatialimages
 import numpy as np
 import torch
 from einops import rearrange
@@ -37,7 +39,7 @@ class ImageDataBackend(Protocol):
         """$4 \\times 4$ affine matrix."""
         ...
 
-    def __getitem__(self, slices: object) -> np.ndarray:
+    def __getitem__(self, slices: Any) -> np.ndarray:
         """Slice the data, returning a numpy array."""
         ...
 
@@ -75,7 +77,7 @@ class NumpyBackend:
     def affine(self) -> np.ndarray:
         return self._affine
 
-    def __getitem__(self, slices: object) -> np.ndarray:
+    def __getitem__(self, slices: Any) -> np.ndarray:
         return self._data[slices]
 
     def to_tensor(self) -> Tensor:
@@ -125,7 +127,7 @@ class NibabelBackend:
     def affine(self) -> np.ndarray:
         return np.asarray(self._nii.header.get_best_affine())
 
-    def __getitem__(self, slices: object) -> np.ndarray:
+    def __getitem__(self, slices: Any) -> np.ndarray:
         """Slice in (C, I, J, K) space.
 
         Translates the (C, I, J, K) indexing to the on-disk layout
@@ -196,7 +198,7 @@ class ZarrBackend:
     def affine(self) -> np.ndarray:
         return self._nibabel_backend.affine
 
-    def __getitem__(self, slices: object) -> np.ndarray:
+    def __getitem__(self, slices: Any) -> np.ndarray:
         return self._nibabel_backend[slices]
 
     def to_tensor(self) -> Tensor:
