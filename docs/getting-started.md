@@ -99,6 +99,17 @@ nifti = nib.load("t1.nii.gz")
 image = tio.ScalarImage.from_nifti(nifti)
 ```
 
+### Attaching metadata
+
+Pass any extra keyword arguments to attach metadata to an image:
+
+```python
+image = tio.ScalarImage("t1.nii.gz", protocol="MPRAGE", te=3.5)
+image.protocol       # "MPRAGE" (attribute access)
+image["te"]          # 3.5     (dict-style access)
+image.metadata       # {"protocol": "MPRAGE", "te": 3.5}
+```
+
 ### Slicing
 
 Slicing follows the `(C, I, J, K)` layout and keeps things lazy -- only

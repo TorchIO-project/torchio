@@ -97,9 +97,9 @@ kji_cs = detections.to_format(BoundingBoxFormat("KJI", "center_size"))
 Iterate over specific annotation types:
 
 ```python
-for name, pts in subject.points().items():
+for name, pts in subject.points.items():
     print(f"{name}: {pts.num_points} points")
 
-for name, bbs in subject.bounding_boxes().items():
+for name, bbs in subject.bounding_boxes.items():
     print(f"{name}: {bbs.num_boxes} boxes")
 ```

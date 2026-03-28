@@ -101,6 +101,18 @@ class Image:
         >>> image = tio.ScalarImage.from_tensor(torch.randn(1, 256, 256, 176))
     """
 
+    # Known __init__ kwargs — everything else goes to metadata.
+    _INIT_KWARGS = frozenset(
+        {
+            "reader",
+            "affine",
+            "channels_last",
+            "suffix",
+            "points",
+            "bounding_boxes",
+        }
+    )
+
     def __init__(
         self,
         path: ImageSource,
@@ -111,12 +123,12 @@ class Image:
         suffix: str | None = None,
         points: dict[str, Points] | None = None,
         bounding_boxes: dict[str, BoundingBoxes] | None = None,
-        metadata: dict[str, Any] | None = None,
+        **kwargs: Any,
     ):
         self._path: Path | None = resolve_source(path, suffix=suffix)
         self._reader = reader or default_reader
         self._channels_last = channels_last
-        self._metadata: dict[str, Any] = dict(metadata) if metadata else {}
+        self._metadata: dict[str, Any] = dict(kwargs)
         self._data: Tensor | None = None
         self._backend: ImageDataBackend | None = None
         self._affine: Affine | None = (
@@ -137,7 +149,7 @@ class Image:
         channels_last: bool = False,
         points: dict[str, Points] | None = None,
         bounding_boxes: dict[str, BoundingBoxes] | None = None,
-        metadata: dict[str, Any] | None = None,
+        **kwargs: Any,
     ) -> Self:
         r"""Create an image from an in-memory tensor.
 
@@ -155,13 +167,13 @@ class Image:
             bounding_boxes: Named sets of
                 [`BoundingBoxes`][torchio.BoundingBoxes] attached to this
                 image.
-            metadata: Arbitrary metadata dict.
+            **kwargs: Arbitrary metadata (e.g., ``protocol="MPRAGE"``).
         """
         instance = object.__new__(cls)
         instance._path = None
         instance._reader = default_reader
         instance._channels_last = False  # already permuted below
-        instance._metadata = dict(metadata) if metadata else {}
+        instance._metadata = dict(kwargs)
         parsed = Image._parse_tensor(tensor)
         if channels_last:
             parsed = rearrange(parsed, "i j k c -> c i j k")
@@ -490,7 +502,7 @@ class Image:
             affine=new_affine,
             points=points_copy,
             bounding_boxes=bboxes_copy,
-            metadata=dict(self._metadata),
+            **dict(self._metadata),
         )
 
     def save(self, path: str | Path) -> None:
@@ -573,8 +585,15 @@ class Image:
         msg = f"Expected 3D image, got {ndim}D"
         raise ValueError(msg)
 
-    def __getitem__(self, item: int | slice | tuple[int | slice, ...]) -> Self:
-        """Slice the image along channel and/or spatial dimensions.
+    def __getitem__(
+        self,
+        item: str | int | slice | tuple[int | slice, ...],
+    ) -> Any:
+        """Slice the image or look up metadata by key.
+
+        When *item* is a ``str``, the metadata value with that key is
+        returned. Otherwise, the image is sliced along channel and/or
+        spatial dimensions.
 
         Indexing follows the tensor layout `(C, I, J, K)`. Up to four
         indices may be provided; unspecified trailing dimensions keep
@@ -609,6 +628,13 @@ class Image:
             >>> image[1:3, 10:20, 10:20, 10:20].shape
             (2, 10, 10, 10)
         """
+        # String key → metadata lookup
+        if isinstance(item, str):
+            if item in self._metadata:
+                return self._metadata[item]
+            msg = f"{type(self).__name__} has no metadata key {item!r}"
+            raise KeyError(msg)
+
         if isinstance(item, (int, slice)) or item is Ellipsis:
             items: tuple[int | slice | types.EllipsisType, ...] = (item,)
         elif isinstance(item, tuple):
@@ -781,7 +807,7 @@ class Image:
             affine=affine,
             points=points,
             bounding_boxes=bounding_boxes,
-            metadata=metadata,
+            **(metadata or {}),
         )
 
     def __repr__(self) -> str:
@@ -809,6 +835,15 @@ class Image:
 
         return image_to_html(self)
 
+    def __getattr__(self, name: str) -> Any:
+        """Look up metadata by attribute name."""
+        if name.startswith("_"):
+            raise AttributeError(name)
+        if name in self._metadata:
+            return self._metadata[name]
+        msg = f"{type(self).__name__} has no attribute {name!r}"
+        raise AttributeError(msg)
+
     def __copy__(self) -> Self:
         return self.new_like(data=self.data.clone())
 
@@ -824,7 +859,7 @@ class Image:
                 affine=affine_copy,
                 points=points_copy,
                 bounding_boxes=bboxes_copy,
-                metadata=meta_copy,
+                **meta_copy,
             )
             if self._data is not None:
                 new._data = self._data.clone()
@@ -836,7 +871,7 @@ class Image:
                 affine=affine_copy,
                 points=points_copy,
                 bounding_boxes=bboxes_copy,
-                metadata=meta_copy,
+                **meta_copy,
             )
         else:
             new = object.__new__(type(self))

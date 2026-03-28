@@ -52,17 +52,13 @@ class FPG(Subject):
         subject_dict: dict[str, ScalarImage | LabelMap] = {
             "t1": ScalarImage(
                 download_root / filenames["t1"],
-                metadata={
-                    "rigid_matrix": rigid,
-                    "affine_matrix": affine_matrix,
-                },
+                rigid_matrix=rigid,
+                affine_matrix=affine_matrix,
             ),
             "seg": LabelMap(
                 download_root / filenames["seg"],
-                metadata={
-                    "rigid_matrix": rigid,
-                    "affine_matrix": affine_matrix,
-                },
+                rigid_matrix=rigid,
+                affine_matrix=affine_matrix,
             ),
         }
         if load_all:

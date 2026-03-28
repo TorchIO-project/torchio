@@ -54,7 +54,7 @@ class TestImageTensorDict:
     def test_metadata_preserved(self) -> None:
         image = tio.ScalarImage.from_tensor(
             torch.rand(1, 8, 8, 8),
-            metadata={"protocol": "MPRAGE"},
+            protocol="MPRAGE",
         )
         td = image.to_tensordict()
         restored = tio.Image.from_tensordict(td)

@@ -104,7 +104,7 @@ class TestImageCreationFromTensor:
     def test_from_tensor_metadata(self):
         image = ScalarImage.from_tensor(
             torch.randn(1, 10, 10, 10),
-            metadata={"scan_id": "abc123"},
+            scan_id="abc123",
         )
         assert image.metadata == {"scan_id": "abc123"}
 
@@ -220,7 +220,7 @@ class TestNewLike:
     def test_new_like_preserves_metadata(self):
         image = ScalarImage.from_tensor(
             torch.randn(1, 10, 10, 10),
-            metadata={"scan_id": "abc123"},
+            scan_id="abc123",
         )
         new = image.new_like(data=torch.randn(1, 5, 5, 5))
         assert new.metadata == {"scan_id": "abc123"}
@@ -694,7 +694,7 @@ class TestImageSlicing:
     def test_slice_preserves_metadata(self):
         image = ScalarImage.from_tensor(
             torch.randn(1, 20, 20, 20),
-            metadata={"modality": "T1"},
+            modality="T1",
         )
         sliced = image[:, 5:10]
         assert sliced.metadata["modality"] == "T1"

@@ -71,7 +71,7 @@ It stores:
   spatial dimensions.
 - An **affine matrix** mapping voxel indices $(i, j, k)$ to world
   coordinates $(x, y, z)$ in millimeters.
-- Optional **metadata** (e.g., acquisition parameters).
+- Optional **metadata** passed as keyword arguments.
 
 Images are **lazy**: data is not read from disk until first accessed.
 This means you can create thousands of `Image` objects cheaply and
@@ -87,6 +87,18 @@ image = tio.ScalarImage(buf, suffix=".nii.gz")     # from file-like object
 image = tio.ScalarImage.from_tensor(tensor)        # from PyTorch tensor
 image = tio.ScalarImage.from_sitk(sitk_image)      # from SimpleITK
 image = tio.ScalarImage.from_nifti(nifti_image)    # from NiBabel
+```
+
+### Metadata
+
+Any extra keyword argument is stored as metadata and accessible by
+attribute or dict-style lookup:
+
+```python
+image = tio.ScalarImage("t1.nii.gz", protocol="MPRAGE", te=3.5)
+image.protocol       # "MPRAGE"
+image["te"]          # 3.5
+image.metadata       # {"protocol": "MPRAGE", "te": 3.5}
 ```
 
 ### ScalarImage vs LabelMap
@@ -207,9 +219,9 @@ subject = tio.Subject(
 
 Contents are classified automatically by type:
 
-- `Image` instances go to `subject.images()`
-- `Points` instances go to `subject.points()`
-- `BoundingBoxes` instances go to `subject.bounding_boxes()`
+- `Image` instances go to `subject.images`
+- `Points` instances go to `subject.points`
+- `BoundingBoxes` instances go to `subject.bounding_boxes`
 - Everything else is metadata, accessible via `subject.metadata`
 
 All entries are accessible by name:
