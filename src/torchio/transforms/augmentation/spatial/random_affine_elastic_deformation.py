@@ -156,7 +156,10 @@ class AffineElasticDeformation(SpatialTransform):
         default_value: float
 
         for image in self.get_images(subject):
-            affine_transform = self._affine.get_affine_transform(image)
+            # Build a SimpleITK transform for composition with elastic deformation.
+            # We reconstruct directly from the Affine's parameters since the
+            # elastic path still uses SimpleITK for BSpline resampling.
+            sitk_affine = _build_sitk_affine_transform(self._affine, image)
             transformed_tensors = []
             for tensor in image.data:
                 sitk_image = nib_to_sitk(
@@ -169,9 +172,7 @@ class AffineElasticDeformation(SpatialTransform):
                     default_value = 0
                 else:
                     interpolation = self._affine.image_interpolation
-                    default_value = self._affine.get_default_pad_value(
-                        tensor, sitk_image
-                    )
+                    default_value = self._affine.get_default_pad_value(tensor)
 
                 bspline_transform = self._elastic.get_bspline_transform(sitk_image)
                 self._elastic.parse_free_form_transform(
@@ -181,9 +182,9 @@ class AffineElasticDeformation(SpatialTransform):
 
                 # stack: LIFO
                 if self.affine_first:
-                    combined_transforms = [affine_transform, bspline_transform]
+                    combined_transforms = [sitk_affine, bspline_transform]
                 else:
-                    combined_transforms = [bspline_transform, affine_transform]
+                    combined_transforms = [bspline_transform, sitk_affine]
                 composite_transform = sitk.CompositeTransform(combined_transforms)
 
                 transformed_tensor = self.apply_composite_transform(
@@ -214,6 +215,63 @@ class AffineElasticDeformation(SpatialTransform):
         resampled = resampler.Execute(floating)
 
         np_array = sitk.GetArrayFromImage(resampled)
-        np_array = np_array.transpose()  # ITK to NumPy
+        np_array = np.asarray(np_array.transpose())  # ITK to NumPy
         tensor = torch.as_tensor(np_array)
         return tensor
+
+
+def _build_sitk_affine_transform(
+    affine: Affine,
+    image: Any,
+) -> sitk.Transform:
+    """Build a SimpleITK composite transform from Affine parameters.
+
+    This reconstructs the scale + Euler rotation transform in LPS coordinates,
+    matching the original SimpleITK-based Affine implementation. Used by
+    RandomAffineElasticDeformation to compose affine with BSpline transforms.
+
+    Args:
+        affine: An Affine transform instance with scales, degrees, translation, etc.
+        image: A TorchIO Image instance.
+
+    Returns:
+        A SimpleITK Transform (already inverted for ResampleImageFilter).
+    """
+    scaling = np.asarray(affine.scales).copy()
+    rotation = np.asarray(affine.degrees).copy()
+    translation = np.asarray(affine.translation).copy()
+
+    if image.is_2d():
+        scaling[2] = 1
+        rotation[:-1] = 0
+
+    if affine.use_image_center:
+        center_lps = image.get_center(lps=True)
+    else:
+        center_lps = None
+
+    def ras_to_lps(triplet):
+        return np.array((-1, -1, 1), dtype=float) * np.asarray(triplet)
+
+    # Scale transform
+    scale_transform = sitk.ScaleTransform(3)
+    scale_transform.SetScale(scaling.astype(float))
+    if center_lps is not None:
+        scale_transform.SetCenter(center_lps)
+
+    # Euler rotation + translation transform
+    euler_transform = sitk.Euler3DTransform()
+    radians = np.radians(rotation).astype(float)
+    euler_transform.SetRotation(*ras_to_lps(radians))
+    euler_transform.SetTranslation(ras_to_lps(translation))
+    if center_lps is not None:
+        euler_transform.SetCenter(center_lps)
+
+    composite = sitk.CompositeTransform([scale_transform, euler_transform])
+    # Invert: ResampleImageFilter expects output→input mapping
+    result = composite.GetInverse()
+
+    if affine.invert_transform:
+        result = result.GetInverse()
+
+    return result
