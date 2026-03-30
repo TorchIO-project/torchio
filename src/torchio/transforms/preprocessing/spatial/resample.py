@@ -1,22 +1,18 @@
 from __future__ import annotations
 
-from collections.abc import Iterable
 from collections.abc import Sequence
-from collections.abc import Sized
 from pathlib import Path
 from typing import TypeAlias
 from typing import Union
 
 import numpy as np
-import SimpleITK as sitk
 import torch
+import torch.nn.functional as F  # noqa: N812
 
 from ....data.image import Image
 from ....data.image import ScalarImage
-from ....data.io import get_sitk_metadata_from_ras_affine
-from ....data.io import sitk_to_nib
+from ....data.io import get_rotation_and_spacing_from_affine
 from ....data.subject import Subject
-from ....types import TypePath
 from ....types import TypeSpacing
 from ....types import TypeTripletFloat
 from ...spatial_transform import SpatialTransform
@@ -24,6 +20,13 @@ from ...spatial_transform import SpatialTransform
 TypeShapeAffine: TypeAlias = tuple[Sequence[int], np.ndarray]
 TypeTarget = Union[TypeSpacing, str, Path, Image, TypeShapeAffine, None]
 ONE_MILLIMITER_ISOTROPIC = 1
+
+_SUPPORTED_INTERPOLATIONS = ('nearest', 'linear')
+
+_TORCH_INTERPOLATION_MODE = {
+    'nearest': 'nearest',
+    'linear': 'bilinear',  # grid_sample calls trilinear "bilinear" for 5D
+}
 
 
 class Resample(SpatialTransform):
@@ -100,10 +103,10 @@ class Resample(SpatialTransform):
     ):
         super().__init__(**kwargs)
         self.target = target
-        self.image_interpolation = self.parse_interpolation(
+        self.image_interpolation = _parse_resample_interpolation(
             image_interpolation,
         )
-        self.label_interpolation = self.parse_interpolation(
+        self.label_interpolation = _parse_resample_interpolation(
             label_interpolation,
         )
         self.pre_affine_name = pre_affine_name
@@ -216,7 +219,6 @@ class Resample(SpatialTransform):
                 interpolation = self.label_interpolation
             else:
                 interpolation = self.image_interpolation
-            interpolator = self.get_sitk_interpolator(interpolation)
 
             # Apply given affine matrix if found in image
             if use_pre_affine and self.pre_affine_name in image:
@@ -227,122 +229,70 @@ class Resample(SpatialTransform):
                     matrix = matrix.numpy()
                 image.affine = matrix @ image.affine
 
-            floating_sitk = image.as_sitk(force_3d=True)
-
-            resampler = self._get_resampler(
-                interpolator,
-                floating_sitk,
-                subject,
+            # Resolve the target output space
+            output_shape, output_affine = self._resolve_target(
                 self.target,
+                image,
+                subject,
             )
-            if self.antialias and isinstance(image, ScalarImage):
-                downsampling_factor = self._get_downsampling_factor(
-                    floating_sitk,
-                    resampler,
-                )
-                sigmas = self._get_sigmas(
-                    downsampling_factor,
-                    floating_sitk.GetSpacing(),
-                )
-                floating_sitk = self._smooth(floating_sitk, sigmas)
-            resampled = resampler.Execute(floating_sitk)
 
-            array, affine = sitk_to_nib(resampled)
-            image.set_data(torch.as_tensor(array))
-            image.affine = affine
+            # Anti-aliasing: smooth before downsampling
+            input_data = image.data
+            if self.antialias and isinstance(image, ScalarImage):
+                input_spacing = np.sqrt((image.affine[:3, :3] ** 2).sum(axis=0))
+                output_spacing = np.sqrt((output_affine[:3, :3] ** 2).sum(axis=0))
+                factors = output_spacing / input_spacing
+                no_downsample = factors <= 1
+                factors[no_downsample] = np.nan
+                sigmas = self._get_sigmas(factors, input_spacing)
+                input_data = _gaussian_smooth(input_data, sigmas)
+
+            # Build the sampling grid mapping output voxels → input voxels
+            theta = _resample_grid_theta(
+                image.affine,
+                output_affine,
+                output_shape,
+            )
+
+            mode = _TORCH_INTERPOLATION_MODE[interpolation]
+            resampled = _resample_tensor(
+                input_data,
+                theta,
+                output_shape,
+                mode,
+            )
+
+            image.set_data(resampled)
+            image.affine = output_affine
         return subject
 
-    @staticmethod
-    def _smooth(
-        image: sitk.Image,
-        sigmas: np.ndarray,
-        epsilon: float = 1e-9,
-    ) -> sitk.Image:
-        """Smooth the image with a Gaussian kernel.
-
-        Args:
-            image: Image to be smoothed.
-            sigmas: Standard deviations of the Gaussian kernel for each
-                dimension. If a value is NaN, no smoothing is applied in that
-                dimension.
-            epsilon: Small value to replace NaN values in sigmas, to avoid
-                division-by-zero errors.
-        """
-
-        sigmas[np.isnan(sigmas)] = epsilon  # no smoothing in that dimension
-        gaussian = sitk.SmoothingRecursiveGaussianImageFilter()
-        gaussian.SetSigma(sigmas.tolist())
-        smoothed = gaussian.Execute(image)
-        return smoothed
-
-    @staticmethod
-    def _get_downsampling_factor(
-        floating: sitk.Image,
-        resampler: sitk.ResampleImageFilter,
-    ) -> np.ndarray:
-        """Get the downsampling factor for each dimension.
-
-        The downsampling factor is the ratio between the output spacing and
-        the input spacing. If the output spacing is smaller than the input
-        spacing, the factor is set to NaN, meaning downsampling is not applied
-        in that dimension.
-
-        Args:
-            floating: The input image to be resampled.
-            resampler: The resampler that will be used to resample the image.
-        """
-        input_spacing = np.array(floating.GetSpacing())
-        output_spacing = np.array(resampler.GetOutputSpacing())
-        factors = output_spacing / input_spacing
-        no_downsampling = factors <= 1
-        factors[no_downsampling] = np.nan
-        return factors
-
-    def _get_resampler(
+    def _resolve_target(
         self,
-        interpolator: int,
-        floating: sitk.Image,
-        subject: Subject,
         target: TypeTarget,
-    ) -> sitk.ResampleImageFilter:
-        """Instantiate a SimpleITK resampler."""
+        image: Image,
+        subject: Subject,
+    ) -> tuple[tuple[int, int, int], np.ndarray]:
+        """Resolve the target to (output_shape, output_affine).
+
+        Args:
+            target: The target specification.
+            image: The image being resampled.
+            subject: The parent subject.
+
+        Returns:
+            Tuple of (spatial_shape, affine_4x4).
+        """
         if target is None:
             raise RuntimeError('Target cannot be None')
-        resampler = sitk.ResampleImageFilter()
-        resampler.SetInterpolator(interpolator)
-        self._set_resampler_reference(
-            resampler,
-            target,
-            floating,
-            subject,
-        )
-        return resampler
 
-    def _set_resampler_reference(
-        self,
-        resampler: sitk.ResampleImageFilter,
-        target: TypeSpacing | TypePath | Image | TypeShapeAffine,
-        floating_sitk,
-        subject,
-    ):
-        # Target can be:
-        # 1) An instance of torchio.Image
-        # 2) An instance of pathlib.Path
-        # 3) A string, which could be a path or an image in subject
-        # 4) A number or sequence of numbers for spacing
-        # 5) A tuple of shape, affine
-        # The fourth case is the different one
         if isinstance(target, (str, Path, Image)):
             if isinstance(target, Image):
-                # It's a TorchIO image
-                image = target
+                ref = target
             elif Path(target).is_file():
-                # It's an existing file
-                path = target
-                image = ScalarImage(path)
-            else:  # assume it's the name of an image in the subject
+                ref = ScalarImage(target)
+            else:
                 try:
-                    image = subject.get_image(target)
+                    ref = subject.get_image(str(target))
                 except KeyError as error:
                     message = (
                         f'Image name "{target}" not found in subject.'
@@ -350,17 +300,16 @@ class Resample(SpatialTransform):
                         ' permission has been denied'
                     )
                     raise ValueError(message) from error
-            self._set_resampler_from_shape_affine(
-                resampler,
-                image.spatial_shape,
-                image.affine,
-            )
-        elif isinstance(target, (int, float)):  # one number for target was passed
-            self._set_resampler_from_spacing(resampler, target, floating_sitk)
-        elif isinstance(target, tuple) and len(target) == 2:
+            return ref.spatial_shape, ref.affine.copy()
+
+        if isinstance(target, (int, float)):
+            spacing = self._parse_spacing(target)
+            return _compute_new_shape_affine(image, spacing)
+
+        if isinstance(target, tuple) and len(target) == 2:
             shape = target[0]
             affine = target[1]
-            if not (isinstance(shape, Sized) and len(shape) == 3):
+            if not (isinstance(shape, (list, tuple)) and len(shape) == 3):
                 message = (
                     'Target shape must be a sequence of three integers, but'
                     f' "{shape}" was passed'
@@ -372,67 +321,38 @@ class Resample(SpatialTransform):
                     f' was passed:\n{shape}'
                 )
                 raise RuntimeError(message)
-            self._set_resampler_from_shape_affine(
-                resampler,
-                shape,
-                affine,
+            shape_list = list(shape)
+            return (
+                int(shape_list[0]),
+                int(shape_list[1]),
+                int(shape_list[2]),
+            ), affine.copy()
+
+        if isinstance(target, list) and len(target) == 3:
+            parsed = self._parse_spacing(target)
+            return _compute_new_shape_affine(image, parsed)
+
+        if isinstance(target, np.ndarray) and target.size == 3:
+            flat = target.flat
+            parsed = self._parse_spacing(
+                (float(flat[0]), float(flat[1]), float(flat[2]))
             )
-        elif (
-            isinstance(target, Sized)
-            and isinstance(target, Iterable)
+            return _compute_new_shape_affine(image, parsed)
+
+        if (
+            isinstance(target, tuple)
             and len(target) == 3
+            and all(isinstance(v, (int, float)) for v in target)
         ):
-            self._set_resampler_from_spacing(resampler, target, floating_sitk)
-        else:
-            raise RuntimeError(f'Target not understood: "{target}"')
+            target_list: list[float] = [
+                float(v) for v in target if isinstance(v, (int, float))
+            ]
+            parsed = self._parse_spacing(
+                (target_list[0], target_list[1], target_list[2])
+            )
+            return _compute_new_shape_affine(image, parsed)
 
-    def _set_resampler_from_shape_affine(self, resampler, shape, affine):
-        origin, spacing, direction = get_sitk_metadata_from_ras_affine(affine)
-        resampler.SetOutputDirection(direction)
-        resampler.SetOutputOrigin(origin)
-        resampler.SetOutputSpacing(spacing)
-        resampler.SetSize(shape)
-
-    def _set_resampler_from_spacing(self, resampler, target, floating_sitk):
-        target_spacing = self._parse_spacing(target)
-        reference_image = self.get_reference_image(
-            floating_sitk,
-            target_spacing,
-        )
-        resampler.SetReferenceImage(reference_image)
-
-    @staticmethod
-    def get_reference_image(
-        floating_sitk: sitk.Image,
-        spacing: TypeTripletFloat,
-    ) -> sitk.Image:
-        old_spacing = np.array(floating_sitk.GetSpacing(), dtype=float)
-        new_spacing = np.array(spacing, dtype=float)
-        old_size = np.array(floating_sitk.GetSize())
-        old_last_index = old_size - 1
-        old_last_index_lps = np.array(
-            floating_sitk.TransformIndexToPhysicalPoint(old_last_index.tolist()),
-            dtype=float,
-        )
-        old_origin_lps = np.array(floating_sitk.GetOrigin(), dtype=float)
-        center_lps = (old_last_index_lps + old_origin_lps) / 2
-        # We use floor to avoid extrapolation by keeping the extent of the
-        # new image the same or smaller than the original.
-        new_size = np.floor(old_size * old_spacing / new_spacing)
-        # We keep singleton dimensions to avoid e.g. making 2D images 3D
-        new_size[old_size == 1] = 1
-        direction = np.asarray(floating_sitk.GetDirection(), dtype=float).reshape(3, 3)
-        half_extent = (new_size - 1) / 2 * new_spacing
-        new_origin_lps = (center_lps - direction @ half_extent).tolist()
-        reference = sitk.Image(
-            new_size.astype(int).tolist(),
-            floating_sitk.GetPixelID(),
-            floating_sitk.GetNumberOfComponentsPerPixel(),
-        )
-        reference.SetDirection(floating_sitk.GetDirection())
-        reference.SetSpacing(new_spacing.tolist())
-        reference.SetOrigin(new_origin_lps)
-        return reference
+        raise RuntimeError(f'Target not understood: "{target}"')
 
     @staticmethod
     def _get_sigmas(downsampling_factor: np.ndarray, spacing: np.ndarray) -> np.ndarray:
@@ -453,3 +373,215 @@ class Resample(SpatialTransform):
         variance = (k**2 - 1) * (2 * np.sqrt(2 * np.log(2))) ** (-2)
         sigma = spacing * np.sqrt(variance)
         return sigma
+
+
+def _compute_new_shape_affine(
+    image: Image,
+    spacing: TypeTripletFloat,
+) -> tuple[tuple[int, int, int], np.ndarray]:
+    """Compute output shape and affine for a target spacing.
+
+    Args:
+        image: The input image.
+        spacing: Target spacing in mm.
+
+    Returns:
+        Tuple of (spatial_shape, affine_4x4).
+    """
+    old_spacing = np.sqrt((image.affine[:3, :3] ** 2).sum(axis=0))
+    new_spacing = np.array(spacing, dtype=float)
+    old_shape = np.array(image.spatial_shape, dtype=float)
+
+    # Compute new size, keeping singleton dimensions
+    new_shape = np.floor(old_shape * old_spacing / new_spacing)
+    new_shape[old_shape == 1] = 1
+
+    # Compute rotation/direction from affine
+    rotation, _ = get_rotation_and_spacing_from_affine(image.affine)
+    old_origin = image.affine[:3, 3]
+
+    # Recompute origin to keep the image centered
+    old_center = old_origin + rotation @ ((old_shape - 1) / 2 * old_spacing)
+    new_origin = old_center - rotation @ ((new_shape - 1) / 2 * new_spacing)
+
+    # Build new affine
+    new_affine = np.eye(4)
+    new_affine[:3, :3] = rotation * new_spacing
+    new_affine[:3, 3] = new_origin
+
+    w, h, d = int(new_shape[0]), int(new_shape[1]), int(new_shape[2])
+    return (w, h, d), new_affine
+
+
+def _resample_grid_theta(
+    input_affine: np.ndarray,
+    output_affine: np.ndarray,
+    output_shape: tuple[int, int, int],
+) -> torch.Tensor:
+    """Build a 3×4 theta for affine_grid to resample from input to output space.
+
+    Maps output normalized coords → input normalized coords.
+
+    Args:
+        input_affine: 4×4 input image affine (voxel → world).
+        output_affine: 4×4 output image affine (voxel → world).
+        output_shape: (W, H, D) output spatial shape.
+
+    Returns:
+        A (1, 3, 4) theta tensor.
+    """
+    # Output voxel → world → input voxel
+    input_affine_inv = np.linalg.inv(input_affine)
+    m_voxel = input_affine_inv @ output_affine  # maps output voxel → input voxel
+
+    # We don't use affine_grid's theta because the input and output shapes
+    # differ. Instead we'll build the grid manually in _resample_tensor.
+    # Return m_voxel as a tensor for use there.
+    return torch.as_tensor(m_voxel, dtype=torch.float32).unsqueeze(0)
+
+
+def _resample_tensor(
+    tensor: torch.Tensor,
+    m_voxel_batch: torch.Tensor,
+    output_shape: tuple[int, int, int],
+    mode: str,
+) -> torch.Tensor:
+    """Resample a tensor from input space to output space.
+
+    Args:
+        tensor: Input tensor of shape (C, W_in, H_in, D_in).
+        m_voxel_batch: (1, 4, 4) matrix mapping output voxels → input voxels.
+        output_shape: Target (W_out, H_out, D_out).
+        mode: Interpolation mode for grid_sample.
+
+    Returns:
+        Resampled tensor of shape (C, W_out, H_out, D_out).
+    """
+    m_voxel = m_voxel_batch.squeeze(0).numpy()
+    in_w, in_h, in_d = tensor.shape[1], tensor.shape[2], tensor.shape[3]
+    out_w, out_h, out_d = output_shape
+
+    # Build grid of output voxel coordinates (out_W, out_H, out_D, 3)
+    gw = torch.arange(out_w, dtype=torch.float32)
+    gh = torch.arange(out_h, dtype=torch.float32)
+    gd = torch.arange(out_d, dtype=torch.float32)
+    grid_w, grid_h, grid_d = torch.meshgrid(gw, gh, gd, indexing='ij')
+    # (out_W, out_H, out_D, 4) homogeneous coords
+    ones = torch.ones_like(grid_w)
+    output_coords = torch.stack([grid_w, grid_h, grid_d, ones], dim=-1)
+
+    # Transform to input voxel coordinates
+    m_t = torch.as_tensor(m_voxel, dtype=torch.float32)
+    # (W, H, D, 4) @ (4, 4).T → (W, H, D, 4)
+    input_coords = output_coords @ m_t.T
+    input_voxels = input_coords[..., :3]  # (out_W, out_H, out_D, 3)
+
+    # Normalize input voxels to [-1, 1] for grid_sample
+    sizes = torch.tensor(
+        [max(in_w - 1, 1), max(in_h - 1, 1), max(in_d - 1, 1)],
+        dtype=torch.float32,
+    )
+    grid_norm = 2.0 * input_voxels / sizes - 1.0  # (out_W, out_H, out_D, 3)
+
+    # Permute to grid_sample layout: (D, H, W, 3) with coords (x=W, y=H, z=D)
+    grid_dhw = grid_norm.permute(2, 1, 0, 3).unsqueeze(0)  # (1, out_D, out_H, out_W, 3)
+
+    # Prepare input: (C, W, H, D) → (1, C, D, H, W)
+    input_5d = tensor.permute(0, 3, 2, 1).unsqueeze(0).float()
+
+    sampled = F.grid_sample(
+        input_5d,
+        grid_dhw,
+        mode=mode,
+        padding_mode='zeros',
+        align_corners=True,
+    )
+
+    # (1, C, out_D, out_H, out_W) → (C, out_W, out_H, out_D)
+    return sampled.squeeze(0).permute(0, 3, 2, 1)
+
+
+def _gaussian_smooth(
+    tensor: torch.Tensor,
+    sigmas: np.ndarray,
+) -> torch.Tensor:
+    """Apply Gaussian smoothing to a tensor.
+
+    Args:
+        tensor: Input tensor of shape (C, W, H, D).
+        sigmas: Standard deviations in mm for each spatial dimension.
+            NaN means no smoothing in that dimension.
+
+    Returns:
+        Smoothed tensor.
+    """
+    sigmas = sigmas.copy()
+    sigmas[np.isnan(sigmas)] = 0.0
+
+    if np.all(sigmas == 0):
+        return tensor
+
+    result = tensor.float()
+    for dim_idx in range(3):
+        sigma = sigmas[dim_idx]
+        if sigma <= 0:
+            continue
+        # Kernel radius: 3 sigma, must be odd
+        radius = max(int(np.ceil(3 * sigma)), 1)
+        kernel_size = 2 * radius + 1
+        x = torch.arange(kernel_size, dtype=torch.float32) - radius
+        kernel_1d = torch.exp(-0.5 * (x / sigma) ** 2)
+        kernel_1d = kernel_1d / kernel_1d.sum()
+
+        # Reshape for conv along spatial dim (dim_idx + 1 because of C dim)
+        # tensor is (C, W, H, D), spatial dims are 1, 2, 3
+        shape = [1] * 4
+        shape[dim_idx + 1] = kernel_size
+        kernel = kernel_1d.reshape(shape)
+
+        # Expand for per-channel conv
+        c = result.shape[0]
+        # We'll apply per-channel using F.conv3d
+        # (C, W, H, D) → (1, C, W, H, D)
+        # Actually easier to pad and convolve along the right dim
+        pad_amounts = [
+            0
+        ] * 6  # (D_before, D_after, H_before, H_after, W_before, W_after)
+        # F.pad pads from last dim backwards
+        pad_idx = 2 * (2 - dim_idx)
+        pad_amounts[pad_idx] = radius
+        pad_amounts[pad_idx + 1] = radius
+
+        padded = F.pad(
+            result.unsqueeze(0),  # (1, C, W, H, D)
+            pad_amounts,
+            mode='replicate',
+        )
+
+        # Build 3D kernel: (C_out, C_in/groups, kW, kH, kD)
+        k3d = torch.zeros(c, 1, 1, 1, 1)
+        if dim_idx == 0:
+            k3d = kernel.unsqueeze(0).expand(c, 1, kernel_size, 1, 1)
+        elif dim_idx == 1:
+            k3d = kernel.unsqueeze(0).expand(c, 1, 1, kernel_size, 1)
+        else:
+            k3d = kernel.unsqueeze(0).expand(c, 1, 1, 1, kernel_size)
+
+        result = F.conv3d(padded, k3d, groups=c).squeeze(0)
+
+    return result
+
+
+def _parse_resample_interpolation(interpolation: str) -> str:
+    """Validate that interpolation is supported by the PyTorch backend."""
+    if not isinstance(interpolation, str):
+        itype = type(interpolation)
+        raise TypeError(f'Interpolation must be a string, not {itype}')
+    interpolation = interpolation.lower()
+    if interpolation not in _SUPPORTED_INTERPOLATIONS:
+        message = (
+            f'Interpolation "{interpolation}" is not supported.'
+            f' Supported values are: {list(_SUPPORTED_INTERPOLATIONS)}'
+        )
+        raise ValueError(message)
+    return interpolation

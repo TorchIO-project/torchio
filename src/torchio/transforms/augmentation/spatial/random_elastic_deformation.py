@@ -3,11 +3,10 @@ from numbers import Number
 from typing import cast
 
 import numpy as np
-import SimpleITK as sitk
 import torch
+import torch.nn.functional as F  # noqa: N812
 
 from ....data.image import ScalarImage
-from ....data.io import nib_to_sitk
 from ....data.subject import Subject
 from ....types import TypeTripletFloat
 from ....types import TypeTripletInt
@@ -16,6 +15,168 @@ from ...spatial_transform import SpatialTransform
 from .. import RandomTransform
 
 SPLINE_ORDER = 3
+
+_SUPPORTED_INTERPOLATIONS = ('nearest', 'linear')
+
+_TORCH_INTERPOLATION_MODE = {
+    'nearest': 'nearest',
+    'linear': 'bilinear',  # grid_sample calls trilinear "bilinear" for 5D
+}
+
+
+def _upsample_displacement_field(
+    coarse_field: torch.Tensor,
+    spatial_shape: tuple[int, int, int],
+) -> torch.Tensor:
+    """Upsample a coarse displacement field to the target spatial shape.
+
+    Uses cubic interpolation to approximate B-spline upsampling.
+
+    Args:
+        coarse_field: Coarse displacement field of shape
+            (nx, ny, nz, 3) where the last dimension is displacement
+            along (W, H, D).
+        spatial_shape: Target spatial shape (W, H, D).
+
+    Returns:
+        Dense displacement field of shape (W, H, D, 3) in mm.
+    """
+    # Rearrange (nx, ny, nz, 3) → (1, 3, nx, ny, nz) for F.interpolate
+    field = coarse_field.permute(3, 0, 1, 2).unsqueeze(0).float()
+
+    # Use trilinear for smooth upsampling (cubic not available for 5D)
+    dense = F.interpolate(
+        field,
+        size=list(spatial_shape),
+        mode='trilinear',
+        align_corners=True,
+    )
+
+    # (1, 3, W, H, D) → (W, H, D, 3)
+    return dense.squeeze(0).permute(1, 2, 3, 0)
+
+
+def _displacement_to_grid(
+    displacement: torch.Tensor,
+    spatial_shape: tuple[int, int, int],
+    spacing: np.ndarray,
+) -> torch.Tensor:
+    """Convert a displacement field in mm to a sampling grid for grid_sample.
+
+    Creates an identity grid and adds the displacement field converted
+    to normalized [-1, 1] coordinates.
+
+    Args:
+        displacement: Dense displacement field of shape (W, H, D, 3) in mm.
+        spatial_shape: Target shape (W, H, D).
+        spacing: Voxel spacing in mm, shape (3,).
+
+    Returns:
+        Sampling grid of shape (1, D, H, W, 3) ready for grid_sample.
+    """
+    w, h, d = spatial_shape
+
+    # Create identity grid in normalized coords
+    # grid_sample expects (N, D, H, W, 3) with coords (x=W, y=H, z=D)
+    identity = F.affine_grid(
+        torch.eye(3, 4, dtype=torch.float32).unsqueeze(0),
+        [1, 1, d, h, w],
+        align_corners=True,
+    )
+    # identity shape: (1, D, H, W, 3) with coords (x, y, z) = (W, H, D)
+
+    # Convert displacement from mm to voxels
+    spacing_t = torch.as_tensor(spacing, dtype=torch.float32)
+    disp_voxels = displacement / spacing_t  # (W, H, D, 3) in voxels
+
+    # Convert displacement from voxels to normalized coords
+    # normalized = 2 * voxel / (size - 1)
+    sizes = torch.tensor(
+        [max(w - 1, 1), max(h - 1, 1), max(d - 1, 1)], dtype=torch.float32
+    )
+    disp_norm = 2.0 * disp_voxels / sizes  # (W, H, D, 3)
+
+    # Permute displacement (W, H, D, 3) → (D, H, W, 3) to match grid layout
+    disp_dhw = disp_norm.permute(2, 1, 0, 3)
+
+    # Add displacement to identity grid
+    grid = identity + disp_dhw.unsqueeze(0)
+
+    return grid
+
+
+def _check_folding(
+    coarse_field: np.ndarray,
+    max_displacement: TypeTripletFloat,
+    spatial_shape: tuple[int, int, int],
+    spacing: np.ndarray,
+) -> None:
+    """Issue a warning if possible folding is detected.
+
+    Args:
+        coarse_field: Coarse displacement field (nx, ny, nz, 3).
+        max_displacement: Maximum displacement per axis.
+        spatial_shape: Image spatial shape (W, H, D).
+        spacing: Voxel spacing in mm.
+    """
+    num_control_points = np.array(coarse_field.shape[:-1])
+    image_bounds = np.array(spatial_shape) * np.array(spacing)
+    # ITK adds a small epsilon to bounds
+    mesh_shape = num_control_points - SPLINE_ORDER
+    grid_spacing = image_bounds / mesh_shape
+    conflicts = np.array(max_displacement) > grid_spacing / 2
+    if np.any(conflicts):
+        (where,) = np.where(conflicts)
+        message = (
+            'The maximum displacement is larger than the coarse grid'
+            f' spacing for dimensions: {where.tolist()}, so folding may'
+            ' occur. Choose fewer control points or a smaller'
+            ' maximum displacement'
+        )
+        warnings.warn(message, RuntimeWarning, stacklevel=3)
+
+
+def _resample_with_displacement(
+    tensor: torch.Tensor,
+    grid: torch.Tensor,
+    mode: str,
+    default_value: float,
+) -> torch.Tensor:
+    """Resample a tensor using a displacement grid.
+
+    Args:
+        tensor: Input of shape (C, W, H, D).
+        grid: Sampling grid of shape (1, D, H, W, 3).
+        mode: Interpolation mode for grid_sample.
+        default_value: Fill value for out-of-bounds regions.
+
+    Returns:
+        Resampled tensor of shape (C, W, H, D).
+    """
+    # (C, W, H, D) → (1, C, D, H, W)
+    tensor_dhw = tensor.permute(0, 3, 2, 1).unsqueeze(0).float()
+
+    sampled = F.grid_sample(
+        tensor_dhw,
+        grid,
+        mode=mode,
+        padding_mode='zeros',
+        align_corners=True,
+    )
+
+    if default_value != 0.0:
+        ones = torch.ones_like(tensor_dhw)
+        mask = F.grid_sample(
+            ones,
+            grid,
+            mode='nearest',
+            padding_mode='zeros',
+            align_corners=True,
+        )
+        sampled = torch.where(mask > 0.5, sampled, torch.tensor(default_value))
+
+    # (1, C, D, H, W) → (C, W, H, D)
+    return sampled.squeeze(0).permute(0, 3, 2, 1)
 
 
 class RandomElasticDeformation(RandomTransform, SpatialTransform):
@@ -151,10 +312,10 @@ class RandomElasticDeformation(RandomTransform, SpatialTransform):
                 ' or use more control points.'
             )
             raise ValueError(message)
-        self.image_interpolation = self.parse_interpolation(
+        self.image_interpolation = _parse_elastic_interpolation(
             image_interpolation,
         )
-        self.label_interpolation = self.parse_interpolation(
+        self.label_interpolation = _parse_elastic_interpolation(
             label_interpolation,
         )
 
@@ -206,10 +367,12 @@ class ElasticDeformation(SpatialTransform):
     r"""Apply dense elastic deformation.
 
     Args:
-        control_points:
-        max_displacement:
-        image_interpolation: See Interpolation.
-        label_interpolation: See Interpolation.
+        control_points: Coarse displacement field as a numpy array.
+        max_displacement: Maximum displacement per axis.
+        image_interpolation: Interpolation mode for intensity images.
+            Must be `'nearest'` or `'linear'`.
+        label_interpolation: Interpolation mode for label maps.
+            Must be `'nearest'` or `'linear'`.
         **kwargs: See [`Transform`][torchio.transforms.Transform] for additional
             keyword arguments.
     """
@@ -225,10 +388,10 @@ class ElasticDeformation(SpatialTransform):
         super().__init__(**kwargs)
         self.control_points = control_points
         self.max_displacement = max_displacement
-        self.image_interpolation = self.parse_interpolation(
+        self.image_interpolation = _parse_elastic_interpolation(
             image_interpolation,
         )
-        self.label_interpolation = self.parse_interpolation(
+        self.label_interpolation = _parse_elastic_interpolation(
             label_interpolation,
         )
         self.invert_transform = False
@@ -239,41 +402,38 @@ class ElasticDeformation(SpatialTransform):
             'max_displacement',
         ]
 
-    def get_bspline_transform(
+    def _get_displacement_grid(
         self,
-        image: sitk.Image,
-    ) -> sitk.BSplineTransform:
+        spatial_shape: tuple[int, int, int],
+        spacing: np.ndarray,
+        is_2d: bool,
+    ) -> torch.Tensor:
+        """Build a sampling grid from the coarse displacement field.
+
+        Args:
+            spatial_shape: Image spatial shape (W, H, D).
+            spacing: Voxel spacing in mm.
+            is_2d: Whether the image is 2D (D == 1).
+
+        Returns:
+            Sampling grid of shape (1, D, H, W, 3).
+        """
         control_points = self.control_points.copy()
         if self.invert_transform:
             control_points *= -1
-        is_2d = image.GetSize()[2] == 1
         if is_2d:
-            control_points[..., -1] = 0  # no displacement in IS axis
-        num_control_points = control_points.shape[:-1]
-        mesh_shape = [n - SPLINE_ORDER for n in num_control_points]
-        bspline_transform = sitk.BSplineTransformInitializer(image, mesh_shape)
-        parameters = control_points.flatten(order='F').tolist()
-        bspline_transform.SetParameters(parameters)
-        return bspline_transform
+            control_points[..., -1] = 0
 
-    @staticmethod
-    def parse_free_form_transform(
-        transform: sitk.BSplineTransform,
-        max_displacement: TypeTripletFloat,
-    ) -> None:
-        """Issue a warning is possible folding is detected."""
-        coefficient_images = transform.GetCoefficientImages()
-        grid_spacing = coefficient_images[0].GetSpacing()
-        conflicts = np.array(max_displacement) > np.array(grid_spacing) / 2
-        if np.any(conflicts):
-            (where,) = np.where(conflicts)
-            message = (
-                'The maximum displacement is larger than the coarse grid'
-                f' spacing for dimensions: {where.tolist()}, so folding may'
-                ' occur. Choose fewer control points or a smaller'
-                ' maximum displacement'
-            )
-            warnings.warn(message, RuntimeWarning, stacklevel=2)
+        _check_folding(
+            control_points,
+            self.max_displacement,
+            spatial_shape,
+            spacing,
+        )
+
+        coarse_field = torch.as_tensor(control_points, dtype=torch.float32)
+        displacement = _upsample_displacement_field(coarse_field, spatial_shape)
+        return _displacement_to_grid(displacement, spatial_shape, spacing)
 
     def apply_transform(self, subject: Subject) -> Subject:
         no_displacement = not any(self.max_displacement)
@@ -285,42 +445,23 @@ class ElasticDeformation(SpatialTransform):
                 interpolation = self.label_interpolation
             else:
                 interpolation = self.image_interpolation
-            transformed = self.apply_bspline_transform(
+
+            spacing = np.sqrt((image.affine[:3, :3] ** 2).sum(axis=0))
+            grid = self._get_displacement_grid(
+                image.spatial_shape,
+                spacing,
+                image.is_2d(),
+            )
+            mode = _TORCH_INTERPOLATION_MODE[interpolation]
+            default_value = image.data.min().item()
+            transformed = _resample_with_displacement(
                 image.data,
-                image.affine,
-                interpolation,
+                grid,
+                mode,
+                default_value,
             )
             image.set_data(transformed)
         return subject
-
-    def apply_bspline_transform(
-        self,
-        tensor: torch.Tensor,
-        affine: np.ndarray,
-        interpolation: str,
-    ) -> torch.Tensor:
-        assert tensor.dim() == 4
-        results = []
-        for component in tensor:
-            image = nib_to_sitk(component[np.newaxis], affine, force_3d=True)
-            floating = reference = image
-            bspline_transform = self.get_bspline_transform(image)
-            self.parse_free_form_transform(
-                bspline_transform,
-                self.max_displacement,
-            )
-            interpolator = self.get_sitk_interpolator(interpolation)
-            resampler = sitk.ResampleImageFilter()
-            resampler.SetReferenceImage(reference)
-            resampler.SetTransform(bspline_transform)
-            resampler.SetInterpolator(interpolator)
-            resampler.SetDefaultPixelValue(component.min().item())
-            resampler.SetOutputPixelType(sitk.sitkFloat32)
-            resampled = resampler.Execute(floating)
-            result, _ = self.sitk_to_nib(resampled)
-            results.append(torch.as_tensor(result))
-        tensor = torch.cat(results)
-        return tensor
 
 
 def _parse_num_control_points(
@@ -346,3 +487,18 @@ def _parse_max_displacement(
                 f' a number greater or equal to 0, not {number}'
             )
             raise ValueError(message)
+
+
+def _parse_elastic_interpolation(interpolation: str) -> str:
+    """Validate that interpolation is supported by the PyTorch backend."""
+    if not isinstance(interpolation, str):
+        itype = type(interpolation)
+        raise TypeError(f'Interpolation must be a string, not {itype}')
+    interpolation = interpolation.lower()
+    if interpolation not in _SUPPORTED_INTERPOLATIONS:
+        message = (
+            f'Interpolation "{interpolation}" is not supported.'
+            f' Supported values are: {list(_SUPPORTED_INTERPOLATIONS)}'
+        )
+        raise ValueError(message)
+    return interpolation

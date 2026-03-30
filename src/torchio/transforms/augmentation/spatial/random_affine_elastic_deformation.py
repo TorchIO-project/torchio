@@ -3,24 +3,29 @@ from __future__ import annotations
 from typing import Any
 
 import numpy as np
-import SimpleITK as sitk
 import torch
+import torch.nn.functional as F  # noqa: N812
 
 from ....constants import INTENSITY
 from ....constants import TYPE
-from ....data.io import nib_to_sitk
 from ....data.subject import Subject
 from ...spatial_transform import SpatialTransform
 from .. import RandomTransform
 from .random_affine import Affine
+from .random_affine import _physical_to_grid_theta
+from .random_elastic_deformation import _TORCH_INTERPOLATION_MODE
 from .random_elastic_deformation import ElasticDeformation
+from .random_elastic_deformation import _check_folding
+from .random_elastic_deformation import _resample_with_displacement
+from .random_elastic_deformation import _upsample_displacement_field
 
 
 class RandomAffineElasticDeformation(RandomTransform, SpatialTransform):
     r"""Apply a RandomAffine and RandomElasticDeformation simultaneously.
 
-    Optimization to use only a single SimpleITK resampling. For additional details on
-    the transformations, see [`RandomAffine`][torchio.transforms.RandomAffine]
+    Composes both transforms into a single resampling operation using pure
+    PyTorch. For additional details on the transformations, see
+    [`RandomAffine`][torchio.transforms.RandomAffine]
     and [`RandomElasticDeformation`][torchio.transforms.RandomElasticDeformation]
 
     Args:
@@ -114,15 +119,14 @@ class RandomAffineElasticDeformation(RandomTransform, SpatialTransform):
 class AffineElasticDeformation(SpatialTransform):
     r"""Apply an Affine and ElasticDeformation simultaneously.
 
-    Optimization to use only a single SimpleITK resampling. For additional details
-    on the transformations, see [`Affine`][torchio.transforms.augmentation.Affine]
-    and [`ElasticDeformation`][torchio.transforms.augmentation.ElasticDeformation]
+    Composes the affine and elastic transforms into a single resampling
+    operation using pure PyTorch.
 
     Args:
         affine_first: Apply affine before elastic deformation.
-        affine_kwargs: See [`RandomAffine`][torchio.transforms.augmentation.RandomAffine] for kwargs.
-        elastic_kwargs: See
-            [`RandomElasticDeformation`][torchio.transforms.augmentation.RandomElasticDeformation] for kwargs.
+        affine_params: See [`Affine`][torchio.transforms.augmentation.Affine] for params.
+        elastic_params: See
+            [`ElasticDeformation`][torchio.transforms.augmentation.ElasticDeformation] for params.
         **kwargs: See [`Transform`][torchio.transforms.Transform] for additional
             keyword arguments.
     """
@@ -156,122 +160,123 @@ class AffineElasticDeformation(SpatialTransform):
         default_value: float
 
         for image in self.get_images(subject):
-            # Build a SimpleITK transform for composition with elastic deformation.
-            # We reconstruct directly from the Affine's parameters since the
-            # elastic path still uses SimpleITK for BSpline resampling.
-            sitk_affine = _build_sitk_affine_transform(self._affine, image)
+            # Build the affine theta (normalized 3×4)
+            forward_transform = self._affine.get_affine_transform(image)
+            theta = _physical_to_grid_theta(
+                forward_transform,
+                image.affine,
+                image.spatial_shape,
+            )
+
+            # Build the elastic displacement grid
+            spacing = np.sqrt((image.affine[:3, :3] ** 2).sum(axis=0))
+            control_points = self._elastic.control_points.copy()
+            if self._elastic.invert_transform:
+                control_points *= -1
+            if image.is_2d():
+                control_points[..., -1] = 0
+            _check_folding(
+                control_points,
+                self._elastic.max_displacement,
+                image.spatial_shape,
+                spacing,
+            )
+            coarse_field = torch.as_tensor(control_points, dtype=torch.float32)
+            displacement = _upsample_displacement_field(
+                coarse_field, image.spatial_shape
+            )
+
+            # Build the combined sampling grid
+            grid = _compose_affine_displacement(
+                theta,
+                displacement,
+                image.spatial_shape,
+                spacing,
+                affine_first=self.affine_first,
+            )
+
             transformed_tensors = []
             for tensor in image.data:
-                sitk_image = nib_to_sitk(
-                    tensor[np.newaxis],
-                    image.affine,
-                    force_3d=True,
-                )
                 if image[TYPE] != INTENSITY:
                     interpolation = self._affine.label_interpolation
-                    default_value = 0
+                    default_value = self._affine.default_pad_label
                 else:
                     interpolation = self._affine.image_interpolation
                     default_value = self._affine.get_default_pad_value(tensor)
 
-                bspline_transform = self._elastic.get_bspline_transform(sitk_image)
-                self._elastic.parse_free_form_transform(
-                    bspline_transform,
-                    self._elastic.max_displacement,
-                )
-
-                # stack: LIFO
-                if self.affine_first:
-                    combined_transforms = [sitk_affine, bspline_transform]
-                else:
-                    combined_transforms = [bspline_transform, sitk_affine]
-                composite_transform = sitk.CompositeTransform(combined_transforms)
-
-                transformed_tensor = self.apply_composite_transform(
-                    sitk_image,
-                    composite_transform,
-                    interpolation,
+                mode = _TORCH_INTERPOLATION_MODE[interpolation]
+                transformed_tensor = _resample_with_displacement(
+                    tensor.unsqueeze(0),
+                    grid,
+                    mode,
                     default_value,
                 )
-                transformed_tensors.append(transformed_tensor)
+                transformed_tensors.append(transformed_tensor.squeeze(0))
             image.set_data(torch.stack(transformed_tensors))
         return subject
 
-    def apply_composite_transform(
-        self,
-        sitk_image: sitk.Image,
-        transform: sitk.Transform,
-        interpolation: str,
-        default_value: float,
-    ) -> torch.Tensor:
-        floating = reference = sitk_image
 
-        resampler = sitk.ResampleImageFilter()
-        resampler.SetInterpolator(self.get_sitk_interpolator(interpolation))
-        resampler.SetReferenceImage(reference)
-        resampler.SetDefaultPixelValue(float(default_value))
-        resampler.SetOutputPixelType(sitk.sitkFloat32)
-        resampler.SetTransform(transform)
-        resampled = resampler.Execute(floating)
-
-        np_array = sitk.GetArrayFromImage(resampled)
-        np_array = np.asarray(np_array.transpose())  # ITK to NumPy
-        tensor = torch.as_tensor(np_array)
-        return tensor
-
-
-def _build_sitk_affine_transform(
-    affine: Affine,
-    image: Any,
-) -> sitk.Transform:
-    """Build a SimpleITK composite transform from Affine parameters.
-
-    This reconstructs the scale + Euler rotation transform in LPS coordinates,
-    matching the original SimpleITK-based Affine implementation. Used by
-    RandomAffineElasticDeformation to compose affine with BSpline transforms.
+def _compose_affine_displacement(
+    theta: torch.Tensor,
+    displacement: torch.Tensor,
+    spatial_shape: tuple[int, int, int],
+    spacing: np.ndarray,
+    affine_first: bool,
+) -> torch.Tensor:
+    """Compose an affine transform with a displacement field into a single grid.
 
     Args:
-        affine: An Affine transform instance with scales, degrees, translation, etc.
-        image: A TorchIO Image instance.
+        theta: Affine parameters (1, 3, 4) for affine_grid.
+        displacement: Dense displacement field (W, H, D, 3) in mm.
+        spatial_shape: Image spatial shape (W, H, D).
+        spacing: Voxel spacing in mm.
+        affine_first: If True, apply affine first then elastic.
 
     Returns:
-        A SimpleITK Transform (already inverted for ResampleImageFilter).
+        Combined sampling grid of shape (1, D, H, W, 3).
     """
-    scaling = np.asarray(affine.scales).copy()
-    rotation = np.asarray(affine.degrees).copy()
-    translation = np.asarray(affine.translation).copy()
+    w, h, d = spatial_shape
 
-    if image.is_2d():
-        scaling[2] = 1
-        rotation[:-1] = 0
+    # Build affine sampling grid (in normalized coords)
+    affine_grid = F.affine_grid(
+        theta,
+        [1, 1, d, h, w],
+        align_corners=True,
+    )
+    # affine_grid: (1, D, H, W, 3)
 
-    if affine.use_image_center:
-        center_lps = image.get_center(lps=True)
+    # Convert displacement from mm to normalized coords
+    spacing_t = torch.as_tensor(spacing, dtype=torch.float32)
+    disp_voxels = displacement / spacing_t
+    sizes = torch.tensor(
+        [max(w - 1, 1), max(h - 1, 1), max(d - 1, 1)],
+        dtype=torch.float32,
+    )
+    disp_norm = 2.0 * disp_voxels / sizes  # (W, H, D, 3)
+    # Permute (W, H, D, 3) → (D, H, W, 3)
+    disp_dhw = disp_norm.permute(2, 1, 0, 3).unsqueeze(0)
+
+    if affine_first:
+        # Affine first: affine_grid gives us where to sample from,
+        # then we add the elastic displacement on top
+        grid = affine_grid + disp_dhw
     else:
-        center_lps = None
+        # Elastic first: start with identity + displacement, then apply affine.
+        # Build identity grid
+        identity = F.affine_grid(
+            torch.eye(3, 4, dtype=torch.float32).unsqueeze(0),
+            [1, 1, d, h, w],
+            align_corners=True,
+        )
+        elastic_grid = identity + disp_dhw
+        # Now apply affine to the elastic grid coords
+        # theta maps output coords to input coords.
+        # elastic_grid gives us intermediate coords; we need to apply
+        # the affine mapping to those.
+        mat = theta[:, :3, :3]  # (1, 3, 3)
+        trans = theta[:, :3, 3:]  # (1, 3, 1)
+        flat = elastic_grid.reshape(1, -1, 3)  # (1, N, 3)
+        transformed = (flat @ mat.transpose(1, 2)) + trans.transpose(1, 2)
+        grid = transformed.reshape(1, d, h, w, 3)
 
-    def ras_to_lps(triplet):
-        return np.array((-1, -1, 1), dtype=float) * np.asarray(triplet)
-
-    # Scale transform
-    scale_transform = sitk.ScaleTransform(3)
-    scale_transform.SetScale(scaling.astype(float))
-    if center_lps is not None:
-        scale_transform.SetCenter(center_lps)
-
-    # Euler rotation + translation transform
-    euler_transform = sitk.Euler3DTransform()
-    radians = np.radians(rotation).astype(float)
-    euler_transform.SetRotation(*ras_to_lps(radians))
-    euler_transform.SetTranslation(ras_to_lps(translation))
-    if center_lps is not None:
-        euler_transform.SetCenter(center_lps)
-
-    composite = sitk.CompositeTransform([scale_transform, euler_transform])
-    # Invert: ResampleImageFilter expects output→input mapping
-    result = composite.GetInverse()
-
-    if affine.invert_transform:
-        result = result.GetInverse()
-
-    return result
+    return grid

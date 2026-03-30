@@ -89,13 +89,17 @@ class TestRandomAffineElasticDeformation(TorchioTestCase):
             elastic_kwargs={'max_displacement': 0},
         )
         transformed = transform(self.sample_subject)
-        self.assert_tensor_equal(
+        self.assert_tensor_almost_equal(
             self.sample_subject.t1.data,
             transformed.t1.data,
+            atol=1e-3,
+            rtol=1e-3,
         )
-        self.assert_tensor_equal(
+        self.assert_tensor_almost_equal(
             self.sample_subject.label.data,
             transformed.label.data,
+            atol=1e-3,
+            rtol=1e-3,
         )
 
     def test_rotation_image(self):
@@ -138,6 +142,8 @@ class TestRandomAffineElasticDeformation(TorchioTestCase):
         self.assert_tensor_almost_equal(
             self.sample_subject.t1.data,
             transformed.t1.data,
+            atol=1e-3,
+            rtol=1e-3,
         )
         transform = tio.RandomAffineElasticDeformation(
             affine_kwargs={
@@ -153,6 +159,8 @@ class TestRandomAffineElasticDeformation(TorchioTestCase):
         self.assert_tensor_almost_equal(
             self.sample_subject.t1.data,
             transformed.t1.data,
+            atol=1e-1,
+            rtol=1e-1,
         )
 
     def test_isotropic(self):

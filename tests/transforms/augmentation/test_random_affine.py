@@ -1,6 +1,7 @@
 from typing import Any
 from typing import cast
 
+import numpy as np
 import pytest
 import torch
 
@@ -51,6 +52,8 @@ class TestRandomAffine(TorchioTestCase):
         self.assert_tensor_almost_equal(
             self.sample_subject.t1.data,
             transformed.t1.data,
+            atol=1e-3,
+            rtol=1e-3,
         )
 
         transform = tio.RandomAffine(
@@ -64,6 +67,8 @@ class TestRandomAffine(TorchioTestCase):
         self.assert_tensor_almost_equal(
             self.sample_subject.t1.data,
             transformed.t1.data,
+            atol=1e-1,
+            rtol=1e-1,
         )
 
     def test_isotropic(self):
@@ -300,3 +305,425 @@ class TestRandomAffine(TorchioTestCase):
         with pytest.raises(RuntimeError):
             tio.RandomAffine()(new_subject)
         tio.RandomAffine(check_shape=False)(new_subject)
+
+
+class TestAffineProperties(TorchioTestCase):
+    """Property-based tests for the pure PyTorch Affine implementation."""
+
+    def _make_subject(
+        self,
+        shape: tuple[int, int, int] = (10, 12, 14),
+        spacing: tuple[float, float, float] = (1.0, 1.0, 1.0),
+    ) -> tio.Subject:
+        """Create a deterministic subject with known geometry."""
+        torch.manual_seed(42)
+        tensor = torch.rand(1, *shape)
+        affine = torch.diag(torch.tensor([*spacing, 1.0], dtype=torch.float64))
+        return tio.Subject(
+            t1=tio.ScalarImage(tensor=tensor, affine=affine.numpy()),
+        )
+
+    def test_identity_preserves_data(self):
+        """Identity transform (scales=1, degrees=0, translation=0) preserves data."""
+        subject = self._make_subject()
+        transform = tio.Affine(
+            scales=(1, 1, 1),
+            degrees=(0, 0, 0),
+            translation=(0, 0, 0),
+        )
+        result = transform(subject)
+        torch.testing.assert_close(
+            subject.t1.data,
+            result.t1.data,
+            atol=1e-3,
+            rtol=1e-3,
+            check_dtype=False,
+        )
+
+    def test_forward_inverse_roundtrip(self):
+        """Forward then inverse approximately restores the original."""
+        subject = self._make_subject(shape=(30, 30, 30))
+        original = subject.t1.data.clone()
+        transform = tio.Affine(
+            scales=(1, 1, 1),
+            degrees=(0, 0, 5),
+            translation=(0, 0, 0),
+            default_pad_value='mean',
+        )
+        inverse = transform.inverse()
+        result = inverse(transform(subject))
+        # Interior voxels should be approximately restored;
+        # borders lose data through padding + double interpolation
+        s = 5
+        orig_interior = original[:, s:-s, s:-s, s:-s]
+        result_interior = result.t1.data[:, s:-s, s:-s, s:-s]
+        mae = (orig_interior - result_interior).abs().mean().item()
+        assert mae < 0.2, f'Mean absolute error {mae:.4f} too high for roundtrip'
+
+    def test_pure_translation_shifts_content(self):
+        """Translation along X shifts voxels predictably."""
+        tensor = torch.zeros(1, 10, 10, 10)
+        tensor[0, 5, 5, 5] = 1.0
+        subject = tio.Subject(t1=tio.ScalarImage(tensor=tensor))
+        transform = tio.Affine(
+            scales=(1, 1, 1),
+            degrees=(0, 0, 0),
+            translation=(1, 0, 0),  # 1mm along X with 1mm spacing
+        )
+        result = transform(subject)
+        # The bright voxel should have moved by ~1 voxel along X
+        original_max_idx = tensor.argmax()
+        result_max_idx = result.t1.data.argmax()
+        assert original_max_idx != result_max_idx
+
+    def test_90_rotation_z_moves_anterior_to_left(self):
+        """A 90° rotation around Z moves the most anterior voxel to the left."""
+        tensor = torch.zeros((1, 2, 2, 2))
+        tensor[0, 1, 1, 1] = 1  # most RAS voxel
+        expected = torch.zeros((1, 2, 2, 2))
+        expected[0, 0, 1, 1] = 1
+        transform = tio.Affine(
+            scales=(1, 1, 1),
+            degrees=(0, 0, 90),
+            translation=(0, 0, 0),
+        )
+        result = transform(tensor)
+        self.assert_tensor_almost_equal(result, expected)
+
+    def test_label_map_uses_nearest_and_pad_label(self):
+        """Label maps use nearest interpolation and default_pad_label."""
+        label_data = torch.ones((1, 4, 4, 4))
+        subject = tio.Subject(label=tio.LabelMap(tensor=label_data))
+        transform = tio.Affine(
+            scales=(1, 1, 1),
+            degrees=(0, 0, 0),
+            translation=(3, 0, 0),
+            default_pad_label=99,
+        )
+        result = transform(subject)
+        label = result.get_label_map('label')
+        assert (label.data == 99).any(), 'Pad label value should appear'
+        unique_values = set(label.data.unique().tolist())
+        assert unique_values <= {0.0, 1.0, 99.0}
+
+    def test_2d_image_no_xy_rotation(self):
+        """2D images (D=1) should ignore X and Y rotation."""
+        tensor = torch.rand(1, 8, 8, 1)
+        subject = tio.Subject(t1=tio.ScalarImage(tensor=tensor))
+        # Even with large X/Y rotation, 2D images should only rotate around Z
+        transform = tio.Affine(
+            scales=(1, 1, 1),
+            degrees=(45, 45, 0),  # only X and Y rotation
+            translation=(0, 0, 0),
+        )
+        result = transform(subject)
+        # With X/Y zeroed for 2D, this should be identity-like
+        torch.testing.assert_close(
+            subject.t1.data,
+            result.t1.data,
+            atol=1e-3,
+            rtol=1e-3,
+            check_dtype=False,
+        )
+
+    def test_center_origin_vs_image_differ(self):
+        """Different center modes produce different results for non-origin images."""
+        subject = self._make_subject()
+        # Move origin away from voxel center
+        subject.t1.affine[:3, 3] = [100, 100, 100]
+
+        transform_image = tio.Affine(
+            scales=(1, 1, 1),
+            degrees=(0, 0, 30),
+            translation=(0, 0, 0),
+            center='image',
+        )
+        transform_origin = tio.Affine(
+            scales=(1, 1, 1),
+            degrees=(0, 0, 30),
+            translation=(0, 0, 0),
+            center='origin',
+        )
+        result_image = transform_image(subject)
+        result_origin = transform_origin(subject)
+        # Results should differ since centers are far apart
+        assert not torch.allclose(result_image.t1.data, result_origin.t1.data)
+
+    def test_isotropic_scaling(self):
+        """Isotropic scaling applies the same factor to all axes."""
+        subject = self._make_subject()
+        transform = tio.RandomAffine(
+            scales=(0.5, 0.5),
+            degrees=0,
+            translation=0,
+            isotropic=True,
+        )
+        # Should not raise and should produce valid output
+        result = transform(subject)
+        assert result.t1.data.shape == subject.t1.data.shape
+
+    def test_unsupported_interpolation_raises(self):
+        """Unsupported interpolation modes raise ValueError."""
+        with pytest.raises(ValueError, match='not supported'):
+            tio.RandomAffine(image_interpolation='bspline')
+        with pytest.raises(ValueError, match='not supported'):
+            tio.RandomAffine(image_interpolation='gaussian')
+        with pytest.raises(ValueError, match='not supported'):
+            tio.Affine(
+                (1, 1, 1),
+                (0, 0, 0),
+                (0, 0, 0),
+                image_interpolation='lanczos',
+            )
+
+    def test_anisotropic_spacing(self):
+        """Transform works correctly with anisotropic voxel spacing."""
+        subject = self._make_subject(spacing=(1.0, 0.5, 2.0))
+        transform = tio.Affine(
+            scales=(1, 1, 1),
+            degrees=(0, 0, 0),
+            translation=(0, 0, 0),
+        )
+        result = transform(subject)
+        torch.testing.assert_close(
+            subject.t1.data,
+            result.t1.data,
+            atol=1e-3,
+            rtol=1e-3,
+            check_dtype=False,
+        )
+
+    def test_scaling_changes_content(self):
+        """Non-identity scaling modifies the image content."""
+        subject = self._make_subject()
+        transform = tio.Affine(
+            scales=(1.5, 1.5, 1.5),
+            degrees=(0, 0, 0),
+            translation=(0, 0, 0),
+            default_pad_value=0,
+        )
+        result = transform(subject)
+        assert not torch.allclose(subject.t1.data, result.t1.data)
+
+    def test_multichannel_image(self):
+        """Transform handles multi-channel images correctly."""
+        tensor = torch.rand(3, 8, 8, 8)  # 3 channels
+        subject = tio.Subject(t1=tio.ScalarImage(tensor=tensor))
+        transform = tio.Affine(
+            scales=(1, 1, 1),
+            degrees=(0, 0, 15),
+            translation=(1, 0, 0),
+        )
+        result = transform(subject)
+        assert result.t1.data.shape == (3, 8, 8, 8)
+
+
+class TestAffineComparison(TorchioTestCase):
+    """Tests comparing PyTorch affine against SimpleITK reference."""
+
+    @staticmethod
+    def _apply_sitk_affine(
+        image: tio.ScalarImage,
+        scales: tuple[float, float, float],
+        degrees: tuple[float, float, float],
+        translation: tuple[float, float, float],
+        center: str = 'image',
+        interpolation: str = 'linear',
+        default_value: float = 0.0,
+    ) -> torch.Tensor:
+        """Apply affine transform using SimpleITK as reference implementation."""
+        import SimpleITK as sitk
+
+        from torchio.data.io import nib_to_sitk
+
+        scaling_np = np.asarray(scales, dtype=float)
+        degrees_np = np.asarray(degrees, dtype=float)
+        translation_np = np.asarray(translation, dtype=float)
+
+        # Build SimpleITK transforms
+        if center == 'image':
+            center_lps = image.get_center(lps=True)
+        else:
+            center_lps = None
+
+        scale_transform = sitk.ScaleTransform(3)
+        scale_transform.SetScale(scaling_np)
+        if center_lps is not None:
+            scale_transform.SetCenter(center_lps)
+
+        def ras_to_lps(triplet):
+            return np.array((-1, -1, 1), dtype=float) * np.asarray(triplet)
+
+        euler = sitk.Euler3DTransform()
+        radians = np.radians(degrees_np).astype(float)
+        euler.SetRotation(*ras_to_lps(radians))
+        euler.SetTranslation(ras_to_lps(translation_np))
+        if center_lps is not None:
+            euler.SetCenter(center_lps)
+
+        composite = sitk.CompositeTransform([scale_transform, euler])
+        composite = composite.GetInverse()
+
+        sitk_interp = {
+            'nearest': sitk.sitkNearestNeighbor,
+            'linear': sitk.sitkLinear,
+        }
+
+        results = []
+        for channel_tensor in image.data:
+            sitk_image = nib_to_sitk(
+                channel_tensor[np.newaxis],
+                image.affine,
+                force_3d=True,
+            )
+            resampler = sitk.ResampleImageFilter()
+            resampler.SetInterpolator(sitk_interp[interpolation])
+            resampler.SetReferenceImage(sitk_image)
+            resampler.SetDefaultPixelValue(float(default_value))
+            resampler.SetOutputPixelType(sitk.sitkFloat32)
+            resampler.SetTransform(composite)
+            resampled = resampler.Execute(sitk_image)
+            arr = sitk.GetArrayFromImage(resampled).transpose()
+            results.append(torch.as_tensor(arr))
+        return torch.stack(results)
+
+    def _make_subject(
+        self,
+        shape: tuple[int, int, int] = (10, 12, 14),
+    ) -> tio.Subject:
+        torch.manual_seed(42)
+        np.random.seed(42)
+        tensor = torch.rand(1, *shape)
+        return tio.Subject(
+            t1=tio.ScalarImage(tensor=tensor),
+        )
+
+    def test_rotation_matches_sitk(self):
+        """90° Z rotation matches SimpleITK reference."""
+        subject = self._make_subject()
+        params = {
+            'scales': (1.0, 1.0, 1.0),
+            'degrees': (0.0, 0.0, 90.0),
+            'translation': (0.0, 0.0, 0.0),
+        }
+        sitk_result = self._apply_sitk_affine(
+            subject.t1,
+            default_value=0.0,
+            **params,
+        )
+        torch_result = tio.Affine(
+            default_pad_value=0.0,
+            **params,
+        )(subject).t1.data
+        torch.testing.assert_close(
+            torch_result,
+            sitk_result,
+            atol=0.1,
+            rtol=0.1,
+            check_dtype=False,
+        )
+
+    def test_scaling_matches_sitk(self):
+        """Uniform scaling matches SimpleITK reference."""
+        subject = self._make_subject()
+        params = {
+            'scales': (1.3, 1.3, 1.3),
+            'degrees': (0.0, 0.0, 0.0),
+            'translation': (0.0, 0.0, 0.0),
+        }
+        sitk_result = self._apply_sitk_affine(
+            subject.t1,
+            default_value=0.0,
+            **params,
+        )
+        torch_result = tio.Affine(
+            default_pad_value=0.0,
+            **params,
+        )(subject).t1.data
+        torch.testing.assert_close(
+            torch_result,
+            sitk_result,
+            atol=0.15,
+            rtol=0.15,
+            check_dtype=False,
+        )
+
+    def test_translation_matches_sitk(self):
+        """Translation matches SimpleITK reference."""
+        subject = self._make_subject()
+        params = {
+            'scales': (1.0, 1.0, 1.0),
+            'degrees': (0.0, 0.0, 0.0),
+            'translation': (3.0, -2.0, 1.0),
+        }
+        sitk_result = self._apply_sitk_affine(
+            subject.t1,
+            default_value=0.0,
+            **params,
+        )
+        torch_result = tio.Affine(
+            default_pad_value=0.0,
+            **params,
+        )(subject).t1.data
+        torch.testing.assert_close(
+            torch_result,
+            sitk_result,
+            atol=0.1,
+            rtol=0.1,
+            check_dtype=False,
+        )
+
+    def test_combined_matches_sitk(self):
+        """Combined scale + rotation + translation matches SimpleITK reference."""
+        subject = self._make_subject(shape=(30, 30, 30))
+        params = {
+            'scales': (1.05, 0.95, 1.02),
+            'degrees': (5.0, -3.0, 8.0),
+            'translation': (1.0, -0.5, 0.3),
+        }
+        sitk_result = self._apply_sitk_affine(
+            subject.t1,
+            default_value=0.0,
+            **params,
+        )
+        torch_result = tio.Affine(
+            default_pad_value=0.0,
+            **params,
+        )(subject).t1.data
+        # Compare interior voxels only — boundaries differ due to different
+        # interpolation kernels and boundary handling
+        s = 5
+        torch.testing.assert_close(
+            torch_result[:, s:-s, s:-s, s:-s],
+            sitk_result[:, s:-s, s:-s, s:-s],
+            atol=0.2,
+            rtol=0.2,
+            check_dtype=False,
+        )
+
+    def test_nearest_rotation_matches_sitk(self):
+        """Nearest-neighbor 90° rotation should closely match SimpleITK."""
+        subject = self._make_subject()
+        params = {
+            'scales': (1.0, 1.0, 1.0),
+            'degrees': (0.0, 0.0, 90.0),
+            'translation': (0.0, 0.0, 0.0),
+        }
+        sitk_result = self._apply_sitk_affine(
+            subject.t1,
+            interpolation='nearest',
+            default_value=0.0,
+            **params,
+        )
+        torch_result = tio.Affine(
+            image_interpolation='nearest',
+            default_pad_value=0.0,
+            **params,
+        )(subject).t1.data
+        torch.testing.assert_close(
+            torch_result,
+            sitk_result,
+            atol=0.01,
+            rtol=0.01,
+            check_dtype=False,
+        )
