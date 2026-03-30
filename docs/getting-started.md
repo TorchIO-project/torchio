@@ -214,5 +214,5 @@ data = {"image": tensor, "label": label_tensor}
 augmented = tio.Noise(std=0.1)(data)  # returns dict
 ```
 
-See the [transform design explanation](explanation/transforms.md) for
+See the [transform design concepts](concepts/transforms.md) for
 the full picture.

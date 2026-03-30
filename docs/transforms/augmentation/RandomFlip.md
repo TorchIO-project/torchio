@@ -1,3 +1,0 @@
-# RandomFlip
-
-::: torchio.transforms.RandomFlip

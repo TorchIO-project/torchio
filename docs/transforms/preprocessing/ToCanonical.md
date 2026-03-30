@@ -1,3 +1,0 @@
-# ToCanonical
-
-::: torchio.transforms.ToCanonical

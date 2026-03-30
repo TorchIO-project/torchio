@@ -1,3 +1,0 @@
-# Compose
-
-::: torchio.transforms.Compose

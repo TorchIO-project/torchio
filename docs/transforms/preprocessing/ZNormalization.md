@@ -1,3 +1,0 @@
-# ZNormalization
-
-::: torchio.transforms.ZNormalization

@@ -8,7 +8,6 @@ from collections.abc import Mapping
 from types import ModuleType
 from typing import Any
 
-import attrs
 import torch
 
 from ..data.image import Image
@@ -19,7 +18,6 @@ from .transform import T
 from .transform import Transform
 
 
-@attrs.define(slots=False, eq=False, kw_only=True, repr=False)
 class MonaiAdapter(Transform):
     """Wrap a MONAI transform for use in TorchIO pipelines.
 
@@ -43,21 +41,17 @@ class MonaiAdapter(Transform):
         >>> result = adapter(subject)
     """
 
-    monai_transform: Callable = attrs.field(kw_only=True)
-
     def __init__(self, monai_transform: Callable, **kwargs: Any) -> None:
+        super().__init__(**kwargs)
         if not callable(monai_transform):
             msg = (
                 "monai_transform must be callable, "
                 f"got {type(monai_transform).__name__}"
             )
             raise TypeError(msg)
-        self.__attrs_init__(monai_transform=monai_transform, **kwargs)
+        self.monai_transform = monai_transform
 
-    def forward(
-        self,
-        data: T,
-    ) -> T:
+    def forward(self, data: T) -> T:
         """Apply without recording history (MONAI transforms are opaque)."""
         subject, unwrap = self._wrap(data)
         if torch.rand(1).item() > self.p:

@@ -7,14 +7,12 @@ from collections.abc import Sequence
 from typing import Any
 from typing import cast
 
-import attrs
 import torch
 
 from .transform import T
 from .transform import Transform
 
 
-@attrs.define(slots=False, eq=False, kw_only=True, repr=False)
 class Compose(Transform):
     """Apply a sequence of transforms.
 
@@ -28,9 +26,6 @@ class Compose(Transform):
         copy: Deep-copy the input before applying transforms.
     """
 
-    transforms: list[Transform] = attrs.field(factory=list)
-    copy: bool = True
-
     def __init__(
         self,
         transforms: Sequence[Transform] | None = None,
@@ -38,21 +33,14 @@ class Compose(Transform):
         copy: bool = True,
         **kwargs: Any,
     ) -> None:
-        self.__attrs_init__(
-            transforms=list(transforms) if transforms else [],
-            copy=copy,
-            **kwargs,
-        )
+        super().__init__(copy=copy, **kwargs)
+        self.transforms = list(transforms) if transforms else []
 
-    def forward(
-        self,
-        data: T,
-    ) -> T:
+    def forward(self, data: T) -> T:
         subject, unwrap = self._wrap(data)
         if self.copy:
             subject = copy.deepcopy(subject)
         for transform in self.transforms:
-            # Skip child copying — Compose already copied
             old_copy = transform.copy
             transform.copy = False
             subject = transform(subject)
@@ -65,7 +53,6 @@ class Compose(Transform):
         return cfg
 
 
-@attrs.define(slots=False, eq=False, kw_only=True, repr=False)
 class OneOf(Transform):
     """Randomly pick one transform from a collection.
 
@@ -74,30 +61,24 @@ class OneOf(Transform):
             transforms to their relative weights.
     """
 
-    transforms: list[Transform] = attrs.field(factory=list)
-    weights: list[float] = attrs.field(factory=list)
-
     def __init__(
         self,
         transforms: Sequence[Transform] | dict[Transform, float],
         **kwargs: Any,
     ) -> None:
+        super().__init__(**kwargs)
         if isinstance(transforms, dict):
             weight_dict = cast(dict[Transform, float], transforms)
-            t_list = list(weight_dict.keys())
+            self.transforms = list(weight_dict.keys())
             w_list: list[float] = list(weight_dict.values())
             total: float = sum(w_list)
-            w_list = [w / total for w in w_list]
+            self.weights = [w / total for w in w_list]
         else:
-            t_list = list(transforms)
-            n = len(t_list)
-            w_list = [1.0 / n] * n
-        self.__attrs_init__(transforms=t_list, weights=w_list, **kwargs)
+            self.transforms = list(transforms)
+            n = len(self.transforms)
+            self.weights = [1.0 / n] * n
 
-    def forward(
-        self,
-        data: T,
-    ) -> T:
+    def forward(self, data: T) -> T:
         subject, unwrap = self._wrap(data)
         if torch.rand(1).item() > self.p:
             return unwrap(subject)
@@ -116,7 +97,6 @@ class OneOf(Transform):
         return cfg
 
 
-@attrs.define(slots=False, eq=False, kw_only=True, repr=False)
 class SomeOf(Transform):
     """Randomly pick N transforms from a collection.
 
@@ -127,10 +107,6 @@ class SomeOf(Transform):
         replace: Sample with replacement.
     """
 
-    transforms: list[Transform] = attrs.field(factory=list)
-    num_transforms: int | tuple[int, int] = 1
-    replace: bool = False
-
     def __init__(
         self,
         transforms: Sequence[Transform] | None = None,
@@ -139,12 +115,10 @@ class SomeOf(Transform):
         replace: bool = False,
         **kwargs: Any,
     ) -> None:
-        self.__attrs_init__(
-            transforms=list(transforms) if transforms else [],
-            num_transforms=num_transforms,
-            replace=replace,
-            **kwargs,
-        )
+        super().__init__(**kwargs)
+        self.transforms = list(transforms) if transforms else []
+        self.num_transforms = num_transforms
+        self.replace = replace
 
     @property
     def _min_n(self) -> int:
@@ -158,10 +132,7 @@ class SomeOf(Transform):
             return self.num_transforms
         return self.num_transforms[1]
 
-    def forward(
-        self,
-        data: T,
-    ) -> T:
+    def forward(self, data: T) -> T:
         subject, unwrap = self._wrap(data)
         if torch.rand(1).item() > self.p:
             return unwrap(subject)

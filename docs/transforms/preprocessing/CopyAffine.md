@@ -1,3 +1,0 @@
-# CopyAffine
-
-::: torchio.transforms.CopyAffine

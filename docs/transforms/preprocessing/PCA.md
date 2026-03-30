@@ -1,3 +1,0 @@
-# PCA
-
-::: torchio.transforms.PCA

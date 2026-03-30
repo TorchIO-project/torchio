@@ -1,3 +1,0 @@
-# OneOf
-
-::: torchio.transforms.OneOf

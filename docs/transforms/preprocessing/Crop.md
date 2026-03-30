@@ -1,3 +1,0 @@
-# Crop
-
-::: torchio.transforms.Crop

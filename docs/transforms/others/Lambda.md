@@ -1,3 +1,0 @@
-# Lambda
-
-::: torchio.transforms.Lambda

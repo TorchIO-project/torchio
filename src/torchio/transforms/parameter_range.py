@@ -5,7 +5,6 @@ or random (sampled from a uniform distribution each call).
 
 Examples:
     >>> ParameterRange(0.5)                    # deterministic: always (0.5, 0.5, 0.5)
-    >>> ParameterRange(0.2, around=1.0)        # U(0.8, 1.2) per axis
     >>> ParameterRange((5.0, 15.0))            # U(5, 15) per axis
     >>> ParameterRange((1.0, 2.0, 3.0))        # deterministic per-axis
     >>> ParameterRange((0, 1, 10, 20, 100, 200))  # per-axis ranges
@@ -23,50 +22,21 @@ class ParameterRange:
         value: Parameter specification. Accepted forms:
 
             - ``float``: deterministic value broadcast to 3 axes.
-              If *around* is set, treated as half-width of a uniform
-              range centered on *around*.
             - ``(lo, hi)``: uniform range ``U(lo, hi)`` for all axes.
             - ``(a, b, c)``: deterministic per-axis values.
             - ``(lo0, hi0, lo1, hi1, lo2, hi2)``: per-axis ranges.
-
-        around: Center value when *value* is a scalar half-width.
-            For example, ``ParameterRange(0.2, around=1.0)`` means
-            ``U(0.8, 1.2)`` per axis.
     """
 
     def __init__(
         self,
         value: float | tuple[float, ...],
-        *,
-        around: float = 0.0,
     ) -> None:
         self._original = value
-        self._around = around
         if isinstance(value, (int, float)):
-            value = float(value)
-            if value == 0.0:
-                # Zero half-width → deterministic at `around`
-                self._ranges = (
-                    (around, around),
-                    (around, around),
-                    (around, around),
-                )
-            elif around != 0.0:
-                # Scalar half-width around a center
-                self._ranges = (
-                    (around - value, around + value),
-                    (around - value, around + value),
-                    (around - value, around + value),
-                )
-            else:
-                # Plain scalar → deterministic
-                self._ranges = (
-                    (value, value),
-                    (value, value),
-                    (value, value),
-                )
+            v = float(value)
+            self._ranges = ((v, v), (v, v), (v, v))
         elif isinstance(value, tuple):
-            self._ranges = _parse_tuple(value, around)
+            self._ranges = _parse_tuple(value)
         else:
             msg = f"Expected float or tuple, got {type(value).__name__}"
             raise TypeError(msg)
@@ -133,17 +103,11 @@ class ParameterRange:
 
 def _parse_tuple(
     value: tuple[float, ...],
-    around: float,
 ) -> tuple[tuple[float, float], tuple[float, float], tuple[float, float]]:
     n = len(value)
     if n == 1:
-        # Single-element tuple → treat as scalar
         v = float(value[0])
-        return (
-            (around + v if around else v, around + v if around else v),
-            (around + v if around else v, around + v if around else v),
-            (around + v if around else v, around + v if around else v),
-        )
+        return ((v, v), (v, v), (v, v))
     if n == 2:
         lo, hi = float(value[0]), float(value[1])
         return ((lo, hi), (lo, hi), (lo, hi))
@@ -160,28 +124,14 @@ def _parse_tuple(
     raise ValueError(msg)
 
 
-# ── Converters for attrs fields ──────────────────────────────────────
+def to_range(value: float | tuple[float, float]) -> ParameterRange:
+    """Convert a scalar or tuple to a ParameterRange."""
+    return ParameterRange(value)
 
 
-def to_range(value: float | tuple[float, ...] | ParameterRange) -> ParameterRange:
-    """Convert a scalar or tuple to a ParameterRange.
-
-    Use as an ``attrs`` converter::
-
-        field: ParameterRange = attrs.field(converter=to_range)
-    """
-    return value if isinstance(value, ParameterRange) else ParameterRange(value)
-
-
-def to_nonneg_range(
-    value: float | tuple[float, ...] | ParameterRange,
-) -> ParameterRange:
-    """Like ``to_range``, but rejects negative values.
-
-    Use as an ``attrs`` converter for parameters like standard
-    deviation that must be non-negative.
-    """
-    pr = to_range(value)
+def to_nonneg_range(value: float | tuple[float, float]) -> ParameterRange:
+    """Like ``to_range``, but rejects negative values."""
+    pr = ParameterRange(value)
     for lo, hi in pr._ranges:
         if lo < 0 or hi < 0:
             msg = f"Value must be non-negative, got {value}"

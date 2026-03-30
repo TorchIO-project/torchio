@@ -1,3 +1,0 @@
-# Transpose
-
-::: torchio.transforms.Transpose

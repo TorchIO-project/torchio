@@ -37,7 +37,7 @@ print(subject.t1.spacing)  # (1.0, 1.0, 1.0)
 
     Install TorchIO and run your first code.
 
-    [:octicons-arrow-right-24: Getting started](getting-started.md)
+    → [Getting started](getting-started.md)
 
 -   **Tutorials**
 
@@ -45,7 +45,7 @@ print(subject.t1.spacing)  # (1.0, 1.0, 1.0)
 
     Step-by-step walkthroughs for common workflows.
 
-    [:octicons-arrow-right-24: Tutorials](tutorials/index.md)
+    → [Tutorials](tutorials/index.md)
 
 -   **How-to guides**
 
@@ -53,15 +53,15 @@ print(subject.t1.spacing)  # (1.0, 1.0, 1.0)
 
     Recipes for specific tasks: custom readers, NIfTI-Zarr, etc.
 
-    [:octicons-arrow-right-24: How-to guides](how-to/index.md)
+    → [How-to guides](how-to/index.md)
 
--   **Explanation**
+-   **Concepts**
 
     ---
 
     Understand the design: lazy loading, affines, backends.
 
-    [:octicons-arrow-right-24: Explanation](explanation/index.md)
+    → [Concepts](concepts/index.md)
 
 -   **API Reference**
 
@@ -69,7 +69,7 @@ print(subject.t1.spacing)  # (1.0, 1.0, 1.0)
 
     Complete reference for all classes and functions.
 
-    [:octicons-arrow-right-24: Reference](reference/index.md)
+    → [Reference](reference/index.md)
 
 </div>
 

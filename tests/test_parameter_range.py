@@ -14,24 +14,15 @@ class TestParameterRangeParsing:
         assert pr.is_deterministic
         assert pr.sample() == (0.5, 0.5, 0.5)
 
-    def test_scalar_with_around(self) -> None:
-        """scalar=0.2 around=1.0 → sample from U(0.8, 1.2) per axis."""
-        pr = ParameterRange(0.2, around=1.0)
+    def test_two_tuple_is_range(self) -> None:
+        """(lo, hi) → sample from U(lo, hi) per axis."""
+        pr = ParameterRange((0.8, 1.2))
         assert not pr.is_deterministic
         for _ in range(50):
             values = pr.sample()
             assert len(values) == 3
             for v in values:
                 assert 0.8 <= v <= 1.2
-
-    def test_two_tuple_is_range(self) -> None:
-        """(lo, hi) → sample from U(lo, hi) per axis."""
-        pr = ParameterRange((5.0, 15.0))
-        assert not pr.is_deterministic
-        for _ in range(50):
-            values = pr.sample()
-            for v in values:
-                assert 5.0 <= v <= 15.0
 
     def test_three_tuple_is_fixed(self) -> None:
         """(a, b, c) → deterministic per-axis values."""
@@ -50,9 +41,9 @@ class TestParameterRangeParsing:
             assert 100.0 <= v2 <= 200.0
 
     def test_zero_scalar_is_deterministic(self) -> None:
-        pr = ParameterRange(0.0, around=1.0)
+        pr = ParameterRange(0.0)
         assert pr.is_deterministic
-        assert pr.sample() == (1.0, 1.0, 1.0)
+        assert pr.sample() == (0.0, 0.0, 0.0)
 
     def test_invalid_tuple_length(self) -> None:
         with pytest.raises(ValueError, match="1, 2, 3, or 6"):

@@ -77,20 +77,22 @@ class Image:
     Use `from_tensor` to create an image from an in-memory tensor.
 
     Args:
-        path: Path to an image file. NIfTI files are read with
-            [NiBabel](https://nipy.org/nibabel/); all other formats are read
+        path: Path to an image file, URL, ``fsspec.OpenFile``, or
+            file-like object. NIfTI files are read with
+            [NiBabel](https://nipy.org/nibabel/); all other formats
             with [SimpleITK](https://simpleitk.org/).
         reader: Callable that takes a path and returns a tuple
             `(tensor, affine_array)`. Overrides the default reader.
         affine: $4 \times 4$ affine matrix or
             [`Affine`][torchio.Affine] instance. If given, overrides
             the affine read from the file.
-        points: Named sets of [`Points`][torchio.Points] attached to this
-            image. Keys are names, values are `Points` instances.
+        points: Named sets of [`Points`][torchio.Points] attached to
+            this image.
         bounding_boxes: Named sets of
             [`BoundingBoxes`][torchio.BoundingBoxes] attached to this
             image.
-        metadata: Arbitrary metadata dict.
+        **kwargs: Arbitrary metadata, accessible via attribute or
+            dict-style lookup (e.g., ``protocol="MPRAGE"``).
 
     Examples:
         >>> import torchio as tio

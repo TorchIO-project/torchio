@@ -45,11 +45,11 @@ run = "uv run --group quality -- bump-my-version bump ${1:-patch} --dry-run --ve
 description = "Push commits and tags"
 run = "git push && git push --tags"
 
-[tasks.docs]
+[tasks."docs:serve"]
 description = "Serve documentation locally"
 run = "uv run --group doc -- zensical serve --open"
 
-[tasks.docs-build]
+[tasks."docs:build"]
 description = "Build documentation"
 run = "uv run --group doc -- zensical build"
 

@@ -31,11 +31,11 @@ nav = [
     "how-to/save-nii-zarr.md",
     "how-to/annotations.md",
   ] },
-  { Explanation = [
-    "explanation/index.md",
-    "explanation/data-model.md",
-    "explanation/lazy-loading.md",
-    "explanation/transforms.md",
+  { Concepts = [
+    "concepts/index.md",
+    "concepts/data-model.md",
+    "concepts/lazy-loading.md",
+    "concepts/transforms.md",
   ] },
   { Reference = [
     "reference/index.md",
@@ -126,6 +126,7 @@ show_bases = true
 show_root_heading = true
 show_root_full_path = false
 members_order = "source"
+filters = ["!^_", "^__init__$"]
 
 [project.markdown_extensions.admonition]
 

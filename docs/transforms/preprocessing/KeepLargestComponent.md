@@ -1,3 +1,0 @@
-# KeepLargestComponent
-
-::: torchio.transforms.KeepLargestComponent

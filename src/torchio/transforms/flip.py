@@ -2,27 +2,15 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from typing import Any
 
-import attrs
 import torch
 
 from ..data.subject import Subject
 from .transform import SpatialTransform
 
 
-def _validate_axes(
-    instance: Any,
-    attribute: Any,
-    value: tuple[int, ...],
-) -> None:
-    for axis in value:
-        if axis not in (0, 1, 2):
-            msg = f"Flip axes must be 0, 1, 2; got {axis}"
-            raise ValueError(msg)
-
-
-@attrs.define(slots=False, eq=False, kw_only=True, repr=False)
 class Flip(SpatialTransform):
     """Flip (reverse) voxel data along one or more spatial axes.
 
@@ -39,18 +27,25 @@ class Flip(SpatialTransform):
         >>> random_flip = tio.Flip(axes=(0,), p=0.5) # 50% chance
     """
 
-    axes: tuple[int, ...] = attrs.field(
-        default=(0,),
-        converter=tuple,
-        validator=_validate_axes,
-    )
+    def __init__(
+        self,
+        *,
+        axes: Sequence[int] = (0,),
+        **kwargs: Any,
+    ) -> None:
+        super().__init__(**kwargs)
+        axes = tuple(axes)
+        for axis in axes:
+            if axis not in (0, 1, 2):
+                msg = f"Flip axes must be 0, 1, 2; got {axis}"
+                raise ValueError(msg)
+        self.axes = axes
 
     def make_params(self, subject: Subject) -> dict[str, Any]:
         return {"axes": self.axes}
 
     def apply_transform(self, subject: Subject, params: dict[str, Any]) -> Subject:
         axes = params["axes"]
-        # torch.flip dims are 1-indexed for (C, I, J, K) layout
         dims = [a + 1 for a in axes]
         for _name, image in self._get_images(subject).items():
             image.set_data(torch.flip(image.data, dims))

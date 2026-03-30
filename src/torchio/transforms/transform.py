@@ -3,13 +3,12 @@
 from __future__ import annotations
 
 import copy as _copy
+import inspect
 from dataclasses import dataclass
 from dataclasses import field
-from typing import TYPE_CHECKING
 from typing import Any
 from typing import TypeVar
 
-import attrs
 import nibabel as nib
 import numpy as np
 import SimpleITK as sitk
@@ -22,9 +21,6 @@ from ..data.image import Image
 from ..data.image import ScalarImage
 from ..data.subject import Subject
 
-# Runtime class for isinstance checks (ty sees attrs.Factory as overloaded)
-_ATTRS_FACTORY_TYPE: type = type(attrs.Factory(list))
-
 #: TypeVar preserving the input type through transforms.
 T = TypeVar(
     "T",
@@ -36,16 +32,6 @@ T = TypeVar(
     nib.Nifti1Image,
     dict,
 )
-
-
-def _validate_probability(
-    instance: Any,
-    attribute: Any,
-    value: float,
-) -> None:
-    if not 0 <= value <= 1:
-        msg = f"Probability must be in [0, 1], got {value}"
-        raise ValueError(msg)
 
 
 @dataclass
@@ -61,7 +47,6 @@ class AppliedTransform:
     params: dict[str, Any] = field(default_factory=dict)
 
 
-@attrs.define(slots=False, eq=False, kw_only=True, repr=False)
 class Transform(nn.Module):
     """Base class for all TorchIO transforms.
 
@@ -78,39 +63,37 @@ class Transform(nn.Module):
         exclude: Image names to exclude (``None`` = none).
     """
 
-    p: float = attrs.field(default=1.0, validator=_validate_probability)
-    copy: bool = True
-    include: list[str] | None = None
-    exclude: list[str] | None = None
-
-    if TYPE_CHECKING:
-
-        def __attrs_init__(self, **kwargs: Any) -> None: ...
-
-    def __attrs_post_init__(self) -> None:
-        nn.Module.__init__(self)
+    def __init__(
+        self,
+        *,
+        p: float = 1.0,
+        copy: bool = True,
+        include: list[str] | None = None,
+        exclude: list[str] | None = None,
+    ) -> None:
+        super().__init__()
+        if not 0 <= p <= 1:
+            msg = f"Probability must be in [0, 1], got {p}"
+            raise ValueError(msg)
+        self.p = p
+        self.copy = copy
+        self.include = include
+        self.exclude = exclude
 
     def __repr__(self) -> str:
         """Show only non-default fields for a compact repr."""
-        cls = type(self)
-        fields = attrs.fields(cls)
-        parts = []
-        for f in fields:
-            value = getattr(self, f.name)
-            default = f.default
-            if isinstance(default, _ATTRS_FACTORY_TYPE):
-                default = default.factory()
-            # Compare original value for ParameterRange fields
-            from .parameter_range import ParameterRange
+        from .parameter_range import ParameterRange
 
+        parts = []
+        for name, default in _collect_init_params(type(self)).items():
+            value = getattr(self, name, default)
             if isinstance(value, ParameterRange):
                 if value._original == default:
                     continue
             elif value == default:
                 continue
-            parts.append(f"{f.name}={value!r}")
-        inner = ", ".join(parts)
-        return f"{cls.__name__}({inner})"
+            parts.append(f"{name}={value!r}")
+        return f"{type(self).__name__}({', '.join(parts)})"
 
     def forward(
         self,
@@ -180,15 +163,11 @@ class Transform(nn.Module):
         from .parameter_range import ParameterRange
 
         cls = type(self)
-        # Use the public torchio.ClassName path for Hydra
         target = f"torchio.{cls.__qualname__}"
         cfg: dict[str, Any] = {"_target_": target}
 
-        for f in attrs.fields(cls):
-            value = getattr(self, f.name)
-            default = f.default
-            if isinstance(default, _ATTRS_FACTORY_TYPE):
-                default = default.factory()
+        for name, default in _collect_init_params(cls).items():
+            value = getattr(self, name, default)
             if isinstance(value, ParameterRange):
                 if value._original == default:
                     continue
@@ -197,7 +176,7 @@ class Transform(nn.Module):
                 continue
             else:
                 value = _hydra_value(value)
-            cfg[f.name] = value
+            cfg[name] = value
         return cfg
 
     def to_yaml(self) -> str:
@@ -273,6 +252,34 @@ class Transform(nn.Module):
         raise TypeError(msg)
 
 
+def _collect_init_params(cls: type) -> dict[str, Any]:
+    """Collect all __init__ params with defaults from the full MRO.
+
+    Walks from the leaf class up through parent classes, collecting
+    named parameters (skipping ``self``, ``*args``, ``**kwargs``).
+    Returns an ordered dict of ``{name: default}``.
+    """
+    params: dict[str, Any] = {}
+    for klass in cls.__mro__:
+        if klass is object or klass is nn.Module:
+            break
+        init = klass.__dict__.get("__init__")
+        if init is None:
+            continue
+        sig = inspect.signature(init)
+        for name, param in sig.parameters.items():
+            if name == "self":
+                continue
+            if param.kind in (
+                inspect.Parameter.VAR_POSITIONAL,
+                inspect.Parameter.VAR_KEYWORD,
+            ):
+                continue
+            if name not in params:
+                params[name] = param.default
+    return params
+
+
 def _hydra_value(value: Any) -> Any:
     """Convert a value to a plain Python type for Hydra/YAML."""
     if isinstance(value, tuple):
@@ -333,7 +340,6 @@ def _unwrap_dict(subject: Subject, keys: list[str]) -> dict[str, Tensor]:
     return result
 
 
-@attrs.define(slots=False, eq=False, kw_only=True, repr=False)
 class SpatialTransform(Transform):
     """Base for transforms that modify spatial geometry.
 
@@ -343,7 +349,6 @@ class SpatialTransform(Transform):
     """
 
 
-@attrs.define(slots=False, eq=False, kw_only=True, repr=False)
 class IntensityTransform(Transform):
     """Base for transforms that modify voxel intensities.
 

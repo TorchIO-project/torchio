@@ -1,3 +1,0 @@
-# ToOrientation
-
-::: torchio.transforms.ToOrientation

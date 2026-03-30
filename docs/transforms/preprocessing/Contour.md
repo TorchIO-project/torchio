@@ -1,3 +1,0 @@
-# Contour
-
-::: torchio.transforms.Contour

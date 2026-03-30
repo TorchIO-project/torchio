@@ -300,11 +300,7 @@ def _generate_page(
         f"https://github.com/TorchIO-project/torchio/blob/main/"
         f"docs/examples/{script_path.name}"
     )
-    lines.append(
-        "\n---\n\n"
-        "[:fontawesome-brands-github: View source on GitHub]"
-        f"({gh_url}){{{{ .md-button }}}}\n"
-    )
+    lines.append(f"\n---\n\n[View source on GitHub]({gh_url})\n")
 
     return "\n".join(lines)
 

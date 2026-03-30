@@ -1,3 +1,0 @@
-# Pad
-
-::: torchio.transforms.Pad

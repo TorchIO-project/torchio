@@ -1,3 +1,0 @@
-# Loader
-
-::: torchio.data.SubjectsLoader

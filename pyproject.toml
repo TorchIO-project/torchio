@@ -4,7 +4,6 @@ version = "0.23.1"
 description = "Medical image preprocessing, augmentation, and patch-based training."
 requires-python = ">=3.11"
 dependencies = [
-    "attrs",
     "einops",
     "fsspec[http]",
     "humanize",
@@ -12,7 +11,7 @@ dependencies = [
     "loguru",
     "nibabel",
     "numpy",
-    "pyyaml>=6.0.3",
+    "pyyaml",
     "rich",
     "simpleitk",
     "tensordict",

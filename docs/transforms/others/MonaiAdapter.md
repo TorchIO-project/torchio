@@ -1,3 +1,0 @@
-# MonaiAdapter
-
-::: torchio.transforms.MonaiAdapter

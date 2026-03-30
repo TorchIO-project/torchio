@@ -1,3 +1,0 @@
-# RandomBlur
-
-::: torchio.transforms.RandomBlur
