@@ -101,6 +101,8 @@ class RandomAnisotropy(RandomTransform):
         # NOTE: If copy=False, the underlying image data will be modified in place.
         # We have to obtain the target spatial shape and affine before the transform
         image = subject.get_first_image()
+        original_shape = image.spatial_shape
+        original_affine = image.affine.copy()
         downsample = Resample(
             target=(
                 float(target_spacing[0]),
@@ -118,7 +120,7 @@ class RandomAnisotropy(RandomTransform):
         )
         downsampled = downsample(subject)
         upsample = Resample(
-            target=(image.spatial_shape, image.affine),
+            target=(original_shape, original_affine),
             image_interpolation=self.image_interpolation,
             scalars_only=self.scalars_only,
             copy=self.copy,

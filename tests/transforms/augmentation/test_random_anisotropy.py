@@ -46,6 +46,22 @@ class TestRandomAnisotropy(TorchioTestCase):
         image = ScalarImage(tensor=torch.rand(3, 4, 5, 6))
         RandomAnisotropy()(image)
 
+    def test_copy_false_preserves_shape(self):
+        """Output shape and spacing must match input when copy=False (#1436)."""
+        subject = tio.Subject(
+            t1=tio.ScalarImage(tensor=torch.randn(1, 20, 22, 18)),
+        )
+        transform = RandomAnisotropy(
+            axes=1,
+            downsampling=(2, 2),
+            copy=False,
+        )
+        original_shape = subject.shape
+        original_spacing = subject.spacing
+        result = transform(subject)
+        assert result.shape == original_shape
+        assert result.spacing == original_spacing
+
     def test_2d_with_axis_2_warns(self):
         """Applying to 2D image with axis 2 in axes warns and excludes it."""
         image = ScalarImage(tensor=torch.rand(1, 10, 10, 1))
