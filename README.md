@@ -409,6 +409,9 @@ Thanks goes to all these people ([emoji key](https://allcontributors.org/docs/en
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/AndersDHenriksen"><img src="https://avatars.githubusercontent.com/u/14275017?v=4?s=100" width="100px;" alt="Anders Dahl Henriksen"/><br /><sub><b>Anders Dahl Henriksen</b></sub></a><br /><a href="#maintenance-AndersDHenriksen" title="Maintenance">🚧</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://e-pet.github.io/"><img src="https://avatars.githubusercontent.com/u/1774207?v=4?s=100" width="100px;" alt="Eike Petersen"/><br /><sub><b>Eike Petersen</b></sub></a><br /><a href="https://github.com/TorchIO-project/torchio/issues?q=author%3Ae-pet" title="Bug reports">🐛</a></td>
     </tr>
+    <tr>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/AlexanderHBerger"><img src="https://avatars.githubusercontent.com/u/52033187?v=4?s=100" width="100px;" alt="AlexanderHBerger"/><br /><sub><b>AlexanderHBerger</b></sub></a><br /><a href="https://github.com/TorchIO-project/torchio/issues?q=author%3AAlexanderHBerger" title="Bug reports">🐛</a></td>
+    </tr>
   </tbody>
 </table>
 
