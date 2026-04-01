@@ -189,6 +189,29 @@ class TestSubject(TorchioTestCase):
         batch = next(iter(loader))
         assert batch.__class__ is dict
 
+    def test_subjects_batch_scalar_metadata(self):
+        """Scalar metadata should be collated into tensors, not lists."""
+        subject_a = tio.Subject(
+            t1=tio.ScalarImage(tensor=torch.rand(1, 4, 4, 4)),
+            age=25,
+            score=0.9,
+            active=True,
+        )
+        subject_b = tio.Subject(
+            t1=tio.ScalarImage(tensor=torch.rand(1, 4, 4, 4)),
+            age=30,
+            score=0.7,
+            active=False,
+        )
+        dataset = tio.SubjectsDataset([subject_a, subject_b])
+        loader = tio.SubjectsLoader(dataset, batch_size=2)
+        batch = next(iter(loader))
+        assert isinstance(batch['age'], torch.Tensor)
+        assert isinstance(batch['score'], torch.Tensor)
+        assert isinstance(batch['active'], torch.Tensor)
+        assert batch['age'].tolist() == [25, 30]
+        assert batch['active'].tolist() == [True, False]
+
     def test_deep_copy_subject(self):
         sub_copy = copy.deepcopy(self.sample_subject)
         assert isinstance(sub_copy, tio.data.Subject)
