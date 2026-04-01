@@ -1,3 +1,0 @@
-# Intensity transforms
-
-::: torchio.Noise

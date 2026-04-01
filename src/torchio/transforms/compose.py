@@ -9,21 +9,31 @@ from typing import cast
 
 import torch
 
-from .transform import T
 from .transform import Transform
 
 
 class Compose(Transform):
-    """Apply a sequence of transforms.
+    """Compose several transforms together.
 
-    By default, the input is deep-copied before the pipeline runs,
-    so the original data is never modified. Set ``copy=False`` to
-    transform in-place (useful inside an outer ``Compose`` that
-    already copied).
+    The input is deep-copied once before the pipeline runs (by
+    default), then each transform operates in-place on the copy.
+    This avoids redundant copies when chaining many transforms.
 
     Args:
-        transforms: Sequence of transforms to apply.
-        copy: Deep-copy the input before applying transforms.
+        transforms: Sequence of transforms to apply sequentially.
+        copy: If ``True`` (default), deep-copy the input before
+            applying the pipeline. Set to ``False`` when this
+            ``Compose`` is nested inside another ``Compose``.
+        **kwargs: See [`Transform`][torchio.Transform] for additional
+            keyword arguments.
+
+    Examples:
+        >>> import torchio as tio
+        >>> preprocessing = tio.Compose([
+        ...     tio.Flip(axes=(0,), p=0.5),
+        ...     tio.Noise(std=(0.01, 0.1)),
+        ... ])
+        >>> augmented = preprocessing(subject)
     """
 
     def __init__(
@@ -36,7 +46,7 @@ class Compose(Transform):
         super().__init__(copy=copy, **kwargs)
         self.transforms = list(transforms) if transforms else []
 
-    def forward(self, data: T) -> T:
+    def forward(self, data):
         subject, unwrap = self._wrap(data)
         if self.copy:
             subject = copy.deepcopy(subject)
@@ -54,11 +64,21 @@ class Compose(Transform):
 
 
 class OneOf(Transform):
-    """Randomly pick one transform from a collection.
+    """Apply one of the given transforms, chosen at random.
 
     Args:
-        transforms: A sequence of transforms, or a dict mapping
-            transforms to their relative weights.
+        transforms: Sequence of transforms, or a ``dict`` mapping
+            transforms to their relative weights. If a sequence is
+            given, all transforms have equal probability.
+        **kwargs: See [`Transform`][torchio.Transform] for additional
+            keyword arguments.
+
+    Examples:
+        >>> import torchio as tio
+        >>> augmentation = tio.OneOf({
+        ...     tio.Noise(std=0.1): 0.7,
+        ...     tio.Flip(axes=(0,)): 0.3,
+        ... })
     """
 
     def __init__(
@@ -78,7 +98,7 @@ class OneOf(Transform):
             n = len(self.transforms)
             self.weights = [1.0 / n] * n
 
-    def forward(self, data: T) -> T:
+    def forward(self, data):
         subject, unwrap = self._wrap(data)
         if torch.rand(1).item() > self.p:
             return unwrap(subject)
@@ -98,13 +118,24 @@ class OneOf(Transform):
 
 
 class SomeOf(Transform):
-    """Randomly pick N transforms from a collection.
+    """Apply a random subset of the given transforms.
 
     Args:
-        transforms: Sequence of transforms to sample from.
-        num_transforms: Number to apply. An ``int`` for a fixed count,
-            or a ``(min, max)`` tuple to sample uniformly.
-        replace: Sample with replacement.
+        transforms: Sequence of candidate transforms.
+        num_transforms: How many transforms to apply. An ``int`` for a
+            fixed count, or a ``(min, max)`` tuple to sample the count
+            uniformly from that range.
+        replace: If ``True``, sample with replacement (the same
+            transform may be applied more than once).
+        **kwargs: See [`Transform`][torchio.Transform] for additional
+            keyword arguments.
+
+    Examples:
+        >>> import torchio as tio
+        >>> augmentation = tio.SomeOf(
+        ...     [tio.Noise(), tio.Flip(), tio.Noise(std=0.5)],
+        ...     num_transforms=2,
+        ... )
     """
 
     def __init__(
@@ -132,7 +163,7 @@ class SomeOf(Transform):
             return self.num_transforms
         return self.num_transforms[1]
 
-    def forward(self, data: T) -> T:
+    def forward(self, data):
         subject, unwrap = self._wrap(data)
         if torch.rand(1).item() > self.p:
             return unwrap(subject)

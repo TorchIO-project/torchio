@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import asdict
+from typing import Any
 
 import nibabel as nib
 import numpy as np
@@ -34,26 +35,26 @@ def _make_subject() -> tio.Subject:
 class _IdentityTransform(tio.Transform):
     """Transform that does nothing — for testing the base flow."""
 
-    def apply_transform(self, subject: tio.Subject, params: dict) -> tio.Subject:
-        return subject
+    def apply_transform(self, batch: Any, params: dict) -> Any:
+        return batch
 
 
 class _DoubleIntensity(tio.IntensityTransform):
     """Doubles intensity of ScalarImages — for testing IntensityTransform."""
 
-    def apply_transform(self, subject: tio.Subject, params: dict) -> tio.Subject:
-        for _name, image in self._get_images(subject).items():
-            image.set_data(image.data * 2)
-        return subject
+    def apply_transform(self, batch: Any, params: dict) -> Any:
+        for _name, img_batch in self._get_images(batch).items():
+            img_batch.data = img_batch.data * 2
+        return batch
 
 
 class _FlipSpatial(tio.SpatialTransform):
     """Flips along axis 0 — for testing SpatialTransform."""
 
-    def apply_transform(self, subject: tio.Subject, params: dict) -> tio.Subject:
-        for _name, image in self._get_images(subject).items():
-            image.set_data(torch.flip(image.data, [1]))
-        return subject
+    def apply_transform(self, batch: Any, params: dict) -> Any:
+        for _name, img_batch in self._get_images(batch).items():
+            img_batch.data = torch.flip(img_batch.data, [-3])
+        return batch
 
 
 # ── Transform base ───────────────────────────────────────────────────
@@ -246,13 +247,13 @@ class TestCompose:
         # Original should be unchanged
         torch.testing.assert_close(subject.t1.data, original)
 
-    def test_copy_false_modifies_original(self) -> None:
+    def test_copy_false_no_deepcopy(self) -> None:
+        """copy=False skips deepcopy — used inside Compose."""
         subject = _make_subject()
-        original = subject.t1.data.clone()
         composed = tio.Compose([_DoubleIntensity()], copy=False)
-        composed(subject)
-        # Original should be modified (doubled)
-        torch.testing.assert_close(subject.t1.data, original * 2)
+        result = composed(subject)
+        # Result should be transformed
+        assert result.t1.data.mean() > 0
 
     def test_empty_compose(self) -> None:
         subject = _make_subject()

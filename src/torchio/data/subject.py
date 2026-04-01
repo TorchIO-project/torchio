@@ -9,14 +9,11 @@ from typing import Self
 
 import numpy as np
 import torch
-from tensordict import TensorDict
 
 from ..types import TypeSpacing
 from ..types import TypeSpatialShape
 from ..types import TypeTensorShape
 from .bboxes import BoundingBoxes
-from .bboxes import BoundingBoxFormat
-from .bboxes import Representation
 from .image import Image
 from .points import Points
 
@@ -275,121 +272,6 @@ class Subject:
             boxes.to(*args, **kwargs)
         return self
 
-    def to_tensordict(self) -> TensorDict:
-        """Convert this Subject to a TensorDict for batching.
-
-        Each image is converted via
-        [`Image.to_tensordict`][torchio.Image.to_tensordict] and stored
-        as a nested entry.
-
-        Subject-level points, bounding boxes, metadata, and applied
-        transforms are stored as non-tensor entries (they may have
-        variable sizes across subjects).
-
-        Returns:
-            A TensorDict with ``batch_size=[]``.
-        """
-        td = TensorDict({}, batch_size=[])
-
-        for name, image in self._images.items():
-            td[name] = image.to_tensordict()
-
-        for name, pts in self._points.items():
-            td.set_non_tensor(
-                f"_points_{name}",
-                {
-                    "data": pts.data,
-                    "axes": pts.axes,
-                    "affine": pts.affine.numpy(),
-                    "metadata": dict(pts.metadata),
-                },
-            )
-
-        for name, boxes in self._bounding_boxes.items():
-            td.set_non_tensor(
-                f"_bboxes_{name}",
-                {
-                    "data": boxes.data,
-                    "format_axes": boxes.format.axes,
-                    "format_repr": boxes.format.representation.value,
-                    "labels": boxes.labels,
-                    "affine": boxes.affine.numpy(),
-                    "metadata": dict(boxes.metadata),
-                },
-            )
-
-        for key, value in self._metadata.items():
-            td.set_non_tensor(f"_meta_{key}", value)
-
-        if self.applied_transforms:
-            td.set_non_tensor("_applied_transforms", self.applied_transforms)
-
-        return td
-
-    @classmethod
-    def from_tensordict(cls, td: TensorDict) -> Self:
-        """Reconstruct a Subject from a TensorDict.
-
-        This is the inverse of
-        [`to_tensordict`][torchio.Subject.to_tensordict].
-
-        Args:
-            td: TensorDict produced by ``to_tensordict()``.
-
-        Returns:
-            Reconstructed Subject.
-        """
-        from .affine import Affine
-
-        kwargs: dict[str, Any] = {}
-
-        # Collect all keys to classify them
-        tensor_keys = [k for k in td.keys(include_nested=False) if isinstance(k, str)]
-        non_tensor_items = {k: v.data for k, v in td.non_tensor_items()}
-
-        # Reconstruct images (nested TensorDicts with 'data' and 'affine')
-        for key in tensor_keys:
-            child = td[key]
-            if isinstance(child, TensorDict) and "data" in child:
-                kwargs[key] = Image.from_tensordict(child)
-
-        # Reconstruct points, bboxes, metadata
-        for key, value in non_tensor_items.items():
-            if key.startswith("_points_"):
-                name = key[len("_points_") :]
-                info = value
-                kwargs[name] = Points(
-                    info["data"],
-                    axes=info["axes"],
-                    affine=Affine(info["affine"]),
-                    metadata=info["metadata"],
-                )
-            elif key.startswith("_bboxes_"):
-                name = key[len("_bboxes_") :]
-                info = value
-                fmt = BoundingBoxFormat(
-                    info["format_axes"],
-                    Representation(info["format_repr"]),
-                )
-                kwargs[name] = BoundingBoxes(
-                    info["data"],
-                    format=fmt,
-                    labels=info["labels"],
-                    affine=Affine(info["affine"]),
-                    metadata=info["metadata"],
-                )
-            elif key.startswith("_meta_"):
-                meta_key = key[len("_meta_") :]
-                kwargs[meta_key] = value
-
-        subject = cls(**kwargs)
-
-        transforms = non_tensor_items.get("_applied_transforms")
-        if transforms is not None:
-            subject.applied_transforms = list(transforms)
-
-        return subject
-
     # --- Internal ---
 
     def _first_image(self) -> Image:
@@ -469,3 +351,9 @@ class Subject:
         from ..repr_html import subject_to_html
 
         return subject_to_html(self)
+
+
+# In DICOM terminology, a "study" contains a set of "series" (volumes).
+# This maps directly to Subject (a container of named images + metadata).
+# Both names are provided so users can pick whichever fits their application.
+Study = Subject

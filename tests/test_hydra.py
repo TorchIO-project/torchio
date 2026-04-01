@@ -50,12 +50,6 @@ class TestToHydra:
         assert inner["_target_"] == "torchio.OneOf"
         assert "transforms" in inner
 
-    def test_to_yaml_string(self) -> None:
-        n = tio.Noise(std=0.1)
-        yaml_str = n.to_yaml()
-        assert "_target_: torchio.Noise" in yaml_str
-        assert "std: 0.1" in yaml_str
-
     def test_round_trip_values(self) -> None:
         """Hydra config values should be plain Python types."""
         n = tio.Noise(std=(0.05, 0.2), mean=0.5, p=0.8)

@@ -199,10 +199,10 @@ representation changes, axis permutations, and even voxel ↔ anatomical
 conversions (using the stored affine). Optionally attach an integer
 `labels` tensor to track per-box class IDs.
 
-## Subject
+## Subject (a.k.a. Study)
 
 A `Subject` groups images, points, bounding boxes, and metadata
-belonging to one individual:
+belonging to one imaging session:
 
 ```python
 subject = tio.Subject(
@@ -215,6 +215,15 @@ subject = tio.Subject(
     ),
     age=45,
 )
+```
+
+`Study` is an alias for `Subject` — both refer to the same class.
+In DICOM terminology, a "study" contains "series" (volumes), which
+maps directly to this container. Neuroscience users tend to think
+in "subjects", radiology users in "studies":
+
+```python
+study = tio.Study(t1=tio.ScalarImage("t1.nii.gz"), patient_id="abc")
 ```
 
 Contents are classified automatically by type:
@@ -267,29 +276,25 @@ A typical workflow:
    produces a new `Subject` with transformed data.
 5. Access `.data` tensors for training.
 
-## Batching with tensordict
+## Batching
 
 When training a model, you need to stack subjects into batches.
-TorchIO uses PyTorch's `tensordict` library for this:
-
-```python
-td = subject.to_tensordict()    # Subject → TensorDict
-restored = Subject.from_tensordict(td)  # TensorDict → Subject
-```
-
-Under the hood:
-
-- Image tensors and affines become regular tensor entries that stack
-  efficiently.
-- Points, bounding boxes, and metadata are stored as *non-tensor*
-  entries -- these can have different sizes per subject (e.g.,
-  different numbers of landmarks).
-
-`SubjectsLoader` wraps `DataLoader` and performs this conversion
-automatically:
+`SubjectsLoader` returns `SubjectsBatch` instances where each
+image entry is an `ImagesBatch` with a 5D tensor `(B, C, I, J, K)`:
 
 ```python
 loader = tio.SubjectsLoader(dataset, batch_size=4)
 for batch in loader:
-    batch["t1", "data"]  # (4, C, I, J, K)
+    batch.t1.data.shape  # (4, C, I, J, K)
+    batch.metadata["age"]  # [42, 35, 60, 28]
+```
+
+Each `ImagesBatch` stores per-sample affine matrices, so subjects
+with different spatial properties batch correctly.
+
+Transforms work directly on batches — parameters are sampled once
+and applied to all samples:
+
+```python
+augmented = tio.Flip(axes=(0,))(batch)
 ```

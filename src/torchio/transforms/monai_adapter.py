@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import copy as _copy
 import warnings
 from collections.abc import Callable
 from collections.abc import Mapping
@@ -14,31 +15,45 @@ from ..data.image import Image
 from ..data.image import ScalarImage
 from ..data.subject import Subject
 from ..imports import get_monai
-from .transform import T
 from .transform import Transform
 
 
 class MonaiAdapter(Transform):
     """Wrap a MONAI transform for use in TorchIO pipelines.
 
-    Both **dictionary transforms** (e.g., ``NormalizeIntensityd``)
-    and **array transforms** (e.g., ``NormalizeIntensity``) are
-    supported.
+    Both **dictionary transforms** (subclasses of MONAI's
+    ``MapTransform``, e.g., ``NormalizeIntensityd``) and **array
+    transforms** (e.g., ``NormalizeIntensity``) are supported.
 
-    Dictionary transforms operate on the full subject dict — only the
-    keys specified in the MONAI transform are modified.
+    Dictionary transforms operate on the full subject dictionary —
+    only the keys specified in the MONAI transform are modified.
 
-    Array transforms are applied to each ``ScalarImage`` in the
-    subject, respecting ``include`` / ``exclude``.
+    Array transforms are applied to each
+    [`ScalarImage`][torchio.ScalarImage] in the subject individually,
+    respecting the ``include`` / ``exclude`` parameters.
 
     Args:
-        monai_transform: A MONAI transform or any callable.
-            Requires MONAI: ``pip install torchio[monai]``.
+        monai_transform: A MONAI transform or any callable. Requires
+            MONAI to be installed: ``pip install torchio[monai]``.
+        **kwargs: See [`Transform`][torchio.Transform] for additional
+            keyword arguments.
 
     Examples:
+        >>> import torchio as tio
         >>> from monai.transforms import NormalizeIntensity
+        >>> # Array transform — applied to each ScalarImage
         >>> adapter = tio.MonaiAdapter(NormalizeIntensity())
         >>> result = adapter(subject)
+        >>> # Inside a Compose pipeline
+        >>> pipeline = tio.Compose([
+        ...     tio.MonaiAdapter(NormalizeIntensity()),
+        ...     tio.Noise(std=0.1),
+        ... ])
+
+    Note:
+        ``MonaiAdapter`` does **not** record itself in the subject's
+        transform history, because MONAI transform objects are not
+        serializable.
     """
 
     def __init__(self, monai_transform: Callable, **kwargs: Any) -> None:
@@ -51,32 +66,37 @@ class MonaiAdapter(Transform):
             raise TypeError(msg)
         self.monai_transform = monai_transform
 
-    def forward(self, data: T) -> T:
+    def forward(self, data):
         """Apply without recording history (MONAI transforms are opaque)."""
-        subject, unwrap = self._wrap(data)
+        batch, unwrap = self._wrap(data)
+        if self.copy:
+            batch = _copy.deepcopy(batch)
         if torch.rand(1).item() > self.p:
-            return unwrap(subject)
-        self.apply_transform(subject, {})
-        return unwrap(subject)
-
-    def apply_transform(self, subject: Subject, params: dict[str, Any]) -> Subject:
+            return unwrap(batch)
+        # MONAI transforms operate per-subject
         monai = get_monai()
-        is_dict = isinstance(
-            self.monai_transform,
-            monai.transforms.MapTransform,
-        )
-        if is_dict:
-            _apply_dict_transform(subject, self.monai_transform, monai)
-        else:
-            images = self._get_images(subject)
-            _apply_array_transform(
-                images,
+        subjects = batch.unbatch()
+        for subject in subjects:
+            is_dict = isinstance(
                 self.monai_transform,
-                monai,
+                monai.transforms.MapTransform,
             )
-        return subject
+            if is_dict:
+                _apply_dict_transform(subject, self.monai_transform, monai)
+            else:
+                images = self._get_subject_images(subject)
+                _apply_array_transform(images, self.monai_transform, monai)
+        from ..data.batch import SubjectsBatch
 
-    def _get_images(self, subject: Subject) -> dict[str, Image]:
+        result = SubjectsBatch.from_subjects(subjects)
+        result.applied_transforms = batch.applied_transforms
+        return unwrap(result)
+
+    def apply_transform(self, batch: Any, params: dict[str, Any]) -> Any:
+        # Not used — MonaiAdapter overrides forward directly
+        return batch
+
+    def _get_subject_images(self, subject: Subject) -> dict[str, Image]:
         """Filter to ScalarImage, then apply include/exclude."""
         images: dict[str, Image] = {
             k: v for k, v in subject.images.items() if isinstance(v, ScalarImage)

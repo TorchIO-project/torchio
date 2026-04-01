@@ -1,82 +1,46 @@
-"""DataLoader wrappers for Subject and Image collation via tensordict."""
+"""DataLoader wrappers for Subject and Image collation."""
 
 from __future__ import annotations
 
 from collections.abc import Sequence
 from typing import Any
-from typing import cast
 
-import torch
-from tensordict import TensorDict
 from torch.utils.data import DataLoader
 from torch.utils.data import Dataset
 
-
-def collate_subjects(batch: Sequence[Any]) -> TensorDict:
-    """Collate a list of Subjects (or TensorDicts) into a batched TensorDict.
-
-    Each element is converted via ``Subject.to_tensordict()`` if it is not
-    already a ``TensorDict``, then the list is stacked with
-    ``torch.stack``.
-
-    Args:
-        batch: Sequence of ``Subject`` or ``TensorDict`` instances.
-
-    Returns:
-        Stacked ``TensorDict`` with ``batch_size=[N]``.
-    """
-    from .data.subject import Subject
-
-    tds = []
-    for item in batch:
-        if isinstance(item, Subject):
-            tds.append(item.to_tensordict())
-        elif isinstance(item, TensorDict):
-            tds.append(item)
-        else:
-            msg = (
-                f"collate_subjects expects Subject or TensorDict, "
-                f"got {type(item).__name__}"
-            )
-            raise TypeError(msg)
-    return cast(TensorDict, torch.stack(tds))
+from .data.batch import ImagesBatch
+from .data.batch import SubjectsBatch
 
 
-def collate_images(batch: Sequence[Any]) -> TensorDict:
-    """Collate a list of Images (or TensorDicts) into a batched TensorDict.
-
-    Each element is converted via ``Image.to_tensordict()`` if it is not
-    already a ``TensorDict``, then the list is stacked with
-    ``torch.stack``.
+def collate_subjects(batch: Sequence[Any]) -> SubjectsBatch:
+    """Collate a list of Subjects into a SubjectsBatch.
 
     Args:
-        batch: Sequence of ``Image`` or ``TensorDict`` instances.
+        batch: Sequence of ``Subject`` instances.
 
     Returns:
-        Stacked ``TensorDict`` with ``batch_size=[N]``.
+        A ``SubjectsBatch`` with stacked 5D tensors.
     """
-    from .data.image import Image
+    return SubjectsBatch.from_subjects(list(batch))
 
-    tds = []
-    for item in batch:
-        if isinstance(item, Image):
-            tds.append(item.to_tensordict())
-        elif isinstance(item, TensorDict):
-            tds.append(item)
-        else:
-            msg = (
-                f"collate_images expects Image or TensorDict, got {type(item).__name__}"
-            )
-            raise TypeError(msg)
-    return cast(TensorDict, torch.stack(tds))
+
+def collate_images(batch: Sequence[Any]) -> ImagesBatch:
+    """Collate a list of Images into an ImagesBatch.
+
+    Args:
+        batch: Sequence of ``Image`` instances.
+
+    Returns:
+        An ``ImagesBatch`` with a stacked 5D tensor.
+    """
+    return ImagesBatch.from_images(list(batch))
 
 
 class SubjectsLoader(DataLoader):
-    """DataLoader that automatically collates Subjects via tensordict.
+    """DataLoader that returns ``SubjectsBatch`` instances.
 
-    A thin wrapper around ``torch.utils.data.DataLoader`` that sets
-    ``collate_fn=collate_subjects``.  All standard ``DataLoader``
-    keyword arguments are forwarded.
+    A thin wrapper around ``torch.utils.data.DataLoader`` that
+    collates ``Subject`` instances into ``SubjectsBatch``.
 
     Args:
         dataset: A dataset that returns ``Subject`` instances.
@@ -85,7 +49,7 @@ class SubjectsLoader(DataLoader):
     Examples:
         >>> loader = tio.SubjectsLoader(dataset, batch_size=4)
         >>> batch = next(iter(loader))
-        >>> batch["t1", "data"].shape
+        >>> batch.t1.data.shape
         torch.Size([4, 1, 256, 256, 176])
     """
 
@@ -100,11 +64,10 @@ class SubjectsLoader(DataLoader):
 
 
 class ImagesLoader(DataLoader):
-    """DataLoader that automatically collates Images via tensordict.
+    """DataLoader that returns ``ImagesBatch`` instances.
 
-    A thin wrapper around ``torch.utils.data.DataLoader`` that sets
-    ``collate_fn=collate_images``.  All standard ``DataLoader``
-    keyword arguments are forwarded.
+    A thin wrapper around ``torch.utils.data.DataLoader`` that
+    collates ``Image`` instances into ``ImagesBatch``.
 
     Args:
         dataset: A dataset that returns ``Image`` instances.
@@ -113,7 +76,7 @@ class ImagesLoader(DataLoader):
     Examples:
         >>> loader = tio.ImagesLoader(dataset, batch_size=4)
         >>> batch = next(iter(loader))
-        >>> batch["data"].shape
+        >>> batch.data.shape
         torch.Size([4, 1, 256, 256, 176])
     """
 
@@ -125,3 +88,8 @@ class ImagesLoader(DataLoader):
             )
             raise ValueError(msg)
         super().__init__(dataset, collate_fn=collate_images, **kwargs)
+
+
+# Aliases for radiology users — see Subject/Study note in subject.py.
+StudiesLoader = SubjectsLoader
+collate_studies = collate_subjects

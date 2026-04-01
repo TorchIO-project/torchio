@@ -11,10 +11,8 @@ dependencies = [
     "loguru",
     "nibabel",
     "numpy",
-    "pyyaml",
     "rich",
     "simpleitk",
-    "tensordict",
     "torch",
 ]
 

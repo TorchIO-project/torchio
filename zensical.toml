@@ -54,8 +54,17 @@ nav = [
       "reference/transforms.md",
       "reference/parameter_range.md",
       "reference/compose.md",
-      "reference/spatial.md",
-      "reference/intensity.md",
+      { "Spatial" = [
+        "reference/transforms/flip.md",
+        "reference/transforms/crop.md",
+      ] },
+      { "Intensity" = [
+        "reference/transforms/noise.md",
+      ] },
+      { "Other" = [
+        "reference/transforms/to.md",
+        "reference/transforms/monai_adapter.md",
+      ] },
     ] },
   ] },
 ]

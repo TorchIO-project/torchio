@@ -698,3 +698,46 @@ class TestImageSlicing:
         )
         sliced = image[:, 5:10]
         assert sliced.metadata["modality"] == "T1"
+
+
+class TestReaderWriterKwargs:
+    def _make_nifti(self, tmp_path: Path) -> Path:
+        """Helper: write a small NIfTI file and return its path."""
+        data = np.random.randn(10, 12, 14).astype(np.float32)
+        nii = nib.Nifti1Image(data, np.eye(4))
+        path = tmp_path / "test.nii.gz"
+        nib.save(nii, path)
+        return path
+
+    def test_reader_kwargs_passed(self, tmp_path: Path):
+        """reader_kwargs are forwarded to the reader function."""
+        from unittest.mock import patch
+
+        path = self._make_nifti(tmp_path)
+        image = ScalarImage(path, reader_kwargs={"keep_file_open": True})
+        with patch("torchio.data.image.nib.load", wraps=nib.load) as mock_load:
+            image.load()
+            mock_load.assert_called_once_with(path, keep_file_open=True)
+
+    def test_writer_kwargs_passed(self, tmp_path: Path):
+        """writer_kwargs are forwarded to SimpleITK.WriteImage."""
+        from unittest.mock import patch
+
+        image = ScalarImage.from_tensor(torch.randn(1, 4, 4, 4))
+        out = tmp_path / "out.nii.gz"
+        with patch("torchio.data.image.sitk.WriteImage") as mock_write:
+            image.save(out, writer_kwargs={"useCompression": True})
+            mock_write.assert_called_once()
+            _, call_kwargs = mock_write.call_args
+            assert call_kwargs["useCompression"] is True
+
+    def test_reader_kwargs_deepcopy(self, tmp_path: Path):
+        """reader_kwargs survive deepcopy."""
+        import copy
+
+        path = self._make_nifti(tmp_path)
+        kw = {"keep_file_open": True}
+        image = ScalarImage(path, reader_kwargs=kw)
+        copied = copy.deepcopy(image)
+        assert copied._reader_kwargs == kw
+        assert copied._reader_kwargs is not image._reader_kwargs

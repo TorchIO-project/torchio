@@ -7,24 +7,29 @@ from typing import Any
 
 import torch
 
-from ..data.subject import Subject
+from ..data.batch import SubjectsBatch
 from .transform import SpatialTransform
 
 
 class Flip(SpatialTransform):
-    """Flip (reverse) voxel data along one or more spatial axes.
-
-    This is a pure ``torch.flip`` operation — GPU-compatible and
-    differentiable. Flipping is its own inverse.
+    """Reverse the order of elements in an image along the given axes.
 
     Args:
-        axes: Spatial axes to flip. ``0`` = first spatial axis (I),
-            ``1`` = second (J), ``2`` = third (K).
+        axes: Tuple of indices of the spatial dimensions along which
+            the image will be flipped. Values must be in
+            ``{0, 1, 2}``, corresponding to the ``I``, ``J``, ``K``
+            axes of the ``(C, I, J, K)`` tensor layout.
+        **kwargs: See [`Transform`][torchio.Transform] for additional
+            keyword arguments.
 
     Examples:
-        >>> flip_lr = tio.Flip(axes=(0,))           # flip left-right
-        >>> flip_all = tio.Flip(axes=(0, 1, 2))     # flip all axes
-        >>> random_flip = tio.Flip(axes=(0,), p=0.5) # 50% chance
+        >>> import torchio as tio
+        >>> # Flip along the first spatial axis
+        >>> transform = tio.Flip(axes=(0,))
+        >>> # Flip along all three axes
+        >>> transform = tio.Flip(axes=(0, 1, 2))
+        >>> # Random flip (50% probability)
+        >>> transform = tio.Flip(axes=(0,), p=0.5)
     """
 
     def __init__(
@@ -41,12 +46,15 @@ class Flip(SpatialTransform):
                 raise ValueError(msg)
         self.axes = axes
 
-    def make_params(self, subject: Subject) -> dict[str, Any]:
+    def make_params(self, batch: SubjectsBatch) -> dict[str, Any]:
         return {"axes": self.axes}
 
-    def apply_transform(self, subject: Subject, params: dict[str, Any]) -> Subject:
-        axes = params["axes"]
-        dims = [a + 1 for a in axes]
-        for _name, image in self._get_images(subject).items():
-            image.set_data(torch.flip(image.data, dims))
-        return subject
+    def apply_transform(
+        self,
+        batch: SubjectsBatch,
+        params: dict[str, Any],
+    ) -> SubjectsBatch:
+        dims = [a - 3 for a in params["axes"]]
+        for _name, img_batch in self._get_images(batch).items():
+            img_batch.data = torch.flip(img_batch.data, dims)
+        return batch

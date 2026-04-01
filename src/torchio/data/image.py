@@ -9,7 +9,6 @@ from pathlib import Path
 from typing import Any
 from typing import Self
 from typing import TypeVar
-from typing import cast
 
 import nibabel as nib
 import nibabel.spatialimages
@@ -18,7 +17,6 @@ import numpy.typing as npt
 import SimpleITK as sitk
 import torch
 from einops import rearrange
-from tensordict import TensorDict
 from torch import Tensor
 
 from ..types import TypeImageData
@@ -29,8 +27,6 @@ from .backends import ImageDataBackend
 from .backends import NibabelBackend
 from .backends import NumpyBackend
 from .bboxes import BoundingBoxes
-from .bboxes import BoundingBoxFormat
-from .bboxes import Representation
 from .io import ImageSource
 from .io import default_reader
 from .io import is_nifti
@@ -83,6 +79,9 @@ class Image:
             with [SimpleITK](https://simpleitk.org/).
         reader: Callable that takes a path and returns a tuple
             `(tensor, affine_array)`. Overrides the default reader.
+        reader_kwargs: Extra keyword arguments forwarded to the reader
+            function. For the default reader these are passed to
+            ``nibabel.load()`` or ``SimpleITK.ReadImage()``.
         affine: $4 \times 4$ affine matrix or
             [`Affine`][torchio.Affine] instance. If given, overrides
             the affine read from the file.
@@ -107,6 +106,7 @@ class Image:
     _INIT_KWARGS = frozenset(
         {
             "reader",
+            "reader_kwargs",
             "affine",
             "channels_last",
             "suffix",
@@ -120,6 +120,7 @@ class Image:
         path: ImageSource,
         *,
         reader: Callable[[Path], tuple[TypeImageData, np.ndarray]] | None = None,
+        reader_kwargs: dict[str, Any] | None = None,
         affine: Affine | npt.ArrayLike | None = None,
         channels_last: bool = False,
         suffix: str | None = None,
@@ -129,6 +130,7 @@ class Image:
     ):
         self._path: Path | None = resolve_source(path, suffix=suffix)
         self._reader = reader or default_reader
+        self._reader_kwargs: dict[str, Any] = dict(reader_kwargs or {})
         self._channels_last = channels_last
         self._metadata: dict[str, Any] = dict(kwargs)
         self._data: Tensor | None = None
@@ -174,6 +176,7 @@ class Image:
         instance = object.__new__(cls)
         instance._path = None
         instance._reader = default_reader
+        instance._reader_kwargs = {}
         instance._channels_last = False  # already permuted below
         instance._metadata = dict(kwargs)
         parsed = Image._parse_tensor(tensor)
@@ -440,7 +443,7 @@ class Image:
                 self._apply_channels_last()
                 return
         # Otherwise use the reader (custom reader or non-NIfTI formats)
-        tensor, affine_array = self._reader(self._path)
+        tensor, affine_array = self._reader(self._path, **self._reader_kwargs)
         self._data = tensor
         if self._affine is None:
             self._affine = Affine(affine_array)
@@ -507,7 +510,12 @@ class Image:
             **dict(self._metadata),
         )
 
-    def save(self, path: str | Path) -> None:
+    def save(
+        self,
+        path: str | Path,
+        *,
+        writer_kwargs: dict[str, Any] | None = None,
+    ) -> None:
         """Save the image to a file.
 
         NIfTI-Zarr (`.nii.zarr`) files are written via `niizarr`
@@ -515,15 +523,19 @@ class Image:
         with [SimpleITK](https://simpleitk.org/).
 
         Args:
-            path: Output file path. The format is inferred from the extension.
+            path: Output file path. The format is inferred from the
+                extension.
+            writer_kwargs: Extra keyword arguments forwarded to the
+                writer. For SimpleITK formats these are passed to
+                ``SimpleITK.WriteImage()``.
         """
         path = Path(path)
         if is_nifti_zarr(path):
             self._save_nii_zarr(path)
         else:
-            self._save_sitk(path)
+            self._save_sitk(path, **(writer_kwargs or {}))
 
-    def _save_sitk(self, path: Path) -> None:
+    def _save_sitk(self, path: Path, **kwargs: Any) -> None:
         data = self.data.numpy()
         n_channels = data.shape[0]
         if n_channels == 1:
@@ -537,7 +549,7 @@ class Image:
         sitk_image.SetDirection(
             rearrange(self.affine.direction, "i j -> (i j)").tolist()
         )
-        sitk.WriteImage(sitk_image, str(path))
+        sitk.WriteImage(sitk_image, str(path), **kwargs)
 
     def _save_nii_zarr(self, path: Path) -> None:
         from ..imports import get_niizarr
@@ -569,7 +581,7 @@ class Image:
 
             self._backend = ZarrBackend(self._path)
         elif is_nifti(self._path):
-            nii = nib.load(self._path)
+            nii = nib.load(self._path, **self._reader_kwargs)
             assert isinstance(nii, nib.spatialimages.SpatialImage)
             self._backend = NibabelBackend(nii)
 
@@ -696,122 +708,6 @@ class Image:
 
         return self.new_like(data=cropped_data, affine=Affine(affine_matrix))
 
-    def to_tensordict(self) -> TensorDict:
-        """Convert this Image to a TensorDict for batching.
-
-        The ``data`` and ``affine`` tensors are stored as regular entries
-        so they stack efficiently. The image class name, metadata,
-        points, and bounding boxes are stored as non-tensor entries.
-
-        Returns:
-            A TensorDict with ``batch_size=[]``.
-        """
-        td = TensorDict(
-            {
-                "data": self.data,
-                "affine": self.affine.data,
-            },
-            batch_size=[],
-        )
-        td.set_non_tensor("_class", type(self).__name__)
-
-        if self._metadata:
-            td.set_non_tensor("_metadata", dict(self._metadata))
-
-        for name, pts in self._points.items():
-            td.set_non_tensor(
-                f"_points_{name}",
-                {
-                    "data": pts.data,
-                    "axes": pts.axes,
-                    "affine": pts.affine.numpy(),
-                    "metadata": dict(pts.metadata),
-                },
-            )
-
-        for name, boxes in self._bounding_boxes.items():
-            td.set_non_tensor(
-                f"_bboxes_{name}",
-                {
-                    "data": boxes.data,
-                    "format_axes": boxes.format.axes,
-                    "format_repr": boxes.format.representation.value,
-                    "labels": boxes.labels,
-                    "affine": boxes.affine.numpy(),
-                    "metadata": dict(boxes.metadata),
-                },
-            )
-
-        return td
-
-    @classmethod
-    def from_tensordict(cls, td: TensorDict) -> Image:
-        """Reconstruct an Image from a TensorDict.
-
-        This is the inverse of
-        [`to_tensordict`][torchio.Image.to_tensordict].
-
-        Args:
-            td: TensorDict produced by ``to_tensordict()``.
-
-        Returns:
-            Reconstructed Image (ScalarImage, LabelMap, or Image).
-        """
-        image_classes: dict[str, type[Image]] = {
-            "ScalarImage": ScalarImage,
-            "LabelMap": LabelMap,
-            "Image": Image,
-        }
-
-        class_name = td.get_non_tensor("_class")
-        image_cls = image_classes.get(class_name, ScalarImage)
-
-        data = cast(Tensor, td["data"])
-        affine = Affine(cast(Tensor, td["affine"]))
-
-        # Reconstruct annotations from non-tensor entries
-        non_tensor = {k: v.data for k, v in td.non_tensor_items()}
-
-        metadata = non_tensor.get("_metadata")
-
-        points: dict[str, Points] | None = None
-        bounding_boxes: dict[str, BoundingBoxes] | None = None
-
-        for key, value in non_tensor.items():
-            if key.startswith("_points_"):
-                if points is None:
-                    points = {}
-                name = key[len("_points_") :]
-                points[name] = Points(
-                    value["data"],
-                    axes=value["axes"],
-                    affine=Affine(value["affine"]),
-                    metadata=value["metadata"],
-                )
-            elif key.startswith("_bboxes_"):
-                if bounding_boxes is None:
-                    bounding_boxes = {}
-                name = key[len("_bboxes_") :]
-                fmt = BoundingBoxFormat(
-                    value["format_axes"],
-                    Representation(value["format_repr"]),
-                )
-                bounding_boxes[name] = BoundingBoxes(
-                    value["data"],
-                    format=fmt,
-                    labels=value["labels"],
-                    affine=Affine(value["affine"]),
-                    metadata=value["metadata"],
-                )
-
-        return image_cls.from_tensor(
-            data,
-            affine=affine,
-            points=points,
-            bounding_boxes=bounding_boxes,
-            **(metadata or {}),
-        )
-
     def __repr__(self) -> str:
         cls_name = type(self).__name__
         parts: list[str] = []
@@ -858,6 +754,7 @@ class Image:
             new = type(self)(
                 self._path,
                 reader=self._reader,
+                reader_kwargs=dict(self._reader_kwargs),
                 affine=affine_copy,
                 points=points_copy,
                 bounding_boxes=bboxes_copy,
@@ -882,6 +779,7 @@ class Image:
             new._backend = None
             new._affine = affine_copy
             new._reader = self._reader
+            new._reader_kwargs = dict(self._reader_kwargs)
             new._metadata = meta_copy
             new._points = points_copy
             new._bounding_boxes = bboxes_copy

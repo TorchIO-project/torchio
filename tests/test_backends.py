@@ -220,3 +220,10 @@ class TestZarrBackend:
         tensor = image.data
         assert isinstance(tensor, torch.Tensor)
         assert tensor.shape == (1, 16, 16, 16)
+
+    def test_read_nifti_zarr(self, zarr_path: Path):
+        from torchio.data.io import read_nifti_zarr
+
+        tensor, affine = read_nifti_zarr(zarr_path)
+        assert tensor.shape == (1, 16, 16, 16)
+        assert affine.shape == (4, 4)

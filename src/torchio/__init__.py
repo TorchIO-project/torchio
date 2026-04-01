@@ -2,6 +2,9 @@
 
 from . import datasets
 from .data.affine import Affine
+from .data.batch import ImagesBatch
+from .data.batch import StudiesBatch
+from .data.batch import SubjectsBatch
 from .data.bboxes import BoundingBoxes
 from .data.bboxes import BoundingBoxFormat
 from .data.bboxes import Representation
@@ -9,16 +12,20 @@ from .data.image import Image
 from .data.image import LabelMap
 from .data.image import ScalarImage
 from .data.points import Points
+from .data.subject import Study
 from .data.subject import Subject
 from .io import read_matrix
 from .io import write_matrix
 from .loader import ImagesLoader
+from .loader import StudiesLoader
 from .loader import SubjectsLoader
 from .loader import collate_images
+from .loader import collate_studies
 from .loader import collate_subjects
 from .logging import enable_logging
 from .transforms import AppliedTransform
 from .transforms import Compose
+from .transforms import Crop
 from .transforms import Flip
 from .transforms import IntensityTransform
 from .transforms import MonaiAdapter
@@ -46,8 +53,10 @@ __all__ = [
     "BoundingBoxFormat",
     "BoundingBoxes",
     "Compose",
+    "Crop",
     "Flip",
     "Image",
+    "ImagesBatch",
     "ImagesLoader",
     "IntensityTransform",
     "LabelMap",
@@ -60,7 +69,11 @@ __all__ = [
     "ScalarImage",
     "SomeOf",
     "SpatialTransform",
+    "StudiesBatch",
+    "StudiesLoader",
+    "Study",
     "Subject",
+    "SubjectsBatch",
     "SubjectsLoader",
     "To",
     "Transform",
@@ -75,6 +88,7 @@ __all__ = [
     "TypeTensorShape",
     "TypeWorldPoints",
     "collate_images",
+    "collate_studies",
     "collate_subjects",
     "datasets",
     "enable_logging",

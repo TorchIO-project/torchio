@@ -32,16 +32,16 @@
 
     For cloud storage (HTTP/HTTPS URLs work out of the box):
 
-    === "S3"
-
-        ```
-        pip install "torchio[s3]"
-        ```
-
     === "Azure Blob"
 
         ```
         pip install "torchio[azure]"
+        ```
+
+    === "S3"
+
+        ```
+        pip install "torchio[s3]"
         ```
 
     === "Google Cloud"
@@ -126,7 +126,8 @@ correct world coordinates.
 
 ### Grouping data into a Subject
 
-A `Subject` holds images, spatial annotations, and metadata:
+A `Subject` (also available as `Study`) holds images, spatial
+annotations, and metadata:
 
 ```python
 import torch
@@ -183,7 +184,7 @@ class BrainDataset(Dataset):
 
 loader = tio.SubjectsLoader(BrainDataset(paths), batch_size=4)
 batch = next(iter(loader))
-batch["t1", "data"].shape  # (4, 1, 256, 256, 176)
+batch.t1.data.shape  # (4, 1, 256, 256, 176)
 ```
 
 See the [DataLoader how-to guide](how-to/dataloader.md) for more
@@ -206,12 +207,20 @@ augment = tio.Compose([
 ])
 augmented = augment(subject)
 
+# Custom distribution for parameters
+from torch.distributions import LogNormal
+noisy = tio.Noise(std=LogNormal(loc=-2, scale=0.5))(subject)
+
 # Works directly on tensors too
 noisy_tensor = tio.Noise(std=0.05)(tensor)
 
 # Works with MONAI-style dicts
 data = {"image": tensor, "label": label_tensor}
 augmented = tio.Noise(std=0.1)(data)  # returns dict
+
+# Works on batches from SubjectsLoader (same params, vectorised)
+batch = next(iter(loader))  # SubjectsBatch
+augmented_batch = augment(batch)
 ```
 
 See the [transform design concepts](concepts/transforms.md) for

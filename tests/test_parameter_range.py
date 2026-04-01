@@ -94,3 +94,34 @@ class TestParameterRangeRepr:
     def test_three_tuple_repr(self) -> None:
         pr = ParameterRange((1.0, 2.0, 3.0))
         assert repr(pr) == "(1.0, 2.0, 3.0)"
+
+
+class TestParameterRangeDistribution:
+    def test_distribution_not_deterministic(self) -> None:
+        from torch.distributions import Normal
+
+        pr = ParameterRange(Normal(0.0, 1.0))
+        assert not pr.is_deterministic
+
+    def test_distribution_sample_1d(self) -> None:
+        from torch.distributions import Uniform
+
+        pr = ParameterRange(Uniform(5.0, 10.0))
+        for _ in range(50):
+            v = pr.sample_1d()
+            assert 5.0 <= v <= 10.0
+
+    def test_distribution_sample_3d(self) -> None:
+        from torch.distributions import Normal
+
+        pr = ParameterRange(Normal(0.0, 1.0))
+        v0, v1, v2 = pr.sample()
+        assert isinstance(v0, float)
+        assert isinstance(v1, float)
+        assert isinstance(v2, float)
+
+    def test_distribution_repr(self) -> None:
+        from torch.distributions import Normal
+
+        pr = ParameterRange(Normal(0.0, 1.0))
+        assert "Normal" in repr(pr)

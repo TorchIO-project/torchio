@@ -7,7 +7,7 @@ import inspect
 from dataclasses import dataclass
 from dataclasses import field
 from typing import Any
-from typing import TypeVar
+from typing import overload
 
 import nibabel as nib
 import numpy as np
@@ -17,21 +17,11 @@ from einops import rearrange
 from torch import Tensor
 from torch import nn
 
+from ..data.batch import ImagesBatch
+from ..data.batch import SubjectsBatch
 from ..data.image import Image
 from ..data.image import ScalarImage
 from ..data.subject import Subject
-
-#: TypeVar preserving the input type through transforms.
-T = TypeVar(
-    "T",
-    Subject,
-    Image,
-    Tensor,
-    np.ndarray,
-    sitk.Image,
-    nib.Nifti1Image,
-    dict,
-)
 
 
 @dataclass
@@ -48,19 +38,36 @@ class AppliedTransform:
 
 
 class Transform(nn.Module):
-    """Base class for all TorchIO transforms.
+    """Abstract class for all TorchIO transforms.
 
-    Transforms accept a ``Subject``, ``Image``, or ``Tensor`` and return
-    the same type. Internally, non-Subject inputs are wrapped in a
-    temporary Subject and unwrapped on output.
+    When called, the input can be an instance of
+    [`Subject`][torchio.Subject],
+    [`Image`][torchio.Image],
+    [`torch.Tensor`][torch.Tensor],
+    [`numpy.ndarray`][numpy.ndarray],
+    [`SimpleITK.Image`](https://simpleitk.org/doxygen/latest/html/classitk_1_1simple_1_1Image.html),
+    [`nibabel.Nifti1Image`](https://nipy.org/nibabel/reference/nibabel.nifti1.html),
+    [`dict`][dict] containing 4D tensors as values,
+    [`ImagesBatch`][torchio.ImagesBatch], or
+    [`SubjectsBatch`][torchio.SubjectsBatch].
+    The output type always matches the input type.
+
+    All subclasses must override
+    [`apply_transform()`][torchio.Transform.apply_transform],
+    which receives a [`SubjectsBatch`][torchio.SubjectsBatch] and
+    returns the transformed batch.
 
     Args:
-        p: Probability of applying the transform.
-        copy: Deep-copy the input before transforming. Set to ``False``
-            for in-place operation (e.g., inside a ``Compose`` that
-            already copied).
-        include: Image names to include (``None`` = all).
-        exclude: Image names to exclude (``None`` = none).
+        p: Probability that this transform will be applied.
+        copy: Make a deep copy of the input before applying the
+            transform. When transforms are composed with
+            [`Compose`][torchio.Compose], the outer ``Compose``
+            copies once and sets ``copy=False`` on inner transforms
+            to avoid redundant copies.
+        include: Sequence of strings with the names of the only images
+            to which the transform will be applied.
+        exclude: Sequence of strings with the names of the images to
+            which the transform will *not* be applied.
     """
 
     def __init__(
@@ -95,67 +102,95 @@ class Transform(nn.Module):
             parts.append(f"{name}={value!r}")
         return f"{type(self).__name__}({', '.join(parts)})"
 
-    def forward(
-        self,
-        data: T,
-    ) -> T:
+    @overload
+    def forward(self, data: Subject) -> Subject: ...
+    @overload
+    def forward(self, data: Image) -> Image: ...
+    @overload
+    def forward(self, data: Tensor) -> Tensor: ...
+    @overload
+    def forward(self, data: np.ndarray) -> np.ndarray: ...
+    @overload
+    def forward(self, data: sitk.Image) -> sitk.Image: ...
+    @overload
+    def forward(self, data: nib.Nifti1Image) -> nib.Nifti1Image: ...
+    @overload
+    def forward(self, data: dict) -> dict: ...
+    @overload
+    def forward(self, data: ImagesBatch) -> ImagesBatch: ...
+    @overload
+    def forward(self, data: SubjectsBatch) -> SubjectsBatch: ...
+
+    def forward(self, data):  # type: ignore[override]
         """Apply the transform.
 
+        The output type always matches the input type.
+
         Args:
-            data: A Subject, Image, 4D Tensor, NumPy array,
-                SimpleITK Image, or NiBabel Nifti1Image.
-
-        Returns:
-            Transformed data of the same type as input.
+            data: Input data to transform.
         """
-        subject, unwrap = self._wrap(data)
+        batch, unwrap = self._wrap(data)
         if self.copy:
-            subject = _copy.deepcopy(subject)
+            batch = _copy.deepcopy(batch)
         if torch.rand(1).item() > self.p:
-            return unwrap(subject)
-        params = self.make_params(subject)
-        subject = self.apply_transform(subject, params)
-        subject.applied_transforms.append(
-            AppliedTransform(
-                name=type(self).__name__,
-                params=params,
-            ),
-        )
-        return unwrap(subject)
+            return unwrap(batch)
+        params = self.make_params(batch)
+        batch = self.apply_transform(batch, params)
+        # Record history on the batch
+        trace = AppliedTransform(name=type(self).__name__, params=params)
+        if not hasattr(batch, "applied_transforms"):
+            batch.applied_transforms = []
+        batch.applied_transforms.append(trace)
+        return unwrap(batch)
 
-    def make_params(self, subject: Subject) -> dict[str, Any]:
+    def make_params(self, batch: SubjectsBatch) -> dict[str, Any]:
         """Sample random parameters for this transform.
 
         Override in subclasses that have random behavior.
 
         Args:
-            subject: The input subject (for shape-dependent sampling).
+            batch: A ``SubjectsBatch``.
 
         Returns:
             Dict of sampled parameters.
         """
         return {}
 
-    def apply_transform(self, subject: Subject, params: dict[str, Any]) -> Subject:
+    def apply_transform(
+        self,
+        batch: SubjectsBatch,
+        params: dict[str, Any],
+    ) -> SubjectsBatch:
         """Apply the transform with the given parameters.
 
-        Must be overridden by subclasses.
+        Must be overridden by subclasses. Receives a ``SubjectsBatch``
+        whose ``ImagesBatch`` entries contain 5D tensors
+        ``(B, C, I, J, K)``. Use negative indexing (``-3``, ``-2``,
+        ``-1``) for spatial dims.
 
         Args:
-            subject: Subject to transform.
+            batch: A ``SubjectsBatch`` to transform.
             params: Parameters from ``make_params``.
 
         Returns:
-            Transformed subject.
+            Transformed ``SubjectsBatch``.
         """
         raise NotImplementedError
+
+    def _get_images(self, batch: SubjectsBatch) -> dict[str, ImagesBatch]:
+        """Get image batches filtered by include/exclude."""
+        images = batch.images
+        if self.include is not None:
+            images = {k: v for k, v in images.items() if k in self.include}
+        if self.exclude is not None:
+            images = {k: v for k, v in images.items() if k not in self.exclude}
+        return images
 
     def to_hydra(self) -> dict[str, Any]:
         """Export as a Hydra-compatible config dict.
 
         Returns a dict with ``_target_`` set to the fully qualified
         class name and only non-default field values included.
-        Values are plain Python types (no ParameterRange, no Tensor).
 
         Returns:
             Dict suitable for ``hydra.utils.instantiate()``.
@@ -179,60 +214,49 @@ class Transform(nn.Module):
             cfg[name] = value
         return cfg
 
-    def to_yaml(self) -> str:
-        """Export as a YAML string for Hydra.
-
-        Requires PyYAML (part of the standard scientific stack).
-
-        Returns:
-            YAML string.
-        """
-        import yaml
-
-        return yaml.dump(
-            self.to_hydra(),
-            default_flow_style=False,
-            sort_keys=False,
-        )
-
-    def _get_images(self, subject: Subject) -> dict[str, Image]:
-        """Get images filtered by include/exclude."""
-        images = subject.images
-        if self.include is not None:
-            images = {k: v for k, v in images.items() if k in self.include}
-        if self.exclude is not None:
-            images = {k: v for k, v in images.items() if k not in self.exclude}
-        return images
-
     @staticmethod
     def _wrap(
-        data: T,
-    ) -> tuple[Subject, Any]:
-        """Wrap non-Subject input into a Subject; return (subject, unwrap_fn)."""
+        data: Any,
+    ) -> tuple[Any, Any]:
+        """Wrap any input into a SubjectsBatch; return (batch, unwrap_fn)."""
+        from ..data.batch import ImagesBatch
+        from ..data.batch import SubjectsBatch
+
+        if isinstance(data, SubjectsBatch):
+            return data, _unwrap_subjects_batch
+        if isinstance(data, ImagesBatch):
+            sb = SubjectsBatch({"tio_default_image": data})
+            return sb, _unwrap_images_batch
         if isinstance(data, Subject):
-            return data, _unwrap_subject
+            sb = SubjectsBatch.from_subjects([data])
+            return sb, _unwrap_subject
         if isinstance(data, Image):
             sub = Subject(tio_default_image=data)
-            return sub, _unwrap_image
+            sb = SubjectsBatch.from_subjects([sub])
+            return sb, _unwrap_image
         if isinstance(data, Tensor):
             img = ScalarImage.from_tensor(data)
             sub = Subject(tio_default_image=img)
-            return sub, _unwrap_tensor
+            sb = SubjectsBatch.from_subjects([sub])
+            return sb, _unwrap_tensor
         if isinstance(data, np.ndarray):
             tensor = torch.as_tensor(data.copy(), dtype=torch.float32)
             if tensor.ndim == 3:
                 tensor = rearrange(tensor, "i j k -> 1 i j k")
             img = ScalarImage.from_tensor(tensor)
             sub = Subject(tio_default_image=img)
-            return sub, _unwrap_ndarray
+            sb = SubjectsBatch.from_subjects([sub])
+            return sb, _unwrap_ndarray
         if isinstance(data, sitk.Image):
             img = ScalarImage.from_sitk(data)
             sub = Subject(tio_default_image=img)
-            return sub, _unwrap_sitk
+            sb = SubjectsBatch.from_subjects([sub])
+            return sb, _unwrap_sitk
         if isinstance(data, nib.Nifti1Image):
             img = ScalarImage.from_nifti(data)
             sub = Subject(tio_default_image=img)
-            return sub, _unwrap_nifti
+            sb = SubjectsBatch.from_subjects([sub])
+            return sb, _unwrap_nifti
         if isinstance(data, dict):
             kwargs: dict[str, Any] = {}
             for k, v in data.items():
@@ -243,11 +267,13 @@ class Transform(nn.Module):
                 else:
                     kwargs[k] = v
             sub = Subject(**kwargs)
-            keys = list(data.keys())
-            return sub, lambda s: _unwrap_dict(s, keys)
+            keys: list[str] = [str(k) for k in data]
+            sb = SubjectsBatch.from_subjects([sub])
+            return sb, lambda b: _unwrap_dict(b, keys)
         msg = (
             "Expected Subject, Image, Tensor, ndarray, dict,"
-            f" SimpleITK Image, or NIfTI, got {type(data).__name__}"
+            f" SimpleITK Image, NIfTI, ImagesBatch, or SubjectsBatch,"
+            f" got {type(data).__name__}"
         )
         raise TypeError(msg)
 
@@ -291,27 +317,39 @@ def _hydra_value(value: Any) -> Any:
     return value
 
 
-def _unwrap_subject(subject: Subject) -> Subject:
-    return subject
+def _unwrap_subjects_batch(batch: SubjectsBatch) -> SubjectsBatch:
+    return batch
 
 
-def _unwrap_image(subject: Subject) -> Image:
-    return subject.tio_default_image
+def _unwrap_images_batch(batch: SubjectsBatch) -> ImagesBatch:
+    return batch.images["tio_default_image"]
 
 
-def _unwrap_tensor(subject: Subject) -> Tensor:
-    return subject.tio_default_image.data
+def _unwrap_subject(batch: SubjectsBatch) -> Subject:
+    return batch.unbatch()[0]
 
 
-def _unwrap_ndarray(subject: Subject) -> np.ndarray:
-    return subject.tio_default_image.data.numpy()
+def _unwrap_image(batch: SubjectsBatch) -> Image:
+    sub = batch.unbatch()[0]
+    return sub.tio_default_image
 
 
-def _unwrap_sitk(subject: Subject) -> sitk.Image:
-    image = subject.tio_default_image
+def _unwrap_tensor(batch: SubjectsBatch) -> Tensor:
+    sub = batch.unbatch()[0]
+    return sub.tio_default_image.data
+
+
+def _unwrap_ndarray(batch: SubjectsBatch) -> np.ndarray:
+    sub = batch.unbatch()[0]
+    return sub.tio_default_image.data.cpu().numpy()
+
+
+def _unwrap_sitk(batch: SubjectsBatch) -> sitk.Image:
+    sub = batch.unbatch()[0]
+    image = sub.tio_default_image
     data = image.data
     affine = image.affine
-    array = data.numpy()
+    array = data.cpu().numpy()
     array = array[0] if data.shape[0] == 1 else np.moveaxis(array, 0, -1)
     sitk_image = sitk.GetImageFromArray(array)
     if data.shape[0] > 1:
@@ -322,17 +360,19 @@ def _unwrap_sitk(subject: Subject) -> sitk.Image:
     return sitk_image
 
 
-def _unwrap_nifti(subject: Subject) -> nib.Nifti1Image:
-    image = subject.tio_default_image
-    array = image.data.numpy()
+def _unwrap_nifti(batch: SubjectsBatch) -> nib.Nifti1Image:
+    sub = batch.unbatch()[0]
+    image = sub.tio_default_image
+    array = image.data.cpu().numpy()
     array = array[0] if array.shape[0] == 1 else np.moveaxis(array, 0, -1)
     return nib.Nifti1Image(array, image.affine.numpy())
 
 
-def _unwrap_dict(subject: Subject, keys: list[str]) -> dict[str, Tensor]:
+def _unwrap_dict(batch: SubjectsBatch, keys: list[str]) -> dict[str, Any]:
+    sub = batch.unbatch()[0]
     result: dict[str, Any] = {}
     for k in keys:
-        entry = getattr(subject, k, None)
+        entry = getattr(sub, k, None)
         if isinstance(entry, Image):
             result[k] = entry.data
         else:
@@ -356,10 +396,10 @@ class IntensityTransform(Transform):
     leaving ``LabelMap`` and annotations unchanged.
     """
 
-    def _get_images(self, subject: Subject) -> dict[str, Image]:
-        """Filter to ScalarImage only, then apply include/exclude."""
-        images: dict[str, Image] = {
-            k: v for k, v in subject.images.items() if isinstance(v, ScalarImage)
+    def _get_images(self, batch: SubjectsBatch) -> dict[str, ImagesBatch]:
+        """Filter to ScalarImage batches only, then apply include/exclude."""
+        images = {
+            k: v for k, v in batch.images.items() if v._image_class is ScalarImage
         }
         if self.include is not None:
             images = {k: v for k, v in images.items() if k in self.include}

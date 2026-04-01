@@ -1,0 +1,3 @@
+# Crop
+
+::: torchio.Crop

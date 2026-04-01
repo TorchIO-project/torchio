@@ -24,6 +24,8 @@ TypeTensorShape: TypeAlias = tuple[int, int, int, int]
 TypeSpacing: TypeAlias = tuple[float, float, float]
 TypeOrigin: TypeAlias = tuple[float, float, float]
 TypeOrientationCodes: TypeAlias = tuple[str, str, str]
+TypeThreeInts: TypeAlias = tuple[int, int, int]
+TypeSixInts: TypeAlias = tuple[int, int, int, int, int, int]
 
 __all__ = [
     "TypeAffineMatrix",

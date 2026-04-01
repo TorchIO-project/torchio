@@ -74,7 +74,7 @@ class TestNoise:
 
     def test_differentiable(self) -> None:
         tensor = torch.rand(1, 4, 4, 4, requires_grad=True)
-        result = tio.Noise(std=0.1)(tensor)
+        result = tio.Noise(std=0.1, copy=False)(tensor)
         loss = result.sum()
         loss.backward()
         assert tensor.grad is not None
@@ -108,6 +108,8 @@ class TestNoise:
 
     def test_seed_reproducibility(self) -> None:
         """Replaying with saved params reproduces the same noise."""
+        from torchio.data.batch import SubjectsBatch
+
         subject1 = tio.Subject(
             t1=tio.ScalarImage.from_tensor(torch.zeros(1, 8, 8, 8)),
         )
@@ -115,11 +117,18 @@ class TestNoise:
             t1=tio.ScalarImage.from_tensor(torch.zeros(1, 8, 8, 8)),
         )
         noise = tio.Noise(std=1.0)
-        # Replay twice with same params (both use CPU generator path)
-        params = {"mean": 0.0, "std": 1.0, "seed": 42}
-        result1 = noise.apply_transform(subject1, params)
-        result2 = noise.apply_transform(subject2, params)
-        torch.testing.assert_close(result1.t1.data, result2.t1.data)
+        params = {
+            "mean": 0.0,
+            "std": 1.0,
+            "seed": 42,
+        }
+        batch1 = SubjectsBatch.from_subjects([subject1])
+        batch2 = SubjectsBatch.from_subjects([subject2])
+        result1 = noise.apply_transform(batch1, params)
+        result2 = noise.apply_transform(batch2, params)
+        r1 = result1.unbatch()[0]
+        r2 = result2.unbatch()[0]
+        torch.testing.assert_close(r1.t1.data, r2.t1.data)
 
     def test_negative_std_raises(self) -> None:
         with pytest.raises(ValueError, match="non-negative"):
@@ -161,3 +170,63 @@ class TestNoise:
         )
         result = noise(subject)
         assert result.applied_transforms[0].params["std"] == 0.5
+
+    def test_rician_noise(self) -> None:
+        tensor = torch.ones(1, 8, 8, 8)
+        subject = tio.Subject(t1=tio.ScalarImage.from_tensor(tensor))
+        result = tio.Noise(std=0.5, rician=True)(subject)
+        # Rician noise is always non-negative
+        assert (result.t1.data >= 0).all()
+        # Should differ from the original
+        assert not torch.equal(result.t1.data, tensor)
+
+    def test_rician_recorded_in_params(self) -> None:
+        subject = tio.Subject(
+            t1=tio.ScalarImage.from_tensor(torch.rand(1, 4, 4, 4)),
+        )
+        result = tio.Noise(std=0.1, rician=True)(subject)
+        assert result.applied_transforms[0].params["rician"] is True
+
+    def test_gaussian_vs_rician_differ(self) -> None:
+        torch.manual_seed(42)
+        tensor = torch.ones(1, 8, 8, 8)
+        subject_g = tio.Subject(t1=tio.ScalarImage.from_tensor(tensor.clone()))
+        subject_r = tio.Subject(t1=tio.ScalarImage.from_tensor(tensor.clone()))
+        gaussian = tio.Noise(std=0.5, rician=False)(subject_g)
+        rician = tio.Noise(std=0.5, rician=True)(subject_r)
+        # They should produce different results
+        assert not torch.equal(gaussian.t1.data, rician.t1.data)
+
+    def test_distribution_for_std(self) -> None:
+        from torch.distributions import Uniform
+
+        subject = tio.Subject(
+            t1=tio.ScalarImage.from_tensor(torch.zeros(1, 8, 8, 8)),
+        )
+        noise = tio.Noise(std=Uniform(0.1, 0.5))
+        result = noise(subject)
+        sampled_std = result.applied_transforms[0].params["std"]
+        assert 0.1 <= sampled_std <= 0.5
+
+    def test_distribution_for_mean(self) -> None:
+        from torch.distributions import Normal
+
+        subject = tio.Subject(
+            t1=tio.ScalarImage.from_tensor(torch.zeros(1, 8, 8, 8)),
+        )
+        noise = tio.Noise(mean=Normal(0.0, 0.1), std=0.0)
+        result = noise(subject)
+        # Mean was sampled from N(0, 0.1) — should be near 0
+        sampled_mean = result.applied_transforms[0].params["mean"]
+        assert isinstance(sampled_mean, float)
+
+    def test_lognormal_distribution(self) -> None:
+        from torch.distributions import LogNormal
+
+        subject = tio.Subject(
+            t1=tio.ScalarImage.from_tensor(torch.zeros(1, 8, 8, 8)),
+        )
+        noise = tio.Noise(std=LogNormal(loc=-2.0, scale=0.5))
+        result = noise(subject)
+        sampled_std = result.applied_transforms[0].params["std"]
+        assert sampled_std > 0  # LogNormal always positive

@@ -2,7 +2,34 @@
 
 TorchIO transforms are `torch.nn.Module` subclasses. They accept
 Subjects, Images, Tensors, NumPy arrays, SimpleITK images, NiBabel
-images, or MONAI-style dicts — and always return the same type.
+images, MONAI-style dicts, ``ImagesBatch``, or ``SubjectsBatch`` —
+and always return the same type.
+
+## Unified batch architecture
+
+Internally, **all inputs are converted to a ``SubjectsBatch``**
+before the transform runs. A single ``Image`` becomes a batch of
+size 1; a ``SubjectsBatch`` from a ``DataLoader`` passes through
+directly. This means transform authors write **one method** that
+works identically for single samples and batches:
+
+```python
+class Flip(SpatialTransform):
+    def apply_transform(self, batch, params):
+        dims = [a - 3 for a in params["axes"]]
+        for name, img_batch in self._get_images(batch).items():
+            img_batch._data = torch.flip(img_batch.data, dims)
+        return batch
+```
+
+The negative dim indexing (``-3``, ``-2``, ``-1`` for spatial axes)
+works for both 5D ``(B, C, I, J, K)`` batch tensors and 5D
+``(1, C, I, J, K)`` single-sample tensors.
+
+When a ``SubjectsBatch`` is passed (e.g., from ``SubjectsLoader``),
+``make_params`` is called **once** and the same parameters are
+applied to all samples — enabling vectorised batch transforms on
+GPU.
 
 ## The `make_params` / `apply` split
 
@@ -17,10 +44,10 @@ This separation (inspired by Torchvision V2) means the same random
 parameters are applied consistently to all images, points, and bounding
 boxes in a Subject. Params are saved in history for replay.
 
-## Scalar or range — one class for both
+## Scalar, range, or distribution — one class for both
 
-Transform parameters accept a scalar (deterministic) or a
-``(lo, hi)`` tuple (random). No separate ``RandomNoise`` class:
+Transform parameters accept three forms. No separate
+``RandomNoise`` class:
 
 ```python
 # Deterministic: always std=0.1
@@ -29,12 +56,14 @@ tio.Noise(std=0.1)
 # Random: sample std ~ U(0.05, 0.2) each call
 tio.Noise(std=(0.05, 0.2))
 
-# Both random
-tio.Noise(mean=(-0.1, 0.1), std=(0.05, 0.2))
+# Custom distribution: sample from any torch.distributions.Distribution
+from torch.distributions import LogNormal
+tio.Noise(std=LogNormal(loc=-2, scale=0.5))
 ```
 
 This is powered by `ParameterRange`, which handles all the parsing
-and sampling.
+and sampling. Any ``torch.distributions.Distribution`` can be used
+for full control over the sampling strategy.
 
 ## Input flexibility
 
@@ -142,20 +171,19 @@ pipeline = tio.Compose([
     tio.Flip(axes=(0, 1), p=0.5),
     tio.Noise(std=(0.05, 0.2)),
 ])
-print(pipeline.to_yaml())
+cfg = pipeline.to_hydra()
 ```
 
-```yaml
-_target_: torchio.Compose
-transforms:
-- _target_: torchio.Flip
-  p: 0.5
-  axes: [0, 1]
-- _target_: torchio.Noise
-  std: [0.05, 0.2]
+```python
+{
+    "_target_": "torchio.Compose",
+    "transforms": [
+        {"_target_": "torchio.Flip", "p": 0.5, "axes": [0, 1]},
+        {"_target_": "torchio.Noise", "std": [0.05, 0.2]},
+    ],
+}
 ```
 
-Use `to_hydra()` for a dict, or `to_yaml()` for a YAML string.
 Instantiate with `hydra.utils.instantiate(cfg)`.
 
 ## GPU and differentiability

@@ -85,7 +85,7 @@ class TestFlip:
 
     def test_flip_differentiable(self) -> None:
         tensor = torch.rand(1, 4, 4, 4, requires_grad=True)
-        result = tio.Flip(axes=(0,))(tensor)
+        result = tio.Flip(axes=(0,), copy=False)(tensor)
         loss = result.sum()
         loss.backward()
         assert tensor.grad is not None

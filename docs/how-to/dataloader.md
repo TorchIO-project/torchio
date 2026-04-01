@@ -1,8 +1,8 @@
 # Load subjects with a DataLoader
 
 Use `SubjectsLoader` to iterate over batches of subjects during
-training. It wraps PyTorch's `DataLoader` and handles collation
-automatically via `tensordict`.
+training. It wraps PyTorch's `DataLoader` and returns
+`SubjectsBatch` instances with stacked 5D tensors.
 
 ## Basic usage
 
@@ -32,26 +32,28 @@ dataset = MyDataset(paths)
 loader = tio.SubjectsLoader(dataset, batch_size=4, num_workers=4)
 
 for batch in loader:
-    images = batch["image", "data"]   # (4, 1, H, W, D)
-    segs = batch["seg", "data"]       # (4, 1, H, W, D)
+    images = batch.image.data   # (4, 1, H, W, D)
+    segs = batch.seg.data       # (4, 1, H, W, D)
     # ... train your model
 ```
 
 ## Accessing metadata in a batch
 
-Scalar metadata and annotations are stored as non-tensor entries
-and can be retrieved per sample:
+Metadata is stored as lists (one value per sample):
 
 ```python
-subject = tio.Subject(
-    image=tio.ScalarImage("t1.nii.gz"),
-    age=42,
-    landmarks=tio.Points(torch.rand(5, 3)),
-)
+batch.metadata["age"]   # [42, 35, 60, 28]
+batch.metadata["name"]  # ["sub_0", "sub_1", "sub_2", "sub_3"]
+```
 
-# After batching:
-batch = next(iter(loader))
-age = batch[0].get_non_tensor("_meta_age")       # 42
+## Unbatching
+
+Split a batch back into individual subjects:
+
+```python
+subjects = batch.unbatch()
+for subject in subjects:
+    print(subject.image.shape)  # (1, H, W, D)
 ```
 
 ## Using a plain DataLoader
@@ -72,17 +74,20 @@ loader = DataLoader(
 
 ## How it works
 
-Each `Subject` or `Image` is converted to a `TensorDict` before
-stacking:
+Each image's 4D tensor is stacked into a 5D ``ImagesBatch``
+``(B, C, I, J, K)``. Per-sample affine matrices are stored as a
+list. Metadata is collected into lists.
 
-- **Images** become TensorDicts with `data` and `affine` tensors.
-- **Points**, **BoundingBoxes**, and **metadata** are stored as
-  non-tensor entries, so variable-size data (e.g., different numbers
-  of landmarks per subject) is handled gracefully.
-- `torch.stack` merges the list into a single batched `TensorDict`.
+## Applying transforms to batches
 
-You can also call `.to_tensordict()` and `.from_tensordict(td)`
-directly on `Subject` or `Image` if you need manual control.
+Transforms work directly on ``SubjectsBatch``. Parameters are
+sampled once and applied identically to all samples:
+
+```python
+batch = next(iter(loader))
+augmented = tio.Flip(axes=(0,), p=0.5)(batch)
+augmented.image.data.shape  # (4, 1, H, W, D)
+```
 
 ## Loading images without a Subject
 
@@ -102,6 +107,6 @@ class SliceDataset(Dataset):
 
 loader = tio.ImagesLoader(SliceDataset(paths), batch_size=4)
 batch = next(iter(loader))
-batch["data"].shape    # (4, 1, H, W, D)
-batch["affine"].shape  # (4, 4, 4)
+batch.data.shape     # (4, 1, H, W, D)
+batch.affines        # list of 4 Affine instances
 ```

@@ -5,6 +5,7 @@ from __future__ import annotations
 import tempfile
 from io import IOBase
 from pathlib import Path
+from typing import Any
 from typing import cast
 
 import fsspec
@@ -79,9 +80,14 @@ def is_nifti_zarr(path: Path) -> bool:
 # ── Readers ──────────────────────────────────────────────────────────
 
 
-def read_nibabel(path: Path) -> tuple[TypeImageData, np.ndarray]:
-    """Read a NIfTI image using NiBabel."""
-    img = cast(nib.Nifti1Image, nib.load(path))
+def read_nibabel(path: Path, **kwargs: Any) -> tuple[TypeImageData, np.ndarray]:
+    """Read a NIfTI image using NiBabel.
+
+    Args:
+        path: Path to the NIfTI file.
+        **kwargs: Forwarded to ``nibabel.load()``.
+    """
+    img = cast(nib.Nifti1Image, nib.load(path, **kwargs))
     data = np.asarray(img.dataobj)
     affine = np.asarray(img.affine)
     if data.ndim == 3:
@@ -97,9 +103,14 @@ def read_nibabel(path: Path) -> tuple[TypeImageData, np.ndarray]:
     return tensor, affine
 
 
-def read_sitk(path: Path) -> tuple[TypeImageData, np.ndarray]:
-    """Read an image using SimpleITK (for non-NIfTI formats)."""
-    sitk_image = sitk.ReadImage(str(path))
+def read_sitk(path: Path, **kwargs: Any) -> tuple[TypeImageData, np.ndarray]:
+    """Read an image using SimpleITK (for non-NIfTI formats).
+
+    Args:
+        path: Path to the image file.
+        **kwargs: Forwarded to ``SimpleITK.ReadImage()``.
+    """
+    sitk_image = sitk.ReadImage(str(path), **kwargs)
     data = sitk.GetArrayFromImage(sitk_image)
     n_components = sitk_image.GetNumberOfComponentsPerPixel()
     if data.ndim == 3 and n_components == 1:
@@ -119,11 +130,47 @@ def read_sitk(path: Path) -> tuple[TypeImageData, np.ndarray]:
     return tensor, affine
 
 
-def default_reader(path: Path) -> tuple[TypeImageData, np.ndarray]:
-    """Read an image, dispatching to NiBabel or SimpleITK by extension."""
+def default_reader(path: Path, **kwargs: Any) -> tuple[TypeImageData, np.ndarray]:
+    """Read an image, dispatching to NiBabel, NIfTI-Zarr, or SimpleITK.
+
+    Args:
+        path: Path to the image file.
+        **kwargs: Forwarded to the underlying reader.
+    """
+    if is_nifti_zarr(path):
+        return read_nifti_zarr(path, **kwargs)
     if is_nifti(path):
-        return read_nibabel(path)
-    return read_sitk(path)
+        return read_nibabel(path, **kwargs)
+    return read_sitk(path, **kwargs)
+
+
+def read_nifti_zarr(
+    path: Path,
+    **kwargs: Any,
+) -> tuple[TypeImageData, np.ndarray]:
+    """Read a NIfTI-Zarr image using ``niizarr``.
+
+    Requires the ``zarr`` extra: ``pip install torchio[zarr]``.
+
+    Args:
+        path: Path to a ``.nii.zarr`` directory.
+        **kwargs: Forwarded to ``niizarr.zarr2nii()``.
+    """
+    from ..imports import get_niizarr
+
+    niizarr = get_niizarr()
+    nii = niizarr.zarr2nii(str(path), **kwargs)
+    data = np.asarray(nii.dataobj)
+    affine = np.asarray(nii.affine)
+    if data.ndim == 3:
+        data = rearrange(data, "i j k -> 1 i j k")
+    elif data.ndim == 4:
+        data = rearrange(data, "i j k c -> c i j k")
+    else:
+        msg = f"Expected 3D or 4D NIfTI-Zarr data, got {data.ndim}D"
+        raise ValueError(msg)
+    tensor = torch.as_tensor(data.copy(), dtype=torch.float32)
+    return tensor, affine
 
 
 # ── Internal helpers ─────────────────────────────────────────────────

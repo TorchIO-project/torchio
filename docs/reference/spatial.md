@@ -1,3 +1,0 @@
-# Spatial transforms
-
-::: torchio.Flip
