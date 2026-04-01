@@ -3,6 +3,17 @@ name: Bluesky
 on:
   release:
     types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag (e.g. v1.0.1)"
+        required: true
+      url:
+        description: "Release URL"
+        required: true
+      body:
+        description: "Release notes body (Markdown)"
+        required: false
 
 permissions:
   contents: read
@@ -25,7 +36,7 @@ jobs:
         env:
           BLUESKY_USERNAME: ${{ secrets.BLUESKY_USERNAME }}
           BLUESKY_PASSWORD: ${{ secrets.BLUESKY_PASSWORD }}
-          RELEASE_TAG: ${{ github.event.release.tag_name }}
-          RELEASE_URL: ${{ github.event.release.html_url }}
-          RELEASE_BODY: ${{ github.event.release.body }}
+          RELEASE_TAG: ${{ github.event.release.tag_name || inputs.tag }}
+          RELEASE_URL: ${{ github.event.release.html_url || inputs.url }}
+          RELEASE_BODY: ${{ github.event.release.body || inputs.body }}
         run: mise run post-to-bluesky
