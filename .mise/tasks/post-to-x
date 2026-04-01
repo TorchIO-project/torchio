@@ -1,0 +1,96 @@
+#!/usr/bin/env -S uv run --script
+# /// script
+# requires-python = ">=3.10"
+# dependencies = [
+#     "tweepy>=4.14",
+# ]
+# ///
+# MISE description="Post a release announcement thread to X (Twitter)"
+
+"""Post a TorchIO release announcement as a threaded tweet on X.
+
+Expects the following environment variables:
+    X_API_KEY: X API key (consumer key)
+    X_API_KEY_SECRET: X API key secret (consumer secret)
+    X_ACCESS_TOKEN: X access token
+    X_ACCESS_TOKEN_SECRET: X access token secret
+    RELEASE_TAG: Git tag for the release (e.g. v1.2.0)
+    RELEASE_URL: URL to the GitHub release page
+    RELEASE_BODY: Markdown body of the release notes
+"""
+
+from __future__ import annotations
+
+import os
+import re
+import sys
+
+import tweepy
+
+
+def get_env(name: str) -> str:
+    """Get a required environment variable or exit with an error."""
+    value = os.environ.get(name)
+    if not value:
+        print(f"Error: {name} environment variable is required", file=sys.stderr)
+        sys.exit(1)
+    return value
+
+
+def extract_bullet_points(body: str) -> list[str]:
+    """Extract bullet points from a Markdown release body.
+
+    Args:
+        body: Markdown text containing bullet points.
+
+    Returns:
+        List of bullet point strings with the leading marker removed.
+    """
+    bullets = []
+    for line in body.splitlines():
+        match = re.match(r"^\s*[-*]\s+(.+)$", line)
+        if match:
+            bullets.append(match.group(1).strip())
+    return bullets
+
+
+def main() -> None:
+    api_key = get_env("X_API_KEY")
+    api_key_secret = get_env("X_API_KEY_SECRET")
+    access_token = get_env("X_ACCESS_TOKEN")
+    access_token_secret = get_env("X_ACCESS_TOKEN_SECRET")
+    tag = get_env("RELEASE_TAG")
+    url = get_env("RELEASE_URL")
+    body = os.environ.get("RELEASE_BODY", "")
+
+    client = tweepy.Client(
+        consumer_key=api_key,
+        consumer_secret=api_key_secret,
+        access_token=access_token,
+        access_token_secret=access_token_secret,
+    )
+
+    root_text = f"TorchIO {tag} is out!\n\n{url}"
+    root_tweet = client.create_tweet(text=root_text)
+    root_id = root_tweet.data["id"]
+    print(f"Root tweet created: {root_id}")
+
+    bullets = extract_bullet_points(body)
+    if not bullets:
+        print("No bullet points found in release notes; thread complete.")
+        return
+
+    parent_id = root_id
+    for i, bullet in enumerate(bullets, 1):
+        reply = client.create_tweet(
+            text=bullet,
+            in_reply_to_tweet_id=parent_id,
+        )
+        parent_id = reply.data["id"]
+        print(f"Reply {i}/{len(bullets)} created: {parent_id}")
+
+    print(f"Thread complete: {len(bullets)} replies posted.")
+
+
+if __name__ == "__main__":
+    main()
