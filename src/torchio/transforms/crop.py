@@ -35,31 +35,38 @@ class Crop(SpatialTransform):
     r"""Remove a border of voxels from each side of the volume.
 
     Args:
-        cropping: Number of voxels to crop. Accepted forms:
-
-            - ``int``: crop the same amount from every side of every
-              axis.
-            - 3 values ``(i, j, k)``: crop symmetrically per axis.
-            - 6 values ``(i₀, i₁, j₀, j₁, k₀, k₁)``: crop a
-              specific amount from the start and end of each axis.
-
+        cropping: Tuple
+            $(i_\text{ini}, i_\text{fin}, j_\text{ini}, j_\text{fin},
+            k_\text{ini}, k_\text{fin})$
+            defining the number of voxels cropped from the edges of
+            each axis. If the initial shape of the image is
+            $I \times J \times K$, the final shape will be
+            $(I - i_\text{ini} - i_\text{fin}) \times
+            (J - j_\text{ini} - j_\text{fin}) \times
+            (K - k_\text{ini} - k_\text{fin})$.
+            If only three values $(i, j, k)$ are provided, then
+            $i_\text{ini} = i_\text{fin} = i$,
+            $j_\text{ini} = j_\text{fin} = j$ and
+            $k_\text{ini} = k_\text{fin} = k$.
+            If only one value $n$ is provided, then
+            $i_\text{ini} = i_\text{fin} = j_\text{ini} =
+            j_\text{fin} = k_\text{ini} = k_\text{fin} = n$.
         **kwargs: See [`Transform`][torchio.Transform] for additional
             keyword arguments.
 
     Examples:
         >>> import torchio as tio
-        >>> # Remove 10 voxels from each side
         >>> transform = tio.Crop(cropping=10)
-        >>> # Remove 5 along I, 10 along J, 0 along K
-        >>> transform = tio.Crop(cropping=(5, 10, 0))
-        >>> # Fine-grained: (i_start, i_end, j_start, j_end, k_start, k_end)
-        >>> transform = tio.Crop(cropping=(2, 3, 4, 5, 6, 7))
+        >>> # Equivalent to
+        >>> transform = tio.Crop(cropping=(10, 10, 10))
+        >>> # Equivalent to
+        >>> transform = tio.Crop(cropping=(10, 10, 10, 10, 10, 10))
     """
 
     def __init__(
         self,
         *,
-        cropping: CroppingParam = 0,
+        cropping: CroppingParam,
         **kwargs: Any,
     ) -> None:
         super().__init__(**kwargs)
