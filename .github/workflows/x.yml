@@ -3,6 +3,17 @@ name: X
 on:
   release:
     types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag (e.g. v1.0.1)"
+        required: true
+      url:
+        description: "Release URL"
+        required: true
+      body:
+        description: "Release notes body (Markdown)"
+        required: false
 
 permissions:
   contents: read
@@ -27,7 +38,7 @@ jobs:
           X_API_KEY_SECRET: ${{ secrets.X_API_KEY_SECRET }}
           X_ACCESS_TOKEN: ${{ secrets.X_ACCESS_TOKEN }}
           X_ACCESS_TOKEN_SECRET: ${{ secrets.X_ACCESS_TOKEN_SECRET }}
-          RELEASE_TAG: ${{ github.event.release.tag_name }}
-          RELEASE_URL: ${{ github.event.release.html_url }}
-          RELEASE_BODY: ${{ github.event.release.body }}
+          RELEASE_TAG: ${{ github.event.release.tag_name || inputs.tag }}
+          RELEASE_URL: ${{ github.event.release.html_url || inputs.url }}
+          RELEASE_BODY: ${{ github.event.release.body || inputs.body }}
         run: mise run post-to-x
