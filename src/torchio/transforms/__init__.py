@@ -7,6 +7,7 @@ from .crop import Crop
 from .flip import Flip
 from .monai_adapter import MonaiAdapter
 from .noise import Noise
+from .pad import Pad
 from .parameter_range import ParameterRange
 from .to import To
 from .transform import AppliedTransform
@@ -23,6 +24,7 @@ __all__ = [
     "MonaiAdapter",
     "Noise",
     "OneOf",
+    "Pad",
     "ParameterRange",
     "SomeOf",
     "SpatialTransform",

@@ -39,6 +39,11 @@ class ImageDataBackend(Protocol):
         """$4 \\times 4$ affine matrix."""
         ...
 
+    @property
+    def dtype(self) -> np.dtype:
+        """Data type of the image on disk."""
+        ...
+
     def __getitem__(self, slices: Any) -> np.ndarray:
         """Slice the data, returning a numpy array."""
         ...
@@ -76,6 +81,10 @@ class NumpyBackend:
     @property
     def affine(self) -> np.ndarray:
         return self._affine
+
+    @property
+    def dtype(self) -> np.dtype:
+        return self._data.dtype
 
     def __getitem__(self, slices: Any) -> np.ndarray:
         return self._data[slices]
@@ -126,6 +135,10 @@ class NibabelBackend:
     @property
     def affine(self) -> np.ndarray:
         return np.asarray(self._nii.header.get_best_affine())
+
+    @property
+    def dtype(self) -> np.dtype:
+        return self._nii.header.get_data_dtype()
 
     def __getitem__(self, slices: Any) -> np.ndarray:
         """Slice in (C, I, J, K) space.
@@ -197,6 +210,10 @@ class ZarrBackend:
     @property
     def affine(self) -> np.ndarray:
         return self._nibabel_backend.affine
+
+    @property
+    def dtype(self) -> np.dtype:
+        return self._nibabel_backend.dtype
 
     def __getitem__(self, slices: Any) -> np.ndarray:
         return self._nibabel_backend[slices]

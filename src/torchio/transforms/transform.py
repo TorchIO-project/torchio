@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import copy as _copy
 import inspect
 from dataclasses import dataclass
@@ -35,6 +36,10 @@ class AppliedTransform:
 
     name: str
     params: dict[str, Any] = field(default_factory=dict)
+
+
+#: Registry mapping transform class names to classes, for inverse lookup.
+_TRANSFORM_REGISTRY: dict[str, type[Transform]] = {}
 
 
 class Transform(nn.Module):
@@ -86,6 +91,10 @@ class Transform(nn.Module):
         self.copy = copy
         self.include = include
         self.exclude = exclude
+
+    def __init_subclass__(cls, **kwargs: Any) -> None:
+        super().__init_subclass__(**kwargs)
+        _TRANSFORM_REGISTRY[cls.__name__] = cls
 
     def __repr__(self) -> str:
         """Show only non-default fields for a compact repr."""
@@ -141,7 +150,16 @@ class Transform(nn.Module):
         if not hasattr(batch, "applied_transforms"):
             batch.applied_transforms = []
         batch.applied_transforms.append(trace)
-        return unwrap(batch)
+        result = unwrap(batch)
+        # Propagate history to outputs that can carry it
+        if (
+            hasattr(batch, "applied_transforms")
+            and not isinstance(result, (SubjectsBatch, Tensor, np.ndarray))
+            and not isinstance(result, dict)
+        ):
+            with contextlib.suppress(AttributeError):
+                result.applied_transforms = list(batch.applied_transforms)
+        return result
 
     def make_params(self, batch: SubjectsBatch) -> dict[str, Any]:
         """Sample random parameters for this transform.
@@ -176,6 +194,27 @@ class Transform(nn.Module):
             Transformed ``SubjectsBatch``.
         """
         raise NotImplementedError
+
+    @property
+    def invertible(self) -> bool:
+        """Whether this transform can be inverted."""
+        return False
+
+    def inverse(self, params: dict[str, Any]) -> Transform:
+        """Return a transform that undoes this one.
+
+        Override in invertible subclasses. The returned transform,
+        when applied, reverses the effect of the forward pass with
+        the given parameters.
+
+        Args:
+            params: The parameters recorded in the forward pass.
+
+        Returns:
+            A new ``Transform`` instance that inverts this one.
+        """
+        msg = f"{type(self).__name__} is not invertible"
+        raise NotImplementedError(msg)
 
     def _get_images(self, batch: SubjectsBatch) -> dict[str, ImagesBatch]:
         """Get image batches filtered by include/exclude."""

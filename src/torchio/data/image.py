@@ -27,6 +27,7 @@ from .backends import ImageDataBackend
 from .backends import NibabelBackend
 from .backends import NumpyBackend
 from .bboxes import BoundingBoxes
+from .invertible import Invertible
 from .io import ImageSource
 from .io import default_reader
 from .io import is_nifti
@@ -58,7 +59,7 @@ def _expand_ellipsis(
     return result
 
 
-class Image:
+class Image(Invertible):
     r"""Base image class.
 
     TorchIO images are
@@ -143,6 +144,7 @@ class Image:
             bounding_boxes,
             "BoundingBoxes",
         )
+        self.applied_transforms: list[Any] = []
 
     @classmethod
     def from_tensor(
@@ -194,6 +196,7 @@ class Image:
             bounding_boxes,
             "BoundingBoxes",
         )
+        instance.applied_transforms = []
         return instance
 
     @classmethod
@@ -395,10 +398,29 @@ class Image:
 
     @property
     def memory(self) -> int:
-        """Number of bytes the tensor occupies in RAM."""
+        """Number of bytes the tensor would occupy in RAM."""
         c, si, sj, sk = self.shape
-        element_size = self.data.element_size() if self.is_loaded else 4
-        return c * si * sj * sk * element_size
+        return c * si * sj * sk * self.dtype.itemsize
+
+    @property
+    def dtype(self) -> torch.dtype | np.dtype:
+        """Data type of the image.
+
+        Returns the PyTorch dtype if the image is loaded, otherwise
+        reads the on-disk dtype from the header without loading data.
+        """
+        if self._data is not None:
+            return self._data.dtype
+        if self._backend is not None:
+            return self._backend.dtype
+        if self._path is not None:
+            self._ensure_backend()
+            if self._backend is not None:
+                return self._backend.dtype
+            # Non-NIfTI fallback: read via SimpleITK header
+            return self._read_dtype_sitk(self._path)
+        msg = "Cannot determine dtype: no data or path"
+        raise RuntimeError(msg)
 
     @property
     def orientation(self) -> tuple[str, str, str]:
@@ -599,6 +621,36 @@ class Image:
         msg = f"Expected 3D image, got {ndim}D"
         raise ValueError(msg)
 
+    @staticmethod
+    def _read_dtype_sitk(path: Path) -> np.dtype:
+        """Read dtype from a SimpleITK-readable file without loading data."""
+        reader = sitk.ImageFileReader()
+        reader.SetFileName(str(path))
+        reader.ReadImageInformation()
+        pixel_id = reader.GetPixelID()
+        # Map SimpleITK pixel IDs to numpy dtypes
+        sitk_to_numpy = {
+            sitk.sitkUInt8: np.dtype("uint8"),
+            sitk.sitkInt8: np.dtype("int8"),
+            sitk.sitkUInt16: np.dtype("uint16"),
+            sitk.sitkInt16: np.dtype("int16"),
+            sitk.sitkUInt32: np.dtype("uint32"),
+            sitk.sitkInt32: np.dtype("int32"),
+            sitk.sitkUInt64: np.dtype("uint64"),
+            sitk.sitkInt64: np.dtype("int64"),
+            sitk.sitkFloat32: np.dtype("float32"),
+            sitk.sitkFloat64: np.dtype("float64"),
+            sitk.sitkVectorUInt8: np.dtype("uint8"),
+            sitk.sitkVectorInt8: np.dtype("int8"),
+            sitk.sitkVectorUInt16: np.dtype("uint16"),
+            sitk.sitkVectorInt16: np.dtype("int16"),
+            sitk.sitkVectorUInt32: np.dtype("uint32"),
+            sitk.sitkVectorInt32: np.dtype("int32"),
+            sitk.sitkVectorFloat32: np.dtype("float32"),
+            sitk.sitkVectorFloat64: np.dtype("float64"),
+        }
+        return sitk_to_numpy.get(pixel_id, np.dtype("float32"))
+
     def __getitem__(
         self,
         item: str | int | slice | tuple[int | slice, ...],
@@ -709,16 +761,22 @@ class Image:
         return self.new_like(data=cropped_data, affine=Affine(affine_matrix))
 
     def __repr__(self) -> str:
+        import humanize
+
         cls_name = type(self).__name__
         parts: list[str] = []
-        if self.is_loaded:
+        # Shape, spacing, orientation are always available (lazy header read)
+        try:
             sp = ", ".join(f"{s:.2f}" for s in self.spacing)
             orient = "".join(self.orientation)
             parts.append(f"shape: {self.shape}")
             parts.append(f"spacing: ({sp})")
             parts.append(f"orientation: {orient}+")
-        elif self._path is not None:
-            parts.append(f'path: "{self._path}"')
+            parts.append(f"dtype: {self.dtype}")
+            parts.append(f"memory: {humanize.naturalsize(self.memory, binary=True)}")
+        except Exception:
+            if self._path is not None:
+                parts.append(f'path: "{self._path}"')
         if self._points:
             names = ", ".join(self._points)
             parts.append(f"points: {{{names}}}")

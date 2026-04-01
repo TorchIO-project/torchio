@@ -25,6 +25,7 @@ Auto-generated documentation from source code docstrings.
 
 - [Flip](transforms/flip.md) -- flip along spatial axes
 - [Crop](transforms/crop.md) -- remove border voxels
+- [Pad](transforms/pad.md) -- add border voxels
 
 ### Intensity
 

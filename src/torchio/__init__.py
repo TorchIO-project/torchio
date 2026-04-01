@@ -31,11 +31,13 @@ from .transforms import IntensityTransform
 from .transforms import MonaiAdapter
 from .transforms import Noise
 from .transforms import OneOf
+from .transforms import Pad
 from .transforms import ParameterRange
 from .transforms import SomeOf
 from .transforms import SpatialTransform
 from .transforms import To
 from .transforms import Transform
+from .transforms.inverse import apply_inverse_transform
 from .types import TypeAffineMatrix
 from .types import TypeDirection
 from .types import TypeImageData
@@ -63,6 +65,7 @@ __all__ = [
     "MonaiAdapter",
     "Noise",
     "OneOf",
+    "Pad",
     "ParameterRange",
     "Points",
     "Representation",
@@ -87,6 +90,7 @@ __all__ = [
     "TypeSpatialShape",
     "TypeTensorShape",
     "TypeWorldPoints",
+    "apply_inverse_transform",
     "collate_images",
     "collate_studies",
     "collate_subjects",

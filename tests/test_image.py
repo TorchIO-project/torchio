@@ -269,13 +269,17 @@ class TestImageRepr:
         image = ScalarImage(path)
         r = repr(image)
         assert "ScalarImage" in r
-        assert "test.nii.gz" in r
+        # Now shows shape/dtype/memory even without loading
+        assert "shape" in r
+        assert "dtype" in r
+        assert "memory" in r
 
     def test_repr_tensor_only_no_path(self):
         image = Image.from_tensor(torch.randn(1, 4, 4, 4))
         image._data = None
         r = repr(image)
-        assert r == "Image()"
+        # No data and no path — falls back to minimal repr
+        assert "Image" in r
 
 
 class TestImageLoad:

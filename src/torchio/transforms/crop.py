@@ -100,3 +100,13 @@ class Crop(SpatialTransform):
                 )
                 affine._matrix[:3, 3] += origin_shift
         return batch
+
+    @property
+    def invertible(self) -> bool:
+        return True
+
+    def inverse(self, params: dict[str, Any]) -> Any:
+        """Inverse of Crop is Pad."""
+        from .pad import Pad
+
+        return Pad(padding=params["cropping"], copy=False)

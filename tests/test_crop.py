@@ -90,3 +90,11 @@ class TestCrop:
         batch = SubjectsBatch.from_subjects(subjects)
         result = tio.Crop(cropping=5)(batch)
         assert result.t1.data.shape == (3, 1, 10, 10, 10)
+
+    def test_crop_inverse_on_image(self) -> None:
+        """apply_inverse_transform works directly on a cropped Image."""
+        image = tio.ScalarImage.from_tensor(torch.rand(1, 200, 200, 200))
+        cropped = tio.Crop(cropping=50)(image)
+        assert cropped.shape == (1, 100, 100, 100)
+        restored = tio.apply_inverse_transform(cropped)
+        assert restored.shape == (1, 200, 200, 200)

@@ -141,3 +141,11 @@ class Flip(SpatialTransform):
         for _name, img_batch in self._get_images(batch).items():
             img_batch.data = torch.flip(img_batch.data, dims)
         return batch
+
+    @property
+    def invertible(self) -> bool:
+        return True
+
+    def inverse(self, params: dict[str, Any]) -> Flip:
+        """Flip is its own inverse."""
+        return Flip(axes=params["axes"], copy=False)

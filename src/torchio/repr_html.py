@@ -69,16 +69,17 @@ def image_to_html(image: Image) -> str:
         rows.append(_row("Orientation", "".join(image.orientation) + "+"))
         rows.append(_row("dtype", str(image.data.dtype).replace("torch.", "")))
         rows.append(_row("Memory", humanize.naturalsize(image.memory, binary=True)))
-    elif image.path is not None:
-        rows.append(_row("Path", str(image.path)))
-        # Shape/spacing can be read lazily from header
+    else:
         try:
             rows.append(_row("Shape", str(image.shape)))
             sp = "({})".format(", ".join(f"{s:.2f}" for s in image.spacing))
             rows.append(_row("Spacing", sp))
             rows.append(_row("Orientation", "".join(image.orientation) + "+"))
+            rows.append(_row("dtype", str(image.dtype)))
+            rows.append(_row("Memory", humanize.naturalsize(image.memory, binary=True)))
         except Exception:
-            pass
+            if image.path is not None:
+                rows.append(_row("Path", str(image.path)))
 
     # Annotations
     for name, pts in image.points.items():

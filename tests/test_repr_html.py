@@ -75,8 +75,8 @@ class TestImageReprHtml:
         html = image._repr_html_()
         assert "Memory" in html
 
-    def test_unloaded_shows_path(self, tmp_path) -> None:
-        """Unloaded image shows path instead of detailed metadata."""
+    def test_unloaded_shows_dtype_and_memory(self, tmp_path) -> None:
+        """Unloaded image shows dtype and memory from header."""
         import nibabel as nib
         import numpy as np
 
@@ -87,7 +87,8 @@ class TestImageReprHtml:
         )
         image = tio.ScalarImage(path)
         html = image._repr_html_()
-        assert "test.nii.gz" in html
+        assert "dtype" in html
+        assert "Memory" in html
 
 
 class TestSubjectReprHtml:

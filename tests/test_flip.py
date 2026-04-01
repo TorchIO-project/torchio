@@ -155,3 +155,83 @@ class TestFlip:
         )
         with pytest.raises(ValueError, match="Unknown anatomical"):
             tio.Flip(axes="X")(subject)
+
+    def test_flip_invertible(self) -> None:
+        assert tio.Flip(axes=0).invertible
+
+    def test_flip_inverse_round_trip(self) -> None:
+        """Subject.apply_inverse_transform round-trips a flip."""
+        tensor = torch.rand(1, 4, 5, 6)
+        subject = tio.Subject(t1=tio.ScalarImage.from_tensor(tensor.clone()))
+        flip = tio.Flip(axes=(0, 1, 2))
+        flipped = flip(subject)
+        restored = flipped.apply_inverse_transform()
+        torch.testing.assert_close(restored.t1.data, tensor)
+
+    def test_compose_inverse(self) -> None:
+        """Compose inverse via Subject.apply_inverse_transform."""
+        tensor = torch.rand(1, 4, 5, 6)
+        subject = tio.Subject(t1=tio.ScalarImage.from_tensor(tensor.clone()))
+        pipeline = tio.Compose(
+            [
+                tio.Flip(axes=0),
+                tio.Flip(axes=1),
+            ]
+        )
+        transformed = pipeline(subject)
+        assert len(transformed.applied_transforms) == 2
+        restored = transformed.apply_inverse_transform()
+        torch.testing.assert_close(restored.t1.data, tensor)
+
+    def test_inverse_on_image_via_subject(self) -> None:
+        """Inverse works by copying history to a new subject."""
+        tensor = torch.rand(1, 4, 5, 6)
+        subject = tio.Subject(t1=tio.ScalarImage.from_tensor(tensor.clone()))
+        flipped = tio.Flip(axes=0)(subject)
+        # Create a prediction subject and copy history
+        pred_subject = tio.Subject(
+            pred=tio.ScalarImage.from_tensor(flipped.t1.data.clone()),
+        )
+        pred_subject.applied_transforms = flipped.applied_transforms
+        restored = pred_subject.apply_inverse_transform()
+        torch.testing.assert_close(restored.pred.data, tensor)
+
+    def test_inverse_skips_non_invertible(self) -> None:
+        """Non-invertible transforms are skipped with a warning."""
+        subject = tio.Subject(
+            t1=tio.ScalarImage.from_tensor(torch.rand(1, 4, 4, 4)),
+        )
+        pipeline = tio.Compose(
+            [
+                tio.Flip(axes=0),
+                tio.Noise(std=0.1),  # not invertible
+            ]
+        )
+        transformed = pipeline(subject)
+        import warnings
+
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+            restored = transformed.apply_inverse_transform()
+            assert any("not invertible" in str(x.message) for x in w)
+        assert restored.t1.shape == (1, 4, 4, 4)
+
+    def test_ignore_intensity(self) -> None:
+        """ignore_intensity=True skips intensity transforms silently."""
+        subject = tio.Subject(
+            t1=tio.ScalarImage.from_tensor(torch.rand(1, 4, 4, 4)),
+        )
+        pipeline = tio.Compose(
+            [
+                tio.Flip(axes=0),
+                tio.Noise(std=0.1),
+            ]
+        )
+        transformed = pipeline(subject)
+        import warnings
+
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+            transformed.apply_inverse_transform(ignore_intensity=True)
+            # No warning about Noise since intensity is ignored
+            assert not any("Noise" in str(x.message) for x in w)

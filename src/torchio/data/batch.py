@@ -11,9 +11,10 @@ from torch import Tensor
 from .affine import Affine
 from .image import Image
 from .image import ScalarImage
+from .invertible import Invertible
 
 
-class ImagesBatch:
+class ImagesBatch(Invertible):
     """A batch of images with per-sample affines.
 
     Wraps a 5D tensor ``(B, C, I, J, K)`` and a list of ``Affine``
@@ -42,6 +43,7 @@ class ImagesBatch:
         self._data = data
         self._affines = affines
         self._image_class = image_class
+        self.applied_transforms: list[Any] = []
 
     @classmethod
     def from_images(cls, images: list[Image]) -> Self:
@@ -115,7 +117,7 @@ class ImagesBatch:
         return f"ImagesBatch({cls}, batch_size={b}, shape=({c}, {i}, {j}, {k}))"
 
 
-class SubjectsBatch:
+class SubjectsBatch(Invertible):
     """A batch of subjects with stacked image data.
 
     Each named image entry becomes an ``ImagesBatch``. Metadata is

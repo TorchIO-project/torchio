@@ -15,13 +15,14 @@ from ..types import TypeSpatialShape
 from ..types import TypeTensorShape
 from .bboxes import BoundingBoxes
 from .image import Image
+from .invertible import Invertible
 from .points import Points
 
 # Union of all spatial data types stored by Subject
 _SpatialData = Image | Points | BoundingBoxes
 
 
-class Subject:
+class Subject(Invertible):
     """Container for images, points, bounding boxes, and metadata.
 
     A `Subject` holds one or more named data entries and optional
@@ -251,10 +252,6 @@ class Subject:
         """Load all images from disk."""
         for image in self._images.values():
             image.load()
-
-    def clear_history(self) -> None:
-        """Remove all applied transform records."""
-        self.applied_transforms = []
 
     def to(self, *args: Any, **kwargs: Any) -> Self:
         """Move all data to a device and/or cast to a dtype.
