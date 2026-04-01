@@ -15,9 +15,18 @@ class TestFlip:
         tensor = torch.arange(8).reshape(1, 2, 2, 2).float()
         image = tio.ScalarImage.from_tensor(tensor)
         subject = tio.Subject(t1=image)
-        result = tio.Flip(axes=(0,))(subject)
+        result = tio.Flip(axes=0)(subject)
         expected = torch.flip(tensor, [1])
         torch.testing.assert_close(result.t1.data, expected)
+
+    def test_flip_single_int_axis(self) -> None:
+        """axes=0 should work the same as axes=(0,)."""
+        tensor = torch.arange(8).reshape(1, 2, 2, 2).float()
+        s1 = tio.Subject(t1=tio.ScalarImage.from_tensor(tensor.clone()))
+        s2 = tio.Subject(t1=tio.ScalarImage.from_tensor(tensor.clone()))
+        r1 = tio.Flip(axes=0)(s1)
+        r2 = tio.Flip(axes=(0,))(s2)
+        torch.testing.assert_close(r1.t1.data, r2.t1.data)
 
     def test_flip_multiple_axes(self) -> None:
         tensor = torch.arange(8).reshape(1, 2, 2, 2).float()
@@ -34,8 +43,7 @@ class TestFlip:
         )
         original_t1 = subject.t1.data.clone()
         original_seg = subject.seg.data.clone()
-        result = tio.Flip(axes=(2,))(subject)
-        # Both should be flipped
+        result = tio.Flip(axes=2)(subject)
         assert not torch.equal(result.t1.data, original_t1)
         assert not torch.equal(result.seg.data, original_seg)
 
@@ -47,45 +55,62 @@ class TestFlip:
         result = flip(flip(subject))
         torch.testing.assert_close(result.t1.data, tensor)
 
-    def test_flip_with_probability(self) -> None:
+    def test_flip_with_probability_zero(self) -> None:
         subject = tio.Subject(
             t1=tio.ScalarImage.from_tensor(torch.rand(1, 4, 4, 4)),
         )
         original = subject.t1.data.clone()
-        result = tio.Flip(axes=(0,), p=0.0)(subject)
+        result = tio.Flip(axes=0, p=0.0)(subject)
         torch.testing.assert_close(result.t1.data, original)
+
+    def test_flip_probability_per_axis(self) -> None:
+        """flip_probability=0 should not flip any axis."""
+        subject = tio.Subject(
+            t1=tio.ScalarImage.from_tensor(torch.rand(1, 4, 4, 4)),
+        )
+        original = subject.t1.data.clone()
+        result = tio.Flip(axes=(0, 1, 2), flip_probability=0.0)(subject)
+        torch.testing.assert_close(result.t1.data, original)
+
+    def test_flip_probability_one(self) -> None:
+        """flip_probability=1 should always flip all specified axes."""
+        subject = tio.Subject(
+            t1=tio.ScalarImage.from_tensor(torch.rand(1, 4, 4, 4)),
+        )
+        original = subject.t1.data.clone()
+        result = tio.Flip(axes=(0, 1, 2), flip_probability=1.0)(subject)
+        expected = torch.flip(original, [1, 2, 3])
+        torch.testing.assert_close(result.t1.data, expected)
 
     def test_flip_history_recorded(self) -> None:
         subject = tio.Subject(
             t1=tio.ScalarImage.from_tensor(torch.rand(1, 4, 4, 4)),
         )
-        result = tio.Flip(axes=(1,))(subject)
+        result = tio.Flip(axes=1)(subject)
         assert len(result.applied_transforms) == 1
-        trace = result.applied_transforms[0]
-        assert trace.name == "Flip"
-        assert trace.params["axes"] == (1,)
+        assert result.applied_transforms[0].name == "Flip"
 
     def test_flip_accepts_image(self) -> None:
         image = tio.ScalarImage.from_tensor(torch.rand(1, 4, 4, 4))
-        result = tio.Flip(axes=(0,))(image)
+        result = tio.Flip(axes=0)(image)
         assert isinstance(result, tio.Image)
 
     def test_flip_accepts_tensor(self) -> None:
         tensor = torch.rand(1, 4, 4, 4)
-        result = tio.Flip(axes=(0,))(tensor)
+        result = tio.Flip(axes=0)(tensor)
         assert isinstance(result, torch.Tensor)
 
     def test_flip_in_compose(self) -> None:
         subject = tio.Subject(
             t1=tio.ScalarImage.from_tensor(torch.rand(1, 4, 4, 4)),
         )
-        pipeline = tio.Compose([tio.Flip(axes=(0,)), tio.Flip(axes=(1,))])
+        pipeline = tio.Compose([tio.Flip(axes=0), tio.Flip(axes=1)])
         result = pipeline(subject)
         assert len(result.applied_transforms) == 2
 
     def test_flip_differentiable(self) -> None:
         tensor = torch.rand(1, 4, 4, 4, requires_grad=True)
-        result = tio.Flip(axes=(0,), copy=False)(tensor)
+        result = tio.Flip(axes=0, copy=False)(tensor)
         loss = result.sum()
         loss.backward()
         assert tensor.grad is not None
@@ -96,12 +121,37 @@ class TestFlip:
             t1=tio.ScalarImage.from_tensor(torch.rand(1, 4, 4, 4)),
         )
         subject.to("mps")
-        result = tio.Flip(axes=(0,))(subject)
+        result = tio.Flip(axes=0)(subject)
         assert result.t1.device.type == "mps"
 
     def test_invalid_axis(self) -> None:
         subject = tio.Subject(
             t1=tio.ScalarImage.from_tensor(torch.rand(1, 4, 4, 4)),
         )
-        with pytest.raises(ValueError, match="0, 1, 2"):
-            tio.Flip(axes=(3,))(subject)
+        with pytest.raises(ValueError, match="0, 1, or 2"):
+            tio.Flip(axes=3)(subject)
+
+    def test_string_axis(self) -> None:
+        """Anatomical label 'Left' should resolve to an axis."""
+        subject = tio.Subject(
+            t1=tio.ScalarImage.from_tensor(torch.rand(1, 4, 4, 4)),
+        )
+        original = subject.t1.data.clone()
+        # Default affine is RAS, so 'Left'/'Right' = axis 0
+        result = tio.Flip(axes="Left")(subject)
+        expected = torch.flip(original, [1])
+        torch.testing.assert_close(result.t1.data, expected)
+
+    def test_string_axis_lr(self) -> None:
+        subject = tio.Subject(
+            t1=tio.ScalarImage.from_tensor(torch.rand(1, 4, 4, 4)),
+        )
+        result = tio.Flip(axes="LR")(subject)
+        assert result.t1.shape == (1, 4, 4, 4)
+
+    def test_invalid_string_axis(self) -> None:
+        subject = tio.Subject(
+            t1=tio.ScalarImage.from_tensor(torch.rand(1, 4, 4, 4)),
+        )
+        with pytest.raises(ValueError, match="Unknown anatomical"):
+            tio.Flip(axes="X")(subject)
