@@ -1,0 +1,116 @@
+#!/usr/bin/env -S uv run --script
+# /// script
+# requires-python = ">=3.10"
+# dependencies = [
+#     "atproto>=0.0.55",
+# ]
+# ///
+# MISE description="Post a release announcement thread to Bluesky"
+
+"""Post a TorchIO release announcement as a threaded post on Bluesky.
+
+Expects the following environment variables:
+    BLUESKY_USERNAME: Bluesky handle (e.g. torchio.org)
+    BLUESKY_PASSWORD: Bluesky App Password
+    RELEASE_TAG: Git tag for the release (e.g. v1.2.0)
+    RELEASE_URL: URL to the GitHub release page
+    RELEASE_BODY: Markdown body of the release notes
+"""
+
+from __future__ import annotations
+
+import os
+import re
+import sys
+
+from atproto import Client, client_utils
+
+
+def get_env(name: str) -> str:
+    """Get a required environment variable or exit with an error."""
+    value = os.environ.get(name)
+    if not value:
+        print(f"Error: {name} environment variable is required", file=sys.stderr)
+        sys.exit(1)
+    return value
+
+
+def extract_bullet_points(body: str) -> list[str]:
+    """Extract bullet points from a Markdown release body.
+
+    Args:
+        body: Markdown text containing bullet points.
+
+    Returns:
+        List of bullet point strings with the leading marker removed.
+    """
+    bullets = []
+    for line in body.splitlines():
+        match = re.match(r"^\s*[-*]\s+(.+)$", line)
+        if match:
+            bullets.append(match.group(1).strip())
+    return bullets
+
+
+def build_root_text(tag: str, url: str) -> client_utils.TextBuilder:
+    """Build the root post text with a clickable link facet.
+
+    Args:
+        tag: The release tag (e.g. v1.2.0).
+        url: The URL to the GitHub release page.
+
+    Returns:
+        A TextBuilder with the root post content.
+    """
+    tb = client_utils.TextBuilder()
+    tb.text(f"TorchIO {tag} is out!\n\n")
+    tb.link(url, url)
+    return tb
+
+
+def main() -> None:
+    username = get_env("BLUESKY_USERNAME")
+    password = get_env("BLUESKY_PASSWORD")
+    tag = get_env("RELEASE_TAG")
+    url = get_env("RELEASE_URL")
+    body = os.environ.get("RELEASE_BODY", "")
+
+    client = Client()
+    client.login(username, password)
+    print(f"Logged in as {username}")
+
+    root_text = build_root_text(tag, url)
+    root_post = client.send_post(root_text)
+    print(f"Root post created: {root_post.uri}")
+
+    bullets = extract_bullet_points(body)
+    if not bullets:
+        print("No bullet points found in release notes; thread complete.")
+        return
+
+    root_ref = client.com.atproto.repo.StrongRef(
+        uri=root_post.uri,
+        cid=root_post.cid,
+    )
+    parent_ref = root_ref
+
+    for i, bullet in enumerate(bullets, 1):
+        reply_ref = client.app.bsky.feed.post.ReplyRef(
+            root=root_ref,
+            parent=parent_ref,
+        )
+        reply_post = client.send_post(
+            text=bullet,
+            reply_to=reply_ref,
+        )
+        parent_ref = client.com.atproto.repo.StrongRef(
+            uri=reply_post.uri,
+            cid=reply_post.cid,
+        )
+        print(f"Reply {i}/{len(bullets)} created: {reply_post.uri}")
+
+    print(f"Thread complete: {len(bullets)} replies posted.")
+
+
+if __name__ == "__main__":
+    main()
