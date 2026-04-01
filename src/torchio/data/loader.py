@@ -59,5 +59,7 @@ def _stack(x):
         for key in first_element.keys():
             collated_dict[key] = _stack([element[key] for element in x])
         return collated_dict
+    elif isinstance(first_element, (int, float, bool)):
+        return torch.tensor(x)
     else:
         return x
