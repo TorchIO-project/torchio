@@ -57,8 +57,10 @@ nav = [
       "reference/compose.md",
       { "Spatial" = [
         "reference/transforms/flip.md",
+        "reference/transforms/reorient.md",
         "reference/transforms/crop.md",
         "reference/transforms/pad.md",
+        "reference/transforms/crop_or_pad.md",
       ] },
       { "Intensity" = [
         "reference/transforms/noise.md",

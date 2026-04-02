@@ -10,6 +10,7 @@ from .monai_adapter import MonaiAdapter
 from .noise import Noise
 from .pad import Pad
 from .parameter_range import ParameterRange
+from .reorient import Reorient
 from .to import To
 from .transform import AppliedTransform
 from .transform import IntensityTransform
@@ -28,6 +29,7 @@ __all__ = [
     "OneOf",
     "Pad",
     "ParameterRange",
+    "Reorient",
     "SomeOf",
     "SpatialTransform",
     "To",

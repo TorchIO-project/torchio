@@ -34,6 +34,7 @@ from .transforms import Noise
 from .transforms import OneOf
 from .transforms import Pad
 from .transforms import ParameterRange
+from .transforms import Reorient
 from .transforms import SomeOf
 from .transforms import SpatialTransform
 from .transforms import To
@@ -70,6 +71,7 @@ __all__ = [
     "Pad",
     "ParameterRange",
     "Points",
+    "Reorient",
     "Representation",
     "ScalarImage",
     "SomeOf",

@@ -30,9 +30,11 @@ from .transform import AppliedTransform
 from .transform import SpatialTransform
 
 #: Accepted target shape specifications.
-#: ``int`` → same size for each axis.
-#: 3-tuple of int or float → per axis.
-TargetShapeParam = int | TypeThreeInts | tuple[float, float, float]
+#: ``int`` or ``float`` → same size for each axis.
+#: 3-tuple → per axis; use ``None`` to leave an axis unchanged.
+TargetShapeParam = (
+    int | float | tuple[int | float | None, int | float | None, int | float | None]
+)
 
 #: Accepted unit values.
 Units = Literal["voxels", "mm", "cm"]
@@ -40,32 +42,43 @@ Units = Literal["voxels", "mm", "cm"]
 
 def _parse_target_shape(
     target_shape: TargetShapeParam,
-) -> tuple[float, float, float]:
-    """Normalise target_shape to a 3-tuple of floats."""
+) -> tuple[float | None, float | None, float | None]:
+    """Normalise target_shape to a 3-tuple of floats or None."""
     if isinstance(target_shape, (int, float)):
         return (float(target_shape), float(target_shape), float(target_shape))
     values = list(target_shape)
     n = len(values)
     if n == 3:
-        return (float(values[0]), float(values[1]), float(values[2]))
+        a, b, c = values
+        return (
+            None if a is None else float(a),
+            None if b is None else float(b),
+            None if c is None else float(c),
+        )
     msg = f"target_shape must have 1 or 3 values, got {n}"
     raise ValueError(msg)
 
 
 def _to_voxels(
-    target: tuple[float, float, float],
+    target: tuple[float | None, float | None, float | None],
     units: Units,
     spacing: TypeSpacing,
+    current_shape: TypeThreeInts,
 ) -> TypeThreeInts:
-    """Convert a target shape from the given units to integer voxels."""
-    if units == "voxels":
-        return (round(target[0]), round(target[1]), round(target[2]))
-    factor = 10.0 if units == "cm" else 1.0
-    return (
-        round(target[0] * factor / spacing[0]),
-        round(target[1] * factor / spacing[1]),
-        round(target[2] * factor / spacing[2]),
-    )
+    """Convert a target shape from the given units to integer voxels.
+
+    ``None`` entries are replaced with the current size along that axis.
+    """
+    result: list[int] = []
+    for t, sp, cur in zip(target, spacing, current_shape, strict=True):
+        if t is None:
+            result.append(cur)
+        elif units == "voxels":
+            result.append(round(t))
+        else:
+            factor = 10.0 if units == "cm" else 1.0
+            result.append(round(t * factor / sp))
+    return (result[0], result[1], result[2])
 
 
 def _compute_crop_and_pad(
@@ -362,7 +375,8 @@ class CropOrPad(SpatialTransform):
         target_shape: Desired spatial shape. A single ``int`` broadcasts
             to all three axes. When ``units`` is ``"mm"`` or ``"cm"``,
             values may be floats representing the physical extent along
-            each axis.
+            each axis. Use ``None`` for an axis to leave it unchanged,
+            e.g., ``(256, 256, None)``.
         units: Coordinate system for ``target_shape``. One of
             ``"voxels"`` (default), ``"mm"``, or ``"cm"``.
         padding_mode: One of ``'constant'``, ``'reflect'``,
@@ -383,6 +397,7 @@ class CropOrPad(SpatialTransform):
         >>> transform = tio.CropOrPad(target_shape=(150.0, 200.0, 180.0), units='mm')
         >>> transform = tio.CropOrPad(target_shape=(15.0, 20.0, 18.0), units='cm')
         >>> transform = tio.CropOrPad(target_shape=256, only_pad=True)
+        >>> transform = tio.CropOrPad(target_shape=(256, 256, None))  # keep depth
     """
 
     def __init__(
@@ -440,7 +455,12 @@ class CropOrPad(SpatialTransform):
         spacing = first_image.affine.spacing
         current_shape: TypeThreeInts = first_image.spatial_shape
 
-        target_voxels = _to_voxels(self.target_shape, self.units, spacing)
+        target_voxels = _to_voxels(
+            self.target_shape,
+            self.units,
+            spacing,
+            current_shape,
+        )
 
         if self.units != "voxels":
             logger.debug(
@@ -502,13 +522,19 @@ class CropOrPad(SpatialTransform):
     def make_params(self, batch: SubjectsBatch) -> dict[str, Any]:
         first_images = next(iter(batch.images.values()))
         spacing = first_images.affines[0].spacing
-        target_voxels = _to_voxels(self.target_shape, self.units, spacing)
 
         data_tensor = first_images.data
         current_shape: TypeThreeInts = (
             data_tensor.shape[-3],
             data_tensor.shape[-2],
             data_tensor.shape[-1],
+        )
+
+        target_voxels = _to_voxels(
+            self.target_shape,
+            self.units,
+            spacing,
+            current_shape,
         )
 
         if self.units != "voxels":

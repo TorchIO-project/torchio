@@ -89,6 +89,25 @@ class TestTargetShapeParam:
         result = tio.CropOrPad(target_shape=(10, 15, 20))(subject)
         assert result.t1.shape == (1, 10, 15, 20)
 
+    def test_none_leaves_axis_unchanged(self) -> None:
+        subject = _make_subject((30, 20, 10))
+        result = tio.CropOrPad(target_shape=(10, None, 20))(subject)
+        assert result.t1.shape == (1, 10, 20, 20)
+
+    def test_all_none_is_no_op(self) -> None:
+        subject = _make_subject((30, 20, 10))
+        result = tio.CropOrPad(target_shape=(None, None, None))(subject)
+        assert result.t1.shape == (1, 30, 20, 10)
+
+    def test_none_with_units(self) -> None:
+        # 20 voxels at 2 mm = 40 mm, target None → keep 20
+        subject = _make_subject((20, 20, 20), spacing=(2.0, 2.0, 2.0))
+        result = tio.CropOrPad(
+            target_shape=(30.0, None, 30.0),
+            units="mm",
+        )(subject)
+        assert result.t1.shape == (1, 15, 20, 15)
+
     def test_invalid_tuple_length(self) -> None:
         with pytest.raises(ValueError, match="1 or 3"):
             tio.CropOrPad(target_shape=(1, 2))  # type: ignore[arg-type]
