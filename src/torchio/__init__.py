@@ -26,6 +26,7 @@ from .logging import enable_logging
 from .transforms import AppliedTransform
 from .transforms import Compose
 from .transforms import Crop
+from .transforms import CropOrPad
 from .transforms import Flip
 from .transforms import IntensityTransform
 from .transforms import MonaiAdapter
@@ -56,6 +57,7 @@ __all__ = [
     "BoundingBoxes",
     "Compose",
     "Crop",
+    "CropOrPad",
     "Flip",
     "Image",
     "ImagesBatch",
