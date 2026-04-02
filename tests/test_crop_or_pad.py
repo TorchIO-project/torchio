@@ -375,6 +375,65 @@ class TestProbability:
 
 
 # ---------------------------------------------------------------------------
+# Random location
+# ---------------------------------------------------------------------------
+
+
+class TestRandomLocation:
+    def test_random_crop_shape(self) -> None:
+        subject = _make_subject((30, 30, 30))
+        result = tio.CropOrPad(target_shape=10, location="random")(subject)
+        assert result.t1.shape == (1, 10, 10, 10)
+
+    def test_random_crop_varies(self) -> None:
+        """Two random crops of the same subject should (usually) differ."""
+        torch.manual_seed(0)
+        data = torch.arange(20 * 20 * 20, dtype=torch.float32).reshape(1, 20, 20, 20)
+        transform = tio.CropOrPad(target_shape=5, location="random")
+        r1 = transform(tio.ScalarImage.from_tensor(data.clone()))
+        r2 = transform(tio.ScalarImage.from_tensor(data.clone()))
+        assert not torch.equal(r1.data, r2.data)
+
+    def test_random_pad_is_still_centered(self) -> None:
+        """Padding should be centered even with location='random'."""
+        subject = _make_subject((10, 10, 10))
+        result_center = tio.CropOrPad(target_shape=20, location="center")(subject)
+        result_random = tio.CropOrPad(target_shape=20, location="random")(subject)
+        # Pure padding — both should produce the same result
+        torch.testing.assert_close(result_center.t1.data, result_random.t1.data)
+
+    def test_random_mixed_crop_and_pad(self) -> None:
+        subject = _make_subject((30, 5, 20))
+        result = tio.CropOrPad(target_shape=10, location="random")(subject)
+        assert result.t1.shape == (1, 10, 10, 10)
+
+    def test_random_with_none_axis(self) -> None:
+        subject = _make_subject((30, 20, 10))
+        result = tio.CropOrPad(
+            target_shape=(10, None, 10),
+            location="random",
+        )(subject)
+        assert result.t1.shape == (1, 10, 20, 10)
+
+    def test_random_batch(self) -> None:
+        from torchio.data.batch import SubjectsBatch
+
+        subjects = [
+            tio.Subject(
+                t1=tio.ScalarImage.from_tensor(torch.rand(1, 20, 20, 20)),
+            )
+            for _ in range(3)
+        ]
+        batch = SubjectsBatch.from_subjects(subjects)
+        result = tio.CropOrPad(target_shape=10, location="random")(batch)
+        assert result.t1.data.shape == (3, 1, 10, 10, 10)
+
+    def test_invalid_location(self) -> None:
+        with pytest.raises(ValueError, match="location"):
+            tio.CropOrPad(target_shape=10, location="top-left")  # type: ignore[arg-type]
+
+
+# ---------------------------------------------------------------------------
 # Laziness preservation
 # ---------------------------------------------------------------------------
 

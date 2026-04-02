@@ -39,6 +39,9 @@ TargetShapeParam = (
 #: Accepted unit values.
 Units = Literal["voxels", "mm", "cm"]
 
+#: Accepted crop location strategies.
+Location = Literal["center", "random"]
+
 
 def _parse_target_shape(
     target_shape: TargetShapeParam,
@@ -87,8 +90,13 @@ def _compute_crop_and_pad(
     *,
     only_crop: bool,
     only_pad: bool,
+    location: Location = "center",
 ) -> tuple[TypeSixInts | None, TypeSixInts | None]:
     """Compute per-side crop and pad amounts to go from current to target.
+
+    Args:
+        location: ``"center"`` splits evenly; ``"random"`` picks a
+            random crop start position for axes that need cropping.
 
     Returns:
         ``(padding_six, cropping_six)`` — either may be ``None`` when no
@@ -100,16 +108,19 @@ def _compute_crop_and_pad(
     for cur, tgt in zip(current_shape, target_shape, strict=True):
         diff = tgt - cur
         if diff > 0:
-            # Need to pad
+            # Need to pad (always centered)
             ini = math.ceil(diff / 2)
             fin = math.floor(diff / 2)
             pad_values.extend([ini, fin])
             crop_values.extend([0, 0])
         elif diff < 0:
-            # Need to crop
             amount = -diff
-            ini = math.ceil(amount / 2)
-            fin = math.floor(amount / 2)
+            if location == "random":
+                ini = int(torch.randint(0, amount + 1, (1,)).item())
+                fin = amount - ini
+            else:
+                ini = math.ceil(amount / 2)
+                fin = math.floor(amount / 2)
             pad_values.extend([0, 0])
             crop_values.extend([ini, fin])
         else:
@@ -387,6 +398,10 @@ class CropOrPad(SpatialTransform):
             exclusive with ``only_pad``.
         only_pad: If ``True``, cropping is never applied. Mutually
             exclusive with ``only_crop``.
+        location: Where to place the crop window when the image is
+            larger than the target. ``"center"`` (default) centres the
+            window; ``"random"`` picks a uniformly random position.
+            Padding is always centred regardless of this parameter.
         **kwargs: See [`Transform`][torchio.Transform] for additional
             keyword arguments.
 
@@ -398,6 +413,7 @@ class CropOrPad(SpatialTransform):
         >>> transform = tio.CropOrPad(target_shape=(15.0, 20.0, 18.0), units='cm')
         >>> transform = tio.CropOrPad(target_shape=256, only_pad=True)
         >>> transform = tio.CropOrPad(target_shape=(256, 256, None))  # keep depth
+        >>> transform = tio.CropOrPad(target_shape=96, location='random')
     """
 
     def __init__(
@@ -409,6 +425,7 @@ class CropOrPad(SpatialTransform):
         fill: float = 0,
         only_crop: bool = False,
         only_pad: bool = False,
+        location: Location = "center",
         **kwargs: Any,
     ) -> None:
         super().__init__(**kwargs)
@@ -418,12 +435,16 @@ class CropOrPad(SpatialTransform):
         if units not in ("voxels", "mm", "cm"):
             msg = f"units must be 'voxels', 'mm', or 'cm', got {units!r}"
             raise ValueError(msg)
+        if location not in ("center", "random"):
+            msg = f"location must be 'center' or 'random', got {location!r}"
+            raise ValueError(msg)
         self.target_shape = _parse_target_shape(target_shape)
         self.units = units
         self.padding_mode = padding_mode
         self.fill = fill
         self.only_crop = only_crop
         self.only_pad = only_pad
+        self.location = location
 
     def forward(self, data):  # type: ignore[override]
         """Apply the transform.
@@ -476,6 +497,7 @@ class CropOrPad(SpatialTransform):
             target_voxels,
             only_crop=self.only_crop,
             only_pad=self.only_pad,
+            location=self.location,
         )
 
         images = _get_images(subject, self.include, self.exclude)
@@ -551,6 +573,7 @@ class CropOrPad(SpatialTransform):
             target_voxels,
             only_crop=self.only_crop,
             only_pad=self.only_pad,
+            location=self.location,
         )
 
         return {"padding": padding, "cropping": cropping}
