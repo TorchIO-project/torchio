@@ -161,7 +161,7 @@ def read_nifti_zarr(
     niizarr = get_niizarr()
     nii = niizarr.zarr2nii(str(path), **kwargs)
     data = np.asarray(nii.dataobj)
-    affine = np.asarray(nii.affine)
+    affine = np.asarray(nii.header.get_best_affine())
     if data.ndim == 3:
         data = rearrange(data, "i j k -> 1 i j k")
     elif data.ndim == 4:
