@@ -119,7 +119,7 @@ class Affine:
         """3x3 direction (rotation) matrix, with spacing factored out."""
         rz = self._matrix[:3, :3]
         sp = torch.sqrt(torch.sum(rz**2, dim=0))
-        return (rz / sp).cpu().numpy()
+        return rz / sp
 
     @property
     def orientation(self) -> TypeOrientationCodes:
