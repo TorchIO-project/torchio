@@ -182,15 +182,16 @@ class TestImageWithBackends:
 class TestZarrBackend:
     """Tests for ZarrBackend using nifti-zarr."""
 
-    @pytest.fixture
-    def zarr_path(self, tmp_path: Path) -> Path:
+    @pytest.fixture(scope="class")
+    def zarr_path(self, tmp_path_factory: pytest.TempPathFactory) -> Path:
         try:
             import niizarr
         except ImportError:
             pytest.skip("nifti-zarr not installed")
+        tmp_path = tmp_path_factory.mktemp("zarr")
         data = np.random.rand(16, 16, 16).astype(np.float32)
         nii = nib.Nifti1Image(data, np.eye(4))
-        nii_path = tmp_path / "test.nii.gz"
+        nii_path = tmp_path / "test.nii"
         nib.save(nii, nii_path)
         zarr_path = tmp_path / "test.nii.zarr"
         niizarr.nii2zarr(str(nii_path), str(zarr_path))
