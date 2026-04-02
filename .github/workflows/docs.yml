@@ -96,7 +96,7 @@ jobs:
 
       - name: Comment PR with preview URL
         if: github.ref != 'refs/heads/main' && steps.smokeshow.outputs.preview_url != '' && steps.find-pr.outputs.pr_number != ''
-        uses: marocchino/sticky-pull-request-comment@v2
+        uses: marocchino/sticky-pull-request-comment@v3
         with:
           header: docs-preview
           number: ${{ steps.find-pr.outputs.pr_number }}
