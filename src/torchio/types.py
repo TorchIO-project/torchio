@@ -27,3 +27,6 @@ TypeTensorShape = TypeFourInts
 TypeSpacing = TypeThreeFloats
 TypeOrigin = TypeThreeFloats
 TypeOrientationCodes: TypeAlias = tuple[str, str, str]
+
+#: Index type accepted by backend ``__getitem__``.
+SliceIndex: TypeAlias = int | slice | tuple[int | slice, ...]

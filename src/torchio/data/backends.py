@@ -8,7 +8,6 @@ and `.dataobj` (lazy backend for advanced use like slicing).
 
 from __future__ import annotations
 
-from typing import Any
 from typing import Protocol
 from typing import runtime_checkable
 
@@ -18,6 +17,10 @@ import numpy as np
 import torch
 from einops import rearrange
 from torch import Tensor
+
+from ..types import SliceIndex
+from ..types import TypeAffineMatrix
+from ..types import TypeTensorShape
 
 
 @runtime_checkable
@@ -30,13 +33,13 @@ class ImageDataBackend(Protocol):
     """
 
     @property
-    def shape(self) -> tuple[int, ...]:
+    def shape(self) -> TypeTensorShape:
         """Shape as (C, I, J, K)."""
         ...
 
     @property
-    def affine(self) -> np.ndarray:
-        """$4 \\times 4$ affine matrix."""
+    def affine(self) -> TypeAffineMatrix:
+        """$4 \\times 4$ affine matrix as a float64 tensor."""
         ...
 
     @property
@@ -44,7 +47,7 @@ class ImageDataBackend(Protocol):
         """Data type of the image on disk."""
         ...
 
-    def __getitem__(self, slices: Any) -> np.ndarray:
+    def __getitem__(self, slices: SliceIndex) -> np.ndarray:
         """Slice the data, returning a numpy array."""
         ...
 
@@ -72,21 +75,25 @@ class NumpyBackend:
         affine: np.ndarray | None = None,
     ) -> None:
         self._data = np.asarray(data)
-        self._affine = affine if affine is not None else np.eye(4)
+        self._affine = torch.as_tensor(
+            affine if affine is not None else np.eye(4),
+            dtype=torch.float64,
+        )
 
     @property
-    def shape(self) -> tuple[int, ...]:
-        return tuple(self._data.shape)
+    def shape(self) -> TypeTensorShape:
+        s = self._data.shape
+        return (int(s[0]), int(s[1]), int(s[2]), int(s[3]))
 
     @property
-    def affine(self) -> np.ndarray:
+    def affine(self) -> TypeAffineMatrix:
         return self._affine
 
     @property
     def dtype(self) -> np.dtype:
         return self._data.dtype
 
-    def __getitem__(self, slices: Any) -> np.ndarray:
+    def __getitem__(self, slices: SliceIndex) -> np.ndarray:
         return self._data[slices]
 
     def to_tensor(self) -> Tensor:
@@ -116,7 +123,7 @@ class NibabelBackend:
         ndim = len(header_shape)
         if ndim == 3:
             si, sj, sk = header_shape
-            self._shape = (1, int(si), int(sj), int(sk))
+            self._shape: TypeTensorShape = (1, int(si), int(sj), int(sk))
         elif ndim == 4:
             si, sj, sk, c = header_shape
             self._shape = (int(c), int(si), int(sj), int(sk))
@@ -129,18 +136,21 @@ class NibabelBackend:
             raise ValueError(msg)
 
     @property
-    def shape(self) -> tuple[int, ...]:
+    def shape(self) -> TypeTensorShape:
         return self._shape
 
     @property
-    def affine(self) -> np.ndarray:
-        return np.asarray(self._nii.header.get_best_affine())
+    def affine(self) -> TypeAffineMatrix:
+        return torch.as_tensor(
+            self._nii.header.get_best_affine(),
+            dtype=torch.float64,
+        )
 
     @property
     def dtype(self) -> np.dtype:
         return self._nii.header.get_data_dtype()
 
-    def __getitem__(self, slices: Any) -> np.ndarray:
+    def __getitem__(self, slices: SliceIndex) -> np.ndarray:
         """Slice in (C, I, J, K) space.
 
         Translates the (C, I, J, K) indexing to the on-disk layout
@@ -178,7 +188,7 @@ class NibabelBackend:
         else:
             msg = f"Expected 3D or 4D data, got {ndim}D"
             raise ValueError(msg)
-        return torch.as_tensor(data.copy(), dtype=torch.float32)
+        return torch.tensor(data, dtype=torch.float32)
 
 
 class ZarrBackend:
@@ -204,18 +214,18 @@ class ZarrBackend:
         self._nibabel_backend = NibabelBackend(nii)
 
     @property
-    def shape(self) -> tuple[int, ...]:
+    def shape(self) -> TypeTensorShape:
         return self._nibabel_backend.shape
 
     @property
-    def affine(self) -> np.ndarray:
+    def affine(self) -> TypeAffineMatrix:
         return self._nibabel_backend.affine
 
     @property
     def dtype(self) -> np.dtype:
         return self._nibabel_backend.dtype
 
-    def __getitem__(self, slices: Any) -> np.ndarray:
+    def __getitem__(self, slices: SliceIndex) -> np.ndarray:
         return self._nibabel_backend[slices]
 
     def to_tensor(self) -> Tensor:

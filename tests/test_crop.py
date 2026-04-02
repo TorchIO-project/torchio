@@ -59,6 +59,22 @@ class TestCrop:
         result = tio.Crop(cropping=5)(subject)
         assert result.t1.shape == (1, 10, 10, 10)
 
+    def test_crop_preserves_laziness_of_original(self, tmp_path) -> None:
+        """Cropping should not load the original image's data."""
+        import nibabel as nib
+        import numpy as np
+
+        path = tmp_path / "test.nii.gz"
+        nib.save(
+            nib.Nifti1Image(np.zeros((20, 20, 20)), np.eye(4)),
+            path,
+        )
+        image = tio.ScalarImage(path)
+        subject = tio.Subject(t1=image)
+        assert not subject.t1.is_loaded
+        tio.Crop(cropping=5)(subject)
+        assert not subject.t1.is_loaded
+
     def test_crop_history(self) -> None:
         image = tio.ScalarImage.from_tensor(torch.rand(1, 20, 20, 20))
         subject = tio.Subject(t1=image)

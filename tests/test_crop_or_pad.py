@@ -353,3 +353,26 @@ class TestProbability:
         subject = _make_subject((20, 20, 20))
         result = tio.CropOrPad(target_shape=10, p=0)(subject)
         assert result.t1.shape == (1, 20, 20, 20)
+
+
+# ---------------------------------------------------------------------------
+# Laziness preservation
+# ---------------------------------------------------------------------------
+
+
+class TestLaziness:
+    def test_preserves_laziness_of_original(self, tmp_path) -> None:
+        """CropOrPad should not load the original image's data."""
+        import nibabel as nib
+        import numpy as np
+
+        path = tmp_path / "test.nii.gz"
+        nib.save(
+            nib.Nifti1Image(np.zeros((20, 20, 20)), np.eye(4)),
+            path,
+        )
+        image = tio.ScalarImage(path)
+        subject = tio.Subject(t1=image)
+        assert not subject.t1.is_loaded
+        tio.CropOrPad(target_shape=10)(subject)
+        assert not subject.t1.is_loaded

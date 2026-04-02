@@ -2,19 +2,31 @@
 
 from __future__ import annotations
 
+import copy as _copy
 import math
 from typing import Any
 from typing import Literal
 
+import numpy as np
+import torch
 from loguru import logger
+from torch import Tensor
 
+from ..data.affine import Affine
+from ..data.backends import ImageDataBackend
 from ..data.batch import SubjectsBatch
+from ..data.image import Image
+from ..data.subject import Subject
+from ..types import SliceIndex
+from ..types import TypeAffineMatrix
 from ..types import TypeSixInts
 from ..types import TypeSpacing
+from ..types import TypeTensorShape
 from ..types import TypeThreeInts
 from .compose import Compose
 from .crop import Crop
 from .pad import Pad
+from .transform import AppliedTransform
 from .transform import SpatialTransform
 
 #: Accepted target shape specifications.
@@ -119,6 +131,218 @@ def _compute_crop_and_pad(
     return padding, cropping
 
 
+class _CroppedBackend:
+    """Backend wrapper that defers spatial cropping until data is accessed."""
+
+    __slots__ = ("_shape", "_source", "_spatial_slices")
+
+    def __init__(
+        self,
+        source: ImageDataBackend,
+        spatial_slices: tuple[slice, slice, slice],
+        cropped_shape: tuple[int, int, int, int],
+    ) -> None:
+        self._source = source
+        self._spatial_slices = spatial_slices
+        self._shape = cropped_shape
+
+    @property
+    def shape(self) -> TypeTensorShape:
+        return self._shape
+
+    @property
+    def affine(self) -> TypeAffineMatrix:
+        return self._source.affine
+
+    @property
+    def dtype(self) -> np.dtype:
+        return self._source.dtype
+
+    def to_tensor(self) -> Tensor:
+        slices = (slice(None), *self._spatial_slices)
+        array = self._source[slices]
+        return torch.tensor(array, dtype=torch.float32)
+
+    def __getitem__(self, slices: SliceIndex) -> np.ndarray:
+        tensor = self.to_tensor()
+        if not isinstance(slices, tuple):
+            slices = (slices,)
+        return tensor[slices].numpy()
+
+
+class _PaddedBackend:
+    """Backend wrapper that defers spatial padding until data is accessed."""
+
+    __slots__ = ("_fill", "_padding", "_padding_mode", "_shape", "_source")
+
+    def __init__(
+        self,
+        source: ImageDataBackend,
+        padding: TypeSixInts,
+        padded_shape: tuple[int, int, int, int],
+        padding_mode: str = "constant",
+        fill: float = 0,
+    ) -> None:
+        self._source = source
+        self._padding = padding
+        self._shape = padded_shape
+        self._padding_mode = padding_mode
+        self._fill = fill
+
+    @property
+    def shape(self) -> TypeTensorShape:
+        return self._shape
+
+    @property
+    def affine(self) -> TypeAffineMatrix:
+        return self._source.affine
+
+    @property
+    def dtype(self) -> np.dtype:
+        return self._source.dtype
+
+    def to_tensor(self) -> Tensor:
+        base = self._source.to_tensor()
+        i0, i1, j0, j1, k0, k1 = self._padding
+        pad_arg = (k0, k1, j0, j1, i0, i1)
+        return torch.nn.functional.pad(
+            base,
+            pad_arg,
+            mode=self._padding_mode,
+            value=self._fill,
+        )
+
+    def __getitem__(self, slices: SliceIndex) -> np.ndarray:
+        tensor = self.to_tensor()
+        if not isinstance(slices, tuple):
+            slices = (slices,)
+        return tensor[slices].numpy()
+
+
+def _get_images(
+    subject: Subject,
+    include: list[str] | None,
+    exclude: list[str] | None,
+) -> dict[str, Image]:
+    """Filter subject images by include/exclude."""
+    images = subject.images
+    if include is not None:
+        images = {k: v for k, v in images.items() if k in include}
+    if exclude is not None:
+        images = {k: v for k, v in images.items() if k not in exclude}
+    return images
+
+
+def _crop_image_lazy(image: Image, cropping: TypeSixInts) -> Image:
+    """Crop an image lazily — data is only loaded when accessed."""
+    i0, i1, j0, j1, k0, k1 = cropping
+    c, si, sj, sk = image.shape
+
+    i_slice = slice(i0, si - i1 or None)
+    j_slice = slice(j0, sj - j1 or None)
+    k_slice = slice(k0, sk - k1 or None)
+
+    # Compute new affine
+    affine_matrix = image.affine.data.clone()
+    start_voxel = torch.tensor(
+        [float(i0), float(j0), float(k0)],
+        dtype=torch.float64,
+    )
+    affine_matrix[:3, 3] += affine_matrix[:3, :3] @ start_voxel
+    new_affine = Affine(affine_matrix)
+
+    if image.is_loaded:
+        new_data = image.data[:, i_slice, j_slice, k_slice]
+        return image.new_like(data=new_data, affine=new_affine)
+
+    # Install a cropped backend on a new Image from the same path
+    image._ensure_backend()
+    if image._backend is not None and image._path is not None:
+        cropped_shape = (
+            c,
+            len(range(*i_slice.indices(si))),
+            len(range(*j_slice.indices(sj))),
+            len(range(*k_slice.indices(sk))),
+        )
+        new = type(image)(
+            image._path,
+            reader=image._reader,
+            reader_kwargs=dict(image._reader_kwargs),
+            affine=new_affine,
+            **dict(image._metadata),
+        )
+        new._backend = _CroppedBackend(
+            image._backend,
+            (i_slice, j_slice, k_slice),
+            cropped_shape,
+        )
+        return new
+
+    # No backend (custom reader) → fall back to eager crop
+    new_data = image.data[:, i_slice, j_slice, k_slice]
+    return image.new_like(data=new_data, affine=new_affine)
+
+
+def _pad_image_lazy(
+    image: Image,
+    padding: TypeSixInts,
+    padding_mode: str,
+    fill: float,
+) -> Image:
+    """Pad an image lazily — data is only loaded when accessed."""
+    i0, i1, j0, j1, k0, k1 = padding
+    c, si, sj, sk = image.shape
+
+    # Compute new affine
+    affine_matrix = image.affine.data.clone()
+    origin_shift = affine_matrix[:3, :3] @ affine_matrix.new_tensor(
+        [-float(i0), -float(j0), -float(k0)],
+    )
+    affine_matrix[:3, 3] += origin_shift
+    new_affine = Affine(affine_matrix)
+
+    padded_shape = (c, si + i0 + i1, sj + j0 + j1, sk + k0 + k1)
+
+    if image.is_loaded:
+        pad_arg = (k0, k1, j0, j1, i0, i1)
+        new_data = torch.nn.functional.pad(
+            image.data,
+            pad_arg,
+            mode=padding_mode,
+            value=fill,
+        )
+        return image.new_like(data=new_data, affine=new_affine)
+
+    # Install a padded backend on a new Image from the same path
+    image._ensure_backend()
+    if image._backend is not None and image._path is not None:
+        new = type(image)(
+            image._path,
+            reader=image._reader,
+            reader_kwargs=dict(image._reader_kwargs),
+            affine=new_affine,
+            **dict(image._metadata),
+        )
+        new._backend = _PaddedBackend(
+            image._backend,
+            padding,
+            padded_shape,
+            padding_mode=padding_mode,
+            fill=fill,
+        )
+        return new
+
+    # No backend → fall back to eager pad
+    pad_arg = (k0, k1, j0, j1, i0, i1)
+    new_data = torch.nn.functional.pad(
+        image.data,
+        pad_arg,
+        mode=padding_mode,
+        value=fill,
+    )
+    return image.new_like(data=new_data, affine=new_affine)
+
+
 class CropOrPad(SpatialTransform):
     r"""Crop and/or pad to a target spatial shape.
 
@@ -130,6 +354,9 @@ class CropOrPad(SpatialTransform):
     The target shape can be specified in voxels (the default), millimetres,
     or centimetres. When physical units are used, the target is converted to
     voxels at transform time using the image spacing.
+
+    When the input is a ``Subject`` or ``Image``, the transform operates
+    lazily — data is not loaded from disk until it is actually accessed.
 
     Args:
         target_shape: Desired spatial shape. A single ``int`` broadcasts
@@ -182,6 +409,95 @@ class CropOrPad(SpatialTransform):
         self.fill = fill
         self.only_crop = only_crop
         self.only_pad = only_pad
+
+    def forward(self, data):  # type: ignore[override]
+        """Apply the transform.
+
+        For ``Subject`` and ``Image`` inputs, operates lazily per-image
+        without loading data from disk. For batched inputs, falls back
+        to the standard ``SubjectsBatch`` path.
+        """
+        if isinstance(data, (Subject, Image)):
+            return self._forward_lazy(data)
+        return super().forward(data)
+
+    def _forward_lazy(self, data: Subject | Image) -> Subject | Image:
+        is_image = isinstance(data, Image)
+        if is_image:
+            subject = Subject(tio_default_image=data)
+        else:
+            assert isinstance(data, Subject)
+            subject = data
+
+        if self.copy:
+            subject = _copy.deepcopy(subject)
+
+        if torch.rand(1).item() > self.p:
+            return subject.tio_default_image if is_image else subject
+
+        # Read shape and affine from header (no data load)
+        first_image = next(iter(subject.images.values()))
+        spacing = first_image.affine.spacing
+        current_shape: TypeThreeInts = first_image.spatial_shape
+
+        target_voxels = _to_voxels(self.target_shape, self.units, spacing)
+
+        if self.units != "voxels":
+            logger.debug(
+                "CropOrPad target {} {} → {} voxels (spacing {} mm)",
+                self.target_shape,
+                self.units,
+                target_voxels,
+                spacing,
+            )
+
+        padding, cropping = _compute_crop_and_pad(
+            current_shape,
+            target_voxels,
+            only_crop=self.only_crop,
+            only_pad=self.only_pad,
+        )
+
+        images = _get_images(subject, self.include, self.exclude)
+
+        if padding is not None:
+            for name, image in images.items():
+                subject._images[name] = _pad_image_lazy(
+                    image,
+                    padding,
+                    self.padding_mode,
+                    self.fill,
+                )
+            pad_params = {
+                "padding": padding,
+                "padding_mode": self.padding_mode,
+                "fill": self.fill,
+            }
+            subject.applied_transforms.append(
+                AppliedTransform(name="Pad", params=pad_params),
+            )
+
+        if cropping is not None:
+            # Re-read images after padding may have replaced them
+            images = _get_images(subject, self.include, self.exclude)
+            for name, image in images.items():
+                subject._images[name] = _crop_image_lazy(image, cropping)
+            crop_params = {"cropping": cropping}
+            subject.applied_transforms.append(
+                AppliedTransform(name="Crop", params=crop_params),
+            )
+
+        # Record CropOrPad (skipped during inversion)
+        subject.applied_transforms.append(
+            AppliedTransform(
+                name="CropOrPad",
+                params={"padding": padding, "cropping": cropping},
+            ),
+        )
+
+        return subject.tio_default_image if is_image else subject
+
+    # --- Standard batch path (for SubjectsBatch, Tensor, etc.) ---
 
     def make_params(self, batch: SubjectsBatch) -> dict[str, Any]:
         first_images = next(iter(batch.images.values()))

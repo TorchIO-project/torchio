@@ -138,9 +138,9 @@ class Transform(nn.Module):
         Args:
             data: Input data to transform.
         """
-        batch, unwrap = self._wrap(data)
         if self.copy:
-            batch = _copy.deepcopy(batch)
+            data = _copy.deepcopy(data)
+        batch, unwrap = self._wrap(data)
         if torch.rand(1).item() > self.p:
             return unwrap(batch)
         params = self.make_params(batch)

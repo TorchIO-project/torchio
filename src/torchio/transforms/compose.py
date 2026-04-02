@@ -47,9 +47,9 @@ class Compose(Transform):
         self.transforms = list(transforms) if transforms else []
 
     def forward(self, data):
-        subject, unwrap = self._wrap(data)
         if self.copy:
-            subject = copy.deepcopy(subject)
+            data = copy.deepcopy(data)
+        subject, unwrap = self._wrap(data)
         for transform in self.transforms:
             old_copy = transform.copy
             transform.copy = False
