@@ -94,26 +94,31 @@ class TestPlotImage:
         fig = img.plot(indices=(5, 10, 15), show=False)
         axes = fig.axes
         assert len(axes) == 3
-        assert "5" in axes[0].get_title()
-        assert "10" in axes[1].get_title()
-        assert "15" in axes[2].get_title()
+        # Titles show the slice index for the sliced axis
+        titles = [ax.get_title() for ax in axes]
+        assert any("5" in t for t in titles)
+        assert any("10" in t for t in titles)
+        assert any("15" in t for t in titles)
 
-    def test_none_indices_uses_midslice(self) -> None:
+    def test_views_are_sagittal_coronal_axial(self) -> None:
         img = tio.ScalarImage.from_tensor(torch.rand(1, 10, 20, 30))
-        fig = img.plot(indices=(None, None, None), show=False)
-        axes = fig.axes
-        assert "5" in axes[0].get_title()
-        assert "10" in axes[1].get_title()
-        assert "15" in axes[2].get_title()
+        fig = img.plot(show=False)
+        titles = [ax.get_title() for ax in fig.axes]
+        assert "Sagittal" in titles[0]
+        assert "Coronal" in titles[1]
+        assert "Axial" in titles[2]
 
-    def test_orientation_labels(self) -> None:
+    def test_orientation_labels_show_tensor_axis(self) -> None:
         img = tio.ScalarImage.from_tensor(torch.rand(1, 10, 10, 10))
         fig = img.plot(show=False)
         ax = fig.axes[0]
         xlabel = ax.get_xlabel()
         ylabel = ax.get_ylabel()
-        assert "←" in xlabel
-        assert "→" in ylabel
+        assert "↔" in xlabel
+        assert "↔" in ylabel
+        # Should contain tensor axis names (I, J, or K)
+        all_labels = xlabel + ylabel
+        assert any(c in all_labels for c in ("I", "J", "K"))
 
     def test_save_to_file(self, tmp_path) -> None:
         img = tio.ScalarImage.from_tensor(torch.rand(1, 10, 10, 10))
@@ -134,6 +139,28 @@ class TestPlotImage:
         ax = fig.axes[0]
         im = ax.images[0]
         assert im.get_interpolation() == "none"
+
+    def test_voxels_mode(self) -> None:
+        img = tio.ScalarImage.from_tensor(torch.rand(1, 10, 10, 10))
+        fig = img.plot(show=False, voxels=True)
+        assert isinstance(fig, Figure)
+
+    def test_consistent_views_across_orientations(self) -> None:
+        """Sagittal/Coronal/Axial order is the same for RAS and LPS."""
+        img_ras = tio.ScalarImage.from_tensor(torch.rand(1, 10, 20, 30))
+        fig_ras = img_ras.plot(show=False)
+
+        ornt = nib.orientations.axcodes2ornt(("L", "P", "S"))
+        affine = tio.Affine(nib.orientations.inv_ornt_aff(ornt, (10, 20, 30)))
+        img_lps = tio.ScalarImage.from_tensor(
+            torch.rand(1, 10, 20, 30),
+            affine=affine,
+        )
+        fig_lps = img_lps.plot(show=False)
+
+        titles_ras = [ax.get_title().split("[")[0].strip() for ax in fig_ras.axes]
+        titles_lps = [ax.get_title().split("[")[0].strip() for ax in fig_lps.axes]
+        assert titles_ras == titles_lps == ["Sagittal", "Coronal", "Axial"]
 
 
 class TestReprHtml:

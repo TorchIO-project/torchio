@@ -32,14 +32,25 @@ _OPPOSITE: dict[str, str] = {
     "I": "S",
 }
 
-# Map orientation code to the anatomical view obtained by slicing that axis.
-_VIEW_NAME: dict[str, str] = {
-    "R": "Sagittal",
-    "L": "Sagittal",
-    "A": "Coronal",
-    "P": "Coronal",
-    "S": "Axial",
-    "I": "Axial",
+# Each view is defined by:
+#   (name, slice_pair, x_pair, y_pair, x_positive_on_left, y_positive_on_top)
+# "pair" means the L/R, A/P, or S/I axis pair.
+# x_positive_on_left / y_positive_on_top: the code that should appear on the
+# left side (x) or top (y) of the display.
+_VIEWS: list[tuple[str, str, str, str, str, str]] = [
+    ("Sagittal", "LR", "AP", "SI", "A", "S"),
+    ("Coronal", "AP", "LR", "SI", "R", "S"),
+    ("Axial", "SI", "LR", "AP", "R", "A"),
+]
+
+# Map orientation code to its axis pair key.
+_CODE_TO_PAIR: dict[str, str] = {
+    "R": "LR",
+    "L": "LR",
+    "A": "AP",
+    "P": "AP",
+    "S": "SI",
+    "I": "SI",
 }
 
 
@@ -91,6 +102,15 @@ def _get_categorical_cmap(
     return colormap, norm
 
 
+def _find_axis(orientation: tuple[str, str, str], pair: str) -> int:
+    """Find which tensor axis (0, 1, 2) corresponds to an anatomical pair."""
+    for i, code in enumerate(orientation):
+        if _CODE_TO_PAIR[code] == pair:
+            return i
+    msg = f"No axis found for pair {pair!r} in orientation {orientation}"
+    raise ValueError(msg)
+
+
 @overload
 def plot_image(
     image: Image,
@@ -105,6 +125,8 @@ def plot_image(
     title: str | None = ...,
     output_path: TypePath | None = ...,
     savefig_kwargs: dict[str, Any] | None = ...,
+    voxels: bool = ...,
+    figsize_multiplier: float = ...,
     **imshow_kwargs: Any,
 ) -> Figure: ...
 
@@ -123,6 +145,8 @@ def plot_image(
     title: str | None = ...,
     output_path: TypePath | None = ...,
     savefig_kwargs: dict[str, Any] | None = ...,
+    voxels: bool = ...,
+    figsize_multiplier: float = ...,
     **imshow_kwargs: Any,
 ) -> None: ...
 
@@ -140,16 +164,16 @@ def plot_image(
     output_path: TypePath | None = None,
     show: bool = True,
     savefig_kwargs: dict[str, Any] | None = None,
+    voxels: bool = False,
+    figsize_multiplier: float = 2.0,
     **imshow_kwargs: Any,
 ) -> Figure | None:
     """Plot 3 orthogonal slices of a 3D image.
 
-    Each subplot shows a slice through one spatial axis. Orientation
-    labels are derived from the image's affine — no reorientation is
-    applied. The horizontal axis is flipped so that, e.g., the left
-    hemisphere appears on the right side of the screen (radiological
-    convention). Uses lazy ``Image.__getitem__`` so only the 3
-    requested planes are read from disk.
+    Always displays Sagittal, Coronal, Axial with fixed anatomical
+    positions regardless of image orientation. Data is flipped and
+    transposed as needed. Uses lazy ``Image.__getitem__`` so only
+    the 3 requested planes are read from disk.
 
     Args:
         image: The image to plot.
@@ -157,7 +181,7 @@ def plot_image(
         indices: Slice index for each spatial axis. ``None`` entries
             default to the mid-slice. Pass ``None`` for all mid-slices.
         axes: Pre-created sequence of 3 matplotlib ``Axes``. If
-            ``None``, a new figure with 3 subplots is created.
+            ``None``, a new figure with correct proportions is created.
         cmap: Colormap. Defaults to ``'gray'`` for intensity images.
         percentiles: Intensity percentile range for display windowing.
             Ignored for label maps.
@@ -166,6 +190,10 @@ def plot_image(
         output_path: Save figure to this path.
         show: Call ``plt.show()`` after plotting.
         savefig_kwargs: Extra keyword arguments for ``fig.savefig()``.
+        voxels: Show voxel indices on ticks instead of world
+            coordinates in mm.
+        figsize_multiplier: Scale factor applied to the default
+            ``rcParams["figure.figsize"]`` when ``figsize`` is ``None``.
         **imshow_kwargs: Forwarded to ``ax.imshow()``.
 
     Returns:
@@ -175,12 +203,13 @@ def plot_image(
     """
     from .data.image import LabelMap
 
-    _, plt = _get_mpl()
+    mpl, plt = _get_mpl()
 
     # Read spatial metadata from headers (no data load)
     spatial_shape = image.spatial_shape
     spacing = image.spacing
     orientation = image.orientation
+    origin = image.origin
 
     # Resolve indices — None → mid-slice
     if indices is None:
@@ -190,14 +219,43 @@ def plot_image(
         for idx, s in zip(indices, spatial_shape, strict=True)
     )
 
+    # Find tensor axis for each anatomical pair
+    axis_for: dict[str, int] = {}
+    for pair in ("LR", "AP", "SI"):
+        axis_for[pair] = _find_axis(orientation, pair)
+
     # Extract 2D slices via lazy Image.__getitem__
     slices_2d: list[np.ndarray] = []
-    for axis in range(3):
+    for _view_name, slice_pair, x_pair, y_pair, x_left, y_top in _VIEWS:
+        slice_axis = axis_for[slice_pair]
+        x_axis = axis_for[x_pair]
+        y_axis = axis_for[y_pair]
+
+        # Slice through the appropriate axis
         sl: list[slice | int] = [slice(None), slice(None), slice(None), slice(None)]
         sl[0] = channel
-        sl[axis + 1] = resolved[axis]
+        sl[slice_axis + 1] = resolved[slice_axis]
         plane = image[tuple(sl)]
-        slices_2d.append(plane.data.squeeze().cpu().numpy())
+        data_2d = plane.data.squeeze().cpu().numpy()
+
+        # data_2d axes are the two remaining spatial axes in tensor order.
+        # We need: rows = y_axis, cols = x_axis.
+        # After slicing axis `slice_axis`, remaining axes are sorted.
+        # If x_axis < y_axis: data_2d dims = (x, y) → transpose to (y, x)
+        if x_axis < y_axis:
+            data_2d = data_2d.T
+
+        # Flip to match expected anatomical display
+        # x: x_left should be at col 0 (left in imshow)
+        # y: y_top should be at last row (top with origin='lower')
+        x_code = orientation[x_axis]
+        y_code = orientation[y_axis]
+        if x_code == x_left:
+            data_2d = np.flip(data_2d, axis=1)
+        if y_code != y_top:
+            data_2d = np.flip(data_2d, axis=0)
+
+        slices_2d.append(np.ascontiguousarray(data_2d))
 
     # Set up imshow defaults
     is_label = isinstance(image, LabelMap)
@@ -221,11 +279,23 @@ def plot_image(
         imshow_kwargs.setdefault("vmin", vmin)
         imshow_kwargs.setdefault("vmax", vmax)
 
+    # Compute physical extents for proportional subplot sizing
+    lr_mm = spatial_shape[axis_for["LR"]] * spacing[axis_for["LR"]]
+    ap_mm = spatial_shape[axis_for["AP"]] * spacing[axis_for["AP"]]
+    width_ratios = [ap_mm, lr_mm, lr_mm]
+
     # Create figure if needed
     fig: Figure
     if axes is None:
-        fig, ax_array = plt.subplots(1, 3, figsize=figsize)
-        plot_axes: Sequence[Axes] = list(ax_array.flat)
+        if figsize is None:
+            default_w, default_h = plt.rcParams["figure.figsize"]
+            figsize = (
+                default_w * figsize_multiplier,
+                default_h * figsize_multiplier,
+            )
+        gs = mpl.gridspec.GridSpec(1, 3, width_ratios=width_ratios)
+        fig = plt.figure(figsize=figsize)
+        plot_axes: Sequence[Axes] = [fig.add_subplot(gs[0, i]) for i in range(3)]
     else:
         if len(axes) < 3:
             msg = f"Expected 3 axes, got {len(axes)}"
@@ -233,32 +303,46 @@ def plot_image(
         plot_axes = axes
         fig = cast("Figure", plot_axes[0].get_figure())
 
-    for axis in range(3):
-        ax = plot_axes[axis]
-        data_2d = slices_2d[axis]
+    # Plot each view
+    for view_idx, (view_name, slice_pair, x_pair, y_pair, x_left, y_top) in enumerate(
+        _VIEWS,
+    ):
+        ax = plot_axes[view_idx]
+        data_2d = slices_2d[view_idx]
 
-        # The two remaining axes (row=first remaining, col=second remaining)
-        remaining = [d for d in range(3) if d != axis]
-        row_dim, col_dim = remaining[0], remaining[1]
+        slice_axis = axis_for[slice_pair]
+        x_axis = axis_for[x_pair]
+        y_axis = axis_for[y_pair]
 
         # Aspect ratio from spacing
-        aspect = spacing[row_dim] / spacing[col_dim]
+        aspect = spacing[y_axis] / spacing[x_axis]
+        ax.imshow(data_2d, aspect=aspect, **imshow_kwargs)
 
-        ax.imshow(data_2d.T, aspect=aspect, **imshow_kwargs)
+        # Axis labels: "J (A ↔ P)"
+        x_code = orientation[x_axis]
+        y_code = orientation[y_axis]
+        x_label = f"{_axis_name(x_axis)} ({x_left} ↔ {_OPPOSITE[x_left]})"
+        y_label = f"{_axis_name(y_axis)} ({_OPPOSITE[y_top]} ↔ {y_top})"
+        ax.set_xlabel(x_label)
+        ax.set_ylabel(y_label)
 
-        # Flip horizontal axis (radiological convention)
-        ax.invert_xaxis()
+        # Tick labels: world coordinates (mm) or voxel indices
+        _set_ticks(
+            ax,
+            x_axis=x_axis,
+            y_axis=y_axis,
+            x_code=x_code,
+            y_code=y_code,
+            x_left=x_left,
+            y_top=y_top,
+            spacing=spacing,
+            origin_mm=origin,
+            spatial_shape=spatial_shape,
+            voxels=voxels,
+        )
 
-        # Orientation labels
-        # x-axis is flipped: positive direction is on the left
-        row_code = orientation[row_dim]
-        col_code = orientation[col_dim]
-        ax.set_xlabel(f"{row_code} ← {_OPPOSITE[row_code]}")
-        ax.set_ylabel(f"{_OPPOSITE[col_code]} → {col_code}")
-
-        # View name from the sliced axis
-        view = _VIEW_NAME.get(orientation[axis], f"Axis {axis}")
-        ax.set_title(f"{view} [{resolved[axis]}]")
+        # Title
+        ax.set_title(f"{view_name} [{resolved[slice_axis]}]")
 
     if title is not None:
         fig.suptitle(title)
@@ -272,3 +356,100 @@ def plot_image(
         return None
 
     return fig
+
+
+def _axis_name(axis: int) -> str:
+    """Return the tensor axis name: I, J, or K."""
+    return ("I", "J", "K")[axis]
+
+
+def _set_ticks(
+    ax: Axes,
+    *,
+    x_axis: int,
+    y_axis: int,
+    x_code: str,
+    y_code: str,
+    x_left: str,
+    y_top: str,
+    spacing: tuple[float, float, float],
+    origin_mm: tuple[float, float, float],
+    spatial_shape: tuple[int, int, int],
+    voxels: bool,
+) -> None:
+    """Set tick labels for a subplot."""
+    if voxels:
+        # Show voxel indices
+        x_size = spatial_shape[x_axis]
+        y_size = spatial_shape[y_axis]
+
+        # If the axis data was flipped, voxel indices run in reverse
+        x_flipped = x_code == x_left
+        y_flipped = y_code != y_top
+
+        x_ticks = np.linspace(0, x_size - 1, min(5, x_size))
+        y_ticks = np.linspace(0, y_size - 1, min(5, y_size))
+
+        ax.set_xticks(x_ticks)
+        ax.set_yticks(y_ticks)
+        if x_flipped:
+            ax.set_xticklabels([str(int(x_size - 1 - v)) for v in x_ticks])
+        else:
+            ax.set_xticklabels([str(int(v)) for v in x_ticks])
+        if y_flipped:
+            ax.set_yticklabels([str(int(y_size - 1 - v)) for v in y_ticks])
+        else:
+            ax.set_yticklabels([str(int(v)) for v in y_ticks])
+    else:
+        # Show world coordinates in mm
+        x_size = spatial_shape[x_axis]
+        y_size = spatial_shape[y_axis]
+
+        x_flipped = x_code == x_left
+        y_flipped = y_code != y_top
+
+        x_sp = spacing[x_axis]
+        y_sp = spacing[y_axis]
+        x_sign = -1.0 if x_code in ("L", "P", "I") else 1.0
+        y_sign = -1.0 if y_code in ("L", "P", "I") else 1.0
+        x_origin = origin_mm[_world_dim(x_code)]
+        y_origin = origin_mm[_world_dim(y_code)]
+
+        x_ticks = np.linspace(0, x_size - 1, min(5, x_size))
+        y_ticks = np.linspace(0, y_size - 1, min(5, y_size))
+
+        ax.set_xticks(x_ticks)
+        ax.set_yticks(y_ticks)
+
+        def _voxel_to_mm(
+            display_pos: float,
+            size: int,
+            flipped: bool,
+            orig: float,
+            sp: float,
+            sign: float,
+        ) -> float:
+            voxel = (size - 1 - display_pos) if flipped else display_pos
+            return orig + voxel * sp * sign
+
+        ax.set_xticklabels(
+            [
+                f"{_voxel_to_mm(v, x_size, x_flipped, x_origin, x_sp, x_sign):.0f}"
+                for v in x_ticks
+            ]
+        )
+        ax.set_yticklabels(
+            [
+                f"{_voxel_to_mm(v, y_size, y_flipped, y_origin, y_sp, y_sign):.0f}"
+                for v in y_ticks
+            ]
+        )
+
+
+def _world_dim(code: str) -> int:
+    """Map an orientation code to the world coordinate dimension (0=x, 1=y, 2=z)."""
+    if code in ("R", "L"):
+        return 0
+    if code in ("A", "P"):
+        return 1
+    return 2
