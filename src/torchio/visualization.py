@@ -43,7 +43,18 @@ _VIEWS: list[tuple[str, str, str, str, str, str]] = [
     ("Axial", "SI", "LR", "AP", "R", "A"),
 ]
 
-# Map orientation code to its axis pair key.
+# Intersection line colors (from 3D Slicer, via v1).
+# Each color identifies the slice position being shown.
+_COLOR_SAGITTAL = "#42A5F5"  # blue
+_COLOR_CORONAL = "#8FE561"  # green
+_COLOR_AXIAL = "#FF8372"  # red
+
+# Map view name to its intersection color.
+_VIEW_COLOR: dict[str, str] = {
+    "Sagittal": _COLOR_SAGITTAL,
+    "Coronal": _COLOR_CORONAL,
+    "Axial": _COLOR_AXIAL,
+}
 _CODE_TO_PAIR: dict[str, str] = {
     "R": "LR",
     "L": "LR",
@@ -118,6 +129,7 @@ def plot_image(
     show: Literal[False],
     channel: int = ...,
     indices: tuple[int | None, int | None, int | None] | None = ...,
+    coordinates: tuple[float | None, float | None, float | None] | None = ...,
     axes: Sequence[Axes] | None = ...,
     cmap: str | Colormap | None = ...,
     percentiles: tuple[float, float] = ...,
@@ -127,6 +139,7 @@ def plot_image(
     savefig_kwargs: dict[str, Any] | None = ...,
     voxels: bool = ...,
     figsize_multiplier: float = ...,
+    intersections: bool = ...,
     **imshow_kwargs: Any,
 ) -> Figure: ...
 
@@ -138,6 +151,7 @@ def plot_image(
     show: Literal[True] = ...,
     channel: int = ...,
     indices: tuple[int | None, int | None, int | None] | None = ...,
+    coordinates: tuple[float | None, float | None, float | None] | None = ...,
     axes: Sequence[Axes] | None = ...,
     cmap: str | Colormap | None = ...,
     percentiles: tuple[float, float] = ...,
@@ -147,6 +161,7 @@ def plot_image(
     savefig_kwargs: dict[str, Any] | None = ...,
     voxels: bool = ...,
     figsize_multiplier: float = ...,
+    intersections: bool = ...,
     **imshow_kwargs: Any,
 ) -> None: ...
 
@@ -156,6 +171,7 @@ def plot_image(
     *,
     channel: int = 0,
     indices: tuple[int | None, int | None, int | None] | None = None,
+    coordinates: tuple[float | None, float | None, float | None] | None = None,
     axes: Sequence[Axes] | None = None,
     cmap: str | Colormap | None = None,
     percentiles: tuple[float, float] = (0.5, 99.5),
@@ -166,6 +182,7 @@ def plot_image(
     savefig_kwargs: dict[str, Any] | None = None,
     voxels: bool = False,
     figsize_multiplier: float = 2.0,
+    intersections: bool = True,
     **imshow_kwargs: Any,
 ) -> Figure | None:
     """Plot 3 orthogonal slices of a 3D image.
@@ -180,6 +197,11 @@ def plot_image(
         channel: Which channel to display.
         indices: Slice index for each spatial axis. ``None`` entries
             default to the mid-slice. Pass ``None`` for all mid-slices.
+            Mutually exclusive with ``coordinates``.
+        coordinates: World coordinates in mm for each slice.
+            ``None`` entries default to the mid-slice. Converted to
+            the nearest voxel index via the inverse affine. Mutually
+            exclusive with ``indices``.
         axes: Pre-created sequence of 3 matplotlib ``Axes``. If
             ``None``, a new figure with correct proportions is created.
         cmap: Colormap. Defaults to ``'gray'`` for intensity images.
@@ -194,6 +216,8 @@ def plot_image(
             coordinates in mm.
         figsize_multiplier: Scale factor applied to the default
             ``rcParams["figure.figsize"]`` when ``figsize`` is ``None``.
+        intersections: Draw coloured cross-hair lines showing where
+            the other two slices intersect each view.
         **imshow_kwargs: Forwarded to ``ax.imshow()``.
 
     Returns:
@@ -201,9 +225,15 @@ def plot_image(
         (the figure is displayed and closed to prevent duplicate
         rendering in notebooks).
     """
+    import torch
+
     from .data.image import LabelMap
 
     mpl, plt = _get_mpl()
+
+    if indices is not None and coordinates is not None:
+        msg = "indices and coordinates are mutually exclusive"
+        raise ValueError(msg)
 
     # Read spatial metadata from headers (no data load)
     spatial_shape = image.spatial_shape
@@ -211,7 +241,22 @@ def plot_image(
     orientation = image.orientation
     origin = image.origin
 
-    # Resolve indices — None → mid-slice
+    # Resolve to voxel indices
+    if coordinates is not None:
+        inv_affine = image.affine.inverse()
+        voxel_coords = inv_affine.apply(
+            torch.tensor(
+                [[c if c is not None else float("nan") for c in coordinates]],
+                dtype=torch.float64,
+            ),
+        )[0]
+        c0, c1, c2 = coordinates
+        indices = (
+            None if c0 is None else round(float(voxel_coords[0])),
+            None if c1 is None else round(float(voxel_coords[1])),
+            None if c2 is None else round(float(voxel_coords[2])),
+        )
+
     if indices is None:
         indices = (None, None, None)
     resolved = tuple(
@@ -344,6 +389,16 @@ def plot_image(
         # Title
         ax.set_title(f"{view_name} [{resolved[slice_axis]}]")
 
+    # Draw slice intersection lines
+    if intersections:
+        _draw_intersections(
+            plot_axes,
+            axis_for=axis_for,
+            orientation=orientation,
+            spatial_shape=spatial_shape,
+            resolved=resolved,
+        )
+
     if title is not None:
         fig.suptitle(title)
     fig.tight_layout()
@@ -361,6 +416,46 @@ def plot_image(
 def _axis_name(axis: int) -> str:
     """Return the tensor axis name: I, J, or K."""
     return ("I", "J", "K")[axis]
+
+
+def _draw_intersections(
+    plot_axes: Sequence[Axes],
+    *,
+    axis_for: dict[str, int],
+    orientation: tuple[str, str, str],
+    spatial_shape: tuple[int, int, int],
+    resolved: tuple[int, ...],
+) -> None:
+    """Draw coloured cross-hair lines showing slice positions."""
+    for view_idx, (view_name, _slice_pair, x_pair, y_pair, x_left, y_top) in enumerate(
+        _VIEWS,
+    ):
+        ax = plot_axes[view_idx]
+        x_axis = axis_for[x_pair]
+        y_axis = axis_for[y_pair]
+        x_size = spatial_shape[x_axis]
+        y_size = spatial_shape[y_axis]
+        x_code = orientation[x_axis]
+        y_code = orientation[y_axis]
+
+        for other_name, other_slice_pair, _, _, _, _ in _VIEWS:
+            if other_name == view_name:
+                continue
+            other_axis = axis_for[other_slice_pair]
+            other_pos = resolved[other_axis]
+            color = _VIEW_COLOR[other_name]
+
+            if other_axis == x_axis:
+                display_x = _display_pos(other_pos, x_size, x_code == x_left)
+                ax.axvline(display_x, color=color, linewidth=0.8, alpha=0.8)
+            elif other_axis == y_axis:
+                display_y = _display_pos(other_pos, y_size, y_code != y_top)
+                ax.axhline(display_y, color=color, linewidth=0.8, alpha=0.8)
+
+
+def _display_pos(voxel: int, size: int, flipped: bool) -> float:
+    """Convert a voxel index to display position, accounting for flips."""
+    return float(size - 1 - voxel) if flipped else float(voxel)
 
 
 def _set_ticks(

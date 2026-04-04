@@ -30,6 +30,7 @@ nav = [
     "how-to/custom-reader.md",
     "how-to/save-nii-zarr.md",
     "how-to/annotations.md",
+    "how-to/visualization.md",
     "how-to/tta.md",
   ] },
   { Concepts = [
@@ -69,6 +70,9 @@ nav = [
         "reference/transforms/to.md",
         "reference/transforms/monai_adapter.md",
       ] },
+    ] },
+    { "Visualization" = [
+      "reference/visualization.md",
     ] },
   ] },
 ]

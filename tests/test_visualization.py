@@ -6,6 +6,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 import nibabel as nib
 import numpy as np
+import pytest
 import torch
 from matplotlib.figure import Figure
 
@@ -161,6 +162,31 @@ class TestPlotImage:
         titles_ras = [ax.get_title().split("[")[0].strip() for ax in fig_ras.axes]
         titles_lps = [ax.get_title().split("[")[0].strip() for ax in fig_lps.axes]
         assert titles_ras == titles_lps == ["Sagittal", "Coronal", "Axial"]
+
+    def test_coordinates_kwarg(self) -> None:
+        """Passing world coordinates resolves to the correct voxel."""
+        affine = tio.Affine.from_spacing((2.0, 2.0, 2.0))
+        img = tio.ScalarImage.from_tensor(
+            torch.rand(1, 50, 50, 50),
+            affine=affine,
+        )
+        # origin = (0,0,0), spacing = 2mm → coord 20mm = voxel 10
+        fig = img.plot(coordinates=(20.0, 20.0, 20.0), show=False)
+        assert isinstance(fig, Figure)
+        # Title should show index 10
+        titles = [ax.get_title() for ax in fig.axes]
+        assert any("10" in t for t in titles)
+
+    def test_coordinates_and_indices_exclusive(self) -> None:
+        img = tio.ScalarImage.from_tensor(torch.rand(1, 10, 10, 10))
+        with pytest.raises(ValueError, match="mutually exclusive"):
+            img.plot(indices=(5, 5, 5), coordinates=(0.0, 0.0, 0.0), show=False)
+
+    def test_coordinates_with_none(self) -> None:
+        """None entries in coordinates default to mid-slice."""
+        img = tio.ScalarImage.from_tensor(torch.rand(1, 20, 20, 20))
+        fig = img.plot(coordinates=(None, None, None), show=False)
+        assert isinstance(fig, Figure)
 
 
 class TestReprHtml:
