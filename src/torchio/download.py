@@ -13,6 +13,7 @@ from urllib import error
 from urllib import request
 
 from loguru import logger
+from platformdirs import user_cache_dir
 from rich.progress import BarColumn
 from rich.progress import DownloadColumn
 from rich.progress import Progress
@@ -23,7 +24,7 @@ from .types import TypePath
 
 def get_torchio_cache_dir() -> Path:
     """Return the default cache directory for TorchIO data."""
-    return Path("~/.cache/torchio").expanduser()
+    return Path(user_cache_dir("torchio"))
 
 
 def calculate_md5(fpath: TypePath, chunk_size: int = 1024 * 1024) -> str:

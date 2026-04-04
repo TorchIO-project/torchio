@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from pathlib import Path
-
 import pytest
 import torch
 
@@ -65,7 +63,8 @@ class TestZonePlate:
 class TestDownloadUtils:
     def test_cache_dir(self):
         d = get_torchio_cache_dir()
-        assert d == Path("~/.cache/torchio").expanduser()
+        assert d.name == "torchio"
+        assert d.is_absolute()
 
     def test_compress(self, tmp_path):
         inp = tmp_path / "test.nii"

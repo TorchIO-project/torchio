@@ -115,3 +115,6 @@ uv.lock
 docs/images/plots/
 docs/images/gallery/
 docs/examples/*.md
+
+ideas.md
+*.nii*
