@@ -55,41 +55,73 @@ def _row(key: str, value: str) -> str:
 
 
 def image_to_html(image: Image) -> str:
-    """Build an HTML table for an Image."""
+    """Build an HTML representation for an Image with an embedded plot."""
     cls_name = type(image).__name__
     rows: list[str] = []
 
     rows.append(_row("Type", cls_name))
 
-    if image.is_loaded:
-        rows.append(_row("Shape", str(image.shape)))
-        rows.append(
-            _row("Spacing", "({})".format(", ".join(f"{s:.2f}" for s in image.spacing)))
+    try:
+        sp = "({})".format(", ".join(f"{s:.2f}" for s in image.spacing))
+        ori = "({})".format(", ".join(f"{o:.2f}" for o in image.origin))
+        angles = "({})".format(
+            ", ".join(f"{a:.1f}°" for a in image.affine.euler_angles)
         )
+        dt = str(image.dtype).replace("torch.", "")
+        rows.append(_row("Channels", str(image.num_channels)))
+        rows.append(_row("Spatial shape", str(image.spatial_shape)))
+        rows.append(_row("Spacing", f"{sp} mm"))
+        rows.append(_row("Origin", f"{ori} mm"))
         rows.append(_row("Orientation", "".join(image.orientation) + "+"))
-        rows.append(_row("dtype", str(image.data.dtype).replace("torch.", "")))
+        rows.append(_row("Euler angles", angles))
+        rows.append(_row("dtype", dt))
         rows.append(_row("Memory", humanize.naturalsize(image.memory, binary=True)))
-    else:
-        try:
-            rows.append(_row("Shape", str(image.shape)))
-            sp = "({})".format(", ".join(f"{s:.2f}" for s in image.spacing))
-            rows.append(_row("Spacing", sp))
-            rows.append(_row("Orientation", "".join(image.orientation) + "+"))
-            rows.append(_row("dtype", str(image.dtype)))
-            rows.append(_row("Memory", humanize.naturalsize(image.memory, binary=True)))
-        except Exception:
-            if image.path is not None:
-                rows.append(_row("Path", str(image.path)))
+    except Exception:
+        if image.path is not None:
+            rows.append(_row("Path", str(image.path)))
 
-    # Annotations
     for name, pts in image.points.items():
         rows.append(_row(f"Points '{name}'", _pluralize("point", pts.num_points)))
-
     for name, boxes in image.bounding_boxes.items():
         rows.append(_row(f"BBoxes '{name}'", _pluralize("box", boxes.num_boxes)))
 
     table = f'{_STYLE}\n<table class="tio-table">\n' + "\n".join(rows) + "\n</table>"
+
+    # Try to embed a plot
+    plot_html = _try_plot_base64(image)
+    if plot_html:
+        return f"{plot_html}\n{table}"
     return table
+
+
+def _try_plot_base64(image: Image) -> str | None:
+    """Render a 3-slice plot as an inline base64 ``<img>`` tag.
+
+    Returns ``None`` if matplotlib is not available.
+    """
+    try:
+        from .visualization import plot_image
+    except ImportError:
+        return None
+
+    import base64
+    import io
+
+    try:
+        import matplotlib
+
+        matplotlib.use("Agg")
+        fig = plot_image(image, show=False, figsize=(9, 3))
+        buf = io.BytesIO()
+        fig.savefig(buf, format="png", bbox_inches="tight", dpi=100)
+        import matplotlib.pyplot as plt
+
+        plt.close(fig)
+        buf.seek(0)
+        b64 = base64.b64encode(buf.read()).decode("ascii")
+        return f'<img src="data:image/png;base64,{b64}" />'
+    except Exception:
+        return None
 
 
 def subject_to_html(subject: Subject) -> str:

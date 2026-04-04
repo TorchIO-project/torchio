@@ -207,7 +207,7 @@ class ZarrBackend:
     __slots__ = ("_nibabel_backend",)
 
     def __init__(self, path: str | object) -> None:
-        from ..imports import get_niizarr
+        from ..external.imports import get_niizarr
 
         niizarr = get_niizarr()
         nii = niizarr.zarr2nii(str(path))

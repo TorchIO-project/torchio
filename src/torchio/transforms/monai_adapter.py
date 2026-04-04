@@ -14,7 +14,7 @@ import torch
 from ..data.image import Image
 from ..data.image import ScalarImage
 from ..data.subject import Subject
-from ..imports import get_monai
+from ..external.imports import get_monai
 from .transform import Transform
 
 

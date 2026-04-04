@@ -127,6 +127,30 @@ class Affine:
         codes = nib.orientations.aff2axcodes(self._matrix.cpu().numpy())
         return (codes[0], codes[1], codes[2])
 
+    @property
+    def euler_angles(self) -> tuple[float, float, float]:
+        """Euler angles in degrees (XYZ intrinsic convention).
+
+        Computed from the direction (rotation) matrix. All zeros means
+        the image axes are perfectly aligned with the scanner axes; non-zero
+        values indicate an oblique acquisition.
+        """
+        r = self.direction
+        # XYZ intrinsic = ZYX extrinsic
+        # r is a (3, 3) Tensor (from the direction property)
+        sy = torch.sqrt(r[0, 0] ** 2 + r[1, 0] ** 2)
+        singular = float(sy) < 1e-6
+        if not singular:
+            x = torch.atan2(r[2, 1], r[2, 2])
+            y = torch.atan2(-r[2, 0], sy)
+            z = torch.atan2(r[1, 0], r[0, 0])
+        else:
+            x = torch.atan2(-r[1, 2], r[1, 1])
+            y = torch.atan2(-r[2, 0], sy)
+            z = torch.zeros(1, dtype=r.dtype, device=r.device)
+        deg = 180.0 / torch.pi
+        return (float(x * deg), float(y * deg), float(z * deg))
+
     # --- Methods ---
 
     def to(self, *args: Any, **kwargs: Any) -> Affine:

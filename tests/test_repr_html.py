@@ -20,7 +20,7 @@ class TestImageReprHtml:
     def test_contains_shape(self) -> None:
         image = tio.ScalarImage.from_tensor(torch.rand(1, 8, 10, 12))
         html = image._repr_html_()
-        assert "(1, 8, 10, 12)" in html
+        assert "(8, 10, 12)" in html
 
     def test_contains_spacing(self) -> None:
         image = tio.ScalarImage.from_tensor(torch.rand(1, 16, 16, 16))

@@ -38,6 +38,20 @@ from .points import Points
 _AnnotationType = TypeVar("_AnnotationType", Points, BoundingBoxes)
 
 
+def _backend_label(backend: object | None) -> str:
+    """Short label for the backend type, used in ``__repr__``."""
+    if backend is None:
+        return "unknown"
+    name = type(backend).__name__
+    if "Nibabel" in name:
+        return "NIfTI"
+    if "Zarr" in name:
+        return "NIfTI-Zarr"
+    if "Numpy" in name:
+        return "NumPy"
+    return name
+
+
 def _expand_ellipsis(
     items: tuple[int | slice | types.EllipsisType, ...],
     *,
@@ -574,7 +588,7 @@ class Image(Invertible):
         sitk.WriteImage(sitk_image, str(path), **kwargs)
 
     def _save_nii_zarr(self, path: Path) -> None:
-        from ..imports import get_niizarr
+        from ..external.imports import get_niizarr
 
         niizarr = get_niizarr()
         data = self.data.numpy()
@@ -764,32 +778,63 @@ class Image(Invertible):
         import humanize
 
         cls_name = type(self).__name__
-        parts: list[str] = []
-        # Shape, spacing, orientation are always available (lazy header read)
+        lines: list[str] = []
         try:
             sp = ", ".join(f"{s:.2f}" for s in self.spacing)
-            orient = "".join(self.orientation)
-            parts.append(f"shape: {self.shape}")
-            parts.append(f"spacing: ({sp})")
-            parts.append(f"orientation: {orient}+")
-            parts.append(f"dtype: {self.dtype}")
-            parts.append(f"memory: {humanize.naturalsize(self.memory, binary=True)}")
+            ori = ", ".join(f"{o:.2f}" for o in self.origin)
+            angles = ", ".join(f"{a:.1f}°" for a in self.affine.euler_angles)
+            dt = str(self.dtype).replace("torch.", "")
+            mem = humanize.naturalsize(self.memory, binary=True)
+
+            # Path / loading status (after header read so backend is set)
+            if self._path is not None:
+                name = self._path.name
+                if self.is_loaded:
+                    lines.append(f"    path:        {name} (loaded)")
+                else:
+                    fmt = _backend_label(self._backend)
+                    lines.append(f"    path:        {name} (lazy, {fmt})")
+            else:
+                lines.append("    path:        (in memory)")
+
+            lines.append(f"    channels:    {self.num_channels}")
+            lines.append(f"    spatial:     {self.spatial_shape}")
+            lines.append(f"    spacing:     ({sp}) mm")
+            lines.append(f"    origin:      ({ori}) mm")
+            lines.append(f"    orientation: {''.join(self.orientation)}+")
+            lines.append(f"    angles:      ({angles})")
+            lines.append(f"    dtype:       {dt}")
+            lines.append(f"    memory:      {mem}")
         except Exception:
             if self._path is not None:
-                parts.append(f'path: "{self._path}"')
+                lines.append(f'    path: "{self._path}"')
+
         if self._points:
             names = ", ".join(self._points)
-            parts.append(f"points: {{{names}}}")
+            lines.append(f"    points:      {{{names}}}")
         if self._bounding_boxes:
             names = ", ".join(self._bounding_boxes)
-            parts.append(f"bounding_boxes: {{{names}}}")
-        return f"{cls_name}({'; '.join(parts)})"
+            lines.append(f"    bboxes:      {{{names}}}")
+
+        body = "\n".join(lines)
+        return f"{cls_name}(\n{body}\n)"
 
     def _repr_html_(self) -> str:
         """Rich HTML representation for Jupyter notebooks."""
         from ..repr_html import image_to_html
 
         return image_to_html(self)
+
+    def plot(self, **kwargs: Any) -> Any:
+        """Plot 3 orthogonal slices of the image.
+
+        Requires the ``[plot]`` extras (``pip install torchio[plot]``).
+        See [`plot_image`][torchio.visualization.plot_image] for the
+        full list of keyword arguments.
+        """
+        from ..visualization import plot_image
+
+        return plot_image(self, **kwargs)
 
     def __getattr__(self, name: str) -> Any:
         """Look up metadata by attribute name."""

@@ -156,7 +156,7 @@ def read_nifti_zarr(
         path: Path to a ``.nii.zarr`` directory.
         **kwargs: Forwarded to ``niizarr.zarr2nii()``.
     """
-    from ..imports import get_niizarr
+    from ..external.imports import get_niizarr
 
     niizarr = get_niizarr()
     nii = niizarr.zarr2nii(str(path), **kwargs)

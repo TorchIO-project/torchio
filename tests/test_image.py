@@ -270,7 +270,7 @@ class TestImageRepr:
         r = repr(image)
         assert "ScalarImage" in r
         # Now shows shape/dtype/memory even without loading
-        assert "shape" in r
+        assert "shape" in r or "spatial" in r
         assert "dtype" in r
         assert "memory" in r
 
