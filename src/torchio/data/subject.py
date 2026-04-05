@@ -349,6 +349,17 @@ class Subject(Invertible):
 
         return subject_to_html(self)
 
+    def plot(self, **kwargs: Any) -> Any:
+        """Plot all images as a grid of orthogonal slices.
+
+        Requires the ``[plot]`` extras (``pip install torchio[plot]``).
+        See [`plot_subject`][torchio.visualization.plot_subject] for the
+        full list of keyword arguments.
+        """
+        from ..visualization import plot_subject
+
+        return plot_subject(self, **kwargs)
+
 
 # In DICOM terminology, a "study" contains a set of "series" (volumes).
 # This maps directly to Subject (a container of named images + metadata).

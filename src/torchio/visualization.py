@@ -20,6 +20,7 @@ if TYPE_CHECKING:
     from matplotlib.figure import Figure
 
     from .data.image import Image
+    from .data.subject import Subject
     from .types import TypePath
 
 # Opposite anatomical direction for each orientation code.
@@ -120,6 +121,128 @@ def _find_axis(orientation: tuple[str, str, str], pair: str) -> int:
             return i
     msg = f"No axis found for pair {pair!r} in orientation {orientation}"
     raise ValueError(msg)
+
+
+def _plot_image_on_axes(
+    image: Image,
+    plot_axes: Sequence[Axes],
+    *,
+    channel: int = 0,
+    resolved: tuple[int, ...],
+    cmap: str | Colormap | None = None,
+    percentiles: tuple[float, float] = (0.5, 99.5),
+    voxels: bool = False,
+    intersections: bool = True,
+    show_labels: bool = True,
+    show_titles: bool = True,
+    **imshow_kwargs: Any,
+) -> None:
+    """Plot 3 orthogonal views of a single image onto pre-created axes."""
+    from .data.image import LabelMap
+
+    spatial_shape = image.spatial_shape
+    spacing = image.spacing
+    orientation = image.orientation
+    origin = image.origin
+
+    axis_for: dict[str, int] = {}
+    for pair in ("LR", "AP", "SI"):
+        axis_for[pair] = _find_axis(orientation, pair)
+
+    # Extract 2D slices via lazy Image.__getitem__
+    slices_2d: list[np.ndarray] = []
+    for _view_name, slice_pair, x_pair, y_pair, x_left, y_top in _VIEWS:
+        slice_axis = axis_for[slice_pair]
+        x_axis = axis_for[x_pair]
+        y_axis = axis_for[y_pair]
+
+        sl: list[slice | int] = [slice(None), slice(None), slice(None), slice(None)]
+        sl[0] = channel
+        sl[slice_axis + 1] = resolved[slice_axis]
+        plane = image[tuple(sl)]
+        data_2d = plane.data.squeeze().cpu().numpy()
+
+        if x_axis < y_axis:
+            data_2d = data_2d.T
+
+        x_code = orientation[x_axis]
+        y_code = orientation[y_axis]
+        if x_code == x_left:
+            data_2d = np.flip(data_2d, axis=1)
+        if y_code != y_top:
+            data_2d = np.flip(data_2d, axis=0)
+
+        slices_2d.append(np.ascontiguousarray(data_2d))
+
+    # Set up imshow defaults
+    kw = dict(imshow_kwargs)
+    is_label = isinstance(image, LabelMap)
+    if cmap is None:
+        if is_label:
+            cmap, norm = _get_categorical_cmap(slices_2d)
+            kw.setdefault("norm", norm)
+        else:
+            cmap = "gray"
+    kw.setdefault("cmap", cmap)
+    kw["origin"] = "lower"
+    if is_label:
+        kw.setdefault("interpolation", "none")
+    else:
+        kw.setdefault("interpolation", "bilinear")
+
+    if not is_label:
+        all_values = np.concatenate([s.ravel() for s in slices_2d])
+        vmin, vmax = np.percentile(all_values, percentiles)
+        kw.setdefault("vmin", vmin)
+        kw.setdefault("vmax", vmax)
+
+    # Plot each view
+    for view_idx, (view_name, slice_pair, x_pair, y_pair, x_left, y_top) in enumerate(
+        _VIEWS,
+    ):
+        ax = plot_axes[view_idx]
+        data_2d = slices_2d[view_idx]
+
+        slice_axis = axis_for[slice_pair]
+        x_axis = axis_for[x_pair]
+        y_axis = axis_for[y_pair]
+
+        aspect = spacing[y_axis] / spacing[x_axis]
+        ax.imshow(data_2d, aspect=aspect, **kw)
+
+        if show_labels:
+            x_code = orientation[x_axis]
+            y_code = orientation[y_axis]
+            x_label = f"{_axis_name(x_axis)} ({x_left} ↔ {_OPPOSITE[x_left]})"
+            y_label = f"{_axis_name(y_axis)} ({_OPPOSITE[y_top]} ↔ {y_top})"
+            ax.set_xlabel(x_label)
+            ax.set_ylabel(y_label)
+
+        _set_ticks(
+            ax,
+            x_axis=x_axis,
+            y_axis=y_axis,
+            x_code=orientation[x_axis],
+            y_code=orientation[y_axis],
+            x_left=x_left,
+            y_top=y_top,
+            spacing=spacing,
+            origin_mm=origin,
+            spatial_shape=spatial_shape,
+            voxels=voxels,
+        )
+
+        if show_titles:
+            ax.set_title(f"{view_name} [{resolved[slice_axis]}]")
+
+    if intersections:
+        _draw_intersections(
+            plot_axes,
+            axis_for=axis_for,
+            orientation=orientation,
+            spatial_shape=spatial_shape,
+            resolved=resolved,
+        )
 
 
 @overload
@@ -225,104 +348,19 @@ def plot_image(
         (the figure is displayed and closed to prevent duplicate
         rendering in notebooks).
     """
-    import torch
-
-    from .data.image import LabelMap
-
     mpl, plt = _get_mpl()
 
-    if indices is not None and coordinates is not None:
-        msg = "indices and coordinates are mutually exclusive"
-        raise ValueError(msg)
+    resolved = _resolve_indices(image, indices, coordinates)
 
     # Read spatial metadata from headers (no data load)
     spatial_shape = image.spatial_shape
     spacing = image.spacing
     orientation = image.orientation
-    origin = image.origin
-
-    # Resolve to voxel indices
-    if coordinates is not None:
-        inv_affine = image.affine.inverse()
-        voxel_coords = inv_affine.apply(
-            torch.tensor(
-                [[c if c is not None else float("nan") for c in coordinates]],
-                dtype=torch.float64,
-            ),
-        )[0]
-        c0, c1, c2 = coordinates
-        indices = (
-            None if c0 is None else round(float(voxel_coords[0])),
-            None if c1 is None else round(float(voxel_coords[1])),
-            None if c2 is None else round(float(voxel_coords[2])),
-        )
-
-    if indices is None:
-        indices = (None, None, None)
-    resolved = tuple(
-        s // 2 if idx is None else idx
-        for idx, s in zip(indices, spatial_shape, strict=True)
-    )
 
     # Find tensor axis for each anatomical pair
     axis_for: dict[str, int] = {}
     for pair in ("LR", "AP", "SI"):
         axis_for[pair] = _find_axis(orientation, pair)
-
-    # Extract 2D slices via lazy Image.__getitem__
-    slices_2d: list[np.ndarray] = []
-    for _view_name, slice_pair, x_pair, y_pair, x_left, y_top in _VIEWS:
-        slice_axis = axis_for[slice_pair]
-        x_axis = axis_for[x_pair]
-        y_axis = axis_for[y_pair]
-
-        # Slice through the appropriate axis
-        sl: list[slice | int] = [slice(None), slice(None), slice(None), slice(None)]
-        sl[0] = channel
-        sl[slice_axis + 1] = resolved[slice_axis]
-        plane = image[tuple(sl)]
-        data_2d = plane.data.squeeze().cpu().numpy()
-
-        # data_2d axes are the two remaining spatial axes in tensor order.
-        # We need: rows = y_axis, cols = x_axis.
-        # After slicing axis `slice_axis`, remaining axes are sorted.
-        # If x_axis < y_axis: data_2d dims = (x, y) → transpose to (y, x)
-        if x_axis < y_axis:
-            data_2d = data_2d.T
-
-        # Flip to match expected anatomical display
-        # x: x_left should be at col 0 (left in imshow)
-        # y: y_top should be at last row (top with origin='lower')
-        x_code = orientation[x_axis]
-        y_code = orientation[y_axis]
-        if x_code == x_left:
-            data_2d = np.flip(data_2d, axis=1)
-        if y_code != y_top:
-            data_2d = np.flip(data_2d, axis=0)
-
-        slices_2d.append(np.ascontiguousarray(data_2d))
-
-    # Set up imshow defaults
-    is_label = isinstance(image, LabelMap)
-    if cmap is None:
-        if is_label:
-            cmap, norm = _get_categorical_cmap(slices_2d)
-            imshow_kwargs.setdefault("norm", norm)
-        else:
-            cmap = "gray"
-    imshow_kwargs.setdefault("cmap", cmap)
-    imshow_kwargs["origin"] = "lower"
-    if is_label:
-        imshow_kwargs.setdefault("interpolation", "none")
-    else:
-        imshow_kwargs.setdefault("interpolation", "bilinear")
-
-    # Percentile windowing (skip for label maps)
-    if not is_label:
-        all_values = np.concatenate([s.ravel() for s in slices_2d])
-        vmin, vmax = np.percentile(all_values, percentiles)
-        imshow_kwargs.setdefault("vmin", vmin)
-        imshow_kwargs.setdefault("vmax", vmax)
 
     # Compute physical extents for proportional subplot sizing
     lr_mm = spatial_shape[axis_for["LR"]] * spacing[axis_for["LR"]]
@@ -348,56 +386,237 @@ def plot_image(
         plot_axes = axes
         fig = cast("Figure", plot_axes[0].get_figure())
 
-    # Plot each view
-    for view_idx, (view_name, slice_pair, x_pair, y_pair, x_left, y_top) in enumerate(
-        _VIEWS,
-    ):
-        ax = plot_axes[view_idx]
-        data_2d = slices_2d[view_idx]
+    _plot_image_on_axes(
+        image=image,
+        plot_axes=plot_axes,
+        channel=channel,
+        resolved=resolved,
+        cmap=cmap,
+        percentiles=percentiles,
+        voxels=voxels,
+        intersections=intersections,
+        **imshow_kwargs,
+    )
 
-        slice_axis = axis_for[slice_pair]
-        x_axis = axis_for[x_pair]
-        y_axis = axis_for[y_pair]
+    if title is not None:
+        fig.suptitle(title)
+    fig.tight_layout()
 
-        # Aspect ratio from spacing
-        aspect = spacing[y_axis] / spacing[x_axis]
-        ax.imshow(data_2d, aspect=aspect, **imshow_kwargs)
+    if output_path is not None:
+        fig.savefig(output_path, **(savefig_kwargs or {}))
+    if show:
+        plt.show()
+        plt.close(fig)
+        return None
 
-        # Axis labels: "J (A ↔ P)"
-        x_code = orientation[x_axis]
-        y_code = orientation[y_axis]
-        x_label = f"{_axis_name(x_axis)} ({x_left} ↔ {_OPPOSITE[x_left]})"
-        y_label = f"{_axis_name(y_axis)} ({_OPPOSITE[y_top]} ↔ {y_top})"
-        ax.set_xlabel(x_label)
-        ax.set_ylabel(y_label)
+    return fig
 
-        # Tick labels: world coordinates (mm) or voxel indices
-        _set_ticks(
-            ax,
-            x_axis=x_axis,
-            y_axis=y_axis,
-            x_code=x_code,
-            y_code=y_code,
-            x_left=x_left,
-            y_top=y_top,
-            spacing=spacing,
-            origin_mm=origin,
-            spatial_shape=spatial_shape,
+
+def _resolve_indices(
+    image: Image,
+    indices: tuple[int | None, int | None, int | None] | None,
+    coordinates: tuple[float | None, float | None, float | None] | None,
+) -> tuple[int, ...]:
+    """Resolve indices/coordinates to concrete voxel indices."""
+    import torch
+
+    if indices is not None and coordinates is not None:
+        msg = "indices and coordinates are mutually exclusive"
+        raise ValueError(msg)
+
+    spatial_shape = image.spatial_shape
+
+    if coordinates is not None:
+        inv_affine = image.affine.inverse()
+        voxel_coords = inv_affine.apply(
+            torch.tensor(
+                [[c if c is not None else float("nan") for c in coordinates]],
+                dtype=torch.float64,
+            ),
+        )[0]
+        c0, c1, c2 = coordinates
+        indices = (
+            None if c0 is None else round(float(voxel_coords[0])),
+            None if c1 is None else round(float(voxel_coords[1])),
+            None if c2 is None else round(float(voxel_coords[2])),
+        )
+
+    if indices is None:
+        indices = (None, None, None)
+    return tuple(
+        s // 2 if idx is None else idx
+        for idx, s in zip(indices, spatial_shape, strict=True)
+    )
+
+
+@overload
+def plot_subject(
+    subject: Subject,
+    *,
+    show: Literal[False],
+    channel: int = ...,
+    indices: tuple[int | None, int | None, int | None] | None = ...,
+    coordinates: tuple[float | None, float | None, float | None] | None = ...,
+    cmap_dict: dict[str, str | Colormap] | None = ...,
+    percentiles: tuple[float, float] = ...,
+    figsize: tuple[float, float] | None = ...,
+    title: str | None = ...,
+    output_path: TypePath | None = ...,
+    savefig_kwargs: dict[str, Any] | None = ...,
+    voxels: bool = ...,
+    figsize_multiplier: float = ...,
+    intersections: bool = ...,
+    **imshow_kwargs: Any,
+) -> Figure: ...
+
+
+@overload
+def plot_subject(
+    subject: Subject,
+    *,
+    show: Literal[True] = ...,
+    channel: int = ...,
+    indices: tuple[int | None, int | None, int | None] | None = ...,
+    coordinates: tuple[float | None, float | None, float | None] | None = ...,
+    cmap_dict: dict[str, str | Colormap] | None = ...,
+    percentiles: tuple[float, float] = ...,
+    figsize: tuple[float, float] | None = ...,
+    title: str | None = ...,
+    output_path: TypePath | None = ...,
+    savefig_kwargs: dict[str, Any] | None = ...,
+    voxels: bool = ...,
+    figsize_multiplier: float = ...,
+    intersections: bool = ...,
+    **imshow_kwargs: Any,
+) -> None: ...
+
+
+def plot_subject(
+    subject: Subject,
+    *,
+    channel: int = 0,
+    indices: tuple[int | None, int | None, int | None] | None = None,
+    coordinates: tuple[float | None, float | None, float | None] | None = None,
+    cmap_dict: dict[str, str | Colormap] | None = None,
+    percentiles: tuple[float, float] = (0.5, 99.5),
+    figsize: tuple[float, float] | None = None,
+    title: str | None = None,
+    output_path: TypePath | None = None,
+    show: bool = True,
+    savefig_kwargs: dict[str, Any] | None = None,
+    voxels: bool = False,
+    figsize_multiplier: float = 2.0,
+    intersections: bool = True,
+    **imshow_kwargs: Any,
+) -> Figure | None:
+    """Plot all images in a subject as a grid.
+
+    Each image gets a row (or column if >3 images) of Sagittal,
+    Coronal, Axial views. LabelMaps are automatically detected and
+    use categorical colormaps.
+
+    Args:
+        subject: The subject to plot.
+        channel: Which channel to display.
+        indices: Voxel indices for each slice. Mutually exclusive
+            with ``coordinates``.
+        coordinates: World coordinates in mm. Mutually exclusive
+            with ``indices``.
+        cmap_dict: Per-image colormap overrides, keyed by image name.
+        percentiles: Intensity percentile range for windowing.
+        figsize: Figure size in inches.
+        title: Figure super-title.
+        output_path: Save figure to this path.
+        show: Call ``plt.show()`` after plotting.
+        savefig_kwargs: Extra keyword arguments for ``fig.savefig()``.
+        voxels: Show voxel ticks instead of world coordinates.
+        figsize_multiplier: Scale factor for default figure size.
+        intersections: Draw slice intersection cross-hairs.
+        **imshow_kwargs: Forwarded to ``ax.imshow()``.
+
+    Returns:
+        The ``Figure``, or ``None`` when ``show=True``.
+    """
+    mpl, plt = _get_mpl()
+
+    images = subject.images
+    num_images = len(images)
+    if num_images == 0:
+        msg = "Subject has no images to plot"
+        raise ValueError(msg)
+
+    # Resolve indices from the first image
+    first_image = next(iter(images.values()))
+    _resolve_indices(first_image, indices, coordinates)  # validates inputs
+
+    many = num_images > 3
+    n_views = 3
+
+    # Compute width ratios from first image
+    orientation = first_image.orientation
+    spacing = first_image.spacing
+    spatial_shape = first_image.spatial_shape
+    axis_for: dict[str, int] = {}
+    for pair in ("LR", "AP", "SI"):
+        axis_for[pair] = _find_axis(orientation, pair)
+    lr_mm = spatial_shape[axis_for["LR"]] * spacing[axis_for["LR"]]
+    ap_mm = spatial_shape[axis_for["AP"]] * spacing[axis_for["AP"]]
+    width_ratios = [ap_mm, lr_mm, lr_mm]
+
+    if figsize is None:
+        default_w, default_h = plt.rcParams["figure.figsize"]
+        figsize = (
+            default_w * figsize_multiplier,
+            default_h * figsize_multiplier,
+        )
+
+    if many:
+        nrows, ncols = n_views, num_images
+        gs = mpl.gridspec.GridSpec(nrows, ncols)
+    else:
+        nrows, ncols = num_images, n_views
+        gs = mpl.gridspec.GridSpec(nrows, ncols, width_ratios=width_ratios)
+
+    fig = plt.figure(figsize=figsize)
+    all_axes = [[fig.add_subplot(gs[r, c]) for c in range(ncols)] for r in range(nrows)]
+    view_names = [v[0] for v in _VIEWS]
+
+    for img_idx, (name, image) in enumerate(images.items()):
+        cmap = cmap_dict.get(name) if cmap_dict else None
+        img_resolved = _resolve_indices(image, indices, coordinates)
+        img_axes = (
+            [all_axes[v][img_idx] for v in range(n_views)]
+            if many
+            else all_axes[img_idx]
+        )
+        is_edge = img_idx == 0 if many else img_idx == num_images - 1
+        cls_name = type(image).__name__
+
+        _plot_image_on_axes(
+            image=image,
+            plot_axes=img_axes,
+            channel=channel,
+            resolved=img_resolved,
+            cmap=cmap,
+            percentiles=percentiles,
             voxels=voxels,
+            intersections=intersections,
+            show_labels=is_edge,
+            show_titles=False,
+            **imshow_kwargs,
         )
 
-        # Title
-        ax.set_title(f"{view_name} [{resolved[slice_axis]}]")
+        if many:
+            img_axes[0].set_title(f"{name}\n({cls_name})")
+        else:
+            img_axes[0].set_ylabel(f"{name}\n({cls_name})", fontsize=10)
 
-    # Draw slice intersection lines
-    if intersections:
-        _draw_intersections(
-            plot_axes,
-            axis_for=axis_for,
-            orientation=orientation,
-            spatial_shape=spatial_shape,
-            resolved=resolved,
-        )
+    if many:
+        for v_idx, row_axes in enumerate(all_axes):
+            row_axes[0].set_ylabel(view_names[v_idx])
+    else:
+        for v_idx in range(n_views):
+            all_axes[0][v_idx].set_title(view_names[v_idx])
 
     if title is not None:
         fig.suptitle(title)

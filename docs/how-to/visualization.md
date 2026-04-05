@@ -5,6 +5,25 @@ orthogonal slices (Sagittal, Coronal, Axial) with correct anatomical
 orientation and proportions. It works with any image orientation —
 RAS, LPS, or anything else.
 
+!!! note "Optional dependency"
+    Plotting requires the `plot` extra:
+
+    === "uv"
+
+        ```
+        uv add torchio[plot]
+        ```
+
+    === "pip"
+
+        ```
+        pip install torchio[plot]
+        ```
+
+    This installs [matplotlib](https://matplotlib.org/) and
+    [colorcet](https://colorcet.holoviz.org/) (for categorical
+    colormaps).
+
 ## Basic usage
 
 ```python
@@ -127,6 +146,36 @@ image  # shows 3 slices + metadata table
 ```
 
 Call `image.plot()` explicitly to get a larger, interactive figure.
+
+## Subjects
+
+Plot all images in a subject as a grid:
+
+```python
+subject = tio.Subject(
+    t1=tio.ScalarImage("t1.nii.gz"),
+    seg=tio.LabelMap("seg.nii.gz"),
+)
+subject.plot()
+```
+
+Each image gets a row of Sagittal/Coronal/Axial views (or columns
+if there are more than 3 images). LabelMaps are automatically
+detected and use categorical colormaps.
+
+### Per-image colormaps
+
+```python
+subject.plot(cmap_dict={"t1": "hot", "seg": "viridis"})
+```
+
+### In Jupyter
+
+`Subject` objects also display an inline plot via `_repr_html_`:
+
+```python
+subject  # shows grid + metadata tables
+```
 
 ## How it works
 

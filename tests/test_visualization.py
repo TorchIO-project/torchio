@@ -202,3 +202,58 @@ class TestReprHtml:
         img = tio.ScalarImage.from_tensor(torch.rand(1, 10, 10, 10))
         html = img._repr_html_()
         assert "data:image/png;base64" in html
+
+
+class TestPlotSubject:
+    def test_returns_figure(self) -> None:
+        subject = tio.Subject(
+            t1=tio.ScalarImage.from_tensor(torch.rand(1, 10, 10, 10)),
+            seg=tio.LabelMap.from_tensor(torch.randint(0, 3, (1, 10, 10, 10))),
+        )
+        fig = subject.plot(show=False)
+        assert isinstance(fig, Figure)
+
+    def test_many_images_transposes(self) -> None:
+        """With >3 images, layout should transpose to rows=views, cols=images."""
+        subject = tio.Subject(
+            **{
+                f"img{i}": tio.ScalarImage.from_tensor(torch.rand(1, 10, 10, 10))
+                for i in range(4)
+            }
+        )
+        fig = subject.plot(show=False)
+        assert isinstance(fig, Figure)
+        # 3 rows (views) x 4 cols (images) = 12 axes
+        assert len(fig.axes) == 12
+
+    def test_few_images_rows(self) -> None:
+        """With ≤3 images, rows=images, cols=views."""
+        subject = tio.Subject(
+            t1=tio.ScalarImage.from_tensor(torch.rand(1, 10, 10, 10)),
+            t2=tio.ScalarImage.from_tensor(torch.rand(1, 10, 10, 10)),
+        )
+        fig = subject.plot(show=False)
+        # 2 rows (images) x 3 cols (views) = 6 axes
+        assert len(fig.axes) == 6
+
+    def test_cmap_dict(self) -> None:
+        subject = tio.Subject(
+            t1=tio.ScalarImage.from_tensor(torch.rand(1, 10, 10, 10)),
+        )
+        fig = subject.plot(show=False, cmap_dict={"t1": "hot"})
+        assert isinstance(fig, Figure)
+
+    def test_save_to_file(self, tmp_path) -> None:
+        subject = tio.Subject(
+            t1=tio.ScalarImage.from_tensor(torch.rand(1, 10, 10, 10)),
+        )
+        out = tmp_path / "subject.png"
+        subject.plot(output_path=out, show=False)
+        assert out.exists()
+
+    def test_subject_repr_html_contains_plot(self) -> None:
+        subject = tio.Subject(
+            t1=tio.ScalarImage.from_tensor(torch.rand(1, 10, 10, 10)),
+        )
+        html = subject._repr_html_()
+        assert "data:image/png;base64" in html

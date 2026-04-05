@@ -184,4 +184,38 @@ def subject_to_html(subject: Subject) -> str:
             rows.append(_row(key, str(value)))
         parts.append('<table class="tio-table">\n' + "\n".join(rows) + "\n</table>")
 
+    # Embed subject plot
+    plot_html = _try_subject_plot_base64(subject)
+    if plot_html:
+        parts.append(plot_html)
+
     return "\n".join(parts)
+
+
+def _try_subject_plot_base64(subject: Subject) -> str | None:
+    """Render a subject grid plot as an inline base64 ``<img>`` tag."""
+    try:
+        from .visualization import plot_subject
+    except ImportError:
+        return None
+
+    import base64
+    import io
+
+    try:
+        import matplotlib
+
+        matplotlib.use("Agg")
+        fig = plot_subject(subject, show=False, figsize=(12, 3 * len(subject.images)))
+        if fig is None:
+            return None
+        buf = io.BytesIO()
+        fig.savefig(buf, format="png", bbox_inches="tight", dpi=100)
+        import matplotlib.pyplot as plt
+
+        plt.close(fig)
+        buf.seek(0)
+        b64 = base64.b64encode(buf.read()).decode("ascii")
+        return f'<img src="data:image/png;base64,{b64}" />'
+    except Exception:
+        return None
