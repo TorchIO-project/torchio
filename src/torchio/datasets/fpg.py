@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import urllib.parse
+from typing import Any
 from typing import ClassVar
 
 from ..data import LabelMap
@@ -59,6 +60,7 @@ class FPG(Subject):
                 download_root / filenames["seg"],
                 rigid_matrix=rigid,
                 affine_matrix=affine_matrix,
+                color_map=FPG.GIF_COLORS,
             ),
         }
         if load_all:
@@ -70,6 +72,11 @@ class FPG(Subject):
                 download_root / filenames["dmri"],
             )
         super().__init__(**subject_dict)
+
+    def plot(self, **kwargs: Any) -> Any:
+        """Plot with GIF parcellation colors for the seg image."""
+        kwargs.setdefault("cmap_dict", {"seg": self.GIF_COLORS})
+        return super().plot(**kwargs)
 
     GIF_COLORS: ClassVar[dict[int, tuple[int, int, int]]] = {
         0: (0, 0, 0),

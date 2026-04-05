@@ -80,6 +80,19 @@ def _get_mpl():
     return matplotlib, plt
 
 
+def _display_figure(fig: Figure) -> None:
+    """Display a figure inline (notebooks) or interactively (scripts)."""
+    try:
+        from IPython.display import display
+
+        display(fig)
+    except ImportError:
+        import matplotlib.pyplot as plt
+
+        plt.show()
+        plt.close(fig)
+
+
 def _get_categorical_cmap(
     slices_2d: list[np.ndarray],
     cmap_name: str = "glasbey_category10",
@@ -156,18 +169,49 @@ def _extract_slices(
     return slices_2d
 
 
+def _resolve_label_colors(
+    image: Image,
+    cmap: str | Colormap | dict[int, tuple[int, int, int]] | None,
+    slices_2d: list[np.ndarray],
+    kw: dict[str, Any],
+) -> tuple[list[np.ndarray], bool]:
+    """If cmap is a color dict (or image carries one), colorize slices."""
+    color_map: dict[int, tuple[int, int, int]] | None = None
+    if isinstance(cmap, dict):
+        color_map = cast("dict[int, tuple[int, int, int]]", cmap)
+    elif cmap is None and hasattr(image, "color_map"):
+        meta = image.color_map
+        if isinstance(meta, dict):
+            color_map = cast("dict[int, tuple[int, int, int]]", meta)
+
+    if color_map is not None:
+        slices_2d = _colorize_labels(slices_2d, color_map)
+        kw["origin"] = "lower"
+        kw.setdefault("interpolation", "none")
+        return slices_2d, True
+    return slices_2d, False
+
+
 def _build_imshow_kwargs(
     image: Image,
     slices_2d: list[np.ndarray],
-    cmap: str | Colormap | None,
+    cmap: str | Colormap | dict[int, tuple[int, int, int]] | None,
     percentiles: tuple[float, float],
     imshow_kwargs: dict[str, Any],
-) -> dict[str, Any]:
-    """Prepare the keyword arguments for ``ax.imshow()``."""
+) -> tuple[dict[str, Any], list[np.ndarray]]:
+    """Prepare the keyword arguments for ``ax.imshow()``.
+
+    Returns the kwargs dict and (possibly RGB-converted) slices.
+    """
     from .data.image import LabelMap
 
     kw = dict(imshow_kwargs)
     is_label = isinstance(image, LabelMap)
+
+    slices_2d, colorized = _resolve_label_colors(image, cmap, slices_2d, kw)
+    if colorized:
+        return kw, slices_2d
+
     if cmap is None:
         if is_label:
             cmap, norm = _get_categorical_cmap(slices_2d)
@@ -186,7 +230,22 @@ def _build_imshow_kwargs(
         vmin, vmax = np.percentile(all_values, percentiles)
         kw.setdefault("vmin", vmin)
         kw.setdefault("vmax", vmax)
-    return kw
+    return kw, slices_2d
+
+
+def _colorize_labels(
+    slices_2d: list[np.ndarray],
+    color_map: dict[int, tuple[int, int, int]],
+) -> list[np.ndarray]:
+    """Convert label slices to RGB using a label-to-color mapping."""
+    result: list[np.ndarray] = []
+    for label_slice in slices_2d:
+        h, w = label_slice.shape[:2]
+        rgb = np.zeros((h, w, 3), dtype=np.uint8)
+        for label, color in color_map.items():
+            rgb[label_slice == label] = color
+        result.append(rgb)
+    return result
 
 
 def _plot_image_on_axes(
@@ -195,11 +254,10 @@ def _plot_image_on_axes(
     *,
     channel: int = 0,
     resolved: tuple[int, ...],
-    cmap: str | Colormap | None = None,
+    cmap: str | Colormap | dict[int, tuple[int, int, int]] | None = None,
     percentiles: tuple[float, float] = (0.5, 99.5),
     voxels: bool = False,
     intersections: bool = True,
-    show_labels: bool = True,
     show_titles: bool = True,
     **imshow_kwargs: Any,
 ) -> None:
@@ -214,7 +272,13 @@ def _plot_image_on_axes(
         axis_for[pair] = _find_axis(orientation, pair)
 
     slices_2d = _extract_slices(image, channel, resolved, axis_for)
-    kw = _build_imshow_kwargs(image, slices_2d, cmap, percentiles, imshow_kwargs)
+    kw, slices_2d = _build_imshow_kwargs(
+        image,
+        slices_2d,
+        cmap,
+        percentiles,
+        imshow_kwargs,
+    )
 
     for view_idx, (view_name, slice_pair, x_pair, y_pair, x_left, y_top) in enumerate(
         _VIEWS,
@@ -228,11 +292,10 @@ def _plot_image_on_axes(
         aspect = spacing[y_axis] / spacing[x_axis]
         ax.imshow(slices_2d[view_idx], aspect=aspect, **kw)
 
-        if show_labels:
-            x_label = f"{_axis_name(x_axis)} ({x_left} ↔ {_OPPOSITE[x_left]})"
-            y_label = f"{_axis_name(y_axis)} ({_OPPOSITE[y_top]} ↔ {y_top})"
-            ax.set_xlabel(x_label)
-            ax.set_ylabel(y_label)
+        x_label = f"{_axis_name(x_axis)} ({x_left} ↔ {_OPPOSITE[x_left]})"
+        y_label = f"{_axis_name(y_axis)} ({_OPPOSITE[y_top]} ↔ {y_top})"
+        ax.set_xlabel(x_label)
+        ax.set_ylabel(y_label)
 
         _set_ticks(
             ax,
@@ -270,7 +333,7 @@ def plot_image(
     indices: tuple[int | None, int | None, int | None] | None = ...,
     coordinates: tuple[float | None, float | None, float | None] | None = ...,
     axes: Sequence[Axes] | None = ...,
-    cmap: str | Colormap | None = ...,
+    cmap: str | Colormap | dict[int, tuple[int, int, int]] | None = ...,
     percentiles: tuple[float, float] = ...,
     figsize: tuple[float, float] | None = ...,
     title: str | None = ...,
@@ -292,7 +355,7 @@ def plot_image(
     indices: tuple[int | None, int | None, int | None] | None = ...,
     coordinates: tuple[float | None, float | None, float | None] | None = ...,
     axes: Sequence[Axes] | None = ...,
-    cmap: str | Colormap | None = ...,
+    cmap: str | Colormap | dict[int, tuple[int, int, int]] | None = ...,
     percentiles: tuple[float, float] = ...,
     figsize: tuple[float, float] | None = ...,
     title: str | None = ...,
@@ -312,7 +375,7 @@ def plot_image(
     indices: tuple[int | None, int | None, int | None] | None = None,
     coordinates: tuple[float | None, float | None, float | None] | None = None,
     axes: Sequence[Axes] | None = None,
-    cmap: str | Colormap | None = None,
+    cmap: str | Colormap | dict[int, tuple[int, int, int]] | None = None,
     percentiles: tuple[float, float] = (0.5, 99.5),
     figsize: tuple[float, float] | None = None,
     title: str | None = None,
@@ -394,6 +457,7 @@ def plot_image(
             )
         gs = mpl.gridspec.GridSpec(1, 3, width_ratios=width_ratios)
         fig = plt.figure(figsize=figsize)
+        plt.close(fig)
         plot_axes: Sequence[Axes] = [fig.add_subplot(gs[0, i]) for i in range(3)]
     else:
         if len(axes) < 3:
@@ -421,8 +485,7 @@ def plot_image(
     if output_path is not None:
         fig.savefig(output_path, **(savefig_kwargs or {}))
     if show:
-        plt.show()
-        plt.close(fig)
+        _display_figure(fig)
         return None
 
     return fig
@@ -479,7 +542,7 @@ def plot_subject(
     channel: int = ...,
     indices: tuple[int | None, int | None, int | None] | None = ...,
     coordinates: tuple[float | None, float | None, float | None] | None = ...,
-    cmap_dict: dict[str, str | Colormap] | None = ...,
+    cmap_dict: dict[str, Any] | None = ...,
     percentiles: tuple[float, float] = ...,
     figsize: tuple[float, float] | None = ...,
     title: str | None = ...,
@@ -500,7 +563,7 @@ def plot_subject(
     channel: int = ...,
     indices: tuple[int | None, int | None, int | None] | None = ...,
     coordinates: tuple[float | None, float | None, float | None] | None = ...,
-    cmap_dict: dict[str, str | Colormap] | None = ...,
+    cmap_dict: dict[str, Any] | None = ...,
     percentiles: tuple[float, float] = ...,
     figsize: tuple[float, float] | None = ...,
     title: str | None = ...,
@@ -519,7 +582,7 @@ def plot_subject(
     channel: int = 0,
     indices: tuple[int | None, int | None, int | None] | None = None,
     coordinates: tuple[float | None, float | None, float | None] | None = None,
-    cmap_dict: dict[str, str | Colormap] | None = None,
+    cmap_dict: dict[str, Any] | None = None,
     percentiles: tuple[float, float] = (0.5, 99.5),
     figsize: tuple[float, float] | None = None,
     title: str | None = None,
@@ -602,8 +665,7 @@ def plot_subject(
     if output_path is not None:
         fig.savefig(output_path, **(savefig_kwargs or {}))
     if show:
-        plt.show()
-        plt.close(fig)
+        _display_figure(fig)
         return None
 
     return fig
@@ -642,6 +704,7 @@ def _create_subject_grid(
         gs = mpl.gridspec.GridSpec(nrows, ncols, width_ratios=width_ratios)
 
     fig = plt.figure(figsize=figsize)
+    plt.close(fig)
     all_axes = [[fig.add_subplot(gs[r, c]) for c in range(ncols)] for r in range(nrows)]
     return fig, all_axes
 
@@ -662,13 +725,11 @@ def _populate_subject_grid(
 ) -> None:
     """Plot each image into its row/column of the subject grid."""
     n_views = 3
-    num_images = len(images)
 
     for img_idx, (name, image) in enumerate(images.items()):
         cmap = cmap_dict.get(name) if cmap_dict else None
         img_resolved = _resolve_indices(image, indices, coordinates)
         img_axes = _get_image_axes(all_axes, img_idx, n_views, many)
-        is_edge = img_idx == 0 if many else img_idx == num_images - 1
 
         _plot_image_on_axes(
             image=image,
@@ -679,15 +740,11 @@ def _populate_subject_grid(
             percentiles=percentiles,
             voxels=voxels,
             intersections=intersections,
-            show_labels=is_edge,
             show_titles=False,
             **imshow_kwargs,
         )
 
-        cls_name = type(image).__name__
-        _label_image_header(img_axes, name, cls_name, many)
-
-    _add_view_labels(all_axes, many)
+        _label_image_header(img_axes, name, many)
 
 
 def _get_image_axes(
@@ -705,25 +762,15 @@ def _get_image_axes(
 def _label_image_header(
     img_axes: list[Any],
     name: str,
-    cls_name: str,
     many: bool,
 ) -> None:
-    """Add image name + type as a row/column header."""
+    """Add image name as a row/column header."""
     if many:
-        img_axes[0].set_title(f"{name}\n({cls_name})")
+        img_axes[0].set_title(name)
     else:
-        img_axes[0].set_ylabel(f"{name}\n({cls_name})", fontsize=10)
-
-
-def _add_view_labels(all_axes: list[list[Any]], many: bool) -> None:
-    """Add Sagittal/Coronal/Axial labels to the grid edges."""
-    view_names = [v[0] for v in _VIEWS]
-    if many:
-        for v_idx, row_axes in enumerate(all_axes):
-            row_axes[0].set_ylabel(view_names[v_idx])
-    else:
-        for v_idx in range(len(view_names)):
-            all_axes[0][v_idx].set_title(view_names[v_idx])
+        # Prepend image name to the existing ylabel (orientation label)
+        existing = img_axes[0].get_ylabel()
+        img_axes[0].set_ylabel(f"{name}\n{existing}", fontsize=10)
 
 
 def _axis_name(axis: int) -> str:
