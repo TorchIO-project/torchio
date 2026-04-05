@@ -1,6 +1,6 @@
 # Working with annotations
 
-This tutorial introduces `Points` and `BoundingBoxes` -- two data
+This tutorial introduces `Points` and `BoundingBoxes`, two data
 structures for storing spatial annotations alongside medical images.
 
 ## Prerequisites

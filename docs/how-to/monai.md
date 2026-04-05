@@ -35,7 +35,7 @@ adapter = tio.MonaiAdapter(NormalizeIntensity(), include=["t1"])
 ### Dictionary transforms
 
 Dictionary transforms (e.g., `NormalizeIntensityd`) operate on the
-full subject dictionary — only the keys specified in the MONAI
+full subject dictionary. Only the keys specified in the MONAI
 transform are modified:
 
 ```python

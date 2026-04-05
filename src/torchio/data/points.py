@@ -3,12 +3,12 @@
 from __future__ import annotations
 
 from typing import Any
-from typing import Self
 
 import numpy as np
 import numpy.typing as npt
 import torch
 from torch import Tensor
+from typing_extensions import Self
 
 from .affine import Affine
 from .axes import AxesType

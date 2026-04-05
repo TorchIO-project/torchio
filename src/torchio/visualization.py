@@ -100,8 +100,7 @@ def _get_categorical_cmap(
     if num_classes > 1:
         from .external.imports import get_colorcet
 
-        cc = get_colorcet()
-        if cc is not None:
+        if (cc := get_colorcet()) is not None:
             cc_cmap = getattr(cc.cm, cmap_name)
             color_cycle = cycle(cc_cmap.colors)
         else:
@@ -845,8 +844,10 @@ def _mm_tick_labels(
 
 def _world_dim(code: str) -> int:
     """Map an orientation code to the world coordinate dimension (0=x, 1=y, 2=z)."""
-    if code in ("R", "L"):
-        return 0
-    if code in ("A", "P"):
-        return 1
-    return 2
+    match code:
+        case "R" | "L":
+            return 0
+        case "A" | "P":
+            return 1
+        case _:
+            return 2

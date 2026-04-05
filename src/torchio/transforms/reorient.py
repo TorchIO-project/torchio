@@ -77,8 +77,7 @@ def _apply_reorientation(
     flip_flags = ornt[:, 1]
 
     # Step 1: flip input axes where direction is -1
-    flip_dims = [int(input_axes[i]) - 3 for i in range(3) if flip_flags[i] == -1]
-    if flip_dims:
+    if flip_dims := [int(input_axes[i]) - 3 for i in range(3) if flip_flags[i] == -1]:
         data = torch.flip(data, flip_dims)
 
     # Step 2: permute spatial axes (-3, -2, -1)

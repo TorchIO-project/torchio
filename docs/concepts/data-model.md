@@ -67,7 +67,7 @@ classDiagram
 An `Image` represents a single 3D (or multi-channel 3D) medical image.
 It stores:
 
-- A **4D tensor** with shape $(C, I, J, K)$ -- channels, then three
+- A **4D tensor** with shape $(C, I, J, K)$: channels, then three
   spatial dimensions.
 - An **affine matrix** mapping voxel indices $(i, j, k)$ to world
   coordinates $(x, y, z)$ in millimeters.
@@ -104,11 +104,11 @@ image.metadata       # {"protocol": "MPRAGE", "te": 3.5}
 ### ScalarImage vs LabelMap
 
 `ScalarImage` and `LabelMap` are subclasses of `Image`. They carry no
-extra data -- the distinction is purely semantic:
+extra data. The distinction is purely semantic:
 
-- **ScalarImage** -- continuous intensity data (MRI signal, CT
+- **ScalarImage**: continuous intensity data (MRI signal, CT
   Hounsfield units, PET SUV).
-- **LabelMap** -- discrete segmentation labels (0 = background, 1 =
+- **LabelMap**: discrete segmentation labels (0 = background, 1 =
   tumor, etc.).
 
 Transforms use `isinstance` checks to decide behavior. For example,
@@ -142,11 +142,11 @@ $$
 
 It provides named access to the components people usually care about:
 
-- **`spacing`** -- voxel size in mm, derived from the column norms of
+- **`spacing`**: voxel size in mm, derived from the column norms of
   the rotation-zoom block.
-- **`origin`** -- world coordinates of the voxel at index $(0, 0, 0)$.
-- **`direction`** -- $3 \times 3$ rotation matrix (spacing factored out).
-- **`orientation`** -- anatomical axis codes like `('R', 'A', 'S')`.
+- **`origin`**: world coordinates of the voxel at index $(0, 0, 0)$.
+- **`direction`**: $3 \times 3$ rotation matrix (spacing factored out).
+- **`orientation`**: anatomical axis codes like `('R', 'A', 'S')`.
 
 Affines compose via the `@` operator:
 
@@ -194,7 +194,7 @@ The format is parameterised by **axes** and **representation**:
 Custom formats are created with
 `BoundingBoxFormat("RAS", "corners")`, etc.
 
-Convert between formats with `to_format()` — this handles
+Convert between formats with `to_format()`. This handles
 representation changes, axis permutations, and even voxel ↔ anatomical
 conversions (using the stored affine). Optionally attach an integer
 `labels` tensor to track per-box class IDs.
@@ -217,7 +217,7 @@ subject = tio.Subject(
 )
 ```
 
-`Study` is an alias for `Subject` — both refer to the same class.
+`Study` is an alias for `Subject`. Both refer to the same class.
 In DICOM terminology, a "study" contains "series" (volumes), which
 maps directly to this container. Neuroscience users tend to think
 in "subjects", radiology users in "studies":
@@ -242,7 +242,7 @@ subject.tumors      # the BoundingBoxes
 subject.age         # 45
 ```
 
-The `Subject` checks consistency across images -- for example,
+The `Subject` checks consistency across images. For example,
 `subject.spatial_shape` raises an error if the images have different
 spatial shapes.
 
@@ -272,7 +272,7 @@ A typical workflow:
 1. Create `Image` objects from file paths (lazy, no data read).
 2. Create `Points` or `BoundingBoxes` from annotations.
 3. Group them into a `Subject`.
-4. Apply transforms to the `Subject` -- this triggers loading and
+4. Apply transforms to the `Subject`. This triggers loading and
    produces a new `Subject` with transformed data.
 5. Access `.data` tensors for training.
 
@@ -292,7 +292,7 @@ for batch in loader:
 Each `ImagesBatch` stores per-sample affine matrices, so subjects
 with different spatial properties batch correctly.
 
-Transforms work directly on batches — parameters are sampled once
+Transforms work directly on batches. Parameters are sampled once
 and applied to all samples:
 
 ```python

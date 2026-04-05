@@ -2,7 +2,7 @@
 
 TorchIO transforms are `torch.nn.Module` subclasses. They accept
 Subjects, Images, Tensors, NumPy arrays, SimpleITK images, NiBabel
-images, MONAI-style dicts, ``ImagesBatch``, or ``SubjectsBatch`` —
+images, MONAI-style dicts, ``ImagesBatch``, or ``SubjectsBatch``,
 and always return the same type.
 
 ## Unified batch architecture
@@ -28,23 +28,23 @@ works for both 5D ``(B, C, I, J, K)`` batch tensors and 5D
 
 When a ``SubjectsBatch`` is passed (e.g., from ``SubjectsLoader``),
 ``make_params`` is called **once** and the same parameters are
-applied to all samples — enabling vectorised batch transforms on
+applied to all samples, enabling vectorised batch transforms on
 GPU.
 
 ## The `make_params` / `apply` split
 
 Every transform has two methods:
 
-- **`make_params(subject)`** — sample random parameters (called once
+- **`make_params(subject)`**: sample random parameters (called once
   per transform invocation).
-- **`apply(subject, params)`** — apply the transform using those
+- **`apply(subject, params)`**: apply the transform using those
   parameters.
 
 This separation (inspired by Torchvision V2) means the same random
 parameters are applied consistently to all images, points, and bounding
 boxes in a Subject. Params are saved in history for replay.
 
-## Scalar, range, or distribution — one class for both
+## Scalar, range, or distribution: one class for both
 
 Transform parameters accept three forms. No separate
 ``RandomNoise`` class:
@@ -102,10 +102,10 @@ MONAI transforms in TorchIO pipelines.
 
 ## Transform types
 
-- **`SpatialTransform`** — modifies geometry. Applies to all images
+- **`SpatialTransform`**: modifies geometry. Applies to all images
   (ScalarImage and LabelMap) and transforms attached Points and
   BoundingBoxes.
-- **`IntensityTransform`** — modifies voxel values. Applies only to
+- **`IntensityTransform`**: modifies voxel values. Applies only to
   ScalarImage, leaving LabelMap and annotations untouched.
 
 ## Composition

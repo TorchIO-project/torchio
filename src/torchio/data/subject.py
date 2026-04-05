@@ -5,10 +5,10 @@ from __future__ import annotations
 import types
 from collections.abc import Iterator
 from typing import Any
-from typing import Self
 
 import numpy as np
 import torch
+from typing_extensions import Self
 
 from ..types import TypeSpacing
 from ..types import TypeSpatialShape

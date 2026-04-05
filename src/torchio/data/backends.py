@@ -56,6 +56,50 @@ class ImageDataBackend(Protocol):
         ...
 
 
+class TensorBackend:
+    """Backend wrapping an in-memory PyTorch tensor.
+
+    Used for images created via `Image.from_tensor()`.
+
+    Args:
+        data: 4D tensor with shape (C, I, J, K).
+        affine: $4 \\times 4$ affine tensor. Identity if not given.
+    """
+
+    __slots__ = ("_affine", "_data")
+
+    def __init__(
+        self,
+        data: Tensor,
+        affine: TypeAffineMatrix | None = None,
+    ) -> None:
+        self._data = data
+        if affine is not None:
+            self._affine = affine
+        else:
+            self._affine = torch.eye(4, dtype=torch.float64)
+
+    @property
+    def shape(self) -> TypeTensorShape:
+        s = self._data.shape
+        return (int(s[0]), int(s[1]), int(s[2]), int(s[3]))
+
+    @property
+    def affine(self) -> TypeAffineMatrix:
+        return self._affine
+
+    @property
+    def dtype(self) -> np.dtype:
+        # Map torch dtype to numpy for protocol compatibility
+        return torch.empty(0, dtype=self._data.dtype).numpy().dtype
+
+    def __getitem__(self, slices: SliceIndex) -> np.ndarray:
+        return self._data[slices].cpu().numpy()
+
+    def to_tensor(self) -> Tensor:
+        return self._data.clone()
+
+
 class NumpyBackend:
     """Backend wrapping an in-memory numpy array.
 

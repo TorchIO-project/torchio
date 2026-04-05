@@ -88,9 +88,7 @@ def image_to_html(image: Image) -> str:
 
     table = f'{_STYLE}\n<table class="tio-table">\n' + "\n".join(rows) + "\n</table>"
 
-    # Try to embed a plot
-    plot_html = _try_plot_base64(image)
-    if plot_html:
+    if plot_html := _try_plot_base64(image):
         return f"{plot_html}\n{table}"
     return table
 
@@ -147,8 +145,7 @@ def subject_to_html(subject: Subject) -> str:
     if subject.metadata:
         parts.append(_metadata_table_html(subject))
 
-    plot_html = _try_subject_plot_base64(subject)
-    if plot_html:
+    if plot_html := _try_subject_plot_base64(subject):
         parts.append(plot_html)
 
     return "\n".join(parts)

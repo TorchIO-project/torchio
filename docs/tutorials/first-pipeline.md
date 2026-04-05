@@ -30,11 +30,11 @@ t1 = tio.ScalarImage("/tmp/synthetic.nii.gz")
 ```
 
 At this point, **no data has been read from disk**. TorchIO uses lazy
-loading -- the file is only read when you access `.data`, `.spacing`,
+loading. The file is only read when you access `.data`, `.spacing`,
 or apply a transform.
 
 ```python
-print(t1.shape)      # (1, 64, 64, 64) -- reads only the header
+print(t1.shape)      # (1, 64, 64, 64), reads only the header
 print(t1.is_loaded)  # False
 print(t1.spacing)    # (1.0, 1.0, 1.0)
 ```
@@ -74,7 +74,7 @@ Access images and metadata by name:
 subject.t1          # the ScalarImage
 subject.seg         # the LabelMap
 subject.age         # 30
-subject.spatial_shape  # (64, 64, 64) -- checked across all images
+subject.spatial_shape  # (64, 64, 64), checked across all images
 ```
 
 !!! tip "Annotations"

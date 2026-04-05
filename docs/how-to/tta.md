@@ -2,7 +2,7 @@
 
 Test-time augmentation improves prediction accuracy by averaging
 multiple augmented versions of the same input. TorchIO's invertible
-transforms make this easy — the pattern mirrors
+transforms make this easy. The pattern mirrors
 [v1's TTA workflow](https://docs.torchio.org/transforms/#invertibility).
 
 ## Basic TTA

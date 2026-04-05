@@ -2,7 +2,7 @@
 name = "torchio"
 version = "0.23.1"
 description = "Medical image preprocessing, augmentation, and patch-based training."
-requires-python = ">=3.11"
+requires-python = ">=3.10"
 dependencies = [
     "einops",
     "fsspec[http]",
@@ -15,6 +15,7 @@ dependencies = [
     "rich",
     "simpleitk",
     "torch",
+    "typing_extensions>=4.0",
 ]
 
 [project.urls]

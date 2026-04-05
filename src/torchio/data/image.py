@@ -7,7 +7,6 @@ import types
 from collections.abc import Callable
 from pathlib import Path
 from typing import Any
-from typing import Self
 from typing import TypeVar
 
 import nibabel as nib
@@ -18,6 +17,7 @@ import SimpleITK as sitk
 import torch
 from einops import rearrange
 from torch import Tensor
+from typing_extensions import Self
 
 from ..types import TypeImageData
 from ..types import TypeSpatialShape
@@ -25,7 +25,7 @@ from ..types import TypeTensorShape
 from .affine import Affine
 from .backends import ImageDataBackend
 from .backends import NibabelBackend
-from .backends import NumpyBackend
+from .backends import TensorBackend
 from .bboxes import BoundingBoxes
 from .invertible import Invertible
 from .io import ImageSource
@@ -43,13 +43,17 @@ def _backend_label(backend: object | None) -> str:
     if backend is None:
         return "unknown"
     name = type(backend).__name__
-    if "Nibabel" in name:
-        return "NIfTI"
-    if "Zarr" in name:
-        return "NIfTI-Zarr"
-    if "Numpy" in name:
-        return "NumPy"
-    return name
+    match name:
+        case n if "Nibabel" in n:
+            return "NIfTI"
+        case n if "Zarr" in n:
+            return "NIfTI-Zarr"
+        case n if "Tensor" in n:
+            return "Tensor"
+        case n if "Numpy" in n:
+            return "NumPy"
+        case _:
+            return name
 
 
 def _expand_ellipsis(
@@ -77,13 +81,16 @@ def _parse_item(
     item: int | slice | tuple[int | slice, ...],
 ) -> list[slice]:
     """Normalise an indexing item to a list of slices."""
-    if isinstance(item, (int, slice)) or item is Ellipsis:
-        items: tuple[int | slice | types.EllipsisType, ...] = (item,)
-    elif isinstance(item, tuple):
-        items = item
-    else:
-        msg = f"Index type {type(item).__name__} not understood"
-        raise TypeError(msg)
+    match item:
+        case int() | slice():
+            items: tuple[int | slice | types.EllipsisType, ...] = (item,)
+        case tuple():
+            items = item
+        case _ if item is Ellipsis:
+            items = (item,)
+        case _:
+            msg = f"Index type {type(item).__name__} not understood"
+            raise TypeError(msg)
 
     items = _expand_ellipsis(items, ndim=4)
 
@@ -93,13 +100,14 @@ def _parse_item(
 
     parsed: list[slice] = []
     for s in items:
-        if isinstance(s, int):
-            parsed.append(slice(s, s + 1))
-        elif isinstance(s, slice):
-            parsed.append(s)
-        else:
-            msg = f"Index type {type(s).__name__} not understood"
-            raise TypeError(msg)
+        match s:
+            case int():
+                parsed.append(slice(s, s + 1))
+            case slice():
+                parsed.append(s)
+            case _:
+                msg = f"Index type {type(s).__name__} not understood"
+                raise TypeError(msg)
     return parsed
 
 
@@ -231,9 +239,9 @@ class Image(Invertible):
         instance._data = parsed
         parsed_affine = Image._parse_affine(affine)
         instance._affine = parsed_affine
-        instance._backend = NumpyBackend(
-            instance._data.detach().cpu().numpy(),
-            affine=parsed_affine.numpy(),
+        instance._backend = TensorBackend(
+            instance._data,
+            affine=parsed_affine.data,
         )
         instance._points = Image._parse_annotations(points, "Points")
         instance._bounding_boxes = Image._parse_annotations(
@@ -390,7 +398,7 @@ class Image(Invertible):
 
         Returns the underlying backend without materializing the full tensor.
         For NIfTI files this is a `NibabelBackend`; for NIfTI-Zarr files a
-        `ZarrBackend`; for in-memory images a `NumpyBackend`.
+        `ZarrBackend`; for in-memory images a `TensorBackend`.
         """
         if self._backend is None:
             self._ensure_backend()

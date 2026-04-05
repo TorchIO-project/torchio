@@ -57,7 +57,7 @@
 ```python
 import torchio as tio
 
-# From a file (lazy -- no data read yet)
+# From a file (lazy, no data read yet)
 image = tio.ScalarImage("t1.nii.gz")
 print(image.shape)    # reads header only: (1, 256, 256, 176)
 print(image.spacing)  # (1.0, 1.0, 1.0)
@@ -112,7 +112,7 @@ image.metadata       # {"protocol": "MPRAGE", "te": 3.5}
 
 ### Slicing
 
-Slicing follows the `(C, I, J, K)` layout and keeps things lazy -- only
+Slicing follows the `(C, I, J, K)` layout and keeps things lazy. Only
 the requested region is read from disk:
 
 ```python
@@ -193,7 +193,7 @@ details.
 ### Applying transforms
 
 Transforms accept Subjects, Images, Tensors, NumPy arrays,
-SimpleITK Images, NiBabel images, or MONAI-style dicts — and return
+SimpleITK Images, NiBabel images, or MONAI-style dicts, and return
 the same type:
 
 ```python

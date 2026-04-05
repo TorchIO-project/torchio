@@ -3,10 +3,10 @@
 from __future__ import annotations
 
 from typing import Any
-from typing import Self
 
 import torch
 from torch import Tensor
+from typing_extensions import Self
 
 from .affine import Affine
 from .image import Image

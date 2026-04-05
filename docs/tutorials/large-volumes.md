@@ -21,7 +21,7 @@ import torchio as tio
 
 image = tio.ScalarImage("huge_volume.nii.gz")
 
-# This is fast -- reads only a 10x10x10 patch
+# This is fast: reads only a 10x10x10 patch
 patch = image[:, 100:110, 100:110, 100:110]
 print(patch.data.mean())
 
@@ -63,7 +63,7 @@ image.save("volume.nii.zarr")
 image = tio.ScalarImage("volume.nii.zarr")
 print(image.shape)  # reads only metadata
 
-# Read a small region -- only the overlapping chunks are decompressed
+# Read a small region: only the overlapping chunks are decompressed
 patch = image[:, 50:60, 50:60, 50:60]
 ```
 
@@ -95,18 +95,18 @@ flowchart TD
     SITK -->|"image.data"| full
 ```
 
-- **`image.data`** -- materializes the full tensor (triggers load if needed)
-- **`image.dataobj`** -- returns the lazy backend for advanced slicing
-- **`image[slices]`** -- uses the backend automatically, returns a new image
+- **`image.data`**: materializes the full tensor (triggers load if needed)
+- **`image.dataobj`**: returns the lazy backend for advanced slicing
+- **`image[slices]`**: uses the backend automatically, returns a new image
 
 ## Tips
 
-1. **Use uncompressed `.nii` for local training** -- memory-mapping gives
+1. **Use uncompressed `.nii` for local training**: memory-mapping gives
    true random access with zero decompression cost.
-2. **Use `.nii.zarr` for large shared volumes** -- chunked storage means
+2. **Use `.nii.zarr` for large shared volumes**: chunked storage means
    each worker reads only what it needs.
-3. **Avoid `.nii.gz` for random access** -- gzip is a stream format.
+3. **Avoid `.nii.gz` for random access**: gzip is a stream format.
    Nibabel handles it well for small slices, but for repeated random
    access, convert to `.nii` or `.nii.zarr`.
-4. **Slice before loading** -- `image[:, 100:200].data` is much cheaper
+4. **Slice before loading**: `image[:, 100:200].data` is much cheaper
    than `image.data[:, 100:200]`.

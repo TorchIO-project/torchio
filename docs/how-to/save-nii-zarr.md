@@ -42,7 +42,7 @@ loaded = tio.ScalarImage("output.nii.zarr")
 print(loaded.shape)    # reads only metadata
 print(loaded.spacing)  # from the stored affine
 
-# Lazy slice -- reads only the needed chunks
+# Lazy slice: reads only the needed chunks
 patch = loaded[:, 50:100, 50:100, 50:100]
 print(patch.data.mean())
 ```

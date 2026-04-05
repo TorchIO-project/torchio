@@ -261,17 +261,19 @@ class Transform(nn.Module):
         from ..data.batch import ImagesBatch
         from ..data.batch import SubjectsBatch
 
-        if isinstance(data, SubjectsBatch):
-            return data, _unwrap_subjects_batch
-        if isinstance(data, ImagesBatch):
-            sb = SubjectsBatch({"tio_default_image": data})
-            return sb, _unwrap_images_batch
-        if isinstance(data, Subject):
-            sb = SubjectsBatch.from_subjects([data])
-            return sb, _unwrap_subject
-        if isinstance(data, dict):
-            return _wrap_dict(data)
-        return _wrap_scalar_input(data)
+        match data:
+            case SubjectsBatch():
+                return data, _unwrap_subjects_batch
+            case ImagesBatch():
+                sb = SubjectsBatch({"tio_default_image": data})
+                return sb, _unwrap_images_batch
+            case Subject():
+                sb = SubjectsBatch.from_subjects([data])
+                return sb, _unwrap_subject
+            case dict():
+                return _wrap_dict(data)
+            case _:
+                return _wrap_scalar_input(data)
 
 
 def _wrap_single_image(img: Image, unwrap_fn: Any) -> tuple[Any, Any]:
@@ -285,25 +287,30 @@ def _wrap_single_image(img: Image, unwrap_fn: Any) -> tuple[Any, Any]:
 
 def _wrap_scalar_input(data: Any) -> tuple[Any, Any]:
     """Wrap a scalar input (Tensor, ndarray, SimpleITK, NIfTI) into a batch."""
-    if isinstance(data, Image):
-        return _wrap_single_image(data, _unwrap_image)
-    if isinstance(data, Tensor):
-        return _wrap_single_image(ScalarImage.from_tensor(data), _unwrap_tensor)
-    if isinstance(data, np.ndarray):
-        tensor = torch.as_tensor(data.copy(), dtype=torch.float32)
-        if tensor.ndim == 3:
-            tensor = rearrange(tensor, "i j k -> 1 i j k")
-        return _wrap_single_image(ScalarImage.from_tensor(tensor), _unwrap_ndarray)
-    if isinstance(data, sitk.Image):
-        return _wrap_single_image(ScalarImage.from_sitk(data), _unwrap_sitk)
-    if isinstance(data, nib.Nifti1Image):
-        return _wrap_single_image(ScalarImage.from_nifti(data), _unwrap_nifti)
-    msg = (
-        "Expected Subject, Image, Tensor, ndarray, dict,"
-        f" SimpleITK Image, NIfTI, ImagesBatch, or SubjectsBatch,"
-        f" got {type(data).__name__}"
-    )
-    raise TypeError(msg)
+    match data:
+        case Image():
+            return _wrap_single_image(data, _unwrap_image)
+        case Tensor():
+            return _wrap_single_image(ScalarImage.from_tensor(data), _unwrap_tensor)
+        case np.ndarray():
+            tensor = torch.as_tensor(data.copy(), dtype=torch.float32)
+            if tensor.ndim == 3:
+                tensor = rearrange(tensor, "i j k -> 1 i j k")
+            return _wrap_single_image(
+                ScalarImage.from_tensor(tensor),
+                _unwrap_ndarray,
+            )
+        case sitk.Image():
+            return _wrap_single_image(ScalarImage.from_sitk(data), _unwrap_sitk)
+        case nib.Nifti1Image():
+            return _wrap_single_image(ScalarImage.from_nifti(data), _unwrap_nifti)
+        case _:
+            msg = (
+                "Expected Subject, Image, Tensor, ndarray, dict,"
+                f" SimpleITK Image, NIfTI, ImagesBatch, or SubjectsBatch,"
+                f" got {type(data).__name__}"
+            )
+            raise TypeError(msg)
 
 
 def _wrap_dict(data: dict) -> tuple[Any, Any]:
@@ -312,12 +319,13 @@ def _wrap_dict(data: dict) -> tuple[Any, Any]:
 
     kwargs: dict[str, Any] = {}
     for k, v in data.items():
-        if isinstance(v, Image):
-            kwargs[k] = v
-        elif isinstance(v, Tensor):
-            kwargs[k] = ScalarImage.from_tensor(v)
-        else:
-            kwargs[k] = v
+        match v:
+            case Image():
+                kwargs[k] = v
+            case Tensor():
+                kwargs[k] = ScalarImage.from_tensor(v)
+            case _:
+                kwargs[k] = v
     sub = Subject(**kwargs)
     keys: list[str] = [str(k) for k in data]
     sb = SubjectsBatch.from_subjects([sub])

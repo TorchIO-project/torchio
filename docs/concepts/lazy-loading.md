@@ -23,7 +23,7 @@ stateDiagram-v2
 |--------|-------------|
 | `Image(path)` | Nothing. Stores the path. |
 | `.shape` | Creates a backend and reads the header. No data loaded. |
-| `.spacing`, `.affine` | Same -- reads header via backend. |
+| `.spacing`, `.affine` | Same: reads header via backend. |
 | `image[slices]` | Reads only the sliced region through the backend. Parent image stays unloaded. |
 | `.data` | Loads the full tensor into memory. Cached for subsequent access. |
 | `.dataobj` | Returns the raw backend for advanced use. |
@@ -36,8 +36,8 @@ into memory. TorchIO selects the backend based on the file extension:
 | Backend | Format | How it works |
 |---------|--------|-------------|
 | `NibabelBackend` | `.nii`, `.nii.gz` | Wraps nibabel's `ArrayProxy`. Uncompressed files are memory-mapped; compressed files are decompressed on demand. |
-| `ZarrBackend` | `.nii.zarr` | Wraps `niizarr.zarr2nii()`. Data is stored in independently compressed chunks -- only the chunks overlapping your slice are read. |
-| `NumpyBackend` | In-memory | Used for images created via `from_tensor()`. Wraps a numpy array. |
+| `ZarrBackend` | `.nii.zarr` | Wraps `niizarr.zarr2nii()`. Data is stored in independently compressed chunks. Only the chunks overlapping your slice are read. |
+| `TensorBackend` | In-memory | Used for images created via `from_tensor()`. Wraps a PyTorch tensor directly (no numpy round-trip). |
 
 For other formats (NRRD, MHA, etc.), there is no lazy backend. Shape
 can still be read from the header via SimpleITK without loading data,
@@ -71,9 +71,9 @@ copies it to a float32 tensor, and *then* slices.
 For advanced use, `image.dataobj` gives direct access to the backend:
 
 ```python
-backend = image.dataobj  # NibabelBackend, ZarrBackend, or NumpyBackend
+backend = image.dataobj  # NibabelBackend, ZarrBackend, or TensorBackend
 backend.shape             # (C, I, J, K)
-backend.affine            # 4x4 numpy array
+backend.affine            # 4x4 float64 tensor
 chunk = backend[:, 50:60, 50:60, 50:60]  # numpy array
 ```
 
