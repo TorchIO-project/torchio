@@ -138,68 +138,84 @@ def subject_to_html(subject: Subject) -> str:
     """Build an HTML table for a Subject."""
     parts: list[str] = [_STYLE]
 
-    # Images table
     if subject.images:
-        parts.append('<div class="tio-section">Images</div>')
-        header = (
-            "<tr><th>Name</th><th>Type</th><th>Shape</th>"
-            "<th>Spacing</th><th>Orientation</th></tr>"
-        )
-        rows: list[str] = [header]
-        for name, image in subject.images.items():
-            img_type = type(image).__name__
-            try:
-                shape = str(image.shape)
-                sp = "({})".format(", ".join(f"{s:.2f}" for s in image.spacing))
-                orient = "".join(image.orientation) + "+"
-            except Exception:
-                shape = sp = orient = "?"
-            rows.append(
-                f"<tr><td>{escape(name)}</td><td>{escape(img_type)}</td>"
-                f"<td>{escape(shape)}</td><td>{escape(sp)}</td>"
-                f"<td>{escape(orient)}</td></tr>"
-            )
-        parts.append('<table class="tio-table">\n' + "\n".join(rows) + "\n</table>")
-
-    # Points table
+        parts.append(_images_table_html(subject))
     if subject.points:
-        parts.append('<div class="tio-section">Points</div>')
-        rows = ["<tr><th>Name</th><th>Count</th><th>Axes</th></tr>"]
-        for name, pts in subject.points.items():
-            rows.append(
-                f"<tr><td>{escape(name)}</td>"
-                f"<td>{_pluralize('point', pts.num_points)}</td>"
-                f"<td>{escape(pts.axes)}</td></tr>"
-            )
-        parts.append('<table class="tio-table">\n' + "\n".join(rows) + "\n</table>")
-
-    # BoundingBoxes table
+        parts.append(_points_table_html(subject))
     if subject.bounding_boxes:
-        parts.append('<div class="tio-section">Bounding Boxes</div>')
-        rows = ["<tr><th>Name</th><th>Count</th><th>Format</th></tr>"]
-        for name, boxes in subject.bounding_boxes.items():
-            fmt = f"{boxes.format.axes} ({boxes.format.representation.value})"
-            rows.append(
-                f"<tr><td>{escape(name)}</td>"
-                f"<td>{_pluralize('box', boxes.num_boxes)}</td>"
-                f"<td>{escape(fmt)}</td></tr>"
-            )
-        parts.append('<table class="tio-table">\n' + "\n".join(rows) + "\n</table>")
-
-    # Metadata table
+        parts.append(_bboxes_table_html(subject))
     if subject.metadata:
-        parts.append('<div class="tio-section">Metadata</div>')
-        rows = ["<tr><th>Key</th><th>Value</th></tr>"]
-        for key, value in subject.metadata.items():
-            rows.append(_row(key, str(value)))
-        parts.append('<table class="tio-table">\n' + "\n".join(rows) + "\n</table>")
+        parts.append(_metadata_table_html(subject))
 
-    # Embed subject plot
     plot_html = _try_subject_plot_base64(subject)
     if plot_html:
         parts.append(plot_html)
 
     return "\n".join(parts)
+
+
+def _images_table_html(subject: Subject) -> str:
+    header = (
+        "<tr><th>Name</th><th>Type</th><th>Shape</th>"
+        "<th>Spacing</th><th>Orientation</th></tr>"
+    )
+    rows: list[str] = [header]
+    for name, image in subject.images.items():
+        img_type = type(image).__name__
+        try:
+            shape = str(image.shape)
+            sp = "({})".format(", ".join(f"{s:.2f}" for s in image.spacing))
+            orient = "".join(image.orientation) + "+"
+        except Exception:
+            shape = sp = orient = "?"
+        rows.append(
+            f"<tr><td>{escape(name)}</td><td>{escape(img_type)}</td>"
+            f"<td>{escape(shape)}</td><td>{escape(sp)}</td>"
+            f"<td>{escape(orient)}</td></tr>"
+        )
+    return (
+        '<div class="tio-section">Images</div>\n'
+        '<table class="tio-table">\n' + "\n".join(rows) + "\n</table>"
+    )
+
+
+def _points_table_html(subject: Subject) -> str:
+    rows = ["<tr><th>Name</th><th>Count</th><th>Axes</th></tr>"]
+    for name, pts in subject.points.items():
+        rows.append(
+            f"<tr><td>{escape(name)}</td>"
+            f"<td>{_pluralize('point', pts.num_points)}</td>"
+            f"<td>{escape(pts.axes)}</td></tr>"
+        )
+    return (
+        '<div class="tio-section">Points</div>\n'
+        '<table class="tio-table">\n' + "\n".join(rows) + "\n</table>"
+    )
+
+
+def _bboxes_table_html(subject: Subject) -> str:
+    rows = ["<tr><th>Name</th><th>Count</th><th>Format</th></tr>"]
+    for name, boxes in subject.bounding_boxes.items():
+        fmt = f"{boxes.format.axes} ({boxes.format.representation.value})"
+        rows.append(
+            f"<tr><td>{escape(name)}</td>"
+            f"<td>{_pluralize('box', boxes.num_boxes)}</td>"
+            f"<td>{escape(fmt)}</td></tr>"
+        )
+    return (
+        '<div class="tio-section">Bounding Boxes</div>\n'
+        '<table class="tio-table">\n' + "\n".join(rows) + "\n</table>"
+    )
+
+
+def _metadata_table_html(subject: Subject) -> str:
+    rows = ["<tr><th>Key</th><th>Value</th></tr>"]
+    for key, value in subject.metadata.items():
+        rows.append(_row(key, str(value)))
+    return (
+        '<div class="tio-section">Metadata</div>\n'
+        '<table class="tio-table">\n' + "\n".join(rows) + "\n</table>"
+    )
 
 
 def _try_subject_plot_base64(subject: Subject) -> str | None:

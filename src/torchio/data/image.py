@@ -73,6 +73,36 @@ def _expand_ellipsis(
     return result
 
 
+def _parse_item(
+    item: int | slice | tuple[int | slice, ...],
+) -> list[slice]:
+    """Normalise an indexing item to a list of slices."""
+    if isinstance(item, (int, slice)) or item is Ellipsis:
+        items: tuple[int | slice | types.EllipsisType, ...] = (item,)
+    elif isinstance(item, tuple):
+        items = item
+    else:
+        msg = f"Index type {type(item).__name__} not understood"
+        raise TypeError(msg)
+
+    items = _expand_ellipsis(items, ndim=4)
+
+    if len(items) > 4:
+        msg = f"Too many indices: expected at most 4 (C, I, J, K), got {len(items)}"
+        raise IndexError(msg)
+
+    parsed: list[slice] = []
+    for s in items:
+        if isinstance(s, int):
+            parsed.append(slice(s, s + 1))
+        elif isinstance(s, slice):
+            parsed.append(s)
+        else:
+            msg = f"Index type {type(s).__name__} not understood"
+            raise TypeError(msg)
+    return parsed
+
+
 class Image(Invertible):
     r"""Base image class.
 
@@ -460,30 +490,29 @@ class Image(Invertible):
         if self._path is None:
             msg = "Cannot load: no path set"
             raise RuntimeError(msg)
-        # If we already have a lazy backend, materialize from it
-        if self._backend is not None:
-            self._data = self._backend.to_tensor()
-            if self._affine is None:
-                self._affine = Affine(self._backend.affine)
-            self._apply_channels_last()
+        if self._load_from_backend():
             return
-        # For NIfTI-Zarr or NIfTI with default reader, create backend first
         if self._reader is default_reader and (
             is_nifti_zarr(self._path) or is_nifti(self._path)
         ):
             self._ensure_backend()
-            if self._backend is not None:
-                self._data = self._backend.to_tensor()
-                if self._affine is None:
-                    self._affine = Affine(self._backend.affine)
-                self._apply_channels_last()
+            if self._load_from_backend():
                 return
-        # Otherwise use the reader (custom reader or non-NIfTI formats)
         tensor, affine_array = self._reader(self._path, **self._reader_kwargs)
         self._data = tensor
         if self._affine is None:
             self._affine = Affine(affine_array)
         self._apply_channels_last()
+
+    def _load_from_backend(self) -> bool:
+        """Materialize data from the lazy backend if available."""
+        if self._backend is None:
+            return False
+        self._data = self._backend.to_tensor()
+        if self._affine is None:
+            self._affine = Affine(self._backend.affine)
+        self._apply_channels_last()
+        return True
 
     def _apply_channels_last(self) -> None:
         """Permute data from (I, J, K, C) to (C, I, J, K) if needed."""
@@ -720,51 +749,15 @@ class Image(Invertible):
             msg = f"{type(self).__name__} has no metadata key {item!r}"
             raise KeyError(msg)
 
-        if isinstance(item, (int, slice)) or item is Ellipsis:
-            items: tuple[int | slice | types.EllipsisType, ...] = (item,)
-        elif isinstance(item, tuple):
-            items = item
-        else:
-            msg = f"Index type {type(item).__name__} not understood"
-            raise TypeError(msg)
+        parsed = _parse_item(item)
 
-        # Expand ellipsis
-        items = _expand_ellipsis(items, ndim=4)
-
-        if len(items) > 4:
-            msg = f"Too many indices: expected at most 4 (C, I, J, K), got {len(items)}"
-            raise IndexError(msg)
-
-        full_shape = self.shape  # (C, I, J, K)
-        parsed: list[slice] = []
-        for dim, s in enumerate(items):
-            if isinstance(s, int):
-                idx = s if s >= 0 else full_shape[dim] + s
-                s = slice(idx, idx + 1)
-            if not isinstance(s, slice):
-                msg = f"Index type {type(s).__name__} not understood"
-                raise TypeError(msg)
-            parsed.append(s)
-
+        full_shape = self.shape
         # Pad with full slices for unspecified dimensions
         while len(parsed) < 4:
             parsed.append(slice(None))
-
         sc, si, sj, sk = parsed
 
-        # Use backend for lazy slicing when possible (avoids full load)
-        if self._data is not None:
-            cropped_data = self._data[sc, si, sj, sk]
-        else:
-            self._ensure_backend()
-            if self._backend is not None:
-                array = self._backend[sc, si, sj, sk]
-                cropped_data = torch.as_tensor(
-                    np.asarray(array).copy(),
-                    dtype=torch.float32,
-                )
-            else:
-                cropped_data = self.data[sc, si, sj, sk]
+        cropped_data = self._slice_data(sc, si, sj, sk)
 
         # Update affine origin: shift by the spatial start offset
         affine_matrix = self.affine.data.clone()
@@ -778,6 +771,25 @@ class Image(Invertible):
         affine_matrix[:3, 3] += affine_matrix[:3, :3] @ start_voxel
 
         return self.new_like(data=cropped_data, affine=Affine(affine_matrix))
+
+    def _slice_data(
+        self,
+        sc: slice,
+        si: slice,
+        sj: slice,
+        sk: slice,
+    ) -> Tensor:
+        """Slice data, using the lazy backend if available."""
+        if self._data is not None:
+            return self._data[sc, si, sj, sk]
+        self._ensure_backend()
+        if self._backend is not None:
+            array = self._backend[sc, si, sj, sk]
+            return torch.as_tensor(
+                np.asarray(array).copy(),
+                dtype=torch.float32,
+            )
+        return self.data[sc, si, sj, sk]
 
     def __repr__(self) -> str:
         import humanize

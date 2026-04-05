@@ -29,17 +29,20 @@ def _validate_orientation(orientation: str) -> str:
         )
         raise ValueError(msg)
 
-    has_lr = "R" in orientation or "L" in orientation
-    has_ap = "A" in orientation or "P" in orientation
-    has_si = "S" in orientation or "I" in orientation
-    if not (has_lr and has_ap and has_si):
+    _check_axis_coverage(orientation)
+    return orientation
+
+
+def _check_axis_coverage(orientation: str) -> None:
+    """Ensure the orientation code covers all three axis pairs."""
+    pairs = [{"R", "L"}, {"A", "P"}, {"S", "I"}]
+    codes = set(orientation)
+    if not all(codes & pair for pair in pairs):
         msg = (
             "Orientation code must include one character for each axis"
             f' direction: R or L, A or P, and S or I, but got "{orientation}"'
         )
         raise ValueError(msg)
-
-    return orientation
 
 
 def _compute_reorientation(

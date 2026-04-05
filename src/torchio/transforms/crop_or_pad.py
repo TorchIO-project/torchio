@@ -84,6 +84,25 @@ def _to_voxels(
     return (result[0], result[1], result[2])
 
 
+def _split_per_axis(
+    diff: int,
+    location: Location,
+) -> tuple[tuple[int, int], tuple[int, int]]:
+    """Compute (pad_ini, pad_fin) and (crop_ini, crop_fin) for one axis."""
+    if diff > 0:
+        ini = math.ceil(diff / 2)
+        fin = math.floor(diff / 2)
+        return (ini, fin), (0, 0)
+    if diff < 0:
+        amount = -diff
+        if location == "random":
+            ini = int(torch.randint(0, amount + 1, (1,)).item())
+        else:
+            ini = math.ceil(amount / 2)
+        return (0, 0), (ini, amount - ini)
+    return (0, 0), (0, 0)
+
+
 def _compute_crop_and_pad(
     current_shape: TypeThreeInts,
     target_shape: TypeThreeInts,
@@ -106,26 +125,9 @@ def _compute_crop_and_pad(
     pad_values: list[int] = []
     crop_values: list[int] = []
     for cur, tgt in zip(current_shape, target_shape, strict=True):
-        diff = tgt - cur
-        if diff > 0:
-            # Need to pad (always centered)
-            ini = math.ceil(diff / 2)
-            fin = math.floor(diff / 2)
-            pad_values.extend([ini, fin])
-            crop_values.extend([0, 0])
-        elif diff < 0:
-            amount = -diff
-            if location == "random":
-                ini = int(torch.randint(0, amount + 1, (1,)).item())
-                fin = amount - ini
-            else:
-                ini = math.ceil(amount / 2)
-                fin = math.floor(amount / 2)
-            pad_values.extend([0, 0])
-            crop_values.extend([ini, fin])
-        else:
-            pad_values.extend([0, 0])
-            crop_values.extend([0, 0])
+        pad, crop = _split_per_axis(tgt - cur, location)
+        pad_values.extend(pad)
+        crop_values.extend(crop)
 
     has_padding = any(v > 0 for v in pad_values)
     has_cropping = any(v > 0 for v in crop_values)
@@ -471,26 +473,14 @@ class CropOrPad(SpatialTransform):
         if torch.rand(1).item() > self.p:
             return subject.tio_default_image if is_image else subject
 
-        # Read shape and affine from header (no data load)
         first_image = next(iter(subject.images.values()))
-        spacing = first_image.affine.spacing
         current_shape: TypeThreeInts = first_image.spatial_shape
-
         target_voxels = _to_voxels(
             self.target_shape,
             self.units,
-            spacing,
+            first_image.affine.spacing,
             current_shape,
         )
-
-        if self.units != "voxels":
-            logger.debug(
-                "CropOrPad target {} {} → {} voxels (spacing {} mm)",
-                self.target_shape,
-                self.units,
-                target_voxels,
-                spacing,
-            )
 
         padding, cropping = _compute_crop_and_pad(
             current_shape,
@@ -500,6 +490,17 @@ class CropOrPad(SpatialTransform):
             location=self.location,
         )
 
+        self._apply_lazy_ops(subject, padding, cropping)
+
+        return subject.tio_default_image if is_image else subject
+
+    def _apply_lazy_ops(
+        self,
+        subject: Subject,
+        padding: TypeSixInts | None,
+        cropping: TypeSixInts | None,
+    ) -> None:
+        """Apply lazy pad/crop and record history."""
         images = _get_images(subject, self.include, self.exclude)
 
         if padding is not None:
@@ -510,34 +511,31 @@ class CropOrPad(SpatialTransform):
                     self.padding_mode,
                     self.fill,
                 )
-            pad_params = {
-                "padding": padding,
-                "padding_mode": self.padding_mode,
-                "fill": self.fill,
-            }
             subject.applied_transforms.append(
-                AppliedTransform(name="Pad", params=pad_params),
+                AppliedTransform(
+                    name="Pad",
+                    params={
+                        "padding": padding,
+                        "padding_mode": self.padding_mode,
+                        "fill": self.fill,
+                    },
+                ),
             )
 
         if cropping is not None:
-            # Re-read images after padding may have replaced them
             images = _get_images(subject, self.include, self.exclude)
             for name, image in images.items():
                 subject._images[name] = _crop_image_lazy(image, cropping)
-            crop_params = {"cropping": cropping}
             subject.applied_transforms.append(
-                AppliedTransform(name="Crop", params=crop_params),
+                AppliedTransform(name="Crop", params={"cropping": cropping}),
             )
 
-        # Record CropOrPad (skipped during inversion)
         subject.applied_transforms.append(
             AppliedTransform(
                 name="CropOrPad",
                 params={"padding": padding, "cropping": cropping},
             ),
         )
-
-        return subject.tio_default_image if is_image else subject
 
     # --- Standard batch path (for SubjectsBatch, Tensor, etc.) ---
 

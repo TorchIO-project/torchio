@@ -48,6 +48,12 @@ repos:
         require_serial: true
         types_or: [python, pyi]
 
+  - repo: https://github.com/yunojuno/pre-commit-xenon
+    rev: cc59b0431a5d072786b59430e9b342b2881064f6
+    hooks:
+      - id: xenon
+        args: ["--max-average=B", "--max-modules=B", "--max-absolute=B"]
+
 ci:
   autoupdate_commit_msg: Autoupdate pre-commit hooks
   autoupdate_schedule: quarterly

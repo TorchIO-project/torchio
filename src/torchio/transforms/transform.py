@@ -269,52 +269,59 @@ class Transform(nn.Module):
         if isinstance(data, Subject):
             sb = SubjectsBatch.from_subjects([data])
             return sb, _unwrap_subject
-        if isinstance(data, Image):
-            sub = Subject(tio_default_image=data)
-            sb = SubjectsBatch.from_subjects([sub])
-            return sb, _unwrap_image
-        if isinstance(data, Tensor):
-            img = ScalarImage.from_tensor(data)
-            sub = Subject(tio_default_image=img)
-            sb = SubjectsBatch.from_subjects([sub])
-            return sb, _unwrap_tensor
-        if isinstance(data, np.ndarray):
-            tensor = torch.as_tensor(data.copy(), dtype=torch.float32)
-            if tensor.ndim == 3:
-                tensor = rearrange(tensor, "i j k -> 1 i j k")
-            img = ScalarImage.from_tensor(tensor)
-            sub = Subject(tio_default_image=img)
-            sb = SubjectsBatch.from_subjects([sub])
-            return sb, _unwrap_ndarray
-        if isinstance(data, sitk.Image):
-            img = ScalarImage.from_sitk(data)
-            sub = Subject(tio_default_image=img)
-            sb = SubjectsBatch.from_subjects([sub])
-            return sb, _unwrap_sitk
-        if isinstance(data, nib.Nifti1Image):
-            img = ScalarImage.from_nifti(data)
-            sub = Subject(tio_default_image=img)
-            sb = SubjectsBatch.from_subjects([sub])
-            return sb, _unwrap_nifti
         if isinstance(data, dict):
-            kwargs: dict[str, Any] = {}
-            for k, v in data.items():
-                if isinstance(v, Image):
-                    kwargs[k] = v
-                elif isinstance(v, Tensor):
-                    kwargs[k] = ScalarImage.from_tensor(v)
-                else:
-                    kwargs[k] = v
-            sub = Subject(**kwargs)
-            keys: list[str] = [str(k) for k in data]
-            sb = SubjectsBatch.from_subjects([sub])
-            return sb, lambda b: _unwrap_dict(b, keys)
-        msg = (
-            "Expected Subject, Image, Tensor, ndarray, dict,"
-            f" SimpleITK Image, NIfTI, ImagesBatch, or SubjectsBatch,"
-            f" got {type(data).__name__}"
-        )
-        raise TypeError(msg)
+            return _wrap_dict(data)
+        return _wrap_scalar_input(data)
+
+
+def _wrap_single_image(img: Image, unwrap_fn: Any) -> tuple[Any, Any]:
+    """Wrap a single Image into a SubjectsBatch."""
+    from ..data.batch import SubjectsBatch
+
+    sub = Subject(tio_default_image=img)
+    sb = SubjectsBatch.from_subjects([sub])
+    return sb, unwrap_fn
+
+
+def _wrap_scalar_input(data: Any) -> tuple[Any, Any]:
+    """Wrap a scalar input (Tensor, ndarray, SimpleITK, NIfTI) into a batch."""
+    if isinstance(data, Image):
+        return _wrap_single_image(data, _unwrap_image)
+    if isinstance(data, Tensor):
+        return _wrap_single_image(ScalarImage.from_tensor(data), _unwrap_tensor)
+    if isinstance(data, np.ndarray):
+        tensor = torch.as_tensor(data.copy(), dtype=torch.float32)
+        if tensor.ndim == 3:
+            tensor = rearrange(tensor, "i j k -> 1 i j k")
+        return _wrap_single_image(ScalarImage.from_tensor(tensor), _unwrap_ndarray)
+    if isinstance(data, sitk.Image):
+        return _wrap_single_image(ScalarImage.from_sitk(data), _unwrap_sitk)
+    if isinstance(data, nib.Nifti1Image):
+        return _wrap_single_image(ScalarImage.from_nifti(data), _unwrap_nifti)
+    msg = (
+        "Expected Subject, Image, Tensor, ndarray, dict,"
+        f" SimpleITK Image, NIfTI, ImagesBatch, or SubjectsBatch,"
+        f" got {type(data).__name__}"
+    )
+    raise TypeError(msg)
+
+
+def _wrap_dict(data: dict) -> tuple[Any, Any]:
+    """Wrap a MONAI-style dict into a SubjectsBatch."""
+    from ..data.batch import SubjectsBatch
+
+    kwargs: dict[str, Any] = {}
+    for k, v in data.items():
+        if isinstance(v, Image):
+            kwargs[k] = v
+        elif isinstance(v, Tensor):
+            kwargs[k] = ScalarImage.from_tensor(v)
+        else:
+            kwargs[k] = v
+    sub = Subject(**kwargs)
+    keys: list[str] = [str(k) for k in data]
+    sb = SubjectsBatch.from_subjects([sub])
+    return sb, lambda b: _unwrap_dict(b, keys)
 
 
 def _collect_init_params(cls: type) -> dict[str, Any]:

@@ -123,33 +123,14 @@ def _find_axis(orientation: tuple[str, str, str], pair: str) -> int:
     raise ValueError(msg)
 
 
-def _plot_image_on_axes(
+def _extract_slices(
     image: Image,
-    plot_axes: Sequence[Axes],
-    *,
-    channel: int = 0,
+    channel: int,
     resolved: tuple[int, ...],
-    cmap: str | Colormap | None = None,
-    percentiles: tuple[float, float] = (0.5, 99.5),
-    voxels: bool = False,
-    intersections: bool = True,
-    show_labels: bool = True,
-    show_titles: bool = True,
-    **imshow_kwargs: Any,
-) -> None:
-    """Plot 3 orthogonal views of a single image onto pre-created axes."""
-    from .data.image import LabelMap
-
-    spatial_shape = image.spatial_shape
-    spacing = image.spacing
+    axis_for: dict[str, int],
+) -> list[np.ndarray]:
+    """Extract oriented 2D slices for each anatomical view."""
     orientation = image.orientation
-    origin = image.origin
-
-    axis_for: dict[str, int] = {}
-    for pair in ("LR", "AP", "SI"):
-        axis_for[pair] = _find_axis(orientation, pair)
-
-    # Extract 2D slices via lazy Image.__getitem__
     slices_2d: list[np.ndarray] = []
     for _view_name, slice_pair, x_pair, y_pair, x_left, y_top in _VIEWS:
         slice_axis = axis_for[slice_pair]
@@ -173,8 +154,19 @@ def _plot_image_on_axes(
             data_2d = np.flip(data_2d, axis=0)
 
         slices_2d.append(np.ascontiguousarray(data_2d))
+    return slices_2d
 
-    # Set up imshow defaults
+
+def _build_imshow_kwargs(
+    image: Image,
+    slices_2d: list[np.ndarray],
+    cmap: str | Colormap | None,
+    percentiles: tuple[float, float],
+    imshow_kwargs: dict[str, Any],
+) -> dict[str, Any]:
+    """Prepare the keyword arguments for ``ax.imshow()``."""
+    from .data.image import LabelMap
+
     kw = dict(imshow_kwargs)
     is_label = isinstance(image, LabelMap)
     if cmap is None:
@@ -195,24 +187,49 @@ def _plot_image_on_axes(
         vmin, vmax = np.percentile(all_values, percentiles)
         kw.setdefault("vmin", vmin)
         kw.setdefault("vmax", vmax)
+    return kw
 
-    # Plot each view
+
+def _plot_image_on_axes(
+    image: Image,
+    plot_axes: Sequence[Axes],
+    *,
+    channel: int = 0,
+    resolved: tuple[int, ...],
+    cmap: str | Colormap | None = None,
+    percentiles: tuple[float, float] = (0.5, 99.5),
+    voxels: bool = False,
+    intersections: bool = True,
+    show_labels: bool = True,
+    show_titles: bool = True,
+    **imshow_kwargs: Any,
+) -> None:
+    """Plot 3 orthogonal views of a single image onto pre-created axes."""
+    spatial_shape = image.spatial_shape
+    spacing = image.spacing
+    orientation = image.orientation
+    origin = image.origin
+
+    axis_for: dict[str, int] = {}
+    for pair in ("LR", "AP", "SI"):
+        axis_for[pair] = _find_axis(orientation, pair)
+
+    slices_2d = _extract_slices(image, channel, resolved, axis_for)
+    kw = _build_imshow_kwargs(image, slices_2d, cmap, percentiles, imshow_kwargs)
+
     for view_idx, (view_name, slice_pair, x_pair, y_pair, x_left, y_top) in enumerate(
         _VIEWS,
     ):
         ax = plot_axes[view_idx]
-        data_2d = slices_2d[view_idx]
 
         slice_axis = axis_for[slice_pair]
         x_axis = axis_for[x_pair]
         y_axis = axis_for[y_pair]
 
         aspect = spacing[y_axis] / spacing[x_axis]
-        ax.imshow(data_2d, aspect=aspect, **kw)
+        ax.imshow(slices_2d[view_idx], aspect=aspect, **kw)
 
         if show_labels:
-            x_code = orientation[x_axis]
-            y_code = orientation[y_axis]
             x_label = f"{_axis_name(x_axis)} ({x_left} ↔ {_OPPOSITE[x_left]})"
             y_label = f"{_axis_name(y_axis)} ({_OPPOSITE[y_top]} ↔ {y_top})"
             ax.set_xlabel(x_label)
@@ -412,40 +429,46 @@ def plot_image(
     return fig
 
 
+def _coordinates_to_indices(
+    image: Image,
+    coordinates: tuple[float | None, float | None, float | None],
+) -> tuple[int | None, int | None, int | None]:
+    """Convert world coordinates (mm) to voxel indices."""
+    import torch
+
+    inv_affine = image.affine.inverse()
+    voxel_coords = inv_affine.apply(
+        torch.tensor(
+            [[c if c is not None else float("nan") for c in coordinates]],
+            dtype=torch.float64,
+        ),
+    )[0]
+    c0, c1, c2 = coordinates
+    return (
+        None if c0 is None else round(float(voxel_coords[0])),
+        None if c1 is None else round(float(voxel_coords[1])),
+        None if c2 is None else round(float(voxel_coords[2])),
+    )
+
+
 def _resolve_indices(
     image: Image,
     indices: tuple[int | None, int | None, int | None] | None,
     coordinates: tuple[float | None, float | None, float | None] | None,
 ) -> tuple[int, ...]:
     """Resolve indices/coordinates to concrete voxel indices."""
-    import torch
-
     if indices is not None and coordinates is not None:
         msg = "indices and coordinates are mutually exclusive"
         raise ValueError(msg)
 
-    spatial_shape = image.spatial_shape
-
     if coordinates is not None:
-        inv_affine = image.affine.inverse()
-        voxel_coords = inv_affine.apply(
-            torch.tensor(
-                [[c if c is not None else float("nan") for c in coordinates]],
-                dtype=torch.float64,
-            ),
-        )[0]
-        c0, c1, c2 = coordinates
-        indices = (
-            None if c0 is None else round(float(voxel_coords[0])),
-            None if c1 is None else round(float(voxel_coords[1])),
-            None if c2 is None else round(float(voxel_coords[2])),
-        )
+        indices = _coordinates_to_indices(image, coordinates)
 
     if indices is None:
         indices = (None, None, None)
     return tuple(
         s // 2 if idx is None else idx
-        for idx, s in zip(indices, spatial_shape, strict=True)
+        for idx, s in zip(indices, image.spatial_shape, strict=True)
     )
 
 
@@ -545,14 +568,58 @@ def plot_subject(
         msg = "Subject has no images to plot"
         raise ValueError(msg)
 
-    # Resolve indices from the first image
     first_image = next(iter(images.values()))
-    _resolve_indices(first_image, indices, coordinates)  # validates inputs
+    _resolve_indices(first_image, indices, coordinates)
 
     many = num_images > 3
-    n_views = 3
+    fig, all_axes = _create_subject_grid(
+        first_image,
+        num_images,
+        many,
+        figsize,
+        figsize_multiplier,
+        mpl,
+        plt,
+    )
 
-    # Compute width ratios from first image
+    _populate_subject_grid(
+        images,
+        all_axes,
+        many,
+        indices,
+        coordinates,
+        channel=channel,
+        cmap_dict=cmap_dict,
+        percentiles=percentiles,
+        voxels=voxels,
+        intersections=intersections,
+        **imshow_kwargs,
+    )
+
+    if title is not None:
+        fig.suptitle(title)
+    fig.tight_layout()
+
+    if output_path is not None:
+        fig.savefig(output_path, **(savefig_kwargs or {}))
+    if show:
+        plt.show()
+        plt.close(fig)
+        return None
+
+    return fig
+
+
+def _create_subject_grid(
+    first_image: Image,
+    num_images: int,
+    many: bool,
+    figsize: tuple[float, float] | None,
+    figsize_multiplier: float,
+    mpl: Any,
+    plt: Any,
+) -> tuple[Any, list[list[Any]]]:
+    """Create the figure and axes grid for ``plot_subject``."""
     orientation = first_image.orientation
     spacing = first_image.spacing
     spatial_shape = first_image.spatial_shape
@@ -565,11 +632,9 @@ def plot_subject(
 
     if figsize is None:
         default_w, default_h = plt.rcParams["figure.figsize"]
-        figsize = (
-            default_w * figsize_multiplier,
-            default_h * figsize_multiplier,
-        )
+        figsize = (default_w * figsize_multiplier, default_h * figsize_multiplier)
 
+    n_views = 3
     if many:
         nrows, ncols = n_views, num_images
         gs = mpl.gridspec.GridSpec(nrows, ncols)
@@ -579,18 +644,32 @@ def plot_subject(
 
     fig = plt.figure(figsize=figsize)
     all_axes = [[fig.add_subplot(gs[r, c]) for c in range(ncols)] for r in range(nrows)]
-    view_names = [v[0] for v in _VIEWS]
+    return fig, all_axes
+
+
+def _populate_subject_grid(
+    images: dict[str, Image],
+    all_axes: list[list[Any]],
+    many: bool,
+    indices: tuple[int | None, int | None, int | None] | None,
+    coordinates: tuple[float | None, float | None, float | None] | None,
+    *,
+    channel: int,
+    cmap_dict: dict[str, Any] | None,
+    percentiles: tuple[float, float],
+    voxels: bool,
+    intersections: bool,
+    **imshow_kwargs: Any,
+) -> None:
+    """Plot each image into its row/column of the subject grid."""
+    n_views = 3
+    num_images = len(images)
 
     for img_idx, (name, image) in enumerate(images.items()):
         cmap = cmap_dict.get(name) if cmap_dict else None
         img_resolved = _resolve_indices(image, indices, coordinates)
-        img_axes = (
-            [all_axes[v][img_idx] for v in range(n_views)]
-            if many
-            else all_axes[img_idx]
-        )
+        img_axes = _get_image_axes(all_axes, img_idx, n_views, many)
         is_edge = img_idx == 0 if many else img_idx == num_images - 1
-        cls_name = type(image).__name__
 
         _plot_image_on_axes(
             image=image,
@@ -606,30 +685,46 @@ def plot_subject(
             **imshow_kwargs,
         )
 
-        if many:
-            img_axes[0].set_title(f"{name}\n({cls_name})")
-        else:
-            img_axes[0].set_ylabel(f"{name}\n({cls_name})", fontsize=10)
+        cls_name = type(image).__name__
+        _label_image_header(img_axes, name, cls_name, many)
 
+    _add_view_labels(all_axes, many)
+
+
+def _get_image_axes(
+    all_axes: list[list[Any]],
+    img_idx: int,
+    n_views: int,
+    many: bool,
+) -> list[Any]:
+    """Get the 3 axes for a given image in the grid."""
+    if many:
+        return [all_axes[v][img_idx] for v in range(n_views)]
+    return all_axes[img_idx]
+
+
+def _label_image_header(
+    img_axes: list[Any],
+    name: str,
+    cls_name: str,
+    many: bool,
+) -> None:
+    """Add image name + type as a row/column header."""
+    if many:
+        img_axes[0].set_title(f"{name}\n({cls_name})")
+    else:
+        img_axes[0].set_ylabel(f"{name}\n({cls_name})", fontsize=10)
+
+
+def _add_view_labels(all_axes: list[list[Any]], many: bool) -> None:
+    """Add Sagittal/Coronal/Axial labels to the grid edges."""
+    view_names = [v[0] for v in _VIEWS]
     if many:
         for v_idx, row_axes in enumerate(all_axes):
             row_axes[0].set_ylabel(view_names[v_idx])
     else:
-        for v_idx in range(n_views):
+        for v_idx in range(len(view_names)):
             all_axes[0][v_idx].set_title(view_names[v_idx])
-
-    if title is not None:
-        fig.suptitle(title)
-    fig.tight_layout()
-
-    if output_path is not None:
-        fig.savefig(output_path, **(savefig_kwargs or {}))
-    if show:
-        plt.show()
-        plt.close(fig)
-        return None
-
-    return fig
 
 
 def _axis_name(axis: int) -> str:
@@ -692,72 +787,60 @@ def _set_ticks(
     voxels: bool,
 ) -> None:
     """Set tick labels for a subplot."""
+    x_size = spatial_shape[x_axis]
+    y_size = spatial_shape[y_axis]
+    x_flipped = x_code == x_left
+    y_flipped = y_code != y_top
+
+    x_ticks = np.linspace(0, x_size - 1, min(5, x_size))
+    y_ticks = np.linspace(0, y_size - 1, min(5, y_size))
+    ax.set_xticks(x_ticks)
+    ax.set_yticks(y_ticks)
+
     if voxels:
-        # Show voxel indices
-        x_size = spatial_shape[x_axis]
-        y_size = spatial_shape[y_axis]
-
-        # If the axis data was flipped, voxel indices run in reverse
-        x_flipped = x_code == x_left
-        y_flipped = y_code != y_top
-
-        x_ticks = np.linspace(0, x_size - 1, min(5, x_size))
-        y_ticks = np.linspace(0, y_size - 1, min(5, y_size))
-
-        ax.set_xticks(x_ticks)
-        ax.set_yticks(y_ticks)
-        if x_flipped:
-            ax.set_xticklabels([str(int(x_size - 1 - v)) for v in x_ticks])
-        else:
-            ax.set_xticklabels([str(int(v)) for v in x_ticks])
-        if y_flipped:
-            ax.set_yticklabels([str(int(y_size - 1 - v)) for v in y_ticks])
-        else:
-            ax.set_yticklabels([str(int(v)) for v in y_ticks])
+        ax.set_xticklabels(_voxel_tick_labels(x_ticks, x_size, x_flipped))
+        ax.set_yticklabels(_voxel_tick_labels(y_ticks, y_size, y_flipped))
     else:
-        # Show world coordinates in mm
-        x_size = spatial_shape[x_axis]
-        y_size = spatial_shape[y_axis]
-
-        x_flipped = x_code == x_left
-        y_flipped = y_code != y_top
-
         x_sp = spacing[x_axis]
         y_sp = spacing[y_axis]
         x_sign = -1.0 if x_code in ("L", "P", "I") else 1.0
         y_sign = -1.0 if y_code in ("L", "P", "I") else 1.0
         x_origin = origin_mm[_world_dim(x_code)]
         y_origin = origin_mm[_world_dim(y_code)]
-
-        x_ticks = np.linspace(0, x_size - 1, min(5, x_size))
-        y_ticks = np.linspace(0, y_size - 1, min(5, y_size))
-
-        ax.set_xticks(x_ticks)
-        ax.set_yticks(y_ticks)
-
-        def _voxel_to_mm(
-            display_pos: float,
-            size: int,
-            flipped: bool,
-            orig: float,
-            sp: float,
-            sign: float,
-        ) -> float:
-            voxel = (size - 1 - display_pos) if flipped else display_pos
-            return orig + voxel * sp * sign
-
         ax.set_xticklabels(
-            [
-                f"{_voxel_to_mm(v, x_size, x_flipped, x_origin, x_sp, x_sign):.0f}"
-                for v in x_ticks
-            ]
+            _mm_tick_labels(x_ticks, x_size, x_flipped, x_origin, x_sp, x_sign),
         )
         ax.set_yticklabels(
-            [
-                f"{_voxel_to_mm(v, y_size, y_flipped, y_origin, y_sp, y_sign):.0f}"
-                for v in y_ticks
-            ]
+            _mm_tick_labels(y_ticks, y_size, y_flipped, y_origin, y_sp, y_sign),
         )
+
+
+def _voxel_tick_labels(
+    ticks: np.ndarray,
+    size: int,
+    flipped: bool,
+) -> list[str]:
+    """Generate voxel-index tick labels."""
+    if flipped:
+        return [str(int(size - 1 - v)) for v in ticks]
+    return [str(int(v)) for v in ticks]
+
+
+def _mm_tick_labels(
+    ticks: np.ndarray,
+    size: int,
+    flipped: bool,
+    origin: float,
+    sp: float,
+    sign: float,
+) -> list[str]:
+    """Generate world-coordinate (mm) tick labels."""
+    labels: list[str] = []
+    for v in ticks:
+        voxel = (size - 1 - v) if flipped else v
+        mm = origin + voxel * sp * sign
+        labels.append(f"{mm:.0f}")
+    return labels
 
 
 def _world_dim(code: str) -> int:
