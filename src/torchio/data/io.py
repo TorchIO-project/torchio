@@ -17,6 +17,10 @@ from einops import rearrange
 
 from ..types import TypeImageData
 
+# NIfTI/TorchIO use RAS+; SimpleITK uses LPS+.  Multiplying the first
+# two rows of the 4x4 affine by -1 converts between the two conventions.
+_RAS_TO_LPS = np.diag([-1.0, -1.0, 1.0, 1.0])
+
 #: Input types accepted by the Image constructor.
 ImageSource = str | Path | IOBase | fsspec.core.OpenFile
 
@@ -123,9 +127,11 @@ def read_sitk(path: Path, **kwargs: Any) -> tuple[TypeImageData, np.ndarray]:
     spacing = np.array(sitk_image.GetSpacing())
     origin = np.array(sitk_image.GetOrigin())
     direction = rearrange(np.array(sitk_image.GetDirection()), "(i j) -> i j", i=3)
-    affine = np.eye(4, dtype=np.float64)
-    affine[:3, :3] = direction * spacing
-    affine[:3, 3] = origin
+    # SimpleITK returns LPS; convert to RAS for TorchIO's convention.
+    lps_affine = np.eye(4, dtype=np.float64)
+    lps_affine[:3, :3] = direction * spacing
+    lps_affine[:3, 3] = origin
+    affine = _RAS_TO_LPS @ lps_affine
     tensor = torch.as_tensor(data.copy(), dtype=torch.float32)
     return tensor, affine
 

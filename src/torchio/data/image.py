@@ -572,6 +572,8 @@ class Image(Invertible):
             self._save_sitk(path, **(writer_kwargs or {}))
 
     def _save_sitk(self, path: Path, **kwargs: Any) -> None:
+        from .io import _RAS_TO_LPS
+
         data = self.data.numpy()
         n_channels = data.shape[0]
         if n_channels == 1:
@@ -580,11 +582,14 @@ class Image(Invertible):
         else:
             array = rearrange(data, "c i j k -> k j i c")
             sitk_image = sitk.GetImageFromArray(array, isVector=True)
-        sitk_image.SetSpacing(self.affine.spacing)
-        sitk_image.SetOrigin(self.affine.origin)
-        sitk_image.SetDirection(
-            rearrange(self.affine.direction, "i j -> (i j)").tolist()
-        )
+        # Convert from RAS (TorchIO) to LPS (SimpleITK) before setting metadata.
+        lps_affine = _RAS_TO_LPS @ self.affine.numpy()
+        lps_spacing = np.sqrt(np.sum(lps_affine[:3, :3] ** 2, axis=0))
+        lps_direction = lps_affine[:3, :3] / lps_spacing
+        lps_origin = lps_affine[:3, 3]
+        sitk_image.SetSpacing(lps_spacing.tolist())
+        sitk_image.SetOrigin(lps_origin.tolist())
+        sitk_image.SetDirection(lps_direction.ravel().tolist())
         sitk.WriteImage(sitk_image, str(path), **kwargs)
 
     def _save_nii_zarr(self, path: Path) -> None:

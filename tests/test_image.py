@@ -523,6 +523,53 @@ class TestImageIO:
         assert loaded.shape == (1, 10, 12, 14)
         np.testing.assert_allclose(loaded.spacing, (0.5, 0.8, 1.2))
 
+    @pytest.mark.parametrize("extension", [".nii.gz", ".nrrd"])
+    def test_save_preserves_affine(self, tmp_path: Path, extension: str):
+        """Round-trip save/load must preserve the full affine matrix."""
+        tensor = torch.randn(1, 8, 10, 12)
+        affine = np.array(
+            [
+                [0.0, 0.0, 1.5, -10.0],
+                [0.5, 0.0, 0.0, -20.0],
+                [0.0, 0.8, 0.0, 30.0],
+                [0.0, 0.0, 0.0, 1.0],
+            ]
+        )
+        image = ScalarImage.from_tensor(tensor, affine=affine)
+        path = tmp_path / f"output{extension}"
+        image.save(path)
+
+        loaded = ScalarImage(path)
+        np.testing.assert_allclose(
+            loaded.affine.numpy(),
+            affine,
+            atol=1e-6,
+        )
+        torch.testing.assert_close(loaded.data, tensor, atol=1e-4, rtol=1e-4)
+
+    def test_save_preserves_lps_orientation(self, tmp_path: Path):
+        """NIfTI with LPS+ orientation must survive a save/load round-trip."""
+        tensor = torch.randn(1, 8, 10, 12)
+        affine = np.array(
+            [
+                [-0.5, 0.0, 0.0, 90.0],
+                [0.0, -0.5, 0.0, 126.0],
+                [0.0, 0.0, 0.5, -72.0],
+                [0.0, 0.0, 0.0, 1.0],
+            ]
+        )
+        image = ScalarImage.from_tensor(tensor, affine=affine)
+        path = tmp_path / "lps.nii.gz"
+        image.save(path)
+
+        loaded = ScalarImage(path)
+        np.testing.assert_allclose(
+            loaded.affine.numpy(),
+            affine,
+            atol=1e-6,
+        )
+        assert loaded.affine.orientation == ("L", "P", "S")
+
     def test_save_multichannel(self, tmp_path: Path):
         tensor = torch.randn(3, 10, 10, 10)
         image = ScalarImage.from_tensor(tensor)
