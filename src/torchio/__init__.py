@@ -1,5 +1,7 @@
 """TorchIO: Medical image preprocessing, augmentation, and patch-based training."""
 
+from importlib.metadata import version
+
 from . import datasets
 from .data.affine import Affine
 from .data.aggregator import PatchAggregator
@@ -119,3 +121,5 @@ __all__ = [
     "read_matrix",
     "write_matrix",
 ]
+
+__version__ = version(__name__)

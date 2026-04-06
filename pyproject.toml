@@ -1,6 +1,6 @@
 [project]
 name = "torchio"
-version = "0.23.1"
+version = "2.0.0"
 description = "Medical image preprocessing, augmentation, and patch-based training."
 requires-python = ">=3.10"
 dependencies = [
@@ -93,7 +93,7 @@ force-single-line = true
 ]
 
 [tool.bump-my-version]
-current_version = "0.23.1"
+current_version = "2.0.0"
 commit = true
 tag = true
 
