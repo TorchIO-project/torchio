@@ -74,6 +74,9 @@ nav = [
     { "Visualization" = [
       "reference/visualization.md",
     ] },
+    { "CLI" = [
+      "reference/cli.md",
+    ] },
   ] },
 ]
 

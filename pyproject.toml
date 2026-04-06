@@ -16,6 +16,7 @@ dependencies = [
     "simpleitk",
     "torch",
     "typing_extensions>=4.0",
+    "tyro>=1.0.12",
 ]
 
 [project.urls]
@@ -24,6 +25,9 @@ Source = "https://github.com/TorchIO-project/torchio"
 "Issue tracker" = "https://github.com/TorchIO-project/torchio/issues"
 Documentation = "https://docs.torchio.org"
 "Release notes" = "https://github.com/TorchIO-project/torchio/releases"
+
+[project.scripts]
+torchio = "torchio.cli:main"
 
 [build-system]
 requires = ["uv_build>=0.11.1,<0.12.0"]
