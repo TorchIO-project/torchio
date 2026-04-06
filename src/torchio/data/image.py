@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import copy
+import io
 import types
 from collections.abc import Callable
 from pathlib import Path
@@ -293,6 +294,46 @@ class Image(Invertible):
         tensor = torch.as_tensor(data.copy(), dtype=torch.float32)
         affine_matrix = np.asarray(nifti_image.affine)
         return cls.from_tensor(tensor, affine=Affine(affine_matrix), **kwargs)
+
+    @classmethod
+    def from_bytes(
+        cls,
+        data: bytes | io.BytesIO,
+        *,
+        suffix: str = ".nii.gz",
+        **kwargs: Any,
+    ) -> Self:
+        """Create an image from raw bytes.
+
+        Useful for data received from HTTP responses, database blobs,
+        or other non-file sources. The bytes are written to a
+        temporary file and loaded via the standard reader.
+
+        Args:
+            data: Raw bytes or a ``BytesIO`` buffer containing a
+                medical image (e.g., NIfTI).
+            suffix: File suffix to determine the format.
+                Defaults to ``".nii.gz"``.
+            **kwargs: Forwarded to ``from_tensor`` (``points``,
+                ``bounding_boxes``, ``metadata``).
+        """
+        import tempfile
+
+        if isinstance(data, io.BytesIO):
+            data = data.read()
+        with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as tmp:
+            tmp.write(data)
+            tmp.flush()
+            tmp_path = Path(tmp.name)
+        try:
+            nii = nib.load(tmp_path)
+            if isinstance(nii, nib.Nifti1Image):
+                return cls.from_nifti(nii, **kwargs)
+            # Non-NIfTI: fall back to SimpleITK
+            sitk_image = sitk.ReadImage(str(tmp_path))
+            return cls.from_sitk(sitk_image, **kwargs)
+        finally:
+            tmp_path.unlink(missing_ok=True)
 
     @staticmethod
     def _parse_tensor(tensor: Tensor | np.ndarray) -> Tensor:

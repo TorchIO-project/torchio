@@ -17,6 +17,12 @@ extra_javascript = [
 nav = [
   { Home = "index.md" },
   { "Getting started" = "getting-started.md" },
+  { Concepts = [
+    "concepts/index.md",
+    "concepts/data-model.md",
+    "concepts/lazy-loading.md",
+    "concepts/transforms.md",
+  ] },
   { Tutorials = [
     "tutorials/index.md",
     "tutorials/first-pipeline.md",
@@ -31,13 +37,8 @@ nav = [
     "how-to/save-nii-zarr.md",
     "how-to/annotations.md",
     "how-to/visualization.md",
+    "how-to/patch-inference.md",
     "how-to/tta.md",
-  ] },
-  { Concepts = [
-    "concepts/index.md",
-    "concepts/data-model.md",
-    "concepts/lazy-loading.md",
-    "concepts/transforms.md",
   ] },
   { Reference = [
     "reference/index.md",
@@ -76,6 +77,9 @@ nav = [
     ] },
     { "CLI" = [
       "reference/cli.md",
+    ] },
+    { "Patches" = [
+      "reference/patches.md",
     ] },
   ] },
 ]

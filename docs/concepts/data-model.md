@@ -87,6 +87,7 @@ image = tio.ScalarImage(buf, suffix=".nii.gz")     # from file-like object
 image = tio.ScalarImage.from_tensor(tensor)        # from PyTorch tensor
 image = tio.ScalarImage.from_sitk(sitk_image)      # from SimpleITK
 image = tio.ScalarImage.from_nifti(nifti_image)    # from NiBabel
+image = tio.ScalarImage.from_bytes(raw_bytes)      # from bytes or BytesIO
 ```
 
 ### Metadata

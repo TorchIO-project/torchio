@@ -2,6 +2,7 @@
 
 from . import datasets
 from .data.affine import Affine
+from .data.aggregator import PatchAggregator
 from .data.batch import ImagesBatch
 from .data.batch import StudiesBatch
 from .data.batch import SubjectsBatch
@@ -11,7 +12,13 @@ from .data.bboxes import Representation
 from .data.image import Image
 from .data.image import LabelMap
 from .data.image import ScalarImage
+from .data.patch import PatchLocation
 from .data.points import Points
+from .data.sampler import GridSampler
+from .data.sampler import LabelSampler
+from .data.sampler import PatchSampler
+from .data.sampler import UniformSampler
+from .data.sampler import WeightedSampler
 from .data.subject import Study
 from .data.subject import Subject
 from .io import read_matrix
@@ -60,16 +67,21 @@ __all__ = [
     "Crop",
     "CropOrPad",
     "Flip",
+    "GridSampler",
     "Image",
     "ImagesBatch",
     "ImagesLoader",
     "IntensityTransform",
     "LabelMap",
+    "LabelSampler",
     "MonaiAdapter",
     "Noise",
     "OneOf",
     "Pad",
     "ParameterRange",
+    "PatchAggregator",
+    "PatchLocation",
+    "PatchSampler",
     "Points",
     "Reorient",
     "Representation",
@@ -94,6 +106,8 @@ __all__ = [
     "TypeSpatialShape",
     "TypeTensorShape",
     "TypeWorldPoints",
+    "UniformSampler",
+    "WeightedSampler",
     "apply_inverse_transform",
     "collate_images",
     "collate_studies",

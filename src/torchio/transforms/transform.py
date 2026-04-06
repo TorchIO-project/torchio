@@ -130,7 +130,7 @@ class Transform(nn.Module):
     @overload
     def forward(self, data: SubjectsBatch) -> SubjectsBatch: ...
 
-    def forward(self, data):  # type: ignore[override]
+    def forward(self, data: Any) -> Any:  # type: ignore[override]
         """Apply the transform.
 
         The output type always matches the input type.

@@ -99,6 +99,21 @@ nifti = nib.load("t1.nii.gz")
 image = tio.ScalarImage.from_nifti(nifti)
 ```
 
+### Creating from bytes
+
+If you have raw image bytes (e.g., from an HTTP response or a
+database), use `from_bytes`:
+
+```python
+response = requests.get("https://example.com/brain.nii.gz")
+image = tio.ScalarImage.from_bytes(response.content)
+
+# Or with a BytesIO buffer
+import io
+buf = io.BytesIO(some_bytes)
+image = tio.ScalarImage.from_bytes(buf, suffix=".nii.gz")
+```
+
 ### Attaching metadata
 
 Pass any extra keyword arguments to attach metadata to an image:
