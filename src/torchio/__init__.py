@@ -14,6 +14,7 @@ from .data.image import LabelMap
 from .data.image import ScalarImage
 from .data.patch import PatchLocation
 from .data.points import Points
+from .data.queue import Queue
 from .data.sampler import GridSampler
 from .data.sampler import LabelSampler
 from .data.sampler import PatchSampler
@@ -83,6 +84,7 @@ __all__ = [
     "PatchLocation",
     "PatchSampler",
     "Points",
+    "Queue",
     "Reorient",
     "Representation",
     "ScalarImage",

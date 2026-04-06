@@ -29,6 +29,24 @@ class PatchSampler:
             patch_size = (patch_size, patch_size, patch_size)
         self.patch_size: TypeThreeInts = patch_size
 
+    def __call__(
+        self,
+        subject: Subject,
+        num_patches: int | None = None,
+    ) -> Iterator[Subject]:
+        """Sample patches from a subject.
+
+        Override in subclasses for custom sampling strategies.
+
+        Args:
+            subject: Subject to extract patches from.
+            num_patches: Number of patches to yield. If ``None``,
+                yields indefinitely (for random samplers) or yields
+                all grid positions (for GridSampler).
+        """
+        msg = f"{type(self).__name__} must implement __call__"
+        raise NotImplementedError(msg)
+
     def _extract_patch(
         self,
         subject: Subject,
@@ -149,10 +167,11 @@ class GridSampler(PatchSampler, Dataset):
 class UniformSampler(PatchSampler, IterableDataset):
     """Random patches with uniform spatial probability.
 
-    An ``IterableDataset`` for training. Use with ``DataLoader``.
+    An ``IterableDataset`` for training. Also callable for use with
+    [`Queue`][torchio.data.Queue].
 
     Args:
-        subject: Subject to sample patches from.
+        subject: Subject to sample patches from (for Dataset use).
         patch_size: Spatial size of each patch.
         num_patches: Number of patches per epoch. If ``None``,
             yields indefinitely.
@@ -172,13 +191,22 @@ class UniformSampler(PatchSampler, IterableDataset):
         self.subject = subject
         self.num_patches = num_patches
 
-    def __iter__(self) -> Iterator[Subject]:
+    def __call__(
+        self,
+        subject: Subject,
+        num_patches: int | None = None,
+    ) -> Iterator[Subject]:
+        """Sample random patches from a given subject."""
+        limit = num_patches or self.num_patches
         count = 0
-        while self.num_patches is None or count < self.num_patches:
-            index = self._random_index(self.subject.spatial_shape)
+        while limit is None or count < limit:
+            index = self._random_index(subject.spatial_shape)
             loc = PatchLocation(index=index, size=self.patch_size)
-            yield self._extract_patch(self.subject, loc)
+            yield self._extract_patch(subject, loc)
             count += 1
+
+    def __iter__(self) -> Iterator[Subject]:
+        return self(self.subject, self.num_patches)
 
     def _random_index(
         self,
@@ -217,32 +245,40 @@ class WeightedSampler(PatchSampler, IterableDataset):
         self.probability_map = probability_map
         self.num_patches = num_patches
 
-    def __iter__(self) -> Iterator[Subject]:
-        prob_data = self._build_probability_map()
+    def __call__(
+        self,
+        subject: Subject,
+        num_patches: int | None = None,
+    ) -> Iterator[Subject]:
+        """Sample weighted patches from a given subject."""
+        prob_data = self._build_probability_map_for(subject)
         flat = prob_data.flatten()
         if flat.sum() == 0:
             msg = f"Probability map '{self.probability_map}' is all zeros"
             raise RuntimeError(msg)
 
+        limit = num_patches or self.num_patches
         count = 0
-        while self.num_patches is None or count < self.num_patches:
+        while limit is None or count < limit:
             idx_flat = torch.multinomial(flat, 1).item()
             center = tuple(
                 int(x) for x in np.unravel_index(int(idx_flat), prob_data.shape)
             )
-            index = _center_to_corner(
-                center,
-                self.subject.spatial_shape,
-                self.patch_size,
-            )
+            index = _center_to_corner(center, subject.spatial_shape, self.patch_size)
             loc = PatchLocation(index=index, size=self.patch_size)
-            yield self._extract_patch(self.subject, loc)
+            yield self._extract_patch(subject, loc)
             count += 1
 
-    def _build_probability_map(self) -> Tensor:
-        prob_image = self.subject.images[self.probability_map]
+    def __iter__(self) -> Iterator[Subject]:
+        return self(self.subject, self.num_patches)
+
+    def _build_probability_map_for(self, subject: Subject) -> Tensor:
+        prob_image = subject.images[self.probability_map]
         prob_data = prob_image.data[0].float()
-        return _mask_borders(prob_data, self.subject.spatial_shape, self.patch_size)
+        return _mask_borders(prob_data, subject.spatial_shape, self.patch_size)
+
+    def _build_probability_map(self) -> Tensor:
+        return self._build_probability_map_for(self.subject)
 
 
 class LabelSampler(WeightedSampler):
@@ -277,8 +313,8 @@ class LabelSampler(WeightedSampler):
         self.label_name = label_name
         self.label_probabilities = label_probabilities
 
-    def _build_probability_map(self) -> Tensor:
-        label_image = self.subject.images[self.label_name]
+    def _build_probability_map_for(self, subject: Subject) -> Tensor:
+        label_image = subject.images[self.label_name]
         label_data = label_image.data[0]
 
         if self.label_probabilities is not None:
@@ -288,7 +324,10 @@ class LabelSampler(WeightedSampler):
         else:
             prob = (label_data > 0).float()
 
-        return _mask_borders(prob, self.subject.spatial_shape, self.patch_size)
+        return _mask_borders(prob, subject.spatial_shape, self.patch_size)
+
+    def _build_probability_map(self) -> Tensor:
+        return self._build_probability_map_for(self.subject)
 
 
 # ---------------------------------------------------------------------------

@@ -38,6 +38,7 @@ nav = [
     "how-to/annotations.md",
     "how-to/visualization.md",
     "how-to/patch-inference.md",
+    "how-to/patch-training.md",
     "how-to/tta.md",
   ] },
   { Reference = [

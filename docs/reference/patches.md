@@ -25,6 +25,11 @@
       show_root_heading: true
       heading_level: 2
 
+::: torchio.data.Queue
+    options:
+      show_root_heading: true
+      heading_level: 2
+
 ::: torchio.data.PatchLocation
     options:
       show_root_heading: true

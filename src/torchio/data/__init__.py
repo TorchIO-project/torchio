@@ -12,6 +12,7 @@ from .image import LabelMap
 from .image import ScalarImage
 from .patch import PatchLocation
 from .points import Points
+from .queue import Queue
 from .sampler import GridSampler
 from .sampler import LabelSampler
 from .sampler import PatchSampler
@@ -32,6 +33,7 @@ __all__ = [
     "PatchLocation",
     "PatchSampler",
     "Points",
+    "Queue",
     "Representation",
     "ScalarImage",
     "StudiesBatch",
