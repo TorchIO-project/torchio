@@ -79,6 +79,7 @@ only load what you need.
 
 Images can be created from multiple sources:
 
+<!-- pytest-codeblocks:skip -->
 ```python
 image = tio.ScalarImage("t1.nii.gz")              # from file (lazy)
 image = tio.ScalarImage("s3://bucket/t1.nii.gz")   # from cloud (via fsspec)
@@ -95,6 +96,7 @@ image = tio.ScalarImage.from_bytes(raw_bytes)      # from bytes or BytesIO
 Any extra keyword argument is stored as metadata and accessible by
 attribute or dict-style lookup:
 
+<!-- pytest-codeblocks:skip -->
 ```python
 image = tio.ScalarImage("t1.nii.gz", protocol="MPRAGE", te=3.5)
 image.protocol       # "MPRAGE"
@@ -151,6 +153,7 @@ It provides named access to the components people usually care about:
 
 Affines compose via the `@` operator:
 
+<!-- pytest-codeblocks:skip -->
 ```python
 combined = affine_a @ affine_b
 ```
@@ -160,6 +163,7 @@ combined = affine_a @ affine_b
 A `Points` object stores an $(N, 3)$ tensor of 3D coordinates in voxel
 space, together with an affine for converting to world coordinates:
 
+<!-- pytest-codeblocks:skip -->
 ```python
 import torch
 import torchio as tio
@@ -205,6 +209,7 @@ conversions (using the stored affine). Optionally attach an integer
 A `Subject` groups images, points, bounding boxes, and metadata
 belonging to one imaging session:
 
+<!-- pytest-codeblocks:skip -->
 ```python
 subject = tio.Subject(
     t1=tio.ScalarImage("t1.nii.gz"),
@@ -223,6 +228,7 @@ In DICOM terminology, a "study" contains "series" (volumes), which
 maps directly to this container. Neuroscience users tend to think
 in "subjects", radiology users in "studies":
 
+<!-- pytest-codeblocks:skip -->
 ```python
 study = tio.Study(t1=tio.ScalarImage("t1.nii.gz"), patient_id="abc")
 ```
@@ -236,6 +242,7 @@ Contents are classified automatically by type:
 
 All entries are accessible by name:
 
+<!-- pytest-codeblocks:skip -->
 ```python
 subject.t1          # the ScalarImage
 subject.landmarks   # the Points
@@ -283,6 +290,7 @@ When training a model, you need to stack subjects into batches.
 `SubjectsLoader` returns `SubjectsBatch` instances where each
 image entry is an `ImagesBatch` with a 5D tensor `(B, C, I, J, K)`:
 
+<!-- pytest-codeblocks:skip -->
 ```python
 loader = tio.SubjectsLoader(dataset, batch_size=4)
 for batch in loader:
@@ -296,6 +304,7 @@ with different spatial properties batch correctly.
 Transforms work directly on batches. Parameters are sampled once
 and applied to all samples:
 
+<!-- pytest-codeblocks:skip -->
 ```python
 augmented = tio.Flip(axes=(0,))(batch)
 ```

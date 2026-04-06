@@ -26,6 +26,7 @@ def nii_path(tmp_path: Path) -> Path:
     return path
 
 
+@pytest.mark.slow
 class TestInfo:
     def test_prints_metadata(self, nii_path: Path) -> None:
         result = _run("info", str(nii_path))
@@ -35,6 +36,7 @@ class TestInfo:
         assert "orientation:" in result.stdout
 
 
+@pytest.mark.slow
 class TestConvert:
     def test_convert_nii_to_nii(self, nii_path: Path, tmp_path: Path) -> None:
         output = tmp_path / "out.nii"
@@ -47,6 +49,7 @@ class TestConvert:
         assert result.returncode != 0
 
 
+@pytest.mark.slow
 class TestTransform:
     def test_apply_noise(self, nii_path: Path, tmp_path: Path) -> None:
         output = tmp_path / "noisy.nii.gz"
@@ -67,6 +70,7 @@ class TestTransform:
         assert "Unknown transform" in result.stderr
 
 
+@pytest.mark.slow
 class TestCacheDir:
     def test_prints_path(self) -> None:
         result = _run("cache", "dir")
@@ -74,6 +78,7 @@ class TestCacheDir:
         assert "torchio" in result.stdout.strip()
 
 
+@pytest.mark.slow
 class TestPlot:
     def test_plot_to_file(self, nii_path: Path, tmp_path: Path) -> None:
         output = tmp_path / "plot.png"

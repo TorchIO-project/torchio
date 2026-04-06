@@ -13,6 +13,7 @@ size 1; a ``SubjectsBatch`` from a ``DataLoader`` passes through
 directly. This means transform authors write **one method** that
 works identically for single samples and batches:
 
+<!-- pytest-codeblocks:skip -->
 ```python
 class Flip(SpatialTransform):
     def apply_transform(self, batch, params):
@@ -49,6 +50,7 @@ boxes in a Subject. Params are saved in history for replay.
 Transform parameters accept three forms. No separate
 ``RandomNoise`` class:
 
+<!-- pytest-codeblocks:skip -->
 ```python
 # Deterministic: always std=0.1
 tio.Noise(std=0.1)
@@ -69,6 +71,7 @@ for full control over the sampling strategy.
 
 Transforms accept multiple input types and return the same type:
 
+<!-- pytest-codeblocks:skip -->
 ```python
 result = transform(subject)      # Subject → Subject
 result = transform(image)        # Image → Image
@@ -87,6 +90,7 @@ round-trip.
 
 Dict input makes TorchIO transforms usable in MONAI pipelines:
 
+<!-- pytest-codeblocks:skip -->
 ```python
 # MONAI-style dict
 data = {"image": tensor, "label": label_tensor, "age": 42}
@@ -113,6 +117,7 @@ MONAI transforms in TorchIO pipelines.
 **`Compose`** runs transforms sequentially. It deep-copies the input
 by default so the original data is preserved:
 
+<!-- pytest-codeblocks:skip -->
 ```python
 pipeline = tio.Compose([
     tio.Flip(axes=(0,)),
@@ -123,6 +128,7 @@ result = pipeline(subject)  # original unchanged
 
 **`OneOf`** picks one transform at random (with optional weights):
 
+<!-- pytest-codeblocks:skip -->
 ```python
 augment = tio.OneOf({
     tio.Noise(std=0.1): 0.7,
@@ -132,6 +138,7 @@ augment = tio.OneOf({
 
 **`SomeOf`** picks N transforms:
 
+<!-- pytest-codeblocks:skip -->
 ```python
 augment = tio.SomeOf(
     [tio.Noise(), tio.Blur(), tio.Gamma()],
@@ -144,6 +151,7 @@ augment = tio.SomeOf(
 Every transform records an `AppliedTransform` in the Subject's
 `applied_transforms` list:
 
+<!-- pytest-codeblocks:skip -->
 ```python
 result = pipeline(subject)
 for trace in result.applied_transforms:
@@ -152,6 +160,7 @@ for trace in result.applied_transforms:
 
 **Replay** applies the exact same augmentation to different data:
 
+<!-- pytest-codeblocks:skip -->
 ```python
 # Get the params from history
 params = result.applied_transforms[0].params
@@ -166,6 +175,7 @@ replayed = noise.apply_transform(new_subject, params)
 Transforms can export themselves as Hydra-compatible YAML configs
 for reproducible experiment management:
 
+<!-- pytest-codeblocks:skip -->
 ```python
 pipeline = tio.Compose([
     tio.Flip(axes=(0, 1), p=0.5),
@@ -192,6 +202,7 @@ All transforms are pure PyTorch operations. Spatial transforms use
 `torch.nn.functional.grid_sample`, which is differentiable and
 GPU-compatible:
 
+<!-- pytest-codeblocks:skip -->
 ```python
 # Augmentation on GPU or MPS
 subject = subject.to("cuda")  # or "mps" on Apple Silicon

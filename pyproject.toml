@@ -117,6 +117,7 @@ test = [
     "monai",
     "nifti-zarr",
     "pytest",
+    "pytest-codeblocks>=0.17.0",
     "pytest-cov",
     "pytest-sugar",
 ]

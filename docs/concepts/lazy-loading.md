@@ -47,6 +47,7 @@ but slicing triggers a full load.
 
 Consider a 724 x 868 x 724 float32 MRI (~1.8 GB):
 
+<!-- pytest-codeblocks:skip -->
 ```python
 image = tio.ScalarImage("huge_volume.nii.gz")
 
@@ -70,6 +71,7 @@ copies it to a float32 tensor, and *then* slices.
 
 For advanced use, `image.dataobj` gives direct access to the backend:
 
+<!-- pytest-codeblocks:skip -->
 ```python
 backend = image.dataobj  # NibabelBackend, ZarrBackend, or TensorBackend
 backend.shape             # (C, I, J, K)

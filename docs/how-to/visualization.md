@@ -26,6 +26,7 @@ RAS, LPS, or anything else.
 
 ## Basic usage
 
+<!-- pytest-codeblocks:skip -->
 ```python
 import torchio as tio
 
@@ -46,6 +47,7 @@ This shows mid-slices through each anatomical plane with:
 By default, the mid-slice along each axis is shown. You can specify
 slices by voxel index or by world coordinates in mm:
 
+<!-- pytest-codeblocks:skip -->
 ```python
 # By voxel index (None = mid-slice)
 image.plot(indices=(80, None, 60))
@@ -65,6 +67,7 @@ image.plot(coordinates=(None, 0.0, None))
 By default, tick labels show world coordinates in mm. Pass
 `voxels=True` to show voxel indices instead:
 
+<!-- pytest-codeblocks:skip -->
 ```python
 image.plot(voxels=True)
 ```
@@ -74,6 +77,7 @@ image.plot(voxels=True)
 For scalar images, the display range is set from the 0.5th to 99.5th
 percentile by default. Adjust with:
 
+<!-- pytest-codeblocks:skip -->
 ```python
 image.plot(percentiles=(1, 99))
 ```
@@ -84,6 +88,7 @@ Label maps automatically use nearest-neighbour interpolation and a
 categorical colormap (from [colorcet](https://colorcet.holoviz.org/)
 if installed, otherwise matplotlib's `tab10`):
 
+<!-- pytest-codeblocks:skip -->
 ```python
 segmentation = tio.LabelMap("seg.nii.gz")
 segmentation.plot()
@@ -93,6 +98,7 @@ segmentation.plot()
 
 ### Figure size
 
+<!-- pytest-codeblocks:skip -->
 ```python
 # Scale the default figure size
 image.plot(figsize_multiplier=3.0)
@@ -103,6 +109,7 @@ image.plot(figsize=(12, 4))
 
 ### Colormap and imshow options
 
+<!-- pytest-codeblocks:skip -->
 ```python
 image.plot(cmap="hot")
 image.plot(vmin=0, vmax=1000)  # extra kwargs go to ax.imshow()
@@ -112,12 +119,14 @@ image.plot(vmin=0, vmax=1000)  # extra kwargs go to ax.imshow()
 
 The coloured cross-hair lines can be turned off:
 
+<!-- pytest-codeblocks:skip -->
 ```python
 image.plot(intersections=False)
 ```
 
 ### Saving to file
 
+<!-- pytest-codeblocks:skip -->
 ```python
 image.plot(output_path="slices.png", show=False)
 image.plot(
@@ -129,6 +138,7 @@ image.plot(
 
 ### Plotting into existing axes
 
+<!-- pytest-codeblocks:skip -->
 ```python
 import matplotlib.pyplot as plt
 
@@ -141,6 +151,7 @@ image.plot(axes=axes, show=False)
 In Jupyter, `Image` objects display an inline plot automatically via
 `_repr_html_`:
 
+<!-- pytest-codeblocks:skip -->
 ```python
 image  # shows 3 slices + metadata table
 ```
@@ -151,6 +162,7 @@ Call `image.plot()` explicitly to get a larger, interactive figure.
 
 Plot all images in a subject as a grid:
 
+<!-- pytest-codeblocks:skip -->
 ```python
 subject = tio.Subject(
     t1=tio.ScalarImage("t1.nii.gz"),
@@ -165,6 +177,7 @@ detected and use categorical colormaps.
 
 ### Per-image colormaps
 
+<!-- pytest-codeblocks:skip -->
 ```python
 subject.plot(cmap_dict={"t1": "hot", "seg": "viridis"})
 ```
@@ -173,6 +186,7 @@ subject.plot(cmap_dict={"t1": "hot", "seg": "viridis"})
 
 `Subject` objects also display an inline plot via `_repr_html_`:
 
+<!-- pytest-codeblocks:skip -->
 ```python
 subject  # shows grid + metadata tables
 ```

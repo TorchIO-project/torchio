@@ -14,6 +14,7 @@ uv add torchio --extra zarr
 
 ## Convert a NIfTI file
 
+<!-- pytest-codeblocks:skip -->
 ```python
 import torchio as tio
 
@@ -37,6 +38,7 @@ image.save("synthetic.nii.zarr")
 
 ## Verify the result
 
+<!-- pytest-codeblocks:skip -->
 ```python
 loaded = tio.ScalarImage("output.nii.zarr")
 print(loaded.shape)    # reads only metadata
@@ -52,6 +54,7 @@ print(patch.data.mean())
 The default chunk size is 64 voxels per dimension. To customize it,
 use `niizarr` directly:
 
+<!-- pytest-codeblocks:skip -->
 ```python
 import nibabel as nib
 from niizarr import nii2zarr

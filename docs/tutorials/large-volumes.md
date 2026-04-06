@@ -16,6 +16,7 @@ TorchIO images are lazy by default. Slicing a lazy image reads **only
 the requested region** through the backend, without loading the full
 volume into memory:
 
+<!-- pytest-codeblocks:skip -->
 ```python
 import torchio as tio
 
@@ -52,6 +53,7 @@ chunk does not require decompressing any other. This is ideal for:
 
 ### Converting to NIfTI-Zarr
 
+<!-- pytest-codeblocks:skip -->
 ```python
 image = tio.ScalarImage("volume.nii.gz")
 image.save("volume.nii.zarr")
@@ -59,6 +61,7 @@ image.save("volume.nii.zarr")
 
 ### Reading from NIfTI-Zarr
 
+<!-- pytest-codeblocks:skip -->
 ```python
 image = tio.ScalarImage("volume.nii.zarr")
 print(image.shape)  # reads only metadata

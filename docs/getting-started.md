@@ -54,6 +54,7 @@
 
 ### Loading an image
 
+<!-- pytest-codeblocks:skip -->
 ```python
 import torchio as tio
 
@@ -77,6 +78,7 @@ image = tio.ScalarImage(buf, suffix=".nii.gz")
 
 ### Creating from a tensor
 
+<!-- pytest-codeblocks:skip -->
 ```python
 import torch
 
@@ -86,6 +88,7 @@ image = tio.ScalarImage.from_tensor(tensor)
 
 ### Creating from SimpleITK or NiBabel
 
+<!-- pytest-codeblocks:skip -->
 ```python
 import SimpleITK as sitk
 import nibabel as nib
@@ -104,6 +107,7 @@ image = tio.ScalarImage.from_nifti(nifti)
 If you have raw image bytes (e.g., from an HTTP response or a
 database), use `from_bytes`:
 
+<!-- pytest-codeblocks:skip -->
 ```python
 response = requests.get("https://example.com/brain.nii.gz")
 image = tio.ScalarImage.from_bytes(response.content)
@@ -118,6 +122,7 @@ image = tio.ScalarImage.from_bytes(buf, suffix=".nii.gz")
 
 Pass any extra keyword arguments to attach metadata to an image:
 
+<!-- pytest-codeblocks:skip -->
 ```python
 image = tio.ScalarImage("t1.nii.gz", protocol="MPRAGE", te=3.5)
 image.protocol       # "MPRAGE" (attribute access)
@@ -130,6 +135,7 @@ image.metadata       # {"protocol": "MPRAGE", "te": 3.5}
 Slicing follows the `(C, I, J, K)` layout and keeps things lazy. Only
 the requested region is read from disk:
 
+<!-- pytest-codeblocks:skip -->
 ```python
 image = tio.ScalarImage("big_volume.nii.gz")
 patch = image[:, 100:200, 100:200, 50:100]  # no full load
@@ -144,6 +150,7 @@ correct world coordinates.
 A `Subject` (also available as `Study`) holds images, spatial
 annotations, and metadata:
 
+<!-- pytest-codeblocks:skip -->
 ```python
 import torch
 
@@ -167,6 +174,7 @@ subject.age          # metadata access (returns 45)
 
 ### Saving
 
+<!-- pytest-codeblocks:skip -->
 ```python
 # Any format SimpleITK supports
 image.save("output.nii.gz")
@@ -178,6 +186,7 @@ image.save("output.nii.zarr")
 
 ### Batching with a DataLoader
 
+<!-- pytest-codeblocks:skip -->
 ```python
 from torch.utils.data import Dataset
 
@@ -211,6 +220,7 @@ Transforms accept Subjects, Images, Tensors, NumPy arrays,
 SimpleITK Images, NiBabel images, or MONAI-style dicts, and return
 the same type:
 
+<!-- pytest-codeblocks:skip -->
 ```python
 # Single deterministic transform
 flipped = tio.Flip(axes=(0,))(subject)

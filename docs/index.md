@@ -6,6 +6,7 @@ in deep learning, following the design of PyTorch.
 
 ## Quick example
 
+<!-- pytest-codeblocks:skip -->
 ```python
 import torch
 import torchio as tio

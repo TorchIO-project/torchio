@@ -26,6 +26,7 @@ The tensor must be 4D with shape `(C, I, J, K)`.
 
 ## Use it
 
+<!-- pytest-codeblocks:skip -->
 ```python
 import torchio as tio
 

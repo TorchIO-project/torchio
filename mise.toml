@@ -53,6 +53,10 @@ run = "uv run --group doc -- zensical serve --open"
 description = "Build documentation"
 run = "uv run --group doc -- zensical build"
 
+[tasks."docs:test"]
+description = "Test documentation code snippets"
+run = "uv run --group test -- pytest --codeblocks docs/"
+
 [tasks.clean]
 description = "Remove build artifacts and caches"
 run = """

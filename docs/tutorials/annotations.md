@@ -42,6 +42,7 @@ print(landmarks.axes)        # 'IJK'
 
 Points are stored as an $(N, 3)$ tensor:
 
+<!-- pytest-codeblocks:cont -->
 ```python
 print(landmarks.data.shape)  # torch.Size([3, 3])
 ```
@@ -51,6 +52,7 @@ print(landmarks.data.shape)  # torch.Size([3, 3])
 Points default to `IJK` (voxel indices). Convert to any other
 convention:
 
+<!-- pytest-codeblocks:cont -->
 ```python
 # With identity affine, IJK == RAS numerically
 ras = landmarks.to_axes("RAS")
@@ -62,6 +64,7 @@ world = landmarks.to_world()
 
 When the points come from a real image, pass its affine:
 
+<!-- pytest-codeblocks:skip -->
 ```python
 image = tio.ScalarImage("t1.nii.gz")
 landmarks = tio.Points(
@@ -88,6 +91,7 @@ and representation:
 | `IJKIJK` | Corners: $(i_1, j_1, k_1, i_2, j_2, k_2)$ |
 | `IJKWHD` | Center + size: $(i_c, j_c, k_c, s_i, s_j, s_k)$ |
 
+<!-- pytest-codeblocks:skip -->
 ```python
 boxes = tio.BoundingBoxes(
     torch.tensor([
@@ -102,6 +106,7 @@ print(boxes.num_boxes)  # 2
 
 Convert between formats:
 
+<!-- pytest-codeblocks:skip -->
 ```python
 whd = boxes.to_format(tio.BoundingBoxFormat.IJKWHD)
 print(whd.data[0])  # center=(30, 40, 50), size=(40, 40, 40)
@@ -109,6 +114,7 @@ print(whd.data[0])  # center=(30, 40, 50), size=(40, 40, 40)
 
 Custom formats work too:
 
+<!-- pytest-codeblocks:skip -->
 ```python
 from torchio import BoundingBoxFormat
 
@@ -120,6 +126,7 @@ ras_boxes = boxes.to_format(ras_corners)
 
 Each box can carry a class label:
 
+<!-- pytest-codeblocks:skip -->
 ```python
 boxes = tio.BoundingBoxes(
     torch.tensor([[10, 20, 30, 50, 60, 70]]),
@@ -133,6 +140,7 @@ print(boxes.labels)  # tensor([1])
 
 A `Subject` automatically sorts its contents:
 
+<!-- pytest-codeblocks:skip -->
 ```python
 subject = tio.Subject(
     t1=tio.ScalarImage.from_tensor(torch.randn(1, 64, 64, 64)),
@@ -145,6 +153,7 @@ subject = tio.Subject(
 
 Access each type:
 
+<!-- pytest-codeblocks:skip -->
 ```python
 subject.t1          # Image
 subject.landmarks   # Points
@@ -154,6 +163,7 @@ subject.age         # metadata (45)
 
 Inspect what the Subject contains:
 
+<!-- pytest-codeblocks:skip -->
 ```python
 print(subject)
 # Subject(images: ('t1', 'seg'); points: ('landmarks',); bboxes: ('tumors',))
@@ -161,6 +171,7 @@ print(subject)
 
 List all entries of a given type:
 
+<!-- pytest-codeblocks:skip -->
 ```python
 subject.images()          # {'t1': ..., 'seg': ...}
 subject.points()          # {'landmarks': ...}

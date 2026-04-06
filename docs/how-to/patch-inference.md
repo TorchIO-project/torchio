@@ -8,6 +8,7 @@ samplers and an aggregator to process volumes in patches.
 Extract all patches on a regular grid, run the model on each batch,
 and reassemble the output:
 
+<!-- pytest-codeblocks:skip -->
 ```python
 import torchio as tio
 from torch.utils.data import DataLoader
@@ -55,6 +56,7 @@ For training, use `UniformSampler`, `WeightedSampler`, or
 `LabelSampler`. These are `IterableDataset`s that yield patches
 on-the-fly:
 
+<!-- pytest-codeblocks:skip -->
 ```python
 sampler = tio.UniformSampler(subject, patch_size=64, num_patches=200)
 loader = SubjectsLoader(sampler, batch_size=8)
@@ -69,6 +71,7 @@ for batch in loader:
 
 Sample more patches from regions of interest using a probability map:
 
+<!-- pytest-codeblocks:skip -->
 ```python
 sampler = tio.WeightedSampler(
     subject,
@@ -82,6 +85,7 @@ sampler = tio.WeightedSampler(
 
 Center patches on labeled voxels, with optional per-class weights:
 
+<!-- pytest-codeblocks:skip -->
 ```python
 sampler = tio.LabelSampler(
     subject,
@@ -97,6 +101,7 @@ sampler = tio.LabelSampler(
 If your model produces spatially smaller outputs (e.g., a feature
 encoder with stride 2), pass `output_shape` to the aggregator:
 
+<!-- pytest-codeblocks:skip -->
 ```python
 aggregator = tio.PatchAggregator(
     spatial_shape=(256, 256, 176),
@@ -109,6 +114,7 @@ aggregator = tio.PatchAggregator(
 
 Pass a dict of tensors to aggregate multiple outputs simultaneously:
 
+<!-- pytest-codeblocks:skip -->
 ```python
 aggregator.add_batch(
     {"segmentation": seg_output, "embedding": emb_output},

@@ -10,6 +10,7 @@ transforms make this easy. The pattern mirrors
 The idea: augment the input, predict, copy the history to the
 prediction, invert, then average:
 
+<!-- pytest-codeblocks:skip -->
 ```python
 import torch
 import torchio as tio
@@ -52,6 +53,7 @@ mean_prediction = torch.stack(predictions).mean(0)
 
 **On Subject:**
 
+<!-- pytest-codeblocks:skip -->
 ```python
 # Get a Compose that inverts the history
 inverse_transform = subject.get_inverse_transform()
@@ -65,6 +67,7 @@ restored = transformed.apply_inverse_transform(ignore_intensity=True)
 
 **Standalone function** (works on any type with history):
 
+<!-- pytest-codeblocks:skip -->
 ```python
 restored = tio.apply_inverse_transform(data)
 ```
@@ -81,6 +84,7 @@ restored = tio.apply_inverse_transform(data)
 Non-invertible transforms are **skipped with a warning** (not
 errored), so TTA works even with mixed pipelines:
 
+<!-- pytest-codeblocks:skip -->
 ```python
 pipeline = tio.Compose([
     tio.Flip(axes=(0, 1, 2), flip_probability=0.5),

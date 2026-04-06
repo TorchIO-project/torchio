@@ -82,3 +82,23 @@ jobs:
 
       - name: Test info CLI tool
         run: uv run -- tiohd --help
+
+  docs:
+    name: Documentation snippet tests
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+
+      - name: Install tox
+        run: uv tool install --with tox-uv tox
+
+      - name: Run doc snippet tests
+        run: tox -e docs

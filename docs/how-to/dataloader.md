@@ -6,6 +6,7 @@ training. It wraps PyTorch's `DataLoader` and returns
 
 ## Basic usage
 
+<!-- pytest-codeblocks:skip -->
 ```python
 from torch.utils.data import Dataset
 import torchio as tio
@@ -41,6 +42,7 @@ for batch in loader:
 
 Metadata is stored as lists (one value per sample):
 
+<!-- pytest-codeblocks:skip -->
 ```python
 batch.metadata["age"]   # [42, 35, 60, 28]
 batch.metadata["name"]  # ["sub_0", "sub_1", "sub_2", "sub_3"]
@@ -50,6 +52,7 @@ batch.metadata["name"]  # ["sub_0", "sub_1", "sub_2", "sub_3"]
 
 Split a batch back into individual subjects:
 
+<!-- pytest-codeblocks:skip -->
 ```python
 subjects = batch.unbatch()
 for subject in subjects:
@@ -61,6 +64,7 @@ for subject in subjects:
 If you prefer not to use `SubjectsLoader`, pass `collate_subjects`
 as the collation function:
 
+<!-- pytest-codeblocks:skip -->
 ```python
 from torch.utils.data import DataLoader
 import torchio as tio
@@ -83,6 +87,7 @@ list. Metadata is collected into lists.
 Transforms work directly on ``SubjectsBatch``. Parameters are
 sampled once and applied identically to all samples:
 
+<!-- pytest-codeblocks:skip -->
 ```python
 batch = next(iter(loader))
 augmented = tio.Flip(axes=(0,), p=0.5)(batch)
@@ -94,6 +99,7 @@ augmented.image.data.shape  # (4, 1, H, W, D)
 If your dataset returns individual `Image` objects (not `Subject`),
 use `ImagesLoader`:
 
+<!-- pytest-codeblocks:skip -->
 ```python
 class SliceDataset(Dataset):
     def __init__(self, paths):

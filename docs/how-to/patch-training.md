@@ -7,6 +7,7 @@ into a buffer.
 
 ## Basic usage
 
+<!-- pytest-codeblocks:skip -->
 ```python
 import torchio as tio
 from torchio.loader import SubjectsLoader
@@ -54,6 +55,7 @@ for epoch in range(num_epochs):
 
 ## Memory estimation
 
+<!-- pytest-codeblocks:skip -->
 ```python
 print(queue.max_memory_pretty)  # e.g., "200.0 MiB"
 ```
@@ -63,6 +65,7 @@ print(queue.max_memory_pretty)  # e.g., "200.0 MiB"
 Pass a `DistributedSampler` as `subject_sampler` so each rank
 processes its own subset of subjects:
 
+<!-- pytest-codeblocks:skip -->
 ```python
 from torch.utils.data.distributed import DistributedSampler
 

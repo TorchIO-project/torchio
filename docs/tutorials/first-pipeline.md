@@ -33,6 +33,7 @@ At this point, **no data has been read from disk**. TorchIO uses lazy
 loading. The file is only read when you access `.data`, `.spacing`,
 or apply a transform.
 
+<!-- pytest-codeblocks:cont -->
 ```python
 print(t1.shape)      # (1, 64, 64, 64), reads only the header
 print(t1.is_loaded)  # False
@@ -41,6 +42,7 @@ print(t1.spacing)    # (1.0, 1.0, 1.0)
 
 ## Step 2: Access the data
 
+<!-- pytest-codeblocks:cont -->
 ```python
 tensor = t1.data  # triggers the load
 print(t1.is_loaded)  # True
@@ -55,6 +57,7 @@ channels and `I, J, K` are the spatial dimensions.
 
 A `Subject` groups related images, annotations, and metadata:
 
+<!-- pytest-codeblocks:cont -->
 ```python
 import torch
 
@@ -70,6 +73,7 @@ subject = tio.Subject(
 
 Access images and metadata by name:
 
+<!-- pytest-codeblocks:cont -->
 ```python
 subject.t1          # the ScalarImage
 subject.seg         # the LabelMap
@@ -84,6 +88,7 @@ subject.spatial_shape  # (64, 64, 64), checked across all images
 
 ## Step 4: Slice a region
 
+<!-- pytest-codeblocks:cont -->
 ```python
 patch = subject.t1[:, 10:30, 10:30, 10:30]
 print(patch.shape)   # (1, 20, 20, 20)
@@ -92,6 +97,7 @@ print(patch.origin)  # shifted by 10 voxels in each direction
 
 ## Step 5: Save the result
 
+<!-- pytest-codeblocks:cont -->
 ```python
 patch.save("/tmp/patch.nii.gz")
 ```

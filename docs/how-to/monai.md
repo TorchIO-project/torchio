@@ -18,6 +18,7 @@ pip install "torchio[monai]"
 Array transforms (e.g., `NormalizeIntensity`) are applied to each
 `ScalarImage` in the subject individually:
 
+<!-- pytest-codeblocks:skip -->
 ```python
 from monai.transforms import NormalizeIntensity
 import torchio as tio
@@ -28,6 +29,7 @@ result = adapter(subject)
 
 Use `include` / `exclude` to control which images are affected:
 
+<!-- pytest-codeblocks:skip -->
 ```python
 adapter = tio.MonaiAdapter(NormalizeIntensity(), include=["t1"])
 ```
@@ -38,6 +40,7 @@ Dictionary transforms (e.g., `NormalizeIntensityd`) operate on the
 full subject dictionary. Only the keys specified in the MONAI
 transform are modified:
 
+<!-- pytest-codeblocks:skip -->
 ```python
 from monai.transforms import NormalizeIntensityd
 
@@ -52,6 +55,7 @@ affine changes back to the TorchIO images automatically.
 
 `MonaiAdapter` works in `Compose` like any other transform:
 
+<!-- pytest-codeblocks:skip -->
 ```python
 pipeline = tio.Compose([
     tio.Flip(axes=(0,), p=0.5),
@@ -71,6 +75,7 @@ result = pipeline(subject)
 TorchIO transforms accept `dict[str, Tensor]` directly, so they
 work in MONAI dict-based pipelines without any adapter:
 
+<!-- pytest-codeblocks:skip -->
 ```python
 from monai.transforms import Compose as MonaiCompose
 from monai.transforms import NormalizeIntensityd

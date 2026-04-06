@@ -29,6 +29,7 @@ subject = tio.Subject(
 Coordinates are in **voxel space** (`IJK`) by default. Convert to a
 different axis convention:
 
+<!-- pytest-codeblocks:skip -->
 ```python
 # To world (mm) coordinates via the affine
 world_coords = subject.landmarks.to_world()
@@ -43,6 +44,7 @@ lpi_points = subject.landmarks.to_axes("LPI")
 For regions of interest such as lesion detections or organ bounding
 boxes, use `BoundingBoxes`:
 
+<!-- pytest-codeblocks:skip -->
 ```python
 detections = tio.BoundingBoxes(
     torch.tensor([
@@ -64,6 +66,7 @@ subject = tio.Subject(
 Pass an integer tensor of labels to track which class each box belongs
 to:
 
+<!-- pytest-codeblocks:skip -->
 ```python
 detections = tio.BoundingBoxes(
     torch.tensor([
@@ -80,6 +83,7 @@ detections = tio.BoundingBoxes(
 Convert between representations (corners vs center+size) and axis
 conventions:
 
+<!-- pytest-codeblocks:skip -->
 ```python
 # Corners → center + size
 whd = detections.to_format(tio.BoundingBoxFormat.IJKWHD)
@@ -96,6 +100,7 @@ kji_cs = detections.to_format(BoundingBoxFormat("KJI", "center_size"))
 
 Iterate over specific annotation types:
 
+<!-- pytest-codeblocks:skip -->
 ```python
 for name, pts in subject.points.items():
     print(f"{name}: {pts.num_points} points")
