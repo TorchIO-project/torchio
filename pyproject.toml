@@ -121,13 +121,7 @@ search = 'version = "{current_version}"'
 replace = 'version = "{new_version}"'
 
 [dependency-groups]
-dev = [
-    "ipykernel>=7.2.0",
-    "ipywidgets>=8.1.8",
-    "nbconvert>=7.17.0",
-    "rich>=14.3.3",
-    "tox-uv",
-]
+dev = ["bump-my-version", "ipykernel>=7.2.0", "ipywidgets>=8.1.8", "tox-uv"]
 test = [
     "colorcet",
     "ffmpeg-python",
@@ -139,8 +133,8 @@ test = [
     "pytest-cov",
     "pytest-sugar",
 ]
-doc = ["mkdocstrings-python", "zensical"]
-quality = ["bump-my-version", "prek", "ruff"]
+docs = ["mkdocstrings-python", "zensical"]
+quality = ["ruff"]
 types = ["ty"]
 zarr = ["nifti-zarr"]
 plot = ["matplotlib", "colorcet"]

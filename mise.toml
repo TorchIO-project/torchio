@@ -6,7 +6,9 @@ uv = "latest"
 description = "Install all dependencies and pre-commit hooks"
 run = """
 uv sync --all-groups
-uv run prek install
+mise trust
+mise install
+prek install --install-hooks
 """
 
 [tasks.test]
@@ -35,11 +37,11 @@ depends = ["lint", "format-check", "types"]
 
 [tasks.bump]
 description = "Bump version (usage: mise run bump -- patch|minor|major)"
-run = "uv run --group quality -- bump-my-version bump ${1:-patch} --verbose"
+run = "uv run -- bump-my-version bump ${1:-patch} --verbose"
 
 [tasks.bump-dry]
 description = "Dry-run version bump"
-run = "uv run --group quality -- bump-my-version bump ${1:-patch} --dry-run --verbose --allow-dirty"
+run = "uv run -- bump-my-version bump ${1:-patch} --dry-run --verbose --allow-dirty"
 
 [tasks.push]
 description = "Push commits and tags"
@@ -47,11 +49,11 @@ run = "git push && git push --tags"
 
 [tasks."docs:serve"]
 description = "Serve documentation locally"
-run = "uv run --group doc -- zensical serve --open"
+run = "uv run --group docs -- zensical serve --open"
 
 [tasks."docs:build"]
 description = "Build documentation"
-run = "uv run --group doc -- zensical build"
+run = "uv run --group docs -- zensical build"
 
 [tasks."docs:test"]
 description = "Test documentation code snippets"
