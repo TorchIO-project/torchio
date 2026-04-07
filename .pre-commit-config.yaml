@@ -54,6 +54,11 @@ repos:
       - id: xenon
         args: ["--max-average=B", "--max-modules=B", "--max-absolute=B"]
 
+  # - repo: https://github.com/regebro/pyroma
+  #   rev: "5.0.1"
+  #   hooks:
+  #     - id: pyroma
+
 ci:
   autoupdate_commit_msg: Autoupdate pre-commit hooks
   autoupdate_schedule: quarterly

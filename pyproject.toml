@@ -3,6 +3,37 @@ name = "torchio"
 version = "2.0.0"
 description = "Medical image preprocessing, augmentation, and patch-based training."
 requires-python = ">=3.10"
+license = "Apache-2.0"
+readme = "README.md"
+authors = [{ name = "TorchIO contributors", email = "fepegar@gmail.com" }]
+maintainers = [{ name = "Fernando Pérez-García", email = "fepegar@gmail.com" }]
+keywords = [
+    "medical image computing",
+    "pytorch",
+    "preprocessing",
+    "augmentation",
+    "mri",
+]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Environment :: Console",
+    "Intended Audience :: Science/Research",
+    "Natural Language :: English",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Scientific/Engineering :: Image Processing",
+    "Topic :: Scientific/Engineering :: Medical Science Apps.",
+    "Typing :: Typed",
+]
 dependencies = [
     "einops",
     "fsspec[http]",
@@ -63,22 +94,9 @@ skip_empty = true
 src = ["src"]
 
 [tool.ruff.lint]
-select = [
-    "A",
-    "B",
-    "C4",
-    "E",
-    "F",
-    "I",
-    "N",
-    "PT",
-    "RUF",
-    "SIM",
-    "UP",
-    "W",
-]
+select = ["A", "B", "C4", "E", "F", "I", "N", "PT", "RUF", "SIM", "UP", "W"]
 ignore = [
-    "N813",  # https://docs.astral.sh/ruff/rules/camelcase-imported-as-lowercase/
+    "N813", # https://docs.astral.sh/ruff/rules/camelcase-imported-as-lowercase/
 ]
 
 [tool.ruff.lint.isort]
@@ -86,10 +104,10 @@ force-single-line = true
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = [
-    "B018",  # https://docs.astral.sh/ruff/rules/useless-expression/
+    "B018", # https://docs.astral.sh/ruff/rules/useless-expression/
 ]
 "src/torchio/data/bboxes.py" = [
-    "A002",  # `format` parameter shadows builtin — canonical name for this concept
+    "A002", # `format` parameter shadows builtin — canonical name for this concept
 ]
 
 [tool.bump-my-version]
@@ -121,37 +139,13 @@ test = [
     "pytest-cov",
     "pytest-sugar",
 ]
-doc = [
-    "mkdocstrings-python",
-    "zensical",
-]
-quality = [
-    "bump-my-version",
-    "prek",
-    "ruff",
-]
-types = [
-    "ty",
-]
-zarr = [
-    "nifti-zarr",
-]
-plot = [
-    "matplotlib",
-    "colorcet",
-]
-video = [
-    "ffmpeg-python",
-]
-monai = [
-    "monai",
-]
-s3 = [
-    "s3fs",
-]
-azure = [
-    "adlfs",
-]
-gcs = [
-    "gcsfs",
-]
+doc = ["mkdocstrings-python", "zensical"]
+quality = ["bump-my-version", "prek", "ruff"]
+types = ["ty"]
+zarr = ["nifti-zarr"]
+plot = ["matplotlib", "colorcet"]
+video = ["ffmpeg-python"]
+monai = ["monai"]
+s3 = ["s3fs"]
+azure = ["adlfs"]
+gcs = ["gcsfs"]
