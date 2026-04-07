@@ -11,7 +11,7 @@ from torchio.data.batch import SubjectsBatch
 
 class TestImagesBatch:
     def test_from_images(self) -> None:
-        images = [tio.ScalarImage.from_tensor(torch.rand(1, 8, 8, 8)) for _ in range(4)]
+        images = [tio.ScalarImage(torch.rand(1, 8, 8, 8)) for _ in range(4)]
         batch = ImagesBatch.from_images(images)
         assert batch.data.shape == (4, 1, 8, 8, 8)
 
@@ -31,7 +31,7 @@ class TestImagesBatch:
         assert result.data.dtype == torch.float64
 
     def test_unbatch(self) -> None:
-        images = [tio.ScalarImage.from_tensor(torch.rand(1, 8, 8, 8)) for _ in range(3)]
+        images = [tio.ScalarImage(torch.rand(1, 8, 8, 8)) for _ in range(3)]
         batch = ImagesBatch.from_images(images)
         restored = batch.unbatch()
         assert len(restored) == 3
@@ -71,8 +71,8 @@ class TestSubjectsBatch:
     def test_from_subjects(self) -> None:
         subjects = [
             tio.Subject(
-                t1=tio.ScalarImage.from_tensor(torch.rand(1, 8, 8, 8)),
-                seg=tio.LabelMap.from_tensor(torch.randint(0, 3, (1, 8, 8, 8))),
+                t1=tio.ScalarImage(torch.rand(1, 8, 8, 8)),
+                seg=tio.LabelMap(torch.randint(0, 3, (1, 8, 8, 8))),
                 age=42 + i,
             )
             for i in range(4)
@@ -84,7 +84,7 @@ class TestSubjectsBatch:
     def test_attribute_access(self) -> None:
         subjects = [
             tio.Subject(
-                t1=tio.ScalarImage.from_tensor(torch.rand(1, 8, 8, 8)),
+                t1=tio.ScalarImage(torch.rand(1, 8, 8, 8)),
             )
             for _ in range(2)
         ]
@@ -94,7 +94,7 @@ class TestSubjectsBatch:
     def test_batch_size(self) -> None:
         subjects = [
             tio.Subject(
-                t1=tio.ScalarImage.from_tensor(torch.rand(1, 8, 8, 8)),
+                t1=tio.ScalarImage(torch.rand(1, 8, 8, 8)),
             )
             for _ in range(3)
         ]
@@ -104,7 +104,7 @@ class TestSubjectsBatch:
     def test_unbatch(self) -> None:
         subjects = [
             tio.Subject(
-                t1=tio.ScalarImage.from_tensor(torch.rand(1, 8, 8, 8)),
+                t1=tio.ScalarImage(torch.rand(1, 8, 8, 8)),
                 age=42 + i,
             )
             for i in range(3)
@@ -120,7 +120,7 @@ class TestSubjectsBatch:
     def test_to_device(self) -> None:
         subjects = [
             tio.Subject(
-                t1=tio.ScalarImage.from_tensor(torch.rand(1, 8, 8, 8)),
+                t1=tio.ScalarImage(torch.rand(1, 8, 8, 8)),
             )
             for _ in range(2)
         ]
@@ -131,7 +131,7 @@ class TestSubjectsBatch:
     def test_metadata_preserved(self) -> None:
         subjects = [
             tio.Subject(
-                t1=tio.ScalarImage.from_tensor(torch.rand(1, 8, 8, 8)),
+                t1=tio.ScalarImage(torch.rand(1, 8, 8, 8)),
                 age=42 + i,
                 name=f"sub_{i}",
             )
@@ -145,7 +145,7 @@ class TestSubjectsBatch:
 class TestBatchTransforms:
     def test_flip_images_batch(self) -> None:
         images = [
-            tio.ScalarImage.from_tensor(torch.arange(8).reshape(1, 2, 2, 2).float())
+            tio.ScalarImage(torch.arange(8).reshape(1, 2, 2, 2).float())
             for _ in range(3)
         ]
         batch = ImagesBatch.from_images(images)
@@ -159,7 +159,7 @@ class TestBatchTransforms:
     def test_flip_subjects_batch(self) -> None:
         subjects = [
             tio.Subject(
-                t1=tio.ScalarImage.from_tensor(torch.rand(1, 8, 8, 8)),
+                t1=tio.ScalarImage(torch.rand(1, 8, 8, 8)),
             )
             for _ in range(4)
         ]
@@ -169,9 +169,7 @@ class TestBatchTransforms:
         assert result.t1.data.shape == (4, 1, 8, 8, 8)
 
     def test_noise_images_batch(self) -> None:
-        images = [
-            tio.ScalarImage.from_tensor(torch.zeros(1, 4, 4, 4)) for _ in range(3)
-        ]
+        images = [tio.ScalarImage(torch.zeros(1, 4, 4, 4)) for _ in range(3)]
         batch = ImagesBatch.from_images(images)
         result = tio.Noise(std=1.0)(batch)
         # Noise should have been added
@@ -181,8 +179,8 @@ class TestBatchTransforms:
         affine_a = tio.Affine.from_spacing((1.0, 1.0, 1.0))
         affine_b = tio.Affine.from_spacing((2.0, 2.0, 2.0))
         images = [
-            tio.ScalarImage.from_tensor(torch.rand(1, 8, 8, 8), affine=affine_a),
-            tio.ScalarImage.from_tensor(torch.rand(1, 8, 8, 8), affine=affine_b),
+            tio.ScalarImage(torch.rand(1, 8, 8, 8), affine=affine_a),
+            tio.ScalarImage(torch.rand(1, 8, 8, 8), affine=affine_b),
         ]
         batch = ImagesBatch.from_images(images)
         result = tio.Flip(axes=(0,))(batch)
@@ -190,9 +188,7 @@ class TestBatchTransforms:
         assert result.affines[1].spacing == (2.0, 2.0, 2.0)
 
     def test_batch_copy_preserves_original(self) -> None:
-        images = [
-            tio.ScalarImage.from_tensor(torch.zeros(1, 4, 4, 4)) for _ in range(2)
-        ]
+        images = [tio.ScalarImage(torch.zeros(1, 4, 4, 4)) for _ in range(2)]
         batch = ImagesBatch.from_images(images)
         original = batch.data.clone()
         tio.Noise(std=1.0)(batch)

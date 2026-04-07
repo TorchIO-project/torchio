@@ -17,12 +17,12 @@ from torchio.data.points import Points
 
 class TestImageWithPoints:
     def test_image_default_no_points(self):
-        image = ScalarImage.from_tensor(torch.randn(1, 10, 10, 10))
+        image = ScalarImage(torch.randn(1, 10, 10, 10))
         assert image.points == {}
 
     def test_image_with_points_kwarg(self):
         pts = Points(torch.randn(5, 3))
-        image = ScalarImage.from_tensor(
+        image = ScalarImage(
             torch.randn(1, 10, 10, 10),
             points={"landmarks": pts},
         )
@@ -32,7 +32,7 @@ class TestImageWithPoints:
     def test_image_with_multiple_point_sets(self):
         lm = Points(torch.randn(5, 3))
         fiducials = Points(torch.randn(3, 3))
-        image = ScalarImage.from_tensor(
+        image = ScalarImage(
             torch.randn(1, 10, 10, 10),
             points={"landmarks": lm, "fiducials": fiducials},
         )
@@ -41,7 +41,7 @@ class TestImageWithPoints:
     def test_image_points_validates_values(self):
         """Points dict values must be Points instances."""
         with pytest.raises(TypeError, match="Points"):
-            ScalarImage.from_tensor(
+            ScalarImage(
                 torch.randn(1, 10, 10, 10),
                 points={"landmarks": torch.randn(5, 3)},
             )
@@ -49,7 +49,7 @@ class TestImageWithPoints:
 
 class TestImageWithBoundingBoxes:
     def test_image_default_no_bounding_boxes(self):
-        image = ScalarImage.from_tensor(torch.randn(1, 10, 10, 10))
+        image = ScalarImage(torch.randn(1, 10, 10, 10))
         assert image.bounding_boxes == {}
 
     def test_image_with_bboxes_kwarg(self):
@@ -57,7 +57,7 @@ class TestImageWithBoundingBoxes:
             torch.tensor([[10, 20, 30, 50, 60, 70]]),
             format=BoundingBoxFormat.IJKIJK,
         )
-        image = ScalarImage.from_tensor(
+        image = ScalarImage(
             torch.randn(1, 10, 10, 10),
             bounding_boxes={"tumors": boxes},
         )
@@ -73,7 +73,7 @@ class TestImageWithBoundingBoxes:
             torch.randn(5, 6),
             format=BoundingBoxFormat.IJKWHD,
         )
-        image = ScalarImage.from_tensor(
+        image = ScalarImage(
             torch.randn(1, 10, 10, 10),
             bounding_boxes={"tumors": tumors, "organs": organs},
         )
@@ -82,7 +82,7 @@ class TestImageWithBoundingBoxes:
     def test_image_bboxes_validates_values(self):
         """BoundingBoxes dict values must be BoundingBoxes instances."""
         with pytest.raises(TypeError, match="BoundingBoxes"):
-            ScalarImage.from_tensor(
+            ScalarImage(
                 torch.randn(1, 10, 10, 10),
                 bounding_boxes={"tumors": torch.randn(2, 6)},
             )
@@ -95,7 +95,7 @@ class TestImageAnnotationsBothTypes:
             torch.randn(2, 6),
             format=BoundingBoxFormat.IJKIJK,
         )
-        image = ScalarImage.from_tensor(
+        image = ScalarImage(
             torch.randn(1, 10, 10, 10),
             points={"landmarks": pts},
             bounding_boxes={"tumors": boxes},
@@ -107,7 +107,7 @@ class TestImageAnnotationsBothTypes:
 class TestNewLikePreservesAnnotations:
     def test_new_like_preserves_points(self):
         pts = Points(torch.randn(5, 3))
-        image = ScalarImage.from_tensor(
+        image = ScalarImage(
             torch.randn(1, 10, 10, 10),
             points={"landmarks": pts},
         )
@@ -122,7 +122,7 @@ class TestNewLikePreservesAnnotations:
             torch.randn(3, 6),
             format=BoundingBoxFormat.IJKIJK,
         )
-        image = ScalarImage.from_tensor(
+        image = ScalarImage(
             torch.randn(1, 10, 10, 10),
             bounding_boxes={"tumors": boxes},
         )
@@ -133,7 +133,7 @@ class TestNewLikePreservesAnnotations:
 
     def test_new_like_preserves_subclass_with_annotations(self):
         pts = Points(torch.randn(5, 3))
-        image = LabelMap.from_tensor(
+        image = LabelMap(
             torch.randint(0, 5, (1, 10, 10, 10)),
             points={"landmarks": pts},
         )
@@ -145,7 +145,7 @@ class TestNewLikePreservesAnnotations:
 class TestDeepCopyPreservesAnnotations:
     def test_deepcopy_copies_points(self):
         pts = Points(torch.randn(5, 3))
-        image = ScalarImage.from_tensor(
+        image = ScalarImage(
             torch.randn(1, 10, 10, 10),
             points={"landmarks": pts},
         )
@@ -162,7 +162,7 @@ class TestDeepCopyPreservesAnnotations:
             torch.randn(3, 6),
             format=BoundingBoxFormat.IJKIJK,
         )
-        image = ScalarImage.from_tensor(
+        image = ScalarImage(
             torch.randn(1, 10, 10, 10),
             bounding_boxes={"tumors": boxes},
         )
@@ -177,7 +177,7 @@ class TestDeepCopyPreservesAnnotations:
     def test_deepcopy_independence(self):
         """Modifying the copy's annotations doesn't affect the original."""
         pts = Points(torch.randn(5, 3))
-        image = ScalarImage.from_tensor(
+        image = ScalarImage(
             torch.randn(1, 10, 10, 10),
             points={"landmarks": pts},
         )
@@ -190,7 +190,7 @@ class TestDeepCopyPreservesAnnotations:
 class TestSlicingPreservesAnnotations:
     def test_slice_preserves_points(self):
         pts = Points(torch.randn(5, 3))
-        image = ScalarImage.from_tensor(
+        image = ScalarImage(
             torch.randn(1, 20, 20, 20),
             points={"landmarks": pts},
         )
@@ -203,7 +203,7 @@ class TestSlicingPreservesAnnotations:
             torch.randn(3, 6),
             format=BoundingBoxFormat.IJKIJK,
         )
-        image = ScalarImage.from_tensor(
+        image = ScalarImage(
             torch.randn(1, 20, 20, 20),
             bounding_boxes={"tumors": boxes},
         )
@@ -215,7 +215,7 @@ class TestSubjectWithImageLevelAnnotations:
     def test_subject_image_level_points(self):
         """Points on an Image are accessible through the Subject."""
         pts = Points(torch.randn(5, 3))
-        image = ScalarImage.from_tensor(
+        image = ScalarImage(
             torch.randn(1, 10, 10, 10),
             points={"landmarks": pts},
         )
@@ -226,7 +226,7 @@ class TestSubjectWithImageLevelAnnotations:
         """all_points() yields from both image-level and subject-level."""
         img_pts = Points(torch.randn(5, 3))
         subj_pts = Points(torch.randn(3, 3))
-        image = ScalarImage.from_tensor(
+        image = ScalarImage(
             torch.randn(1, 10, 10, 10),
             points={"img_landmarks": img_pts},
         )
@@ -248,7 +248,7 @@ class TestSubjectWithImageLevelAnnotations:
             torch.randn(1, 6),
             format=BoundingBoxFormat.IJKIJK,
         )
-        image = ScalarImage.from_tensor(
+        image = ScalarImage(
             torch.randn(1, 10, 10, 10),
             bounding_boxes={"img_tumors": img_boxes},
         )
@@ -264,7 +264,7 @@ class TestSubjectWithImageLevelAnnotations:
         """Subject with only subject-level points."""
         subj_pts = Points(torch.randn(3, 3))
         subject = Subject(
-            t1=ScalarImage.from_tensor(torch.randn(1, 10, 10, 10)),
+            t1=ScalarImage(torch.randn(1, 10, 10, 10)),
             landmarks=subj_pts,
         )
         all_pts = subject.all_points()
@@ -274,7 +274,7 @@ class TestSubjectWithImageLevelAnnotations:
     def test_all_points_only_image_level(self):
         """Subject with only image-level points."""
         img_pts = Points(torch.randn(5, 3))
-        image = ScalarImage.from_tensor(
+        image = ScalarImage(
             torch.randn(1, 10, 10, 10),
             points={"landmarks": img_pts},
         )
@@ -291,7 +291,7 @@ class TestImageAnnotationsRepr:
             torch.randn(2, 6),
             format=BoundingBoxFormat.IJKIJK,
         )
-        image = ScalarImage.from_tensor(
+        image = ScalarImage(
             torch.randn(1, 10, 10, 10),
             points={"landmarks": pts},
             bounding_boxes={"tumors": boxes},
@@ -301,7 +301,7 @@ class TestImageAnnotationsRepr:
         assert "tumors" in r
 
     def test_repr_no_annotations(self):
-        image = ScalarImage.from_tensor(torch.randn(1, 10, 10, 10))
+        image = ScalarImage(torch.randn(1, 10, 10, 10))
         r = repr(image)
         # Should not mention points/bboxes when empty
         assert "points" not in r.lower() or "0" in r

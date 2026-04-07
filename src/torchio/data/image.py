@@ -124,21 +124,35 @@ class Image(Invertible):
     Transforms use `isinstance` checks to decide behavior (e.g., nearest-
     neighbor interpolation for [`LabelMap`][torchio.LabelMap]).
 
-    Use `from_tensor` to create an image from an in-memory tensor.
+    The constructor accepts many source types and dispatches
+    automatically:
+
+    | Source type | Behavior |
+    |---|---|
+    | `str`, `Path`, URL, `OpenFile`, file-like | Lazy load from file |
+    | `torch.Tensor`, `np.ndarray` | Eager, in-memory |
+    | `nib.Nifti1Image` | Lazy via `NibabelBackend` |
+    | `sitk.Image` | Eager, converted to tensor |
+    | `zarr.abc.store.Store` | Lazy via `zarr2nii` + `NibabelBackend` |
+    | `bytes`, `io.BytesIO` | Decoded via temp file |
+    | `None` (default) | Empty image — set data later |
 
     Args:
-        path: Path to an image file, URL, ``fsspec.OpenFile``, or
-            file-like object. NIfTI files are read with
-            [NiBabel](https://nipy.org/nibabel/); all other formats
-            with [SimpleITK](https://simpleitk.org/).
+        source: Image data or path. See the table above.
         reader: Callable that takes a path and returns a tuple
             `(tensor, affine_array)`. Overrides the default reader.
+            Only used for file-path sources.
         reader_kwargs: Extra keyword arguments forwarded to the reader
             function. For the default reader these are passed to
             ``nibabel.load()`` or ``SimpleITK.ReadImage()``.
         affine: $4 \times 4$ affine matrix or
             [`Affine`][torchio.Affine] instance. If given, overrides
             the affine read from the file.
+        channels_last: If ``True``, the tensor is assumed to have
+            shape $(I, J, K, C)$ and will be permuted to
+            $(C, I, J, K)$. Only used for tensor sources.
+        suffix: File suffix hint (e.g., ``".nii.gz"``). Used for
+            file-like and bytes sources.
         points: Named sets of [`Points`][torchio.Points] attached to
             this image.
         bounding_boxes: Named sets of
@@ -149,29 +163,27 @@ class Image(Invertible):
 
     Examples:
         >>> import torchio as tio
-        >>> image = tio.ScalarImage("t1.nii.gz")  # lazy, not loaded yet
-        >>> image.data  # triggers load
-        >>> image.spacing
-        (1.0, 1.0, 1.0)
-        >>> image = tio.ScalarImage.from_tensor(torch.randn(1, 256, 256, 176))
+        >>> image = tio.ScalarImage("t1.nii.gz")  # from path (lazy)
+        >>> image = tio.ScalarImage(torch.randn(1, 256, 256, 176))  # from tensor
+        >>> image = tio.ScalarImage(nifti_image)  # from nibabel (lazy)
     """
 
-    # Known __init__ kwargs — everything else goes to metadata.
-    _INIT_KWARGS = frozenset(
-        {
-            "reader",
-            "reader_kwargs",
-            "affine",
-            "channels_last",
-            "suffix",
-            "points",
-            "bounding_boxes",
-        }
+    #: Source types accepted by the constructor.
+    ImageInput = (
+        ImageSource  # str | Path | IOBase | OpenFile
+        | Tensor
+        | np.ndarray
+        | nib.Nifti1Image
+        | sitk.Image
+        | bytes
+        | io.BytesIO
+        # | zarr.abc.store.Store  (optional — accepted at runtime)
+        | None
     )
 
     def __init__(
         self,
-        path: ImageSource,
+        source: ImageInput = None,
         *,
         reader: Callable[[Path], tuple[TypeImageData, np.ndarray]] | None = None,
         reader_kwargs: dict[str, Any] | None = None,
@@ -182,13 +194,15 @@ class Image(Invertible):
         bounding_boxes: dict[str, BoundingBoxes] | None = None,
         **kwargs: Any,
     ):
-        self._path: Path | None = resolve_source(path, suffix=suffix)
+        # Common state shared by all source types.
         self._reader = reader or default_reader
         self._reader_kwargs: dict[str, Any] = dict(reader_kwargs or {})
         self._channels_last = channels_last
         self._metadata: dict[str, Any] = dict(kwargs)
         self._data: Tensor | None = None
         self._backend: ImageDataBackend | None = None
+        self._path: Path | None = None
+        self._zarr_store: Any = None
         self._affine: Affine | None = (
             self._parse_affine(affine) if affine is not None else None
         )
@@ -199,70 +213,63 @@ class Image(Invertible):
         )
         self.applied_transforms: list[Any] = []
 
-    @classmethod
-    def from_tensor(
-        cls,
+        # Dispatch based on source type.
+        self._dispatch_source(
+            source, affine=affine, channels_last=channels_last, suffix=suffix
+        )
+
+    def _dispatch_source(
+        self,
+        source: ImageInput,
+        *,
+        affine: Affine | npt.ArrayLike | None,
+        channels_last: bool,
+        suffix: str | None,
+    ) -> None:
+        """Route *source* to the appropriate init helper."""
+        if source is None:
+            return
+        if isinstance(source, (Tensor, np.ndarray)):
+            self._init_from_tensor(source, affine=affine, channels_last=channels_last)
+        elif isinstance(source, nib.Nifti1Image):
+            self._init_from_nifti(source)
+        elif isinstance(source, sitk.Image):
+            self._init_from_sitk(source, affine=affine)
+        elif isinstance(source, (bytes, io.BytesIO)):
+            self._init_from_bytes(source, suffix=suffix or ".nii.gz")
+        elif self._is_zarr_store(source):
+            self._zarr_store = source
+        else:
+            # Path-like, URL, fsspec OpenFile, or file-like object.
+            self._path = resolve_source(source, suffix=suffix)
+
+    # -- Private init helpers -------------------------------------------------
+
+    def _init_from_tensor(
+        self,
         tensor: TypeImageData | np.ndarray,
         *,
-        affine: Affine | npt.ArrayLike | None = None,
-        channels_last: bool = False,
-        points: dict[str, Points] | None = None,
-        bounding_boxes: dict[str, BoundingBoxes] | None = None,
-        **kwargs: Any,
-    ) -> Self:
-        r"""Create an image from an in-memory tensor.
-
-        Args:
-            tensor: 4D [`torch.Tensor`][torch.Tensor] or NumPy array
-                with shape $(C, I, J, K)$, or $(I, J, K, C)$ if
-                *channels_last* is ``True``.
-            affine: $4 \times 4$ affine matrix or
-                [`Affine`][torchio.Affine] instance. Identity if `None`.
-            channels_last: If ``True``, the tensor is assumed to have
-                shape $(I, J, K, C)$ and will be permuted to
-                $(C, I, J, K)$.
-            points: Named sets of [`Points`][torchio.Points] attached to
-                this image.
-            bounding_boxes: Named sets of
-                [`BoundingBoxes`][torchio.BoundingBoxes] attached to this
-                image.
-            **kwargs: Arbitrary metadata (e.g., ``protocol="MPRAGE"``).
-        """
-        instance = object.__new__(cls)
-        instance._path = None
-        instance._reader = default_reader
-        instance._reader_kwargs = {}
-        instance._channels_last = False  # already permuted below
-        instance._metadata = dict(kwargs)
-        parsed = Image._parse_tensor(tensor)
+        affine: Affine | npt.ArrayLike | None,
+        channels_last: bool,
+    ) -> None:
+        parsed = self._parse_tensor(tensor)
         if channels_last:
             parsed = rearrange(parsed, "i j k c -> c i j k")
-        instance._data = parsed
-        parsed_affine = Image._parse_affine(affine)
-        instance._affine = parsed_affine
-        instance._backend = TensorBackend(
-            instance._data,
-            affine=parsed_affine.data,
-        )
-        instance._points = Image._parse_annotations(points, "Points")
-        instance._bounding_boxes = Image._parse_annotations(
-            bounding_boxes,
-            "BoundingBoxes",
-        )
-        instance.applied_transforms = []
-        return instance
+        self._data = parsed
+        self._channels_last = False  # already permuted
+        parsed_affine = self._parse_affine(affine)
+        self._affine = parsed_affine
+        self._backend = TensorBackend(self._data, affine=parsed_affine.data)
 
-    @classmethod
-    def from_sitk(cls, sitk_image: sitk.Image, **kwargs: Any) -> Self:
-        """Create an image from a SimpleITK Image.
+    def _init_from_nifti(self, nifti_image: nib.Nifti1Image) -> None:
+        self._backend = NibabelBackend(nifti_image)
 
-        Preserves spacing, origin, and direction.
-
-        Args:
-            sitk_image: A SimpleITK Image.
-            **kwargs: Forwarded to ``from_tensor`` (``points``,
-                ``bounding_boxes``, ``metadata``).
-        """
+    def _init_from_sitk(
+        self,
+        sitk_image: sitk.Image,
+        *,
+        affine: Affine | npt.ArrayLike | None,
+    ) -> None:
         data = sitk.GetArrayFromImage(sitk_image)
         n_components = sitk_image.GetNumberOfComponentsPerPixel()
         data = data[np.newaxis] if n_components == 1 else np.moveaxis(data, -1, 0)
@@ -273,50 +280,18 @@ class Image(Invertible):
         affine_matrix = np.eye(4)
         affine_matrix[:3, :3] = direction * spacing
         affine_matrix[:3, 3] = origin
-        return cls.from_tensor(tensor, affine=Affine(affine_matrix), **kwargs)
+        self._init_from_tensor(
+            tensor,
+            affine=affine if affine is not None else Affine(affine_matrix),
+            channels_last=False,
+        )
 
-    @classmethod
-    def from_nifti(cls, nifti_image: nib.Nifti1Image, **kwargs: Any) -> Self:
-        """Create an image from a NiBabel Nifti1Image.
-
-        Preserves the affine matrix.
-
-        Args:
-            nifti_image: A NiBabel Nifti1Image.
-            **kwargs: Forwarded to ``from_tensor`` (``points``,
-                ``bounding_boxes``, ``metadata``).
-        """
-        data = np.asarray(nifti_image.dataobj)
-        if data.ndim == 3:
-            data = data[np.newaxis]
-        elif data.ndim == 4:
-            data = np.moveaxis(data, -1, 0)
-        tensor = torch.as_tensor(data.copy(), dtype=torch.float32)
-        affine_matrix = np.asarray(nifti_image.affine)
-        return cls.from_tensor(tensor, affine=Affine(affine_matrix), **kwargs)
-
-    @classmethod
-    def from_bytes(
-        cls,
+    def _init_from_bytes(
+        self,
         data: bytes | io.BytesIO,
         *,
-        suffix: str = ".nii.gz",
-        **kwargs: Any,
-    ) -> Self:
-        """Create an image from raw bytes.
-
-        Useful for data received from HTTP responses, database blobs,
-        or other non-file sources. The bytes are written to a
-        temporary file and loaded via the standard reader.
-
-        Args:
-            data: Raw bytes or a ``BytesIO`` buffer containing a
-                medical image (e.g., NIfTI).
-            suffix: File suffix to determine the format.
-                Defaults to ``".nii.gz"``.
-            **kwargs: Forwarded to ``from_tensor`` (``points``,
-                ``bounding_boxes``, ``metadata``).
-        """
+        suffix: str,
+    ) -> None:
         import tempfile
 
         if isinstance(data, io.BytesIO):
@@ -328,12 +303,25 @@ class Image(Invertible):
         try:
             nii = nib.load(tmp_path)
             if isinstance(nii, nib.Nifti1Image):
-                return cls.from_nifti(nii, **kwargs)
+                self._init_from_nifti(nii)
+                self.load()  # materialize before temp file is deleted
+                return
             # Non-NIfTI: fall back to SimpleITK
             sitk_image = sitk.ReadImage(str(tmp_path))
-            return cls.from_sitk(sitk_image, **kwargs)
+            self._init_from_sitk(sitk_image, affine=self._affine)
         finally:
             tmp_path.unlink(missing_ok=True)
+
+    @staticmethod
+    def _is_zarr_store(obj: object) -> bool:
+        """Check if *obj* is a ``zarr.abc.store.Store`` without importing zarr."""
+        try:
+            from zarr.abc.store import Store
+        except ImportError:  # zarr not installed
+            return False
+        return isinstance(obj, Store)
+
+    # -- Static helpers -------------------------------------------------------
 
     @staticmethod
     def _parse_tensor(tensor: Tensor | np.ndarray) -> Tensor:
@@ -418,8 +406,12 @@ class Image(Invertible):
     def affine(self) -> Affine:
         """4x4 affine matrix mapping voxel indices to world coordinates."""
         if self._affine is None:
-            # Try backend first to avoid full data load
-            if self._path is not None and self._reader is default_reader:
+            # Try existing backend first to avoid full data load
+            if self._backend is not None:
+                self._affine = Affine(self._backend.affine)
+            elif self._zarr_store is not None or (
+                self._path is not None and self._reader is default_reader
+            ):
                 self._ensure_backend()
                 if self._backend is not None:
                     self._affine = Affine(self._backend.affine)
@@ -453,6 +445,11 @@ class Image(Invertible):
             c, si, sj, sk = self._data.shape
             return (c, si, sj, sk)
         if self._backend is not None:
+            s = self._backend.shape
+            return (int(s[0]), int(s[1]), int(s[2]), int(s[3]))
+        if self._zarr_store is not None:
+            self._ensure_backend()
+            assert self._backend is not None
             s = self._backend.shape
             return (int(s[0]), int(s[1]), int(s[2]), int(s[3]))
         if self._path is not None:
@@ -536,22 +533,29 @@ class Image(Invertible):
         """Load data from disk into memory."""
         if self._data is not None:
             return
-        if self._path is None:
-            msg = "Cannot load: no path set"
-            raise RuntimeError(msg)
-        if self._load_from_backend():
+        if self._try_load_via_backend():
             return
-        if self._reader is default_reader and (
-            is_nifti_zarr(self._path) or is_nifti(self._path)
-        ):
-            self._ensure_backend()
-            if self._load_from_backend():
-                return
+        if self._path is None:
+            msg = "Cannot load: no path or backend set"
+            raise RuntimeError(msg)
         tensor, affine_array = self._reader(self._path, **self._reader_kwargs)
         self._data = tensor
         if self._affine is None:
             self._affine = Affine(affine_array)
         self._apply_channels_last()
+
+    def _try_load_via_backend(self) -> bool:
+        """Try to load data from an existing or newly-created backend."""
+        if self._load_from_backend():
+            return True
+        if self._zarr_store is not None or (
+            self._path is not None
+            and self._reader is default_reader
+            and (is_nifti_zarr(self._path) or is_nifti(self._path))
+        ):
+            self._ensure_backend()
+            return self._load_from_backend()
+        return False
 
     def _load_from_backend(self) -> bool:
         """Materialize data from the lazy backend if available."""
@@ -616,7 +620,7 @@ class Image(Invertible):
             self._parse_affine(affine) if affine is not None else self.affine.clone()
         )
         points_copy, bboxes_copy = self._deep_copy_annotations()
-        return type(self).from_tensor(
+        return type(self)(
             data,
             affine=new_affine,
             points=points_copy,
@@ -684,16 +688,24 @@ class Image(Invertible):
         niizarr.nii2zarr(nii, str(path))
 
     def _ensure_backend(self) -> None:
-        """Create the lazy backend from path, without loading data.
+        """Create the lazy backend from path or zarr store, without loading data.
 
         For NIfTI and NIfTI-Zarr files, creates a lazy backend that supports
-        header-only reads. For other formats (NRRD, MHA, etc.), no lazy
-        backend is available — callers should fall back to other methods.
+        header-only reads. For zarr stores, calls ``zarr2nii`` to build a
+        dask-backed nibabel image. For other formats (NRRD, MHA, etc.), no
+        lazy backend is available — callers should fall back to other methods.
         """
         if self._backend is not None:
             return
+        if self._zarr_store is not None:
+            from ..external.imports import get_niizarr
+
+            niizarr = get_niizarr()
+            nii = niizarr.zarr2nii(self._zarr_store, **self._reader_kwargs)
+            self._backend = NibabelBackend(nii)
+            return
         if self._path is None:
-            msg = "Cannot create backend: no path set"
+            msg = "Cannot create backend: no path or store set"
             raise RuntimeError(msg)
         if is_nifti_zarr(self._path):
             from .backends import ZarrBackend
@@ -781,7 +793,7 @@ class Image(Invertible):
             A new image of the same class containing the sliced data.
 
         Examples:
-            >>> image = tio.ScalarImage.from_tensor(torch.randn(3, 256, 256, 176))
+            >>> image = tio.ScalarImage(torch.randn(3, 256, 256, 176))
             >>> image[0].shape              # first channel
             (1, 256, 256, 176)
             >>> image[:, 100:200].shape     # spatial range, all channels
@@ -933,8 +945,20 @@ class Image(Invertible):
                 new._data = self._data.clone()
                 new._affine = affine_copy
             # Backend will be lazily recreated from path when needed
+        elif self._zarr_store is not None:
+            new = type(self)(
+                self._zarr_store,
+                reader_kwargs=dict(self._reader_kwargs),
+                affine=affine_copy,
+                points=points_copy,
+                bounding_boxes=bboxes_copy,
+                **meta_copy,
+            )
+            if self._data is not None:
+                new._data = self._data.clone()
+                new._affine = affine_copy
         elif self._data is not None:
-            new = type(self).from_tensor(
+            new = type(self)(
                 self._data.clone(),
                 affine=affine_copy,
                 points=points_copy,
@@ -942,16 +966,12 @@ class Image(Invertible):
                 **meta_copy,
             )
         else:
-            new = object.__new__(type(self))
-            new._path = None
-            new._data = None
-            new._backend = None
-            new._affine = affine_copy
-            new._reader = self._reader
-            new._reader_kwargs = dict(self._reader_kwargs)
-            new._metadata = meta_copy
-            new._points = points_copy
-            new._bounding_boxes = bboxes_copy
+            new = type(self)(
+                affine=affine_copy,
+                points=points_copy,
+                bounding_boxes=bboxes_copy,
+                **meta_copy,
+            )
         memo[id(self)] = new
         return new
 
@@ -965,7 +985,7 @@ class ScalarImage(Image):
     Examples:
         >>> import torchio as tio
         >>> image = tio.ScalarImage("t1.nii.gz")
-        >>> image = tio.ScalarImage.from_tensor(torch.randn(1, 256, 256, 176))
+        >>> image = tio.ScalarImage(torch.randn(1, 256, 256, 176))
     """
 
 
@@ -978,5 +998,5 @@ class LabelMap(Image):
     Examples:
         >>> import torchio as tio
         >>> label = tio.LabelMap("seg.nii.gz")
-        >>> label = tio.LabelMap.from_tensor(torch.randint(0, 5, (1, 256, 256, 176)))
+        >>> label = tio.LabelMap(torch.randint(0, 5, (1, 256, 256, 176)))
     """

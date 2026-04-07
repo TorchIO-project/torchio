@@ -21,13 +21,13 @@ def _make_subject(
     with_label: bool = False,
 ) -> tio.Subject:
     affine = Affine.from_spacing(spacing)
-    image = tio.ScalarImage.from_tensor(
+    image = tio.ScalarImage(
         torch.rand(1, *shape),
         affine=affine,
     )
     kwargs: dict = {"t1": image}
     if with_label:
-        kwargs["seg"] = tio.LabelMap.from_tensor(
+        kwargs["seg"] = tio.LabelMap(
             torch.randint(0, 3, (1, *shape)),
             affine=affine,
         )
@@ -215,7 +215,7 @@ class TestOnlyCropOnlyPad:
 class TestPaddingMode:
     def test_constant_fill(self) -> None:
         tensor = torch.ones(1, 4, 4, 4)
-        image = tio.ScalarImage.from_tensor(tensor)
+        image = tio.ScalarImage(tensor)
         subject = tio.Subject(t1=image)
         result = tio.CropOrPad(target_shape=8, fill=-1)(subject)
         # Padded corners should be -1
@@ -284,7 +284,7 @@ class TestAllImages:
 class TestInvertibility:
     def test_crop_then_inverse(self) -> None:
         tensor = torch.rand(1, 20, 20, 20)
-        subject = tio.Subject(t1=tio.ScalarImage.from_tensor(tensor.clone()))
+        subject = tio.Subject(t1=tio.ScalarImage(tensor.clone()))
         transformed = tio.CropOrPad(target_shape=10)(subject)
         assert transformed.t1.shape == (1, 10, 10, 10)
         restored = transformed.apply_inverse_transform()
@@ -292,7 +292,7 @@ class TestInvertibility:
 
     def test_pad_then_inverse(self) -> None:
         tensor = torch.rand(1, 10, 10, 10)
-        subject = tio.Subject(t1=tio.ScalarImage.from_tensor(tensor.clone()))
+        subject = tio.Subject(t1=tio.ScalarImage(tensor.clone()))
         transformed = tio.CropOrPad(target_shape=20)(subject)
         assert transformed.t1.shape == (1, 20, 20, 20)
         restored = transformed.apply_inverse_transform()
@@ -301,7 +301,7 @@ class TestInvertibility:
 
     def test_mixed_then_inverse(self) -> None:
         tensor = torch.rand(1, 30, 10, 20)
-        subject = tio.Subject(t1=tio.ScalarImage.from_tensor(tensor.clone()))
+        subject = tio.Subject(t1=tio.ScalarImage(tensor.clone()))
         transformed = tio.CropOrPad(target_shape=20)(subject)
         assert transformed.t1.shape == (1, 20, 20, 20)
         restored = transformed.apply_inverse_transform()
@@ -315,7 +315,7 @@ class TestInvertibility:
 
 class TestInputTypes:
     def test_accepts_image(self) -> None:
-        image = tio.ScalarImage.from_tensor(torch.rand(1, 20, 20, 20))
+        image = tio.ScalarImage(torch.rand(1, 20, 20, 20))
         result = tio.CropOrPad(target_shape=10)(image)
         assert isinstance(result, tio.Image)
         assert result.shape == (1, 10, 10, 10)
@@ -342,7 +342,7 @@ class TestBatch:
     def test_batch_crop(self) -> None:
         subjects = [
             tio.Subject(
-                t1=tio.ScalarImage.from_tensor(torch.rand(1, 20, 20, 20)),
+                t1=tio.ScalarImage(torch.rand(1, 20, 20, 20)),
             )
             for _ in range(3)
         ]
@@ -353,7 +353,7 @@ class TestBatch:
     def test_batch_pad(self) -> None:
         subjects = [
             tio.Subject(
-                t1=tio.ScalarImage.from_tensor(torch.rand(1, 10, 10, 10)),
+                t1=tio.ScalarImage(torch.rand(1, 10, 10, 10)),
             )
             for _ in range(3)
         ]
@@ -390,8 +390,8 @@ class TestRandomLocation:
         torch.manual_seed(0)
         data = torch.arange(20 * 20 * 20, dtype=torch.float32).reshape(1, 20, 20, 20)
         transform = tio.CropOrPad(target_shape=5, location="random")
-        r1 = transform(tio.ScalarImage.from_tensor(data.clone()))
-        r2 = transform(tio.ScalarImage.from_tensor(data.clone()))
+        r1 = transform(tio.ScalarImage(data.clone()))
+        r2 = transform(tio.ScalarImage(data.clone()))
         assert not torch.equal(r1.data, r2.data)
 
     def test_random_pad_is_still_centered(self) -> None:
@@ -420,7 +420,7 @@ class TestRandomLocation:
 
         subjects = [
             tio.Subject(
-                t1=tio.ScalarImage.from_tensor(torch.rand(1, 20, 20, 20)),
+                t1=tio.ScalarImage(torch.rand(1, 20, 20, 20)),
             )
             for _ in range(3)
         ]

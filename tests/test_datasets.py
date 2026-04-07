@@ -127,12 +127,12 @@ class TestMatrixIO:
 class TestChannelsLast:
     def test_from_tensor_channels_last(self):
         data = torch.randn(10, 20, 30, 3)  # (I, J, K, C)
-        img = tio.ScalarImage.from_tensor(data, channels_last=True)
+        img = tio.ScalarImage(data, channels_last=True)
         assert img.data.shape == (3, 10, 20, 30)
 
     def test_from_tensor_channels_first(self):
         data = torch.randn(3, 10, 20, 30)  # (C, I, J, K)
-        img = tio.ScalarImage.from_tensor(data, channels_last=False)
+        img = tio.ScalarImage(data, channels_last=False)
         assert img.data.shape == (3, 10, 20, 30)
 
     def test_channels_last_load(self, tmp_path):
@@ -140,5 +140,5 @@ class TestChannelsLast:
         # We test that channels_last permutes from (I,J,K,C) -> (C,I,J,K)
         # by using from_tensor with explicit channels_last data
         data = torch.randn(5, 6, 7, 3)  # (I, J, K, C)
-        img = tio.LabelMap.from_tensor(data, channels_last=True)
+        img = tio.LabelMap(data, channels_last=True)
         assert img.data.shape == (3, 5, 6, 7)

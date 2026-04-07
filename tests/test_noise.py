@@ -13,14 +13,14 @@ HAS_MPS = torch.backends.mps.is_available()
 class TestNoise:
     def test_adds_noise(self) -> None:
         tensor = torch.zeros(1, 8, 8, 8)
-        subject = tio.Subject(t1=tio.ScalarImage.from_tensor(tensor))
+        subject = tio.Subject(t1=tio.ScalarImage(tensor))
         result = tio.Noise(std=1.0)(subject)
         # Should no longer be all zeros
         assert result.t1.data.abs().sum() > 0
 
     def test_mean_param(self) -> None:
         tensor = torch.zeros(1, 8, 8, 8)
-        subject = tio.Subject(t1=tio.ScalarImage.from_tensor(tensor))
+        subject = tio.Subject(t1=tio.ScalarImage(tensor))
         result = tio.Noise(mean=10.0, std=0.0)(subject)
         torch.testing.assert_close(
             result.t1.data.mean(),
@@ -31,14 +31,14 @@ class TestNoise:
 
     def test_zero_std_no_change(self) -> None:
         tensor = torch.rand(1, 8, 8, 8)
-        subject = tio.Subject(t1=tio.ScalarImage.from_tensor(tensor.clone()))
+        subject = tio.Subject(t1=tio.ScalarImage(tensor.clone()))
         result = tio.Noise(std=0.0)(subject)
         torch.testing.assert_close(result.t1.data, tensor)
 
     def test_only_scalar_images(self) -> None:
         subject = tio.Subject(
-            t1=tio.ScalarImage.from_tensor(torch.zeros(1, 8, 8, 8)),
-            seg=tio.LabelMap.from_tensor(torch.zeros(1, 8, 8, 8, dtype=torch.long)),
+            t1=tio.ScalarImage(torch.zeros(1, 8, 8, 8)),
+            seg=tio.LabelMap(torch.zeros(1, 8, 8, 8, dtype=torch.long)),
         )
         original_seg = subject.seg.data.clone()
         result = tio.Noise(std=1.0)(subject)
@@ -46,7 +46,7 @@ class TestNoise:
 
     def test_history_recorded(self) -> None:
         subject = tio.Subject(
-            t1=tio.ScalarImage.from_tensor(torch.rand(1, 4, 4, 4)),
+            t1=tio.ScalarImage(torch.rand(1, 4, 4, 4)),
         )
         result = tio.Noise(std=0.5)(subject)
         assert len(result.applied_transforms) == 1
@@ -58,12 +58,12 @@ class TestNoise:
 
     def test_probability(self) -> None:
         tensor = torch.rand(1, 4, 4, 4)
-        subject = tio.Subject(t1=tio.ScalarImage.from_tensor(tensor.clone()))
+        subject = tio.Subject(t1=tio.ScalarImage(tensor.clone()))
         result = tio.Noise(std=1.0, p=0.0)(subject)
         torch.testing.assert_close(result.t1.data, tensor)
 
     def test_accepts_image(self) -> None:
-        image = tio.ScalarImage.from_tensor(torch.rand(1, 4, 4, 4))
+        image = tio.ScalarImage(torch.rand(1, 4, 4, 4))
         result = tio.Noise(std=0.1)(image)
         assert isinstance(result, tio.Image)
 
@@ -81,7 +81,7 @@ class TestNoise:
 
     def test_in_compose(self) -> None:
         subject = tio.Subject(
-            t1=tio.ScalarImage.from_tensor(torch.rand(1, 4, 4, 4)),
+            t1=tio.ScalarImage(torch.rand(1, 4, 4, 4)),
         )
         pipeline = tio.Compose([tio.Noise(std=0.1), tio.Noise(std=0.2)])
         result = pipeline(subject)
@@ -89,8 +89,8 @@ class TestNoise:
 
     def test_include_exclude(self) -> None:
         subject = tio.Subject(
-            t1=tio.ScalarImage.from_tensor(torch.zeros(1, 4, 4, 4)),
-            t2=tio.ScalarImage.from_tensor(torch.zeros(1, 4, 4, 4)),
+            t1=tio.ScalarImage(torch.zeros(1, 4, 4, 4)),
+            t2=tio.ScalarImage(torch.zeros(1, 4, 4, 4)),
         )
         original_t2 = subject.t2.data.clone()
         result = tio.Noise(std=1.0, include=["t1"])(subject)
@@ -99,7 +99,7 @@ class TestNoise:
     @pytest.mark.skipif(not HAS_MPS, reason="No MPS")
     def test_noise_on_mps(self) -> None:
         subject = tio.Subject(
-            t1=tio.ScalarImage.from_tensor(torch.zeros(1, 4, 4, 4)),
+            t1=tio.ScalarImage(torch.zeros(1, 4, 4, 4)),
         )
         subject.to("mps")
         result = tio.Noise(std=1.0)(subject)
@@ -111,10 +111,10 @@ class TestNoise:
         from torchio.data.batch import SubjectsBatch
 
         subject1 = tio.Subject(
-            t1=tio.ScalarImage.from_tensor(torch.zeros(1, 8, 8, 8)),
+            t1=tio.ScalarImage(torch.zeros(1, 8, 8, 8)),
         )
         subject2 = tio.Subject(
-            t1=tio.ScalarImage.from_tensor(torch.zeros(1, 8, 8, 8)),
+            t1=tio.ScalarImage(torch.zeros(1, 8, 8, 8)),
         )
         noise = tio.Noise(std=1.0)
         params = {
@@ -137,7 +137,7 @@ class TestNoise:
     def test_random_std_range(self) -> None:
         """std=(lo, hi) samples uniformly each call."""
         subject = tio.Subject(
-            t1=tio.ScalarImage.from_tensor(torch.zeros(1, 8, 8, 8)),
+            t1=tio.ScalarImage(torch.zeros(1, 8, 8, 8)),
         )
         noise = tio.Noise(std=(0.5, 1.5))
         stds = set()
@@ -152,7 +152,7 @@ class TestNoise:
     def test_random_mean_range(self) -> None:
         noise = tio.Noise(mean=(-1.0, 1.0), std=0.0)
         subject = tio.Subject(
-            t1=tio.ScalarImage.from_tensor(torch.zeros(1, 8, 8, 8)),
+            t1=tio.ScalarImage(torch.zeros(1, 8, 8, 8)),
         )
         means = set()
         for _ in range(10):
@@ -166,14 +166,14 @@ class TestNoise:
         """Scalar std is always the same."""
         noise = tio.Noise(std=0.5)
         subject = tio.Subject(
-            t1=tio.ScalarImage.from_tensor(torch.zeros(1, 4, 4, 4)),
+            t1=tio.ScalarImage(torch.zeros(1, 4, 4, 4)),
         )
         result = noise(subject)
         assert result.applied_transforms[0].params["std"] == 0.5
 
     def test_rician_noise(self) -> None:
         tensor = torch.ones(1, 8, 8, 8)
-        subject = tio.Subject(t1=tio.ScalarImage.from_tensor(tensor))
+        subject = tio.Subject(t1=tio.ScalarImage(tensor))
         result = tio.Noise(std=0.5, rician=True)(subject)
         # Rician noise is always non-negative
         assert (result.t1.data >= 0).all()
@@ -182,7 +182,7 @@ class TestNoise:
 
     def test_rician_recorded_in_params(self) -> None:
         subject = tio.Subject(
-            t1=tio.ScalarImage.from_tensor(torch.rand(1, 4, 4, 4)),
+            t1=tio.ScalarImage(torch.rand(1, 4, 4, 4)),
         )
         result = tio.Noise(std=0.1, rician=True)(subject)
         assert result.applied_transforms[0].params["rician"] is True
@@ -190,8 +190,8 @@ class TestNoise:
     def test_gaussian_vs_rician_differ(self) -> None:
         torch.manual_seed(42)
         tensor = torch.ones(1, 8, 8, 8)
-        subject_g = tio.Subject(t1=tio.ScalarImage.from_tensor(tensor.clone()))
-        subject_r = tio.Subject(t1=tio.ScalarImage.from_tensor(tensor.clone()))
+        subject_g = tio.Subject(t1=tio.ScalarImage(tensor.clone()))
+        subject_r = tio.Subject(t1=tio.ScalarImage(tensor.clone()))
         gaussian = tio.Noise(std=0.5, rician=False)(subject_g)
         rician = tio.Noise(std=0.5, rician=True)(subject_r)
         # They should produce different results
@@ -201,7 +201,7 @@ class TestNoise:
         from torch.distributions import Uniform
 
         subject = tio.Subject(
-            t1=tio.ScalarImage.from_tensor(torch.zeros(1, 8, 8, 8)),
+            t1=tio.ScalarImage(torch.zeros(1, 8, 8, 8)),
         )
         noise = tio.Noise(std=Uniform(0.1, 0.5))
         result = noise(subject)
@@ -212,7 +212,7 @@ class TestNoise:
         from torch.distributions import Normal
 
         subject = tio.Subject(
-            t1=tio.ScalarImage.from_tensor(torch.zeros(1, 8, 8, 8)),
+            t1=tio.ScalarImage(torch.zeros(1, 8, 8, 8)),
         )
         noise = tio.Noise(mean=Normal(0.0, 0.1), std=0.0)
         result = noise(subject)
@@ -224,7 +224,7 @@ class TestNoise:
         from torch.distributions import LogNormal
 
         subject = tio.Subject(
-            t1=tio.ScalarImage.from_tensor(torch.zeros(1, 8, 8, 8)),
+            t1=tio.ScalarImage(torch.zeros(1, 8, 8, 8)),
         )
         noise = tio.Noise(std=LogNormal(loc=-2.0, scale=0.5))
         result = noise(subject)

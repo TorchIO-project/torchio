@@ -99,7 +99,7 @@ class ImagesBatch(Invertible):
 
     def __getitem__(self, index: int) -> Image:
         """Get a single image from the batch by index."""
-        return self._image_class.from_tensor(
+        return self._image_class(
             self._data[index],
             affine=self._affines[index].clone(),
         )

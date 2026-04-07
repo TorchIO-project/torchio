@@ -130,7 +130,7 @@ class Transform(nn.Module):
     @overload
     def forward(self, data: SubjectsBatch) -> SubjectsBatch: ...
 
-    def forward(self, data: Any) -> Any:  # type: ignore[override]
+    def forward(self, data: Any) -> Any:
         """Apply the transform.
 
         The output type always matches the input type.
@@ -291,19 +291,19 @@ def _wrap_scalar_input(data: Any) -> tuple[Any, Any]:
         case Image():
             return _wrap_single_image(data, _unwrap_image)
         case Tensor():
-            return _wrap_single_image(ScalarImage.from_tensor(data), _unwrap_tensor)
+            return _wrap_single_image(ScalarImage(data), _unwrap_tensor)
         case np.ndarray():
             tensor = torch.as_tensor(data.copy(), dtype=torch.float32)
             if tensor.ndim == 3:
                 tensor = rearrange(tensor, "i j k -> 1 i j k")
             return _wrap_single_image(
-                ScalarImage.from_tensor(tensor),
+                ScalarImage(tensor),
                 _unwrap_ndarray,
             )
         case sitk.Image():
-            return _wrap_single_image(ScalarImage.from_sitk(data), _unwrap_sitk)
+            return _wrap_single_image(ScalarImage(data), _unwrap_sitk)
         case nib.Nifti1Image():
-            return _wrap_single_image(ScalarImage.from_nifti(data), _unwrap_nifti)
+            return _wrap_single_image(ScalarImage(data), _unwrap_nifti)
         case _:
             msg = (
                 "Expected Subject, Image, Tensor, ndarray, dict,"
@@ -323,7 +323,7 @@ def _wrap_dict(data: dict) -> tuple[Any, Any]:
             case Image():
                 kwargs[k] = v
             case Tensor():
-                kwargs[k] = ScalarImage.from_tensor(v)
+                kwargs[k] = ScalarImage(v)
             case _:
                 kwargs[k] = v
     sub = Subject(**kwargs)

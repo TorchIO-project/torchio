@@ -13,7 +13,7 @@ def _make_subjects(
 ) -> list[tio.Subject]:
     return [
         tio.Subject(
-            t1=tio.ScalarImage.from_tensor(
+            t1=tio.ScalarImage(
                 torch.rand(1, *shape) + i,
             ),
         )

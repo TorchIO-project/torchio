@@ -1,14 +1,15 @@
 # Lazy loading and backends
 
 TorchIO images are lazy by default: creating an `Image` from a file
-path reads nothing from disk. This article explains when data actually
-enters memory and how the backend system works.
+path, a NiBabel image, or a zarr Store reads nothing from disk. This
+article explains when data actually enters memory and how the backend
+system works.
 
 ## When is data loaded?
 
 ```mermaid
 stateDiagram-v2
-    [*] --> Lazy: Image(path)
+    [*] --> Lazy: Image(path) / Image(nifti) / Image(store)
     Lazy --> BackendReady: .shape / .affine / .dataobj / [slicing]
     Lazy --> Loaded: .data / .load()
     BackendReady --> Loaded: .data / .load()
@@ -22,6 +23,9 @@ stateDiagram-v2
 | Access | What happens |
 |--------|-------------|
 | `Image(path)` | Nothing. Stores the path. |
+| `Image(nifti_image)` | Nothing. Stores a reference to the nibabel object. |
+| `Image(zarr_store)` | Nothing. Stores the store reference. |
+| `Image(tensor)` | Immediate. The tensor is already in memory. |
 | `.shape` | Creates a backend and reads the header. No data loaded. |
 | `.spacing`, `.affine` | Same: reads header via backend. |
 | `image[slices]` | Reads only the sliced region through the backend. Parent image stays unloaded. |
@@ -35,9 +39,10 @@ into memory. TorchIO selects the backend based on the file extension:
 
 | Backend | Format | How it works |
 |---------|--------|-------------|
-| `NibabelBackend` | `.nii`, `.nii.gz` | Wraps nibabel's `ArrayProxy`. Uncompressed files are memory-mapped; compressed files are decompressed on demand. |
+| `NibabelBackend` | `.nii`, `.nii.gz`, `nib.Nifti1Image` | Wraps nibabel's `ArrayProxy`. Uncompressed files are memory-mapped; compressed files are decompressed on demand. Also used for NiBabel images passed directly to the constructor. |
 | `ZarrBackend` | `.nii.zarr` | Wraps `niizarr.zarr2nii()`. Data is stored in independently compressed chunks. Only the chunks overlapping your slice are read. |
-| `TensorBackend` | In-memory | Used for images created via `from_tensor()`. Wraps a PyTorch tensor directly (no numpy round-trip). |
+| `NibabelBackend` (via store) | `zarr.Store` | For zarr stores passed to the constructor, `zarr2nii(store)` is called on first access, producing a dask-backed nibabel image. Instantiation is O(1). |
+| `TensorBackend` | In-memory | Used for images created from tensors or NumPy arrays. Wraps a PyTorch tensor directly (no numpy round-trip). |
 
 For other formats (NRRD, MHA, etc.), there is no lazy backend. Shape
 can still be read from the header via SimpleITK without loading data,
@@ -90,4 +95,5 @@ object.
 | Local training with random access | Uncompressed `.nii` (memory-mapped) |
 | Storage / archival | `.nii.gz` (compressed) |
 | Very large volumes, remote storage | `.nii.zarr` (chunked) |
+| Large-scale datasets (100k+ volumes) | `zarr.Store` objects (O(1) instantiation) |
 | Interop with non-NIfTI tools | `.nrrd`, `.mha` via SimpleITK |

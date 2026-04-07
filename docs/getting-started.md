@@ -83,7 +83,7 @@ image = tio.ScalarImage(buf, suffix=".nii.gz")
 import torch
 
 tensor = torch.randn(1, 128, 128, 128)
-image = tio.ScalarImage.from_tensor(tensor)
+image = tio.ScalarImage(tensor)
 ```
 
 ### Creating from SimpleITK or NiBabel
@@ -95,27 +95,46 @@ import nibabel as nib
 
 # From a SimpleITK Image (preserves spacing, origin, direction)
 sitk_image = sitk.ReadImage("t1.nii.gz")
-image = tio.ScalarImage.from_sitk(sitk_image)
+image = tio.ScalarImage(sitk_image)
 
-# From a NiBabel Nifti1Image (preserves affine)
+# From a NiBabel Nifti1Image (lazy — data not loaded yet)
 nifti = nib.load("t1.nii.gz")
-image = tio.ScalarImage.from_nifti(nifti)
+image = tio.ScalarImage(nifti)
 ```
 
 ### Creating from bytes
 
 If you have raw image bytes (e.g., from an HTTP response or a
-database), use `from_bytes`:
+database), pass them directly:
 
 <!-- pytest-codeblocks:skip -->
 ```python
 response = requests.get("https://example.com/brain.nii.gz")
-image = tio.ScalarImage.from_bytes(response.content)
+image = tio.ScalarImage(response.content)
 
 # Or with a BytesIO buffer
 import io
 buf = io.BytesIO(some_bytes)
-image = tio.ScalarImage.from_bytes(buf, suffix=".nii.gz")
+image = tio.ScalarImage(buf, suffix=".nii.gz")
+```
+
+### Creating from a Zarr store
+
+For large-scale datasets stored as `.nii.zarr`, you can pass a
+`zarr.abc.store.Store` directly. Instantiation is O(1) — the store
+is only accessed when metadata or data is needed:
+
+<!-- pytest-codeblocks:skip -->
+```python
+import zarr
+
+store = zarr.storage.FsspecStore("s3://bucket/brain.nii.zarr", mode="r")
+image = tio.ScalarImage(store)              # instant — no I/O
+print(image.shape)                          # triggers header read
+image.data                                  # triggers full load
+
+# Select a specific pyramid level
+image = tio.ScalarImage(store, reader_kwargs={"level": 1})
 ```
 
 ### Attaching metadata

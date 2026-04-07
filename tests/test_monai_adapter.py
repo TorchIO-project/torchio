@@ -26,7 +26,7 @@ class TestMonaiAdapterArray:
         from monai.transforms import NormalizeIntensity
 
         subject = tio.Subject(
-            t1=tio.ScalarImage.from_tensor(torch.rand(1, 8, 8, 8) + 1),
+            t1=tio.ScalarImage(torch.rand(1, 8, 8, 8) + 1),
         )
         adapter = tio.MonaiAdapter(NormalizeIntensity())
         result = adapter(subject)
@@ -37,8 +37,8 @@ class TestMonaiAdapterArray:
         from monai.transforms import NormalizeIntensity
 
         subject = tio.Subject(
-            t1=tio.ScalarImage.from_tensor(torch.rand(1, 8, 8, 8) + 5),
-            t2=tio.ScalarImage.from_tensor(torch.rand(1, 8, 8, 8) + 5),
+            t1=tio.ScalarImage(torch.rand(1, 8, 8, 8) + 5),
+            t2=tio.ScalarImage(torch.rand(1, 8, 8, 8) + 5),
         )
         original_t2 = subject.t2.data.clone()
         adapter = tio.MonaiAdapter(NormalizeIntensity(), include=["t1"])
@@ -49,8 +49,8 @@ class TestMonaiAdapterArray:
         from monai.transforms import NormalizeIntensity
 
         subject = tio.Subject(
-            t1=tio.ScalarImage.from_tensor(torch.rand(1, 8, 8, 8)),
-            seg=tio.LabelMap.from_tensor(torch.randint(0, 3, (1, 8, 8, 8))),
+            t1=tio.ScalarImage(torch.rand(1, 8, 8, 8)),
+            seg=tio.LabelMap(torch.randint(0, 3, (1, 8, 8, 8))),
         )
         original_seg = subject.seg.data.clone()
         adapter = tio.MonaiAdapter(NormalizeIntensity())
@@ -64,7 +64,7 @@ class TestMonaiAdapterDict:
         from monai.transforms import NormalizeIntensityd
 
         subject = tio.Subject(
-            t1=tio.ScalarImage.from_tensor(torch.rand(1, 8, 8, 8) + 1),
+            t1=tio.ScalarImage(torch.rand(1, 8, 8, 8) + 1),
         )
         adapter = tio.MonaiAdapter(NormalizeIntensityd(keys=["t1"]))
         result = adapter(subject)
@@ -74,8 +74,8 @@ class TestMonaiAdapterDict:
         from monai.transforms import NormalizeIntensityd
 
         subject = tio.Subject(
-            t1=tio.ScalarImage.from_tensor(torch.rand(1, 8, 8, 8) + 5),
-            t2=tio.ScalarImage.from_tensor(torch.rand(1, 8, 8, 8) + 5),
+            t1=tio.ScalarImage(torch.rand(1, 8, 8, 8) + 5),
+            t2=tio.ScalarImage(torch.rand(1, 8, 8, 8) + 5),
         )
         original_t2 = subject.t2.data.clone()
         adapter = tio.MonaiAdapter(NormalizeIntensityd(keys=["t1"]))
@@ -89,7 +89,7 @@ class TestMonaiAdapterGeneral:
         from monai.transforms import NormalizeIntensity
 
         subject = tio.Subject(
-            t1=tio.ScalarImage.from_tensor(torch.rand(1, 8, 8, 8)),
+            t1=tio.ScalarImage(torch.rand(1, 8, 8, 8)),
         )
         adapter = tio.MonaiAdapter(NormalizeIntensity())
         result = adapter(subject)
@@ -99,7 +99,7 @@ class TestMonaiAdapterGeneral:
     def test_accepts_image(self) -> None:
         from monai.transforms import NormalizeIntensity
 
-        image = tio.ScalarImage.from_tensor(torch.rand(1, 8, 8, 8) + 1)
+        image = tio.ScalarImage(torch.rand(1, 8, 8, 8) + 1)
         result = tio.MonaiAdapter(NormalizeIntensity())(image)
         assert isinstance(result, tio.Image)
 
@@ -111,7 +111,7 @@ class TestMonaiAdapterGeneral:
         from monai.transforms import NormalizeIntensity
 
         subject = tio.Subject(
-            t1=tio.ScalarImage.from_tensor(torch.rand(1, 8, 8, 8) + 1),
+            t1=tio.ScalarImage(torch.rand(1, 8, 8, 8) + 1),
         )
         pipeline = tio.Compose([tio.MonaiAdapter(NormalizeIntensity())])
         result = pipeline(subject)

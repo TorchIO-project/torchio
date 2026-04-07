@@ -15,7 +15,7 @@ def _make_subject(
         shape[0] * shape[1] * shape[2],
         dtype=torch.float32,
     ).reshape(1, *shape)
-    return tio.Subject(t1=tio.ScalarImage.from_tensor(data))
+    return tio.Subject(t1=tio.ScalarImage(data))
 
 
 def _make_subject_with_label(
@@ -25,8 +25,8 @@ def _make_subject_with_label(
     label = torch.zeros(1, *shape, dtype=torch.float32)
     label[0, 8:12, 8:12, 8:12] = 1
     return tio.Subject(
-        t1=tio.ScalarImage.from_tensor(data),
-        seg=tio.LabelMap.from_tensor(label),
+        t1=tio.ScalarImage(data),
+        seg=tio.LabelMap(label),
     )
 
 

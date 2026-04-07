@@ -22,22 +22,22 @@ from torchio.data.points import Points
 class TestSubjectCreation:
     def test_create_with_kwargs(self):
         subject = Subject(
-            t1=ScalarImage.from_tensor(torch.randn(1, 10, 10, 10)),
-            seg=LabelMap.from_tensor(torch.randint(0, 5, (1, 10, 10, 10))),
+            t1=ScalarImage(torch.randn(1, 10, 10, 10)),
+            seg=LabelMap(torch.randint(0, 5, (1, 10, 10, 10))),
         )
         assert len(subject.images) == 2
 
     def test_create_from_unpacked_dict(self):
         data = {
-            "t1": ScalarImage.from_tensor(torch.randn(1, 10, 10, 10)),
-            "seg": LabelMap.from_tensor(torch.randint(0, 5, (1, 10, 10, 10))),
+            "t1": ScalarImage(torch.randn(1, 10, 10, 10)),
+            "seg": LabelMap(torch.randint(0, 5, (1, 10, 10, 10))),
         }
         subject = Subject(**data)
         assert len(subject.images) == 2
 
     def test_metadata_from_kwargs(self):
         subject = Subject(
-            t1=ScalarImage.from_tensor(torch.randn(1, 10, 10, 10)),
+            t1=ScalarImage(torch.randn(1, 10, 10, 10)),
             age=45,
             name="John",
         )
@@ -64,8 +64,8 @@ class TestSubjectAccess:
     @pytest.fixture
     def subject(self) -> Subject:
         return Subject(
-            t1=ScalarImage.from_tensor(torch.randn(1, 10, 10, 10)),
-            seg=LabelMap.from_tensor(torch.randint(0, 5, (1, 10, 10, 10))),
+            t1=ScalarImage(torch.randn(1, 10, 10, 10)),
+            seg=LabelMap(torch.randint(0, 5, (1, 10, 10, 10))),
             age=45,
         )
 
@@ -106,8 +106,8 @@ class TestSubjectProperties:
     @pytest.fixture
     def subject(self) -> Subject:
         return Subject(
-            t1=ScalarImage.from_tensor(torch.randn(1, 10, 20, 30)),
-            seg=LabelMap.from_tensor(torch.randint(0, 5, (1, 10, 20, 30))),
+            t1=ScalarImage(torch.randn(1, 10, 20, 30)),
+            seg=LabelMap(torch.randint(0, 5, (1, 10, 20, 30))),
         )
 
     def test_spatial_shape(self, subject: Subject):
@@ -121,19 +121,19 @@ class TestSubjectProperties:
 
     def test_inconsistent_shapes_raises(self):
         subject = Subject(
-            t1=ScalarImage.from_tensor(torch.randn(1, 10, 10, 10)),
-            t2=ScalarImage.from_tensor(torch.randn(1, 20, 20, 20)),
+            t1=ScalarImage(torch.randn(1, 10, 10, 10)),
+            t2=ScalarImage(torch.randn(1, 20, 20, 20)),
         )
         with pytest.raises(RuntimeError, match="Inconsistent"):
             subject.spatial_shape
 
     def test_inconsistent_spacing_raises(self):
         subject = Subject(
-            t1=ScalarImage.from_tensor(
+            t1=ScalarImage(
                 torch.randn(1, 10, 10, 10),
                 affine=np.diag([1.0, 1.0, 1.0, 1.0]),
             ),
-            t2=ScalarImage.from_tensor(
+            t2=ScalarImage(
                 torch.randn(1, 10, 10, 10),
                 affine=np.diag([2.0, 2.0, 2.0, 1.0]),
             ),
@@ -143,7 +143,7 @@ class TestSubjectProperties:
 
     def test_single_image_properties(self):
         subject = Subject(
-            t1=ScalarImage.from_tensor(torch.randn(1, 10, 10, 10)),
+            t1=ScalarImage(torch.randn(1, 10, 10, 10)),
         )
         assert subject.spatial_shape == (10, 10, 10)
         assert subject.spacing == (1.0, 1.0, 1.0)
@@ -155,7 +155,7 @@ class TestSubjectProperties:
 class TestSubjectHistory:
     def test_add_transform(self):
         subject = Subject(
-            t1=ScalarImage.from_tensor(torch.randn(1, 10, 10, 10)),
+            t1=ScalarImage(torch.randn(1, 10, 10, 10)),
         )
         subject.applied_transforms.append(
             {"name": "Affine", "parameters": {"scales": (1.1, 1.1, 1.1)}}
@@ -164,7 +164,7 @@ class TestSubjectHistory:
 
     def test_clear_history(self):
         subject = Subject(
-            t1=ScalarImage.from_tensor(torch.randn(1, 10, 10, 10)),
+            t1=ScalarImage(torch.randn(1, 10, 10, 10)),
         )
         subject.applied_transforms.append(
             {"name": "Affine", "parameters": {"scales": (1.1, 1.1, 1.1)}}
@@ -190,7 +190,7 @@ class TestSubjectLoad:
 class TestSubjectCopy:
     def test_copy(self):
         subject = Subject(
-            t1=ScalarImage.from_tensor(torch.randn(1, 10, 10, 10)),
+            t1=ScalarImage(torch.randn(1, 10, 10, 10)),
             age=45,
         )
         copied = copy.deepcopy(subject)
@@ -205,8 +205,8 @@ class TestSubjectCopy:
 class TestSubjectRepr:
     def test_repr(self):
         subject = Subject(
-            t1=ScalarImage.from_tensor(torch.randn(1, 10, 10, 10)),
-            seg=LabelMap.from_tensor(torch.randint(0, 5, (1, 10, 10, 10))),
+            t1=ScalarImage(torch.randn(1, 10, 10, 10)),
+            seg=LabelMap(torch.randint(0, 5, (1, 10, 10, 10))),
         )
         r = repr(subject)
         assert "Subject" in r
@@ -217,8 +217,8 @@ class TestSubjectRepr:
 class TestSubjectIteration:
     def test_iter_yields_image_keys(self):
         subject = Subject(
-            t1=ScalarImage.from_tensor(torch.randn(1, 10, 10, 10)),
-            seg=LabelMap.from_tensor(torch.randint(0, 5, (1, 10, 10, 10))),
+            t1=ScalarImage(torch.randn(1, 10, 10, 10)),
+            seg=LabelMap(torch.randint(0, 5, (1, 10, 10, 10))),
             age=45,
         )
         keys = list(subject)
@@ -228,7 +228,7 @@ class TestSubjectIteration:
 
     def test_iter_yields_all_spatial_keys(self):
         subject = Subject(
-            t1=ScalarImage.from_tensor(torch.randn(1, 10, 10, 10)),
+            t1=ScalarImage(torch.randn(1, 10, 10, 10)),
             landmarks=Points(torch.randn(5, 3)),
             tumors=BoundingBoxes(
                 torch.randn(2, 6),
@@ -247,7 +247,7 @@ class TestSubjectWithPoints:
     def test_points_access(self):
         pts = Points(torch.randn(5, 3))
         subject = Subject(
-            t1=ScalarImage.from_tensor(torch.randn(1, 10, 10, 10)),
+            t1=ScalarImage(torch.randn(1, 10, 10, 10)),
             landmarks=pts,
         )
         assert subject.landmarks is pts
@@ -255,7 +255,7 @@ class TestSubjectWithPoints:
 
     def test_points_dict(self):
         subject = Subject(
-            t1=ScalarImage.from_tensor(torch.randn(1, 10, 10, 10)),
+            t1=ScalarImage(torch.randn(1, 10, 10, 10)),
             lm1=Points(torch.randn(3, 3)),
             lm2=Points(torch.randn(7, 3)),
         )
@@ -266,14 +266,14 @@ class TestSubjectWithPoints:
 
     def test_contains_points(self):
         subject = Subject(
-            t1=ScalarImage.from_tensor(torch.randn(1, 10, 10, 10)),
+            t1=ScalarImage(torch.randn(1, 10, 10, 10)),
             landmarks=Points(torch.randn(5, 3)),
         )
         assert "landmarks" in subject
 
     def test_len_includes_points(self):
         subject = Subject(
-            t1=ScalarImage.from_tensor(torch.randn(1, 10, 10, 10)),
+            t1=ScalarImage(torch.randn(1, 10, 10, 10)),
             landmarks=Points(torch.randn(5, 3)),
         )
         assert len(subject) == 2
@@ -286,7 +286,7 @@ class TestSubjectWithBoundingBoxes:
             format=BoundingBoxFormat.IJKIJK,
         )
         subject = Subject(
-            t1=ScalarImage.from_tensor(torch.randn(1, 10, 10, 10)),
+            t1=ScalarImage(torch.randn(1, 10, 10, 10)),
             tumors=boxes,
         )
         assert subject.tumors is boxes
@@ -294,7 +294,7 @@ class TestSubjectWithBoundingBoxes:
 
     def test_bboxes_dict(self):
         subject = Subject(
-            t1=ScalarImage.from_tensor(torch.randn(1, 10, 10, 10)),
+            t1=ScalarImage(torch.randn(1, 10, 10, 10)),
             tumors=BoundingBoxes(
                 torch.randn(3, 6),
                 format=BoundingBoxFormat.IJKIJK,
@@ -311,7 +311,7 @@ class TestSubjectWithBoundingBoxes:
 
     def test_contains_bboxes(self):
         subject = Subject(
-            t1=ScalarImage.from_tensor(torch.randn(1, 10, 10, 10)),
+            t1=ScalarImage(torch.randn(1, 10, 10, 10)),
             tumors=BoundingBoxes(
                 torch.randn(1, 6),
                 format=BoundingBoxFormat.IJKIJK,
@@ -321,7 +321,7 @@ class TestSubjectWithBoundingBoxes:
 
     def test_len_includes_bboxes(self):
         subject = Subject(
-            t1=ScalarImage.from_tensor(torch.randn(1, 10, 10, 10)),
+            t1=ScalarImage(torch.randn(1, 10, 10, 10)),
             tumors=BoundingBoxes(
                 torch.randn(1, 6),
                 format=BoundingBoxFormat.IJKIJK,
@@ -333,8 +333,8 @@ class TestSubjectWithBoundingBoxes:
 class TestSubjectMixed:
     def test_all_types(self):
         subject = Subject(
-            t1=ScalarImage.from_tensor(torch.randn(1, 10, 10, 10)),
-            seg=LabelMap.from_tensor(torch.randint(0, 5, (1, 10, 10, 10))),
+            t1=ScalarImage(torch.randn(1, 10, 10, 10)),
+            seg=LabelMap(torch.randint(0, 5, (1, 10, 10, 10))),
             landmarks=Points(torch.randn(5, 3)),
             tumors=BoundingBoxes(
                 torch.randn(2, 6),
@@ -350,7 +350,7 @@ class TestSubjectMixed:
 
     def test_repr_with_all_types(self):
         subject = Subject(
-            t1=ScalarImage.from_tensor(torch.randn(1, 10, 10, 10)),
+            t1=ScalarImage(torch.randn(1, 10, 10, 10)),
             landmarks=Points(torch.randn(5, 3)),
             tumors=BoundingBoxes(
                 torch.randn(2, 6),
@@ -367,8 +367,8 @@ class TestSubjectSlicing:
     @pytest.fixture
     def subject(self) -> Subject:
         return Subject(
-            t1=ScalarImage.from_tensor(torch.randn(1, 20, 30, 40)),
-            seg=LabelMap.from_tensor(torch.randint(0, 3, (1, 20, 30, 40))),
+            t1=ScalarImage(torch.randn(1, 20, 30, 40)),
+            seg=LabelMap(torch.randint(0, 3, (1, 20, 30, 40))),
             age=42,
         )
 
@@ -400,14 +400,14 @@ class TestSubjectSlicing:
 
     def test_preserves_channels(self):
         subject = Subject(
-            rgb=ScalarImage.from_tensor(torch.randn(3, 20, 30, 40)),
+            rgb=ScalarImage(torch.randn(3, 20, 30, 40)),
         )
         cropped = subject[5:15]
         assert cropped.rgb.shape == (3, 10, 30, 40)
 
     def test_preserves_points(self):
         subject = Subject(
-            t1=ScalarImage.from_tensor(torch.randn(1, 20, 30, 40)),
+            t1=ScalarImage(torch.randn(1, 20, 30, 40)),
             landmarks=Points(torch.randn(5, 3)),
         )
         cropped = subject[5:15]
@@ -416,7 +416,7 @@ class TestSubjectSlicing:
 
     def test_preserves_bboxes(self):
         subject = Subject(
-            t1=ScalarImage.from_tensor(torch.randn(1, 20, 30, 40)),
+            t1=ScalarImage(torch.randn(1, 20, 30, 40)),
             tumors=BoundingBoxes(
                 torch.tensor([[1, 2, 3, 4, 5, 6]]),
                 format=BoundingBoxFormat.IJKIJK,
@@ -427,7 +427,7 @@ class TestSubjectSlicing:
 
     def test_preserves_transform_history(self):
         subject = Subject(
-            t1=ScalarImage.from_tensor(torch.randn(1, 20, 30, 40)),
+            t1=ScalarImage(torch.randn(1, 20, 30, 40)),
         )
         subject.applied_transforms.append({"name": "RandomFlip"})
         cropped = subject[5:15]
@@ -435,8 +435,8 @@ class TestSubjectSlicing:
 
     def test_inconsistent_shapes_raises(self):
         subject = Subject(
-            t1=ScalarImage.from_tensor(torch.randn(1, 20, 30, 40)),
-            t2=ScalarImage.from_tensor(torch.randn(1, 10, 30, 40)),
+            t1=ScalarImage(torch.randn(1, 20, 30, 40)),
+            t2=ScalarImage(torch.randn(1, 10, 30, 40)),
         )
         with pytest.raises(RuntimeError, match="Inconsistent"):
             subject[5:10]

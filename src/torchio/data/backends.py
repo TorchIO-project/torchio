@@ -59,7 +59,7 @@ class ImageDataBackend(Protocol):
 class TensorBackend:
     """Backend wrapping an in-memory PyTorch tensor.
 
-    Used for images created via `Image.from_tensor()`.
+    Used for images created from tensors or NumPy arrays.
 
     Args:
         data: 4D tensor with shape (C, I, J, K).
@@ -103,7 +103,7 @@ class TensorBackend:
 class NumpyBackend:
     """Backend wrapping an in-memory numpy array.
 
-    Used for images created via `Image.from_tensor()` or after full
+    Used for images created from arrays or after full
     materialization from another backend.
 
     Args:

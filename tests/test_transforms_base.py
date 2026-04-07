@@ -21,8 +21,8 @@ from torchio.data.points import Points
 
 def _make_subject() -> tio.Subject:
     return tio.Subject(
-        t1=tio.ScalarImage.from_tensor(torch.rand(1, 8, 8, 8)),
-        seg=tio.LabelMap.from_tensor(torch.randint(0, 3, (1, 8, 8, 8))),
+        t1=tio.ScalarImage(torch.rand(1, 8, 8, 8)),
+        seg=tio.LabelMap(torch.randint(0, 3, (1, 8, 8, 8))),
         landmarks=Points(torch.rand(3, 3)),
         tumors=BoundingBoxes(
             torch.rand(2, 6),
@@ -67,7 +67,7 @@ class TestTransformBase:
         assert isinstance(result, tio.Subject)
 
     def test_forward_accepts_image(self) -> None:
-        image = tio.ScalarImage.from_tensor(torch.rand(1, 8, 8, 8))
+        image = tio.ScalarImage(torch.rand(1, 8, 8, 8))
         result = _IdentityTransform()(image)
         assert isinstance(result, tio.Image)
 
@@ -268,7 +268,7 @@ class TestCompose:
         assert len(result.applied_transforms) == 2
 
     def test_accepts_image(self) -> None:
-        image = tio.ScalarImage.from_tensor(torch.rand(1, 8, 8, 8))
+        image = tio.ScalarImage(torch.rand(1, 8, 8, 8))
         composed = tio.Compose([_IdentityTransform()])
         result = composed(image)
         assert isinstance(result, tio.Image)

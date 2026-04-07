@@ -32,7 +32,7 @@ import torch
 import torchio as tio
 
 tensor = torch.randn(1, 256, 256, 256)
-image = tio.ScalarImage.from_tensor(tensor)
+image = tio.ScalarImage(tensor)
 image.save("synthetic.nii.zarr")
 ```
 

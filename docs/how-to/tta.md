@@ -35,7 +35,7 @@ for _ in range(n_augmentations):
 
     # Wrap prediction and copy transform history
     pred_subject = tio.Subject(
-        pred=tio.ScalarImage.from_tensor(pred.squeeze(0)),
+        pred=tio.ScalarImage(pred.squeeze(0)),
     )
     pred_subject.applied_transforms = augmented.applied_transforms
 

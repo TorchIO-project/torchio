@@ -10,8 +10,8 @@ import torchio as tio
 
 def _make_subject(idx: int = 0) -> tio.Subject:
     return tio.Subject(
-        t1=tio.ScalarImage.from_tensor(torch.rand(1, 16, 16, 16)),
-        seg=tio.LabelMap.from_tensor(torch.randint(0, 3, (1, 16, 16, 16))),
+        t1=tio.ScalarImage(torch.rand(1, 16, 16, 16)),
+        seg=tio.LabelMap(torch.randint(0, 3, (1, 16, 16, 16))),
         age=42 + idx,
         name=f"subject_{idx}",
     )
@@ -28,7 +28,7 @@ class TestCollate:
         assert batch.t1.data.shape == (4, 1, 16, 16, 16)
 
     def test_collate_images(self) -> None:
-        images = [tio.ScalarImage.from_tensor(torch.rand(1, 8, 8, 8)) for _ in range(4)]
+        images = [tio.ScalarImage(torch.rand(1, 8, 8, 8)) for _ in range(4)]
         batch = tio.collate_images(images)
         assert batch.batch_size == 4
         assert batch.data.shape == (4, 1, 8, 8, 8)
@@ -92,7 +92,7 @@ class _SimpleImagesDataset(Dataset):
         return self.n
 
     def __getitem__(self, idx: int) -> tio.ScalarImage:
-        return tio.ScalarImage.from_tensor(torch.rand(1, 8, 8, 8))
+        return tio.ScalarImage(torch.rand(1, 8, 8, 8))
 
 
 class TestImagesLoader:

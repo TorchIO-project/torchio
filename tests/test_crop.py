@@ -9,34 +9,34 @@ import torchio as tio
 
 class TestCrop:
     def test_crop_uniform(self) -> None:
-        image = tio.ScalarImage.from_tensor(torch.rand(1, 20, 20, 20))
+        image = tio.ScalarImage(torch.rand(1, 20, 20, 20))
         subject = tio.Subject(t1=image)
         result = tio.Crop(cropping=5)(subject)
         assert result.t1.shape == (1, 10, 10, 10)
 
     def test_crop_per_axis(self) -> None:
-        image = tio.ScalarImage.from_tensor(torch.rand(1, 20, 20, 20))
+        image = tio.ScalarImage(torch.rand(1, 20, 20, 20))
         subject = tio.Subject(t1=image)
         result = tio.Crop(cropping=(2, 4, 6))(subject)
         assert result.t1.shape == (1, 16, 12, 8)
 
     def test_crop_six_values(self) -> None:
-        image = tio.ScalarImage.from_tensor(torch.rand(1, 20, 20, 20))
+        image = tio.ScalarImage(torch.rand(1, 20, 20, 20))
         subject = tio.Subject(t1=image)
         result = tio.Crop(cropping=(2, 3, 4, 5, 6, 7))(subject)
         assert result.t1.shape == (1, 15, 11, 7)
 
     def test_crop_all_images(self) -> None:
         subject = tio.Subject(
-            t1=tio.ScalarImage.from_tensor(torch.rand(1, 20, 20, 20)),
-            seg=tio.LabelMap.from_tensor(torch.randint(0, 3, (1, 20, 20, 20))),
+            t1=tio.ScalarImage(torch.rand(1, 20, 20, 20)),
+            seg=tio.LabelMap(torch.randint(0, 3, (1, 20, 20, 20))),
         )
         result = tio.Crop(cropping=5)(subject)
         assert result.t1.shape == (1, 10, 10, 10)
         assert result.seg.shape == (1, 10, 10, 10)
 
     def test_crop_affine_updated(self) -> None:
-        image = tio.ScalarImage.from_tensor(torch.rand(1, 20, 20, 20))
+        image = tio.ScalarImage(torch.rand(1, 20, 20, 20))
         subject = tio.Subject(t1=image)
         original_origin = subject.t1.affine.origin
         result = tio.Crop(cropping=(5, 0, 0, 0, 0, 0))(subject)
@@ -76,14 +76,14 @@ class TestCrop:
         assert not subject.t1.is_loaded
 
     def test_crop_history(self) -> None:
-        image = tio.ScalarImage.from_tensor(torch.rand(1, 20, 20, 20))
+        image = tio.ScalarImage(torch.rand(1, 20, 20, 20))
         subject = tio.Subject(t1=image)
         result = tio.Crop(cropping=5)(subject)
         assert len(result.applied_transforms) == 1
         assert result.applied_transforms[0].name == "Crop"
 
     def test_crop_accepts_image(self) -> None:
-        image = tio.ScalarImage.from_tensor(torch.rand(1, 20, 20, 20))
+        image = tio.ScalarImage(torch.rand(1, 20, 20, 20))
         result = tio.Crop(cropping=5)(image)
         assert isinstance(result, tio.Image)
         assert result.shape == (1, 10, 10, 10)
@@ -99,7 +99,7 @@ class TestCrop:
 
         subjects = [
             tio.Subject(
-                t1=tio.ScalarImage.from_tensor(torch.rand(1, 20, 20, 20)),
+                t1=tio.ScalarImage(torch.rand(1, 20, 20, 20)),
             )
             for _ in range(3)
         ]
@@ -109,7 +109,7 @@ class TestCrop:
 
     def test_crop_inverse_on_image(self) -> None:
         """apply_inverse_transform works directly on a cropped Image."""
-        image = tio.ScalarImage.from_tensor(torch.rand(1, 200, 200, 200))
+        image = tio.ScalarImage(torch.rand(1, 200, 200, 200))
         cropped = tio.Crop(cropping=50)(image)
         assert cropped.shape == (1, 100, 100, 100)
         restored = tio.apply_inverse_transform(cropped)

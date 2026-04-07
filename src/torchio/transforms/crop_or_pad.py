@@ -281,17 +281,20 @@ def _crop_image_lazy(image: Image, cropping: TypeSixInts) -> Image:
         new_data = image.data[:, i_slice, j_slice, k_slice]
         return image.new_like(data=new_data, affine=new_affine)
 
-    # Install a cropped backend on a new Image from the same path
+    # Install a cropped backend on a new Image from the same source
     image._ensure_backend()
-    if image._backend is not None and image._path is not None:
+    if image._backend is not None and (
+        image._path is not None or image._zarr_store is not None
+    ):
         cropped_shape = (
             c,
             len(range(*i_slice.indices(si))),
             len(range(*j_slice.indices(sj))),
             len(range(*k_slice.indices(sk))),
         )
+        source = image._path if image._path is not None else image._zarr_store
         new = type(image)(
-            image._path,
+            source,
             reader=image._reader,
             reader_kwargs=dict(image._reader_kwargs),
             affine=new_affine,
@@ -339,11 +342,14 @@ def _pad_image_lazy(
         )
         return image.new_like(data=new_data, affine=new_affine)
 
-    # Install a padded backend on a new Image from the same path
+    # Install a padded backend on a new Image from the same source
     image._ensure_backend()
-    if image._backend is not None and image._path is not None:
+    if image._backend is not None and (
+        image._path is not None or image._zarr_store is not None
+    ):
+        source = image._path if image._path is not None else image._zarr_store
         new = type(image)(
-            image._path,
+            source,
             reader=image._reader,
             reader_kwargs=dict(image._reader_kwargs),
             affine=new_affine,
@@ -448,7 +454,7 @@ class CropOrPad(SpatialTransform):
         self.only_pad = only_pad
         self.location = location
 
-    def forward(self, data):  # type: ignore[override]
+    def forward(self, data):
         """Apply the transform.
 
         For ``Subject`` and ``Image`` inputs, operates lazily per-image

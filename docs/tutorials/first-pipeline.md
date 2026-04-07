@@ -17,7 +17,7 @@ synthetic image:
 import torch
 import torchio as tio
 
-image = tio.ScalarImage.from_tensor(torch.randn(1, 64, 64, 64))
+image = tio.ScalarImage(torch.randn(1, 64, 64, 64))
 image.save("/tmp/synthetic.nii.gz")
 ```
 
@@ -62,7 +62,7 @@ A `Subject` groups related images, annotations, and metadata:
 import torch
 
 seg_tensor = (torch.randn(1, 64, 64, 64) > 0).float()
-seg = tio.LabelMap.from_tensor(seg_tensor)
+seg = tio.LabelMap(seg_tensor)
 
 subject = tio.Subject(
     t1=t1,

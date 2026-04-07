@@ -33,7 +33,7 @@ class TestImageCreationFromPath:
         nii = nib.Nifti1Image(tensor.numpy()[0], np.eye(4))
         path = tmp_path / "test.nii.gz"
         nib.save(nii, path)
-        image = ScalarImage(path=path)
+        image = ScalarImage(source=path)
         assert image.path == path
 
     def test_from_path_string(self, tmp_path: Path):
@@ -62,30 +62,31 @@ class TestImageCreationFromPath:
         image = ScalarImage(path)
         assert image.path == path
 
-    def test_no_path_raises(self):
-        with pytest.raises(TypeError):
-            ScalarImage()
+    def test_no_path_creates_empty_image(self):
+        image = ScalarImage()
+        assert image.path is None
+        assert not image.is_loaded
 
 
 class TestImageCreationFromTensor:
     def test_from_tensor(self):
         tensor = torch.randn(1, 10, 10, 10)
-        image = ScalarImage.from_tensor(tensor)
+        image = ScalarImage(tensor)
         assert isinstance(image, ScalarImage)
         assert torch.equal(image.data, tensor)
 
     def test_from_tensor_numpy(self):
         array = np.random.randn(1, 10, 10, 10).astype(np.float32)
-        image = ScalarImage.from_tensor(array)
+        image = ScalarImage(array)
         assert torch.equal(image.data, torch.from_numpy(array))
 
     def test_from_tensor_default_affine(self):
-        image = ScalarImage.from_tensor(torch.randn(1, 10, 10, 10))
+        image = ScalarImage(torch.randn(1, 10, 10, 10))
         np.testing.assert_array_equal(image.affine, np.eye(4))
 
     def test_from_tensor_custom_affine(self):
         affine = np.diag([2.0, 2.0, 2.0, 1.0])
-        image = ScalarImage.from_tensor(
+        image = ScalarImage(
             torch.randn(1, 10, 10, 10),
             affine=affine,
         )
@@ -95,14 +96,14 @@ class TestImageCreationFromTensor:
         from torchio import Affine
 
         aff = Affine(np.diag([2.0, 2.0, 2.0, 1.0]))
-        image = ScalarImage.from_tensor(
+        image = ScalarImage(
             torch.randn(1, 10, 10, 10),
             affine=aff,
         )
         assert image.affine == aff
 
     def test_from_tensor_metadata(self):
-        image = ScalarImage.from_tensor(
+        image = ScalarImage(
             torch.randn(1, 10, 10, 10),
             scan_id="abc123",
         )
@@ -110,32 +111,32 @@ class TestImageCreationFromTensor:
 
     def test_from_tensor_must_be_4d(self):
         with pytest.raises(ValueError, match="4D"):
-            ScalarImage.from_tensor(torch.randn(10, 10, 10))
+            ScalarImage(torch.randn(10, 10, 10))
 
     def test_from_tensor_affine_must_be_4x4(self):
         with pytest.raises(ValueError, match=r"4.*4"):
-            ScalarImage.from_tensor(
+            ScalarImage(
                 torch.randn(1, 10, 10, 10),
                 affine=np.eye(3),
             )
 
     def test_from_tensor_path_is_none(self):
-        image = ScalarImage.from_tensor(torch.randn(1, 10, 10, 10))
+        image = ScalarImage(torch.randn(1, 10, 10, 10))
         assert image.path is None
 
     def test_from_tensor_preserves_subclass(self):
-        image = LabelMap.from_tensor(torch.randint(0, 5, (1, 10, 10, 10)))
+        image = LabelMap(torch.randint(0, 5, (1, 10, 10, 10)))
         assert isinstance(image, LabelMap)
 
     def test_from_tensor_is_loaded(self):
-        image = ScalarImage.from_tensor(torch.randn(1, 10, 10, 10))
+        image = ScalarImage(torch.randn(1, 10, 10, 10))
         assert image.is_loaded
 
 
 class TestImageProperties:
     @pytest.fixture
     def image(self) -> ScalarImage:
-        return ScalarImage.from_tensor(torch.randn(2, 10, 20, 30))
+        return ScalarImage(torch.randn(2, 10, 20, 30))
 
     def test_shape(self, image: ScalarImage):
         assert image.shape == (2, 10, 20, 30)
@@ -151,7 +152,7 @@ class TestImageProperties:
 
     def test_spacing_with_custom_affine(self):
         affine = np.diag([0.5, 0.8, 1.2, 1.0])
-        image = ScalarImage.from_tensor(
+        image = ScalarImage(
             torch.randn(1, 10, 10, 10),
             affine=affine,
         )
@@ -170,12 +171,12 @@ class TestImageProperties:
 
 class TestLabelMap:
     def test_is_label_map(self):
-        label = LabelMap.from_tensor(torch.randint(0, 5, (1, 10, 10, 10)))
+        label = LabelMap(torch.randint(0, 5, (1, 10, 10, 10)))
         assert isinstance(label, LabelMap)
         assert isinstance(label, Image)
 
     def test_is_not_scalar_image(self):
-        label = LabelMap.from_tensor(torch.randint(0, 5, (1, 10, 10, 10)))
+        label = LabelMap(torch.randint(0, 5, (1, 10, 10, 10)))
         assert not isinstance(label, ScalarImage)
 
     def test_is_label_subclass(self):
@@ -184,12 +185,12 @@ class TestLabelMap:
 
 class TestScalarImage:
     def test_is_scalar_image(self):
-        image = ScalarImage.from_tensor(torch.randn(1, 10, 10, 10))
+        image = ScalarImage(torch.randn(1, 10, 10, 10))
         assert isinstance(image, ScalarImage)
         assert isinstance(image, Image)
 
     def test_is_not_label_map(self):
-        image = ScalarImage.from_tensor(torch.randn(1, 10, 10, 10))
+        image = ScalarImage(torch.randn(1, 10, 10, 10))
         assert not isinstance(image, LabelMap)
 
     def test_is_image_subclass(self):
@@ -198,13 +199,13 @@ class TestScalarImage:
 
 class TestNewLike:
     def test_new_like_preserves_type(self):
-        image = ScalarImage.from_tensor(torch.randn(1, 10, 10, 10))
+        image = ScalarImage(torch.randn(1, 10, 10, 10))
         new = image.new_like(data=torch.randn(1, 5, 5, 5))
         assert isinstance(new, ScalarImage)
 
     def test_new_like_preserves_affine(self):
         affine = np.diag([2.0, 2.0, 2.0, 1.0])
-        image = ScalarImage.from_tensor(
+        image = ScalarImage(
             torch.randn(1, 10, 10, 10),
             affine=affine,
         )
@@ -212,13 +213,13 @@ class TestNewLike:
         np.testing.assert_array_equal(new.affine, affine)
 
     def test_new_like_with_new_affine(self):
-        image = ScalarImage.from_tensor(torch.randn(1, 10, 10, 10))
+        image = ScalarImage(torch.randn(1, 10, 10, 10))
         new_affine = np.diag([3.0, 3.0, 3.0, 1.0])
         new = image.new_like(data=torch.randn(1, 5, 5, 5), affine=new_affine)
         np.testing.assert_array_equal(new.affine, new_affine)
 
     def test_new_like_preserves_metadata(self):
-        image = ScalarImage.from_tensor(
+        image = ScalarImage(
             torch.randn(1, 10, 10, 10),
             scan_id="abc123",
         )
@@ -229,12 +230,12 @@ class TestNewLike:
         class MyImage(ScalarImage):
             pass
 
-        image = MyImage.from_tensor(torch.randn(1, 10, 10, 10))
+        image = MyImage(torch.randn(1, 10, 10, 10))
         new = image.new_like(data=torch.randn(1, 5, 5, 5))
         assert isinstance(new, MyImage)
 
     def test_new_like_label_map(self):
-        label = LabelMap.from_tensor(torch.randint(0, 5, (1, 10, 10, 10)))
+        label = LabelMap(torch.randint(0, 5, (1, 10, 10, 10)))
         new = label.new_like(data=torch.randint(0, 5, (1, 5, 5, 5)))
         assert isinstance(new, LabelMap)
         assert not isinstance(new, ScalarImage)
@@ -242,20 +243,20 @@ class TestNewLike:
 
 class TestSetData:
     def test_set_data(self):
-        image = ScalarImage.from_tensor(torch.randn(1, 10, 10, 10))
+        image = ScalarImage(torch.randn(1, 10, 10, 10))
         new_data = torch.randn(1, 5, 5, 5)
         image.set_data(new_data)
         assert torch.equal(image.data, new_data)
 
     def test_set_data_must_be_4d(self):
-        image = ScalarImage.from_tensor(torch.randn(1, 10, 10, 10))
+        image = ScalarImage(torch.randn(1, 10, 10, 10))
         with pytest.raises(ValueError, match="4D"):
             image.set_data(torch.randn(10, 10, 10))
 
 
 class TestImageRepr:
     def test_loaded_repr(self):
-        image = ScalarImage.from_tensor(torch.randn(1, 10, 10, 10))
+        image = ScalarImage(torch.randn(1, 10, 10, 10))
         r = repr(image)
         assert "ScalarImage" in r
         assert "10" in r
@@ -275,7 +276,7 @@ class TestImageRepr:
         assert "memory" in r
 
     def test_repr_tensor_only_no_path(self):
-        image = Image.from_tensor(torch.randn(1, 4, 4, 4))
+        image = Image(torch.randn(1, 4, 4, 4))
         image._data = None
         r = repr(image)
         # No data and no path — falls back to minimal repr
@@ -284,20 +285,21 @@ class TestImageRepr:
 
 class TestImageLoad:
     def test_load_already_loaded_is_noop(self):
-        image = ScalarImage.from_tensor(torch.randn(1, 10, 10, 10))
+        image = ScalarImage(torch.randn(1, 10, 10, 10))
         original_data = image.data
         image.load()
         assert image.data is original_data
 
     def test_load_no_path_raises(self):
-        image = ScalarImage.from_tensor(torch.randn(1, 10, 10, 10))
+        image = ScalarImage(torch.randn(1, 10, 10, 10))
         image._data = None
         image._path = None
-        with pytest.raises(RuntimeError, match="no path"):
+        image._backend = None
+        with pytest.raises(RuntimeError, match="no path or backend"):
             image.load()
 
     def test_shape_no_data_no_path_raises(self):
-        image = ScalarImage.from_tensor(torch.randn(1, 10, 10, 10))
+        image = ScalarImage(torch.randn(1, 10, 10, 10))
         image._data = None
         image._path = None
         image._backend = None
@@ -309,7 +311,7 @@ class TestImageCopy:
     def test_copy(self):
         import copy
 
-        image = ScalarImage.from_tensor(torch.randn(1, 10, 10, 10))
+        image = ScalarImage(torch.randn(1, 10, 10, 10))
         copied = copy.copy(image)
         assert isinstance(copied, ScalarImage)
         assert torch.equal(copied.data, image.data)
@@ -319,7 +321,7 @@ class TestImageCopy:
     def test_deepcopy_tensor_based(self):
         import copy
 
-        image = ScalarImage.from_tensor(torch.randn(1, 10, 10, 10))
+        image = ScalarImage(torch.randn(1, 10, 10, 10))
         copied = copy.deepcopy(image)
         assert isinstance(copied, ScalarImage)
         assert torch.equal(copied.data, image.data)
@@ -360,7 +362,7 @@ class TestImageCopy:
     def test_deepcopy_degenerate_state(self):
         import copy
 
-        image = ScalarImage.from_tensor(torch.randn(1, 4, 4, 4))
+        image = ScalarImage(torch.randn(1, 4, 4, 4))
         image._data = None
         image._path = None
         copied = copy.deepcopy(image)
@@ -491,7 +493,7 @@ class TestSimpleITKReaderEdgeCases:
     def test_5d_vector_nifti_loads_data(self, tmp_path: Path):
         # SimpleITK writes multichannel NIfTI as 5D vector: (I, J, K, 1, C)
         tensor = torch.randn(3, 10, 10, 10)
-        image = ScalarImage.from_tensor(tensor)
+        image = ScalarImage(tensor)
         path = tmp_path / "vector.nii.gz"
         image.save(path)
 
@@ -504,7 +506,7 @@ class TestImageIO:
     def test_save_and_load_nifti(self, tmp_path: Path):
         tensor = torch.randn(1, 10, 10, 10)
         affine = np.diag([2.0, 2.0, 2.0, 1.0])
-        image = ScalarImage.from_tensor(tensor, affine=affine)
+        image = ScalarImage(tensor, affine=affine)
         path = tmp_path / "output.nii.gz"
         image.save(path)
 
@@ -515,7 +517,7 @@ class TestImageIO:
     def test_save_and_load_nrrd(self, tmp_path: Path):
         tensor = torch.randn(1, 10, 12, 14)
         affine = np.diag([0.5, 0.8, 1.2, 1.0])
-        image = ScalarImage.from_tensor(tensor, affine=affine)
+        image = ScalarImage(tensor, affine=affine)
         path = tmp_path / "output.nrrd"
         image.save(path)
 
@@ -535,7 +537,7 @@ class TestImageIO:
                 [0.0, 0.0, 0.0, 1.0],
             ]
         )
-        image = ScalarImage.from_tensor(tensor, affine=affine)
+        image = ScalarImage(tensor, affine=affine)
         path = tmp_path / f"output{extension}"
         image.save(path)
 
@@ -558,7 +560,7 @@ class TestImageIO:
                 [0.0, 0.0, 0.0, 1.0],
             ]
         )
-        image = ScalarImage.from_tensor(tensor, affine=affine)
+        image = ScalarImage(tensor, affine=affine)
         path = tmp_path / "lps.nii.gz"
         image.save(path)
 
@@ -572,7 +574,7 @@ class TestImageIO:
 
     def test_save_multichannel(self, tmp_path: Path):
         tensor = torch.randn(3, 10, 10, 10)
-        image = ScalarImage.from_tensor(tensor)
+        image = ScalarImage(tensor)
         path = tmp_path / "multi.nii.gz"
         image.save(path)
 
@@ -594,7 +596,7 @@ class TestImageIO:
     def test_save_nii_zarr(self, tmp_path: Path):
         tensor = torch.randn(1, 10, 12, 14)
         affine = np.diag([2.0, 3.0, 4.0, 1.0])
-        image = ScalarImage.from_tensor(tensor, affine=affine)
+        image = ScalarImage(tensor, affine=affine)
         path = tmp_path / "output.nii.zarr"
         image.save(path)
 
@@ -609,7 +611,7 @@ class TestImageIO:
 
     def test_save_nii_zarr_multichannel(self, tmp_path: Path):
         tensor = torch.randn(3, 8, 8, 8)
-        image = ScalarImage.from_tensor(tensor)
+        image = ScalarImage(tensor)
         path = tmp_path / "multi.nii.zarr"
         image.save(path)
 
@@ -620,42 +622,42 @@ class TestImageIO:
 class TestImageSlicing:
     def test_slice_channel_int(self):
         tensor = torch.randn(3, 20, 20, 20)
-        image = ScalarImage.from_tensor(tensor)
+        image = ScalarImage(tensor)
         sliced = image[0]
         assert sliced.shape == (1, 20, 20, 20)
         torch.testing.assert_close(sliced.data, tensor[0:1])
 
     def test_slice_channel_range(self):
         tensor = torch.randn(5, 20, 20, 20)
-        image = ScalarImage.from_tensor(tensor)
+        image = ScalarImage(tensor)
         sliced = image[1:3]
         assert sliced.shape == (2, 20, 20, 20)
         torch.testing.assert_close(sliced.data, tensor[1:3])
 
     def test_slice_spatial_via_tuple(self):
         tensor = torch.randn(1, 20, 20, 20)
-        image = ScalarImage.from_tensor(tensor)
+        image = ScalarImage(tensor)
         sliced = image[:, 5:10]
         assert sliced.shape == (1, 5, 20, 20)
         torch.testing.assert_close(sliced.data, tensor[:, 5:10, :, :])
 
     def test_slice_all_four_dims(self):
         tensor = torch.randn(3, 20, 20, 20)
-        image = ScalarImage.from_tensor(tensor)
+        image = ScalarImage(tensor)
         sliced = image[0:2, 2:8, 3:7, 4:10]
         assert sliced.shape == (2, 6, 4, 6)
         torch.testing.assert_close(sliced.data, tensor[0:2, 2:8, 3:7, 4:10])
 
     def test_slice_preserves_class(self):
         tensor = torch.randn(1, 20, 20, 20)
-        image = LabelMap.from_tensor(tensor)
+        image = LabelMap(tensor)
         sliced = image[:, 5:10]
         assert isinstance(sliced, LabelMap)
 
     def test_slice_updates_affine_origin(self):
         affine = np.diag([2.0, 3.0, 4.0, 1.0])
         tensor = torch.randn(1, 20, 20, 20)
-        image = ScalarImage.from_tensor(tensor, affine=affine)
+        image = ScalarImage(tensor, affine=affine)
         sliced = image[:, 5:10]
         # New origin should be shifted by 5 voxels * 2mm spacing in I direction
         expected_origin = (10.0, 0.0, 0.0)
@@ -664,70 +666,70 @@ class TestImageSlicing:
     def test_slice_channel_does_not_affect_origin(self):
         affine = np.diag([2.0, 3.0, 4.0, 1.0])
         tensor = torch.randn(5, 20, 20, 20)
-        image = ScalarImage.from_tensor(tensor, affine=affine)
+        image = ScalarImage(tensor, affine=affine)
         sliced = image[1:3]
         np.testing.assert_allclose(sliced.origin, (0.0, 0.0, 0.0))
 
     def test_slice_partial_dims(self):
         tensor = torch.randn(1, 20, 20, 20)
-        image = ScalarImage.from_tensor(tensor)
+        image = ScalarImage(tensor)
         sliced = image[:, 5:10, 3:7]
         assert sliced.shape == (1, 5, 4, 20)
 
     def test_slice_negative_indices(self):
         tensor = torch.randn(1, 20, 20, 20)
-        image = ScalarImage.from_tensor(tensor)
+        image = ScalarImage(tensor)
         sliced = image[:, -5:]
         assert sliced.shape == (1, 5, 20, 20)
         torch.testing.assert_close(sliced.data, tensor[:, 15:, :, :])
 
     def test_slice_with_step(self):
         tensor = torch.randn(1, 20, 20, 20)
-        image = ScalarImage.from_tensor(tensor)
+        image = ScalarImage(tensor)
         sliced = image[:, ::2]
         assert sliced.shape == (1, 10, 20, 20)
         torch.testing.assert_close(sliced.data, tensor[:, ::2, :, :])
 
     def test_slice_ellipsis_trailing(self):
         tensor = torch.randn(3, 20, 20, 20)
-        image = ScalarImage.from_tensor(tensor)
+        image = ScalarImage(tensor)
         sliced = image[..., 5:10]
         assert sliced.shape == (3, 20, 20, 5)
         torch.testing.assert_close(sliced.data, tensor[..., 5:10])
 
     def test_slice_ellipsis_leading(self):
         tensor = torch.randn(3, 20, 20, 20)
-        image = ScalarImage.from_tensor(tensor)
+        image = ScalarImage(tensor)
         sliced = image[0, ...]
         assert sliced.shape == (1, 20, 20, 20)
         torch.testing.assert_close(sliced.data, tensor[0:1])
 
     def test_slice_ellipsis_middle(self):
         tensor = torch.randn(3, 20, 20, 20)
-        image = ScalarImage.from_tensor(tensor)
+        image = ScalarImage(tensor)
         sliced = image[0:2, ..., 5:10]
         assert sliced.shape == (2, 20, 20, 5)
         torch.testing.assert_close(sliced.data, tensor[0:2, :, :, 5:10])
 
     def test_slice_bare_ellipsis(self):
         tensor = torch.randn(1, 20, 20, 20)
-        image = ScalarImage.from_tensor(tensor)
+        image = ScalarImage(tensor)
         sliced = image[...]
         assert sliced.shape == (1, 20, 20, 20)
         torch.testing.assert_close(sliced.data, tensor)
 
     def test_slice_double_ellipsis_raises(self):
-        image = ScalarImage.from_tensor(torch.randn(1, 20, 20, 20))
+        image = ScalarImage(torch.randn(1, 20, 20, 20))
         with pytest.raises(IndexError, match="one ellipsis"):
             image[..., ...]
 
     def test_slice_float_raises(self):
-        image = ScalarImage.from_tensor(torch.randn(1, 20, 20, 20))
+        image = ScalarImage(torch.randn(1, 20, 20, 20))
         with pytest.raises(TypeError, match="not understood"):
             image[1.5]
 
     def test_slice_too_many_dims_raises(self):
-        image = ScalarImage.from_tensor(torch.randn(1, 20, 20, 20))
+        image = ScalarImage(torch.randn(1, 20, 20, 20))
         with pytest.raises(IndexError, match="Too many"):
             image[:, :, :, :, :]
 
@@ -743,7 +745,7 @@ class TestImageSlicing:
         assert sliced.shape == (1, 3, 4, 4)
 
     def test_slice_preserves_metadata(self):
-        image = ScalarImage.from_tensor(
+        image = ScalarImage(
             torch.randn(1, 20, 20, 20),
             modality="T1",
         )
@@ -774,7 +776,7 @@ class TestReaderWriterKwargs:
         """writer_kwargs are forwarded to SimpleITK.WriteImage."""
         from unittest.mock import patch
 
-        image = ScalarImage.from_tensor(torch.randn(1, 4, 4, 4))
+        image = ScalarImage(torch.randn(1, 4, 4, 4))
         out = tmp_path / "out.nii.gz"
         with patch("torchio.data.image.sitk.WriteImage") as mock_write:
             image.save(out, writer_kwargs={"useCompression": True})
@@ -792,3 +794,87 @@ class TestReaderWriterKwargs:
         copied = copy.deepcopy(image)
         assert copied._reader_kwargs == kw
         assert copied._reader_kwargs is not image._reader_kwargs
+
+
+class TestFromNiftiLazy:
+    """Tests for the lazy Image.from_nifti constructor."""
+
+    @staticmethod
+    def _make_nifti(shape: tuple[int, ...] = (10, 12, 14)) -> nib.Nifti1Image:
+        data = np.random.randn(*shape).astype(np.float32)
+        affine = np.diag([2.0, 3.0, 4.0, 1.0])
+        return nib.Nifti1Image(data, affine)
+
+    def test_from_nifti_is_lazy(self):
+        nii = self._make_nifti()
+        image = ScalarImage(nii)
+        assert not image.is_loaded
+
+    def test_data_triggers_load(self):
+        nii = self._make_nifti()
+        image = ScalarImage(nii)
+        _ = image.data
+        assert image.is_loaded
+
+    def test_data_values_correct(self):
+        data = np.arange(24, dtype=np.float32).reshape(2, 3, 4)
+        nii = nib.Nifti1Image(data, np.eye(4))
+        image = ScalarImage(nii)
+        expected = torch.tensor(data[np.newaxis], dtype=torch.float32)
+        torch.testing.assert_close(image.data, expected)
+
+    def test_shape_without_load(self):
+        nii = self._make_nifti((10, 12, 14))
+        image = ScalarImage(nii)
+        assert image.shape == (1, 10, 12, 14)
+        assert not image.is_loaded
+
+    def test_affine_without_load(self):
+        nii = self._make_nifti()
+        image = ScalarImage(nii)
+        np.testing.assert_allclose(
+            image.affine.numpy(),
+            np.diag([2.0, 3.0, 4.0, 1.0]),
+        )
+        assert not image.is_loaded
+
+    def test_spacing_without_load(self):
+        nii = self._make_nifti()
+        image = ScalarImage(nii)
+        np.testing.assert_allclose(image.spacing, (2.0, 3.0, 4.0))
+        assert not image.is_loaded
+
+    def test_multichannel(self):
+        data = np.random.randn(10, 12, 14, 3).astype(np.float32)
+        nii = nib.Nifti1Image(data, np.eye(4))
+        image = ScalarImage(nii)
+        assert image.shape == (3, 10, 12, 14)
+        assert not image.is_loaded
+        assert image.data.shape == (3, 10, 12, 14)
+
+    def test_label_map_subclass(self):
+        nii = self._make_nifti()
+        image = LabelMap(nii)
+        assert isinstance(image, LabelMap)
+        assert not image.is_loaded
+
+    def test_metadata_forwarded(self):
+        nii = self._make_nifti()
+        image = ScalarImage(nii, protocol="MPRAGE")
+        assert image.metadata["protocol"] == "MPRAGE"
+        assert not image.is_loaded
+
+    def test_from_bytes_still_works(self, tmp_path: Path):
+        tensor = torch.randn(1, 8, 8, 8)
+        affine = np.diag([1.5, 1.5, 1.5, 1.0])
+        nii = nib.Nifti1Image(
+            rearrange(tensor.numpy(), "c i j k -> i j k c"),
+            affine,
+        )
+        path = tmp_path / "temp.nii.gz"
+        nib.save(nii, path)
+        raw = path.read_bytes()
+        image = ScalarImage(raw)
+        assert image.is_loaded
+        assert image.shape == (1, 8, 8, 8)
+        np.testing.assert_allclose(image.spacing, (1.5, 1.5, 1.5))

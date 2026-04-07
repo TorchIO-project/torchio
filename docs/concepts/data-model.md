@@ -85,10 +85,11 @@ image = tio.ScalarImage("t1.nii.gz")              # from file (lazy)
 image = tio.ScalarImage("s3://bucket/t1.nii.gz")   # from cloud (via fsspec)
 image = tio.ScalarImage("https://example.com/t1.nii.gz")  # from URL
 image = tio.ScalarImage(buf, suffix=".nii.gz")     # from file-like object
-image = tio.ScalarImage.from_tensor(tensor)        # from PyTorch tensor
-image = tio.ScalarImage.from_sitk(sitk_image)      # from SimpleITK
-image = tio.ScalarImage.from_nifti(nifti_image)    # from NiBabel
-image = tio.ScalarImage.from_bytes(raw_bytes)      # from bytes or BytesIO
+image = tio.ScalarImage(tensor)                    # from PyTorch tensor
+image = tio.ScalarImage(sitk_image)                # from SimpleITK
+image = tio.ScalarImage(nifti_image)               # from NiBabel (lazy)
+image = tio.ScalarImage(raw_bytes)                 # from bytes or BytesIO
+image = tio.ScalarImage(zarr_store)                # from zarr Store (lazy)
 ```
 
 ### Metadata

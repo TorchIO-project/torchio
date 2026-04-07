@@ -49,7 +49,7 @@ class TestEulerAngles:
 
 class TestImageRepr:
     def test_multiline_format(self) -> None:
-        img = tio.ScalarImage.from_tensor(torch.rand(1, 10, 20, 30))
+        img = tio.ScalarImage(torch.rand(1, 10, 20, 30))
         r = repr(img)
         assert "ScalarImage(\n" in r
         assert "channels:" in r
@@ -69,13 +69,13 @@ class TestImageRepr:
         assert "NIfTI" in r
 
     def test_loaded_shows_loaded(self) -> None:
-        img = tio.ScalarImage.from_tensor(torch.rand(1, 10, 10, 10))
+        img = tio.ScalarImage(torch.rand(1, 10, 10, 10))
         r = repr(img)
         assert "in memory" in r
 
     def test_origin_shown(self) -> None:
         affine = Affine.from_spacing((1, 1, 1), origin=(10.0, 20.0, 30.0))
-        img = tio.ScalarImage.from_tensor(
+        img = tio.ScalarImage(
             torch.rand(1, 5, 5, 5),
             affine=affine,
         )
@@ -86,12 +86,12 @@ class TestImageRepr:
 
 class TestPlotImage:
     def test_returns_figure(self) -> None:
-        img = tio.ScalarImage.from_tensor(torch.rand(1, 10, 20, 30))
+        img = tio.ScalarImage(torch.rand(1, 10, 20, 30))
         fig = img.plot(show=False)
         assert isinstance(fig, Figure)
 
     def test_custom_indices(self) -> None:
-        img = tio.ScalarImage.from_tensor(torch.rand(1, 10, 20, 30))
+        img = tio.ScalarImage(torch.rand(1, 10, 20, 30))
         fig = img.plot(indices=(5, 10, 15), show=False)
         axes = fig.axes
         assert len(axes) == 3
@@ -102,7 +102,7 @@ class TestPlotImage:
         assert any("15" in t for t in titles)
 
     def test_views_are_sagittal_coronal_axial(self) -> None:
-        img = tio.ScalarImage.from_tensor(torch.rand(1, 10, 20, 30))
+        img = tio.ScalarImage(torch.rand(1, 10, 20, 30))
         fig = img.plot(show=False)
         titles = [ax.get_title() for ax in fig.axes]
         assert "Sagittal" in titles[0]
@@ -110,7 +110,7 @@ class TestPlotImage:
         assert "Axial" in titles[2]
 
     def test_orientation_labels_show_tensor_axis(self) -> None:
-        img = tio.ScalarImage.from_tensor(torch.rand(1, 10, 10, 10))
+        img = tio.ScalarImage(torch.rand(1, 10, 10, 10))
         fig = img.plot(show=False)
         ax = fig.axes[0]
         xlabel = ax.get_xlabel()
@@ -122,7 +122,7 @@ class TestPlotImage:
         assert any(c in all_labels for c in ("I", "J", "K"))
 
     def test_save_to_file(self, tmp_path) -> None:
-        img = tio.ScalarImage.from_tensor(torch.rand(1, 10, 10, 10))
+        img = tio.ScalarImage(torch.rand(1, 10, 10, 10))
         out = tmp_path / "test.png"
         img.plot(output_path=out, show=False)
         assert out.exists()
@@ -130,30 +130,30 @@ class TestPlotImage:
 
     def test_external_axes(self) -> None:
         fig, axes = plt.subplots(1, 3)
-        img = tio.ScalarImage.from_tensor(torch.rand(1, 10, 10, 10))
+        img = tio.ScalarImage(torch.rand(1, 10, 10, 10))
         result = img.plot(axes=axes, show=False)
         assert result is fig
 
     def test_label_map_uses_nearest(self) -> None:
-        label = tio.LabelMap.from_tensor(torch.randint(0, 3, (1, 10, 10, 10)))
+        label = tio.LabelMap(torch.randint(0, 3, (1, 10, 10, 10)))
         fig = label.plot(show=False)
         ax = fig.axes[0]
         im = ax.images[0]
         assert im.get_interpolation() == "none"
 
     def test_voxels_mode(self) -> None:
-        img = tio.ScalarImage.from_tensor(torch.rand(1, 10, 10, 10))
+        img = tio.ScalarImage(torch.rand(1, 10, 10, 10))
         fig = img.plot(show=False, voxels=True)
         assert isinstance(fig, Figure)
 
     def test_consistent_views_across_orientations(self) -> None:
         """Sagittal/Coronal/Axial order is the same for RAS and LPS."""
-        img_ras = tio.ScalarImage.from_tensor(torch.rand(1, 10, 20, 30))
+        img_ras = tio.ScalarImage(torch.rand(1, 10, 20, 30))
         fig_ras = img_ras.plot(show=False)
 
         ornt = nib.orientations.axcodes2ornt(("L", "P", "S"))
         affine = tio.Affine(nib.orientations.inv_ornt_aff(ornt, (10, 20, 30)))
-        img_lps = tio.ScalarImage.from_tensor(
+        img_lps = tio.ScalarImage(
             torch.rand(1, 10, 20, 30),
             affine=affine,
         )
@@ -166,7 +166,7 @@ class TestPlotImage:
     def test_coordinates_kwarg(self) -> None:
         """Passing world coordinates resolves to the correct voxel."""
         affine = tio.Affine.from_spacing((2.0, 2.0, 2.0))
-        img = tio.ScalarImage.from_tensor(
+        img = tio.ScalarImage(
             torch.rand(1, 50, 50, 50),
             affine=affine,
         )
@@ -178,20 +178,20 @@ class TestPlotImage:
         assert any("10" in t for t in titles)
 
     def test_coordinates_and_indices_exclusive(self) -> None:
-        img = tio.ScalarImage.from_tensor(torch.rand(1, 10, 10, 10))
+        img = tio.ScalarImage(torch.rand(1, 10, 10, 10))
         with pytest.raises(ValueError, match="mutually exclusive"):
             img.plot(indices=(5, 5, 5), coordinates=(0.0, 0.0, 0.0), show=False)
 
     def test_coordinates_with_none(self) -> None:
         """None entries in coordinates default to mid-slice."""
-        img = tio.ScalarImage.from_tensor(torch.rand(1, 20, 20, 20))
+        img = tio.ScalarImage(torch.rand(1, 20, 20, 20))
         fig = img.plot(coordinates=(None, None, None), show=False)
         assert isinstance(fig, Figure)
 
 
 class TestReprHtml:
     def test_contains_table(self) -> None:
-        img = tio.ScalarImage.from_tensor(torch.rand(1, 10, 10, 10))
+        img = tio.ScalarImage(torch.rand(1, 10, 10, 10))
         html = img._repr_html_()
         assert "tio-table" in html
         assert "Channels" in html
@@ -199,7 +199,7 @@ class TestReprHtml:
         assert "Euler angles" in html
 
     def test_contains_plot(self) -> None:
-        img = tio.ScalarImage.from_tensor(torch.rand(1, 10, 10, 10))
+        img = tio.ScalarImage(torch.rand(1, 10, 10, 10))
         html = img._repr_html_()
         assert "data:image/png;base64" in html
 
@@ -207,8 +207,8 @@ class TestReprHtml:
 class TestPlotSubject:
     def test_returns_figure(self) -> None:
         subject = tio.Subject(
-            t1=tio.ScalarImage.from_tensor(torch.rand(1, 10, 10, 10)),
-            seg=tio.LabelMap.from_tensor(torch.randint(0, 3, (1, 10, 10, 10))),
+            t1=tio.ScalarImage(torch.rand(1, 10, 10, 10)),
+            seg=tio.LabelMap(torch.randint(0, 3, (1, 10, 10, 10))),
         )
         fig = subject.plot(show=False)
         assert isinstance(fig, Figure)
@@ -216,10 +216,7 @@ class TestPlotSubject:
     def test_many_images_transposes(self) -> None:
         """With >3 images, layout should transpose to rows=views, cols=images."""
         subject = tio.Subject(
-            **{
-                f"img{i}": tio.ScalarImage.from_tensor(torch.rand(1, 10, 10, 10))
-                for i in range(4)
-            }
+            **{f"img{i}": tio.ScalarImage(torch.rand(1, 10, 10, 10)) for i in range(4)}
         )
         fig = subject.plot(show=False)
         assert isinstance(fig, Figure)
@@ -229,8 +226,8 @@ class TestPlotSubject:
     def test_few_images_rows(self) -> None:
         """With ≤3 images, rows=images, cols=views."""
         subject = tio.Subject(
-            t1=tio.ScalarImage.from_tensor(torch.rand(1, 10, 10, 10)),
-            t2=tio.ScalarImage.from_tensor(torch.rand(1, 10, 10, 10)),
+            t1=tio.ScalarImage(torch.rand(1, 10, 10, 10)),
+            t2=tio.ScalarImage(torch.rand(1, 10, 10, 10)),
         )
         fig = subject.plot(show=False)
         # 2 rows (images) x 3 cols (views) = 6 axes
@@ -238,14 +235,14 @@ class TestPlotSubject:
 
     def test_cmap_dict(self) -> None:
         subject = tio.Subject(
-            t1=tio.ScalarImage.from_tensor(torch.rand(1, 10, 10, 10)),
+            t1=tio.ScalarImage(torch.rand(1, 10, 10, 10)),
         )
         fig = subject.plot(show=False, cmap_dict={"t1": "hot"})
         assert isinstance(fig, Figure)
 
     def test_save_to_file(self, tmp_path) -> None:
         subject = tio.Subject(
-            t1=tio.ScalarImage.from_tensor(torch.rand(1, 10, 10, 10)),
+            t1=tio.ScalarImage(torch.rand(1, 10, 10, 10)),
         )
         out = tmp_path / "subject.png"
         subject.plot(output_path=out, show=False)
@@ -253,7 +250,7 @@ class TestPlotSubject:
 
     def test_subject_repr_html_contains_plot(self) -> None:
         subject = tio.Subject(
-            t1=tio.ScalarImage.from_tensor(torch.rand(1, 10, 10, 10)),
+            t1=tio.ScalarImage(torch.rand(1, 10, 10, 10)),
         )
         html = subject._repr_html_()
         assert "data:image/png;base64" in html

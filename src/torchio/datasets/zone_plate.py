@@ -55,4 +55,4 @@ class ZonePlate(Subject):
         affine = np.eye(4)
         origin = np.array([ini, ini, ini])
         affine[:3, 3] = origin
-        return ScalarImage.from_tensor(g[np.newaxis], affine=affine)
+        return ScalarImage(g[np.newaxis], affine=affine)

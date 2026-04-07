@@ -56,5 +56,5 @@ except Exception as _exc:
             "Failed to import duecredit due to %s",
             _exc,
         )
-    due = InactiveDueCreditCollector()  # type: ignore[assignment]
+    due = InactiveDueCreditCollector()
     BibTeX = Doi = Url = Text = _donothing_func

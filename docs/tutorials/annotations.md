@@ -143,8 +143,8 @@ A `Subject` automatically sorts its contents:
 <!-- pytest-codeblocks:skip -->
 ```python
 subject = tio.Subject(
-    t1=tio.ScalarImage.from_tensor(torch.randn(1, 64, 64, 64)),
-    seg=tio.LabelMap.from_tensor((torch.randn(1, 64, 64, 64) > 0).float()),
+    t1=tio.ScalarImage(torch.randn(1, 64, 64, 64)),
+    seg=tio.LabelMap((torch.randn(1, 64, 64, 64) > 0).float()),
     landmarks=landmarks,
     tumors=boxes,
     age=45,

@@ -114,7 +114,7 @@ class TestNibabelBackend:
 
 class TestImageWithBackends:
     def test_from_tensor_uses_numpy_backend(self):
-        image = ScalarImage.from_tensor(torch.randn(1, 10, 10, 10))
+        image = ScalarImage(torch.randn(1, 10, 10, 10))
         assert isinstance(image._backend, NumpyBackend)
 
     def test_nifti_uses_nibabel_backend(self, tmp_path: Path):
@@ -151,7 +151,7 @@ class TestImageWithBackends:
         assert isinstance(dataobj, NibabelBackend)
 
     def test_dataobj_from_tensor(self):
-        image = ScalarImage.from_tensor(torch.randn(1, 10, 10, 10))
+        image = ScalarImage(torch.randn(1, 10, 10, 10))
         dataobj = image.dataobj
         assert isinstance(dataobj, NumpyBackend)
 
