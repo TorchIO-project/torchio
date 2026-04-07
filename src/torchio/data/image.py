@@ -631,8 +631,7 @@ class Image(Invertible):
     def save(
         self,
         path: str | Path,
-        *,
-        writer_kwargs: dict[str, Any] | None = None,
+        **kwargs: Any,
     ) -> None:
         """Save the image to a file.
 
@@ -643,7 +642,7 @@ class Image(Invertible):
         Args:
             path: Output file path. The format is inferred from the
                 extension.
-            writer_kwargs: Extra keyword arguments forwarded to the
+            **kwargs: Extra keyword arguments forwarded to the
                 writer. For SimpleITK formats these are passed to
                 ``SimpleITK.WriteImage()``.
         """
@@ -651,7 +650,7 @@ class Image(Invertible):
         if is_nifti_zarr(path):
             self._save_nii_zarr(path)
         else:
-            self._save_sitk(path, **(writer_kwargs or {}))
+            self._save_sitk(path, **kwargs)
 
     def _save_sitk(self, path: Path, **kwargs: Any) -> None:
         from .io import _RAS_TO_LPS

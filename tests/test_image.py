@@ -773,13 +773,13 @@ class TestReaderWriterKwargs:
             mock_load.assert_called_once_with(path, keep_file_open=True)
 
     def test_writer_kwargs_passed(self, tmp_path: Path):
-        """writer_kwargs are forwarded to SimpleITK.WriteImage."""
+        """writer kwargs are forwarded to SimpleITK.WriteImage."""
         from unittest.mock import patch
 
         image = ScalarImage(torch.randn(1, 4, 4, 4))
         out = tmp_path / "out.nii.gz"
         with patch("torchio.data.image.sitk.WriteImage") as mock_write:
-            image.save(out, writer_kwargs={"useCompression": True})
+            image.save(out, useCompression=True)
             mock_write.assert_called_once()
             _, call_kwargs = mock_write.call_args
             assert call_kwargs["useCompression"] is True
