@@ -83,3 +83,14 @@ If you use this library for your research, please cite our paper:
 > augmentation and patch-based sampling of medical images in deep learning.*
 > Computer Methods and Programs in Biomedicine (June 2021), p. 106236.
 > [doi:10.1016/j.cmpb.2021.106236](https://doi.org/10.1016/j.cmpb.2021.106236).
+
+## Related projects
+
+- [MONAI](https://monai.readthedocs.io)
+- [Cornucopia](https://cornucopia.readthedocs.io/)
+- [batchgenerators](https://github.com/MIC-DKFZ/batchgenerators)[[v2](https://github.com/MIC-DKFZ/batchgeneratorsv2)]
+- [volumentations](https://github.com/ZFTurbo/volumentations) (low activity)
+- [Rising](https://rising.readthedocs.io) (archived)
+- [pymia](https://pymia.readthedocs.io) (low activity)
+- [MedicalTorch](https://medicaltorch.readthedocs.io) (abandoned)
+- [Eisen](https://github.com/eisen-ai/eisen-core) (abandoned)

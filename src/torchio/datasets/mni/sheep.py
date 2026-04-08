@@ -36,7 +36,4 @@ class Sheep(SubjectMNI):
                 if path == t1_nii_path:
                     compress(t1_nii_path, t1_niigz_path)
                 path.unlink()
-        try:
-            super().__init__(t1=ScalarImage(t1_niigz_path))
-        except FileNotFoundError:  # for backward compatibility
-            super().__init__(t1=ScalarImage(t1_nii_path))
+        super().__init__(t1=ScalarImage(t1_niigz_path))

@@ -67,10 +67,7 @@ class Pediatric(SubjectMNI):
                 compress(path)
                 path.unlink()
 
-        try:
-            subject_kwargs = self._get_subject_kwargs(".nii.gz")
-        except FileNotFoundError:  # for backward compatibility
-            subject_kwargs = self._get_subject_kwargs(".nii")
+        subject_kwargs = self._get_subject_kwargs(".nii.gz")
         super().__init__(**subject_kwargs)
 
     def _get_subject_kwargs(self, extension: str) -> dict:
@@ -79,7 +76,5 @@ class Pediatric(SubjectMNI):
             "t1": ScalarImage(root / f"nihpd_{self.file_id}_t1w{extension}"),
             "t2": ScalarImage(root / f"nihpd_{self.file_id}_t2w{extension}"),
             "pd": ScalarImage(root / f"nihpd_{self.file_id}_pdw{extension}"),
-            "mask": LabelMap(
-                root / f"nihpd_{self.file_id}_mask{extension}",
-            ),
+            "mask": LabelMap(root / f"nihpd_{self.file_id}_mask{extension}"),
         }

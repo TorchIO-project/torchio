@@ -76,16 +76,10 @@ class Colin27(SubjectMNI):
                 compress(path)
                 path.unlink()
 
-        try:
-            subject_kwargs = self._get_subject_kwargs(
-                self.download_root,
-                extension=".nii.gz",
-            )
-        except FileNotFoundError:  # for backward compatibility
-            subject_kwargs = self._get_subject_kwargs(
-                self.download_root,
-                extension=".nii",
-            )
+        subject_kwargs = self._get_subject_kwargs(
+            self.download_root,
+            extension=".nii.gz",
+        )
         super().__init__(**subject_kwargs)
 
     def _get_subject_kwargs(self, download_root, extension):
