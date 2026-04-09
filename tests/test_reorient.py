@@ -6,7 +6,7 @@ import pytest
 import torch
 
 import torchio as tio
-from torchio.data.affine import Affine
+from torchio.data.affine import AffineMatrix
 
 
 def _make_subject(
@@ -20,7 +20,7 @@ def _make_subject(
     target_ornt = nib.orientations.axcodes2ornt(tuple(orientation))
     # Start from identity and apply the orientation
     base_affine = nib.orientations.inv_ornt_aff(target_ornt, shape)
-    affine = Affine(base_affine)
+    affine = AffineMatrix(base_affine)
     data = torch.arange(shape[0] * shape[1] * shape[2], dtype=torch.float32)
     data = data.reshape(1, *shape)
     image = tio.ScalarImage(data, affine=affine)
@@ -118,7 +118,7 @@ class TestAllImages:
         import nibabel as nib
 
         ornt = nib.orientations.axcodes2ornt(tuple("RAS"))
-        affine = Affine(nib.orientations.inv_ornt_aff(ornt, (10, 20, 30)))
+        affine = AffineMatrix(nib.orientations.inv_ornt_aff(ornt, (10, 20, 30)))
         subject = tio.Subject(
             t1=tio.ScalarImage(torch.rand(1, 10, 20, 30), affine=affine),
             seg=tio.LabelMap(
@@ -159,7 +159,7 @@ class TestInputTypes:
         import nibabel as nib
 
         ornt = nib.orientations.axcodes2ornt(tuple("RAS"))
-        affine = Affine(nib.orientations.inv_ornt_aff(ornt, (10, 20, 30)))
+        affine = AffineMatrix(nib.orientations.inv_ornt_aff(ornt, (10, 20, 30)))
         image = tio.ScalarImage(
             torch.rand(1, 10, 20, 30),
             affine=affine,
@@ -186,7 +186,7 @@ class TestBatch:
         from torchio.data.batch import SubjectsBatch
 
         ornt = nib.orientations.axcodes2ornt(tuple("RAS"))
-        affine = Affine(nib.orientations.inv_ornt_aff(ornt, (10, 20, 30)))
+        affine = AffineMatrix(nib.orientations.inv_ornt_aff(ornt, (10, 20, 30)))
         subjects = [
             tio.Subject(
                 t1=tio.ScalarImage(

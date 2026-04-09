@@ -6,7 +6,7 @@ import pytest
 import torch
 
 import torchio as tio
-from torchio.data.affine import Affine
+from torchio.data.affine import AffineMatrix
 from torchio.data.batch import SubjectsBatch
 
 # ---------------------------------------------------------------------------
@@ -20,7 +20,7 @@ def _make_subject(
     *,
     with_label: bool = False,
 ) -> tio.Subject:
-    affine = Affine.from_spacing(spacing)
+    affine = AffineMatrix.from_spacing(spacing)
     image = tio.ScalarImage(
         torch.rand(1, *shape),
         affine=affine,
@@ -233,7 +233,7 @@ class TestPaddingMode:
 
 
 # ---------------------------------------------------------------------------
-# Affine correctness
+# AffineMatrix correctness
 # ---------------------------------------------------------------------------
 
 

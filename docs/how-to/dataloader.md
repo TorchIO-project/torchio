@@ -114,5 +114,5 @@ class SliceDataset(Dataset):
 loader = tio.ImagesLoader(SliceDataset(paths), batch_size=4)
 batch = next(iter(loader))
 batch.data.shape     # (4, 1, H, W, D)
-batch.affines        # list of 4 Affine instances
+batch.affines        # list of 4 AffineMatrix instances
 ```

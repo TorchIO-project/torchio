@@ -81,6 +81,13 @@ def is_nifti_zarr(path: Path) -> bool:
     return str(path).endswith(".nii.zarr")
 
 
+def is_remote_nifti_zarr(uri: str) -> bool:
+    """Check if a string is a remote NIfTI-Zarr URI."""
+    clean = uri.split("?", maxsplit=1)[0].split("#", maxsplit=1)[0]
+    clean = clean.rstrip("/").lower()
+    return _is_remote(clean) and clean.endswith(".nii.zarr")
+
+
 # ── Readers ──────────────────────────────────────────────────────────
 
 

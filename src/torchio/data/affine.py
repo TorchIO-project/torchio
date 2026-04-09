@@ -17,7 +17,7 @@ from ..types import TypeOrigin
 from ..types import TypeSpacing
 
 
-class Affine:
+class AffineMatrix:
     r"""$4 \times 4$ affine matrix mapping voxel indices to world coordinates.
 
     Stores the matrix as a ``torch.Tensor`` so it can live on the same
@@ -30,7 +30,7 @@ class Affine:
 
     Examples:
         >>> import torchio as tio
-        >>> affine = tio.Affine()
+        >>> affine = tio.AffineMatrix()
         >>> affine.spacing
         (1.0, 1.0, 1.0)
         >>> affine.orientation
@@ -41,21 +41,21 @@ class Affine:
 
     def __init__(
         self,
-        matrix: Affine | Tensor | npt.ArrayLike | None = None,
+        matrix: AffineMatrix | Tensor | npt.ArrayLike | None = None,
     ) -> None:
         if matrix is None:
             self._matrix = torch.eye(4, dtype=torch.float64)
-        elif isinstance(matrix, Affine):
+        elif isinstance(matrix, AffineMatrix):
             self._matrix = matrix._matrix.clone()
         elif isinstance(matrix, Tensor):
             if matrix.shape != (4, 4):
-                msg = f"Affine must be 4x4, got {tuple(matrix.shape)}"
+                msg = f"AffineMatrix must be 4x4, got {tuple(matrix.shape)}"
                 raise ValueError(msg)
             self._matrix = matrix.to(torch.float64).clone()
         else:
             m = np.asarray(matrix, dtype=np.float64)
             if m.shape != (4, 4):
-                msg = f"Affine must be 4x4, got {m.shape}"
+                msg = f"AffineMatrix must be 4x4, got {m.shape}"
                 raise ValueError(msg)
             self._matrix = torch.as_tensor(m.copy(), dtype=torch.float64)
 
@@ -68,7 +68,7 @@ class Affine:
         *,
         origin: TypeOrigin = (0.0, 0.0, 0.0),
         direction: npt.ArrayLike | Tensor | None = None,
-    ) -> Affine:
+    ) -> AffineMatrix:
         """Create an affine from spacing, origin, and direction.
 
         Args:
@@ -153,7 +153,7 @@ class Affine:
 
     # --- Methods ---
 
-    def to(self, *args: Any, **kwargs: Any) -> Affine:
+    def to(self, *args: Any, **kwargs: Any) -> AffineMatrix:
         """Move the affine to a device.
 
         The affine always stays in float64 for precision. On devices
@@ -167,20 +167,20 @@ class Affine:
             self._matrix = self._matrix.to(*args, **kwargs).to(torch.float64)
         return self
 
-    def clone(self) -> Affine:
+    def clone(self) -> AffineMatrix:
         """Return a deep copy."""
-        return Affine(self._matrix.clone())
+        return AffineMatrix(self._matrix.clone())
 
-    def inverse(self) -> Affine:
+    def inverse(self) -> AffineMatrix:
         """Return the inverse affine."""
-        return Affine(torch.linalg.inv(self._matrix))
+        return AffineMatrix(torch.linalg.inv(self._matrix))
 
-    def compose(self, other: Affine) -> Affine:
-        """Return `self @ other` as a new `Affine`.
+    def compose(self, other: AffineMatrix) -> AffineMatrix:
+        """Return `self @ other` as a new `AffineMatrix`.
 
         Equivalent to using the `@` operator.
         """
-        return Affine(self._matrix @ other._matrix)
+        return AffineMatrix(self._matrix @ other._matrix)
 
     def apply(self, points: Tensor | npt.ArrayLike) -> Tensor:
         """Apply the affine to an (N, 3) set of points.
@@ -210,9 +210,9 @@ class Affine:
 
     # --- Dunder methods ---
 
-    def __matmul__(self, other: object) -> Affine:
+    def __matmul__(self, other: object) -> AffineMatrix:
         """Compose two affines via the `@` operator."""
-        if not isinstance(other, Affine):
+        if not isinstance(other, AffineMatrix):
             return NotImplemented
         return self.compose(other)
 
@@ -232,17 +232,17 @@ class Affine:
         sp = ", ".join(f"{s:.2f}" for s in self.spacing)
         ori = "".join(self.orientation)
         o = ", ".join(f"{v:.2f}" for v in self.origin)
-        return f"Affine(spacing=({sp}), origin=({o}), orientation={ori}+)"
+        return f"AffineMatrix(spacing=({sp}), origin=({o}), orientation={ori}+)"
 
     def __eq__(self, other: object) -> bool:
-        if not isinstance(other, Affine):
+        if not isinstance(other, AffineMatrix):
             return NotImplemented
         return torch.equal(self._matrix, other._matrix)
 
-    def __copy__(self) -> Affine:
+    def __copy__(self) -> AffineMatrix:
         return self.clone()
 
-    def __deepcopy__(self, memo: dict) -> Affine:
+    def __deepcopy__(self, memo: dict) -> AffineMatrix:
         new = self.clone()
         memo[id(self)] = new
         return new

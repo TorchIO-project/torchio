@@ -23,16 +23,19 @@ from typing_extensions import Self
 from ..types import TypeImageData
 from ..types import TypeSpatialShape
 from ..types import TypeTensorShape
-from .affine import Affine
+from ..external.imports import get_niizarr
+from .affine import AffineMatrix
 from .backends import ImageDataBackend
 from .backends import NibabelBackend
 from .backends import TensorBackend
+from .backends import ZarrBackend
 from .bboxes import BoundingBoxes
 from .invertible import Invertible
 from .io import ImageSource
 from .io import default_reader
 from .io import is_nifti
 from .io import is_nifti_zarr
+from .io import is_remote_nifti_zarr
 from .io import resolve_source
 from .points import Points
 
@@ -146,7 +149,7 @@ class Image(Invertible):
             function. For the default reader these are passed to
             ``nibabel.load()`` or ``SimpleITK.ReadImage()``.
         affine: $4 \times 4$ affine matrix or
-            [`Affine`][torchio.Affine] instance. If given, overrides
+            [`AffineMatrix`][torchio.AffineMatrix] instance. If given, overrides
             the affine read from the file.
         channels_last: If ``True``, the tensor is assumed to have
             shape $(I, J, K, C)$ and will be permuted to
@@ -187,7 +190,7 @@ class Image(Invertible):
         *,
         reader: Callable[[Path], tuple[TypeImageData, np.ndarray]] | None = None,
         reader_kwargs: dict[str, Any] | None = None,
-        affine: Affine | npt.ArrayLike | None = None,
+        affine: AffineMatrix | npt.ArrayLike | None = None,
         channels_last: bool = False,
         suffix: str | None = None,
         points: dict[str, Points] | None = None,
@@ -202,8 +205,9 @@ class Image(Invertible):
         self._data: Tensor | None = None
         self._backend: ImageDataBackend | None = None
         self._path: Path | None = None
+        self._remote_zarr_uri: str | None = None
         self._zarr_store: Any = None
-        self._affine: Affine | None = (
+        self._affine: AffineMatrix | None = (
             self._parse_affine(affine) if affine is not None else None
         )
         self._points = self._parse_annotations(points, "Points")
@@ -222,7 +226,7 @@ class Image(Invertible):
         self,
         source: ImageInput,
         *,
-        affine: Affine | npt.ArrayLike | None,
+        affine: AffineMatrix | npt.ArrayLike | None,
         channels_last: bool,
         suffix: str | None,
     ) -> None:
@@ -237,6 +241,8 @@ class Image(Invertible):
             self._init_from_sitk(source, affine=affine)
         elif isinstance(source, (bytes, io.BytesIO)):
             self._init_from_bytes(source, suffix=suffix or ".nii.gz")
+        elif isinstance(source, str) and is_remote_nifti_zarr(source):
+            self._remote_zarr_uri = source
         elif self._is_zarr_store(source):
             self._zarr_store = source
         else:
@@ -249,7 +255,7 @@ class Image(Invertible):
         self,
         tensor: TypeImageData | np.ndarray,
         *,
-        affine: Affine | npt.ArrayLike | None,
+        affine: AffineMatrix | npt.ArrayLike | None,
         channels_last: bool,
     ) -> None:
         parsed = self._parse_tensor(tensor)
@@ -268,7 +274,7 @@ class Image(Invertible):
         self,
         sitk_image: sitk.Image,
         *,
-        affine: Affine | npt.ArrayLike | None,
+        affine: AffineMatrix | npt.ArrayLike | None,
     ) -> None:
         data = sitk.GetArrayFromImage(sitk_image)
         n_components = sitk_image.GetNumberOfComponentsPerPixel()
@@ -282,7 +288,7 @@ class Image(Invertible):
         affine_matrix[:3, 3] = origin
         self._init_from_tensor(
             tensor,
-            affine=affine if affine is not None else Affine(affine_matrix),
+            affine=affine if affine is not None else AffineMatrix(affine_matrix),
             channels_last=False,
         )
 
@@ -333,12 +339,12 @@ class Image(Invertible):
         return tensor
 
     @staticmethod
-    def _parse_affine(affine: Affine | npt.ArrayLike | None) -> Affine:
+    def _parse_affine(affine: AffineMatrix | npt.ArrayLike | None) -> AffineMatrix:
         if affine is None:
-            return Affine()
-        if isinstance(affine, Affine):
+            return AffineMatrix()
+        if isinstance(affine, AffineMatrix):
             return affine
-        return Affine(affine)
+        return AffineMatrix(affine)
 
     @staticmethod
     def _parse_annotations(
@@ -403,18 +409,20 @@ class Image(Invertible):
         return self._data
 
     @property
-    def affine(self) -> Affine:
+    def affine(self) -> AffineMatrix:
         """4x4 affine matrix mapping voxel indices to world coordinates."""
         if self._affine is None:
             # Try existing backend first to avoid full data load
             if self._backend is not None:
-                self._affine = Affine(self._backend.affine)
-            elif self._zarr_store is not None or (
-                self._path is not None and self._reader is default_reader
+                self._affine = AffineMatrix(self._backend.affine)
+            elif (
+                self._remote_zarr_uri is not None
+                or self._zarr_store is not None
+                or (self._path is not None and self._reader is default_reader)
             ):
                 self._ensure_backend()
                 if self._backend is not None:
-                    self._affine = Affine(self._backend.affine)
+                    self._affine = AffineMatrix(self._backend.affine)
             if self._affine is None:
                 self.load()
         assert self._affine is not None
@@ -447,7 +455,7 @@ class Image(Invertible):
         if self._backend is not None:
             s = self._backend.shape
             return (int(s[0]), int(s[1]), int(s[2]), int(s[3]))
-        if self._zarr_store is not None:
+        if self._remote_zarr_uri is not None or self._zarr_store is not None:
             self._ensure_backend()
             assert self._backend is not None
             s = self._backend.shape
@@ -503,6 +511,10 @@ class Image(Invertible):
             return self._data.dtype
         if self._backend is not None:
             return self._backend.dtype
+        if self._remote_zarr_uri is not None:
+            self._ensure_backend()
+            if self._backend is not None:
+                return self._backend.dtype
         if self._path is not None:
             self._ensure_backend()
             if self._backend is not None:
@@ -541,17 +553,21 @@ class Image(Invertible):
         tensor, affine_array = self._reader(self._path, **self._reader_kwargs)
         self._data = tensor
         if self._affine is None:
-            self._affine = Affine(affine_array)
+            self._affine = AffineMatrix(affine_array)
         self._apply_channels_last()
 
     def _try_load_via_backend(self) -> bool:
         """Try to load data from an existing or newly-created backend."""
         if self._load_from_backend():
             return True
-        if self._zarr_store is not None or (
-            self._path is not None
-            and self._reader is default_reader
-            and (is_nifti_zarr(self._path) or is_nifti(self._path))
+        if (
+            self._remote_zarr_uri is not None
+            or self._zarr_store is not None
+            or (
+                self._path is not None
+                and self._reader is default_reader
+                and (is_nifti_zarr(self._path) or is_nifti(self._path))
+            )
         ):
             self._ensure_backend()
             return self._load_from_backend()
@@ -563,7 +579,7 @@ class Image(Invertible):
             return False
         self._data = self._backend.to_tensor()
         if self._affine is None:
-            self._affine = Affine(self._backend.affine)
+            self._affine = AffineMatrix(self._backend.affine)
         self._apply_channels_last()
         return True
 
@@ -603,7 +619,7 @@ class Image(Invertible):
         self,
         *,
         data: TypeImageData,
-        affine: Affine | npt.ArrayLike | None = None,
+        affine: AffineMatrix | npt.ArrayLike | None = None,
     ) -> Self:
         r"""Create a new image of the same class with new data.
 
@@ -674,8 +690,6 @@ class Image(Invertible):
         sitk.WriteImage(sitk_image, str(path), **kwargs)
 
     def _save_nii_zarr(self, path: Path) -> None:
-        from ..external.imports import get_niizarr
-
         niizarr = get_niizarr()
         data = self.data.numpy()
         n_channels = data.shape[0]
@@ -696,9 +710,13 @@ class Image(Invertible):
         """
         if self._backend is not None:
             return
+        if self._remote_zarr_uri is not None:
+            self._backend = ZarrBackend(
+                self._remote_zarr_uri,
+                **self._reader_kwargs,
+            )
+            return
         if self._zarr_store is not None:
-            from ..external.imports import get_niizarr
-
             niizarr = get_niizarr()
             nii = niizarr.zarr2nii(self._zarr_store, **self._reader_kwargs)
             self._backend = NibabelBackend(nii)
@@ -707,9 +725,7 @@ class Image(Invertible):
             msg = "Cannot create backend: no path or store set"
             raise RuntimeError(msg)
         if is_nifti_zarr(self._path):
-            from .backends import ZarrBackend
-
-            self._backend = ZarrBackend(self._path)
+            self._backend = ZarrBackend(self._path, **self._reader_kwargs)
         elif is_nifti(self._path):
             nii = nib.load(self._path, **self._reader_kwargs)
             assert isinstance(nii, nib.spatialimages.SpatialImage)
@@ -830,7 +846,7 @@ class Image(Invertible):
         )
         affine_matrix[:3, 3] += affine_matrix[:3, :3] @ start_voxel
 
-        return self.new_like(data=cropped_data, affine=Affine(affine_matrix))
+        return self.new_like(data=cropped_data, affine=AffineMatrix(affine_matrix))
 
     def _slice_data(
         self,
@@ -864,7 +880,14 @@ class Image(Invertible):
             mem = humanize.naturalsize(self.memory, binary=True)
 
             # Path / loading status (after header read so backend is set)
-            if self._path is not None:
+            if self._remote_zarr_uri is not None:
+                if self.is_loaded:
+                    lines.append(f"    path:        {self._remote_zarr_uri} (loaded)")
+                else:
+                    lines.append(
+                        f"    path:        {self._remote_zarr_uri} (lazy, NIfTI-Zarr)"
+                    )
+            elif self._path is not None:
                 name = self._path.name
                 if self.is_loaded:
                     lines.append(f"    path:        {name} (loaded)")
@@ -930,7 +953,20 @@ class Image(Invertible):
         meta_copy = dict(self._metadata)
         points_copy, bboxes_copy = self._deep_copy_annotations()
 
-        if self._path is not None:
+        if self._remote_zarr_uri is not None:
+            new = type(self)(
+                self._remote_zarr_uri,
+                reader=self._reader,
+                reader_kwargs=dict(self._reader_kwargs),
+                affine=affine_copy,
+                points=points_copy,
+                bounding_boxes=bboxes_copy,
+                **meta_copy,
+            )
+            if self._data is not None:
+                new._data = self._data.clone()
+                new._affine = affine_copy
+        elif self._path is not None:
             new = type(self)(
                 self._path,
                 reader=self._reader,

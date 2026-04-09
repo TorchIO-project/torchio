@@ -11,6 +11,7 @@ from typing import Any
 
 import torch
 
+from ..data.affine import AffineMatrix
 from ..data.image import Image
 from ..data.image import ScalarImage
 from ..data.subject import Subject
@@ -129,9 +130,7 @@ def _update_image_from_result(
         image.set_data(result.as_tensor())
         new_affine = result.affine
         if not torch.equal(new_affine.cpu().to(torch.float64), image.affine.data.cpu()):
-            from ..data.affine import Affine
-
-            image._affine = Affine(new_affine)
+            image._affine = AffineMatrix(new_affine)
     else:
         image.set_data(result)
 

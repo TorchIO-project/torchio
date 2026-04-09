@@ -11,14 +11,14 @@ import torch
 from matplotlib.figure import Figure
 
 import torchio as tio
-from torchio.data.affine import Affine
+from torchio.data.affine import AffineMatrix
 
 matplotlib.use("Agg")
 
 
 class TestEulerAngles:
     def test_identity_gives_zeros(self) -> None:
-        a = Affine()
+        a = AffineMatrix()
         angles = a.euler_angles
         assert all(abs(v) < 1e-6 for v in angles)
 
@@ -29,7 +29,7 @@ class TestEulerAngles:
         m[0, 1] = -np.sin(theta)
         m[1, 0] = np.sin(theta)
         m[1, 1] = np.cos(theta)
-        a = Affine(m)
+        a = AffineMatrix(m)
         x, y, z = a.euler_angles
         assert abs(z - 15.0) < 0.1
         assert abs(x) < 0.1
@@ -42,7 +42,7 @@ class TestEulerAngles:
         m[1, 2] = -np.sin(theta)
         m[2, 1] = np.sin(theta)
         m[2, 2] = np.cos(theta)
-        a = Affine(m)
+        a = AffineMatrix(m)
         x, _y, _z = a.euler_angles
         assert abs(x - 30.0) < 0.1
 
@@ -74,7 +74,7 @@ class TestImageRepr:
         assert "in memory" in r
 
     def test_origin_shown(self) -> None:
-        affine = Affine.from_spacing((1, 1, 1), origin=(10.0, 20.0, 30.0))
+        affine = AffineMatrix.from_spacing((1, 1, 1), origin=(10.0, 20.0, 30.0))
         img = tio.ScalarImage(
             torch.rand(1, 5, 5, 5),
             affine=affine,
@@ -152,7 +152,7 @@ class TestPlotImage:
         fig_ras = img_ras.plot(show=False)
 
         ornt = nib.orientations.axcodes2ornt(("L", "P", "S"))
-        affine = tio.Affine(nib.orientations.inv_ornt_aff(ornt, (10, 20, 30)))
+        affine = tio.AffineMatrix(nib.orientations.inv_ornt_aff(ornt, (10, 20, 30)))
         img_lps = tio.ScalarImage(
             torch.rand(1, 10, 20, 30),
             affine=affine,
@@ -165,7 +165,7 @@ class TestPlotImage:
 
     def test_coordinates_kwarg(self) -> None:
         """Passing world coordinates resolves to the correct voxel."""
-        affine = tio.Affine.from_spacing((2.0, 2.0, 2.0))
+        affine = tio.AffineMatrix.from_spacing((2.0, 2.0, 2.0))
         img = tio.ScalarImage(
             torch.rand(1, 50, 50, 50),
             affine=affine,

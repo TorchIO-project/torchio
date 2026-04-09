@@ -8,7 +8,7 @@ import torch
 from torch import Tensor
 from typing_extensions import Self
 
-from .affine import Affine
+from .affine import AffineMatrix
 from .image import Image
 from .image import ScalarImage
 from .invertible import Invertible
@@ -17,7 +17,7 @@ from .invertible import Invertible
 class ImagesBatch(Invertible):
     """A batch of images with per-sample affines.
 
-    Wraps a 5D tensor ``(B, C, I, J, K)`` and a list of ``Affine``
+    Wraps a 5D tensor ``(B, C, I, J, K)`` and a list of ``AffineMatrix``
     matrices (one per sample). Created by stacking multiple ``Image``
     objects or directly from a 5D tensor.
 
@@ -30,7 +30,7 @@ class ImagesBatch(Invertible):
     def __init__(
         self,
         data: Tensor,
-        affines: list[Affine],
+        affines: list[AffineMatrix],
         *,
         image_class: type[Image] = ScalarImage,
     ) -> None:
@@ -76,7 +76,7 @@ class ImagesBatch(Invertible):
         self._data = value
 
     @property
-    def affines(self) -> list[Affine]:
+    def affines(self) -> list[AffineMatrix]:
         """List of affine matrices, one per sample."""
         return self._affines
 

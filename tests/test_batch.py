@@ -18,14 +18,14 @@ class TestImagesBatch:
     def test_batch_size(self) -> None:
         batch = ImagesBatch(
             data=torch.rand(4, 1, 8, 8, 8),
-            affines=[tio.Affine() for _ in range(4)],
+            affines=[tio.AffineMatrix() for _ in range(4)],
         )
         assert batch.batch_size == 4
 
     def test_to_device(self) -> None:
         batch = ImagesBatch(
             data=torch.rand(2, 1, 4, 4, 4),
-            affines=[tio.Affine() for _ in range(2)],
+            affines=[tio.AffineMatrix() for _ in range(2)],
         )
         result = batch.to(torch.float64)
         assert result.data.dtype == torch.float64
@@ -42,15 +42,15 @@ class TestImagesBatch:
     def test_getitem_int(self) -> None:
         batch = ImagesBatch(
             data=torch.rand(4, 1, 8, 8, 8),
-            affines=[tio.Affine() for _ in range(4)],
+            affines=[tio.AffineMatrix() for _ in range(4)],
         )
         img = batch[0]
         assert isinstance(img, tio.ScalarImage)
         assert img.shape == (1, 8, 8, 8)
 
     def test_per_sample_affines(self) -> None:
-        affine_a = tio.Affine.from_spacing((1.0, 1.0, 1.0))
-        affine_b = tio.Affine.from_spacing((2.0, 2.0, 2.0))
+        affine_a = tio.AffineMatrix.from_spacing((1.0, 1.0, 1.0))
+        affine_b = tio.AffineMatrix.from_spacing((2.0, 2.0, 2.0))
         batch = ImagesBatch(
             data=torch.rand(2, 1, 8, 8, 8),
             affines=[affine_a, affine_b],
@@ -61,7 +61,7 @@ class TestImagesBatch:
     def test_repr(self) -> None:
         batch = ImagesBatch(
             data=torch.rand(4, 1, 8, 8, 8),
-            affines=[tio.Affine() for _ in range(4)],
+            affines=[tio.AffineMatrix() for _ in range(4)],
         )
         assert "4" in repr(batch)
         assert "8" in repr(batch)
@@ -176,8 +176,8 @@ class TestBatchTransforms:
         assert result.data.abs().sum() > 0
 
     def test_batch_preserves_affines(self) -> None:
-        affine_a = tio.Affine.from_spacing((1.0, 1.0, 1.0))
-        affine_b = tio.Affine.from_spacing((2.0, 2.0, 2.0))
+        affine_a = tio.AffineMatrix.from_spacing((1.0, 1.0, 1.0))
+        affine_b = tio.AffineMatrix.from_spacing((2.0, 2.0, 2.0))
         images = [
             tio.ScalarImage(torch.rand(1, 8, 8, 8), affine=affine_a),
             tio.ScalarImage(torch.rand(1, 8, 8, 8), affine=affine_b),

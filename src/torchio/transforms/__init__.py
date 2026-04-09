@@ -11,6 +11,10 @@ from .noise import Noise
 from .pad import Pad
 from .parameter_range import ParameterRange
 from .reorient import Reorient
+from .spatial import Affine
+from .spatial import ElasticDeformation
+from .spatial import Resample
+from .spatial import Spatial
 from .to import To
 from .transform import AppliedTransform
 from .transform import IntensityTransform
@@ -18,10 +22,12 @@ from .transform import SpatialTransform
 from .transform import Transform
 
 __all__ = [
+    "Affine",
     "AppliedTransform",
     "Compose",
     "Crop",
     "CropOrPad",
+    "ElasticDeformation",
     "Flip",
     "IntensityTransform",
     "MonaiAdapter",
@@ -30,7 +36,9 @@ __all__ = [
     "Pad",
     "ParameterRange",
     "Reorient",
+    "Resample",
     "SomeOf",
+    "Spatial",
     "SpatialTransform",
     "To",
     "Transform",

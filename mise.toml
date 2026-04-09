@@ -13,7 +13,7 @@ prek install --install-hooks
 
 [tasks.test]
 description = "Run tests with pytest"
-run = "uv run tox -e pytest"
+run = "uv run tox -e test"
 
 [tasks.lint]
 description = "Lint with ruff"

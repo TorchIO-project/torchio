@@ -15,7 +15,7 @@ import torch
 from torch import Tensor
 from typing_extensions import Self
 
-from .affine import Affine
+from .affine import AffineMatrix
 from .axes import AxesType
 from .axes import axes_type
 from .axes import get_axis_mapping
@@ -176,7 +176,7 @@ def _permute_center_size(
 
 def _ijk_corners_to_world(
     data: Tensor,
-    affine: Affine,
+    affine: AffineMatrix,
 ) -> Tensor:
     """Convert (N, 6) corners from IJK voxel to world (RAS) coordinates."""
     c1 = data[:, :3]
@@ -191,7 +191,7 @@ def _ijk_corners_to_world(
 
 def _world_corners_to_ijk(
     data: Tensor,
-    affine: Affine,
+    affine: AffineMatrix,
 ) -> Tensor:
     """Convert (N, 6) corners from world (RAS) to IJK voxel coordinates."""
     inv = affine.inverse()
@@ -235,7 +235,7 @@ class BoundingBoxes:
         *,
         format: BoundingBoxFormat,
         labels: Tensor | None = None,
-        affine: Affine | npt.ArrayLike | None = None,
+        affine: AffineMatrix | npt.ArrayLike | None = None,
         metadata: dict[str, Any] | None = None,
     ) -> None:
         self._data = self._parse_data(data)
@@ -265,12 +265,12 @@ class BoundingBoxes:
         return labels
 
     @staticmethod
-    def _parse_affine(affine: Affine | npt.ArrayLike | None) -> Affine:
+    def _parse_affine(affine: AffineMatrix | npt.ArrayLike | None) -> AffineMatrix:
         if affine is None:
-            return Affine()
-        if isinstance(affine, Affine):
+            return AffineMatrix()
+        if isinstance(affine, AffineMatrix):
             return affine
-        return Affine(affine)
+        return AffineMatrix(affine)
 
     # --- Properties ---
 
@@ -290,7 +290,7 @@ class BoundingBoxes:
         return self._labels
 
     @property
-    def affine(self) -> Affine:
+    def affine(self) -> AffineMatrix:
         r"""$4 \times 4$ affine mapping voxel to world coordinates."""
         return self._affine
 
@@ -378,7 +378,7 @@ class BoundingBoxes:
         *,
         data: Tensor | npt.ArrayLike,
         labels: Tensor | None = None,
-        affine: Affine | npt.ArrayLike | None = None,
+        affine: AffineMatrix | npt.ArrayLike | None = None,
     ) -> Self:
         """Create new BoundingBoxes with the same format and metadata.
 

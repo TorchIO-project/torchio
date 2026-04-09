@@ -1,7 +1,7 @@
 # Data model
 
 TorchIO's data model has five core classes: **Image**, **Points**,
-**BoundingBoxes**, **Subject**, and **Affine**. This article explains
+**BoundingBoxes**, **Subject**, and **AffineMatrix**. This article explains
 what each one does and how they relate.
 
 ## Overview
@@ -10,7 +10,7 @@ what each one does and how they relate.
 classDiagram
     class Image {
         +data: Tensor (C,I,J,K)
-        +affine: Affine
+        +affine: AffineMatrix
         +load() / save()
     }
 
@@ -24,7 +24,7 @@ classDiagram
 
     class Points {
         +data: Tensor (N,3)
-        +affine: Affine
+        +affine: AffineMatrix
         +to_world()
     }
 
@@ -42,7 +42,7 @@ classDiagram
         +metadata
     }
 
-    class Affine {
+    class AffineMatrix {
         +spacing
         +origin
         +direction
@@ -54,9 +54,9 @@ classDiagram
 
     Image <|-- ScalarImage
     Image <|-- LabelMap
-    Image --> Affine : has
-    Points --> Affine : has
-    BoundingBoxes --> Affine : has
+    Image --> AffineMatrix : has
+    Points --> AffineMatrix : has
+    BoundingBoxes --> AffineMatrix : has
     Subject --> Image : contains
     Subject --> Points : contains
     Subject --> BoundingBoxes : contains
@@ -132,9 +132,9 @@ TorchIO uses the convention `(C, I, J, K)`:
 
 Most single-channel images (T1, CT, etc.) have `C = 1`.
 
-## Affine
+## AffineMatrix
 
-The `Affine` class wraps a $4 \times 4$ matrix that maps voxel indices
+The `AffineMatrix` class wraps a $4 \times 4$ matrix that maps voxel indices
 to world coordinates:
 
 $$
@@ -267,9 +267,9 @@ flowchart LR
         META["age: 45"]
     end
 
-    T1 -->|".affine"| A1[Affine<br/>spacing, origin,<br/>direction]
-    SEG -->|".affine"| A2[Affine]
-    LM -->|".affine"| A3[Affine]
+    T1 -->|".affine"| A1[AffineMatrix<br/>spacing, origin,<br/>direction]
+    SEG -->|".affine"| A2[AffineMatrix]
+    LM -->|".affine"| A3[AffineMatrix]
     T1 -->|".data"| D1["Tensor (C, I, J, K)"]
     SEG -->|".data"| D2["Tensor (C, I, J, K)"]
     LM -->|".data"| D3["Tensor (N, 3)"]

@@ -12,7 +12,7 @@ import torch
 from loguru import logger
 from torch import Tensor
 
-from ..data.affine import Affine
+from ..data.affine import AffineMatrix
 from ..data.backends import ImageDataBackend
 from ..data.batch import SubjectsBatch
 from ..data.image import Image
@@ -275,7 +275,7 @@ def _crop_image_lazy(image: Image, cropping: TypeSixInts) -> Image:
         dtype=torch.float64,
     )
     affine_matrix[:3, 3] += affine_matrix[:3, :3] @ start_voxel
-    new_affine = Affine(affine_matrix)
+    new_affine = AffineMatrix(affine_matrix)
 
     if image.is_loaded:
         new_data = image.data[:, i_slice, j_slice, k_slice]
@@ -328,7 +328,7 @@ def _pad_image_lazy(
         [-float(i0), -float(j0), -float(k0)],
     )
     affine_matrix[:3, 3] += origin_shift
-    new_affine = Affine(affine_matrix)
+    new_affine = AffineMatrix(affine_matrix)
 
     padded_shape = (c, si + i0 + i1, sj + j0 + j1, sk + k0 + k1)
 

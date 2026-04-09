@@ -3,7 +3,7 @@
 from importlib.metadata import version
 
 from . import datasets
-from .data.affine import Affine
+from .data.affine import AffineMatrix
 from .data.aggregator import PatchAggregator
 from .data.batch import ImagesBatch
 from .data.batch import StudiesBatch
@@ -33,10 +33,12 @@ from .loader import collate_images
 from .loader import collate_studies
 from .loader import collate_subjects
 from .logging import enable_logging
+from .transforms import Affine
 from .transforms import AppliedTransform
 from .transforms import Compose
 from .transforms import Crop
 from .transforms import CropOrPad
+from .transforms import ElasticDeformation
 from .transforms import Flip
 from .transforms import IntensityTransform
 from .transforms import MonaiAdapter
@@ -45,7 +47,9 @@ from .transforms import OneOf
 from .transforms import Pad
 from .transforms import ParameterRange
 from .transforms import Reorient
+from .transforms import Resample
 from .transforms import SomeOf
+from .transforms import Spatial
 from .transforms import SpatialTransform
 from .transforms import To
 from .transforms import Transform
@@ -63,12 +67,14 @@ from .types import TypeWorldPoints
 
 __all__ = [
     "Affine",
+    "AffineMatrix",
     "AppliedTransform",
     "BoundingBoxFormat",
     "BoundingBoxes",
     "Compose",
     "Crop",
     "CropOrPad",
+    "ElasticDeformation",
     "Flip",
     "GridSampler",
     "Image",
@@ -89,8 +95,10 @@ __all__ = [
     "Queue",
     "Reorient",
     "Representation",
+    "Resample",
     "ScalarImage",
     "SomeOf",
+    "Spatial",
     "SpatialTransform",
     "StudiesBatch",
     "StudiesLoader",

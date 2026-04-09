@@ -1,0 +1,1456 @@
+"""Unified spatial transforms.
+
+Combines resampling, affine motion, and elastic deformation into a single
+``grid_sample`` call.  The public API consists of four classes:
+
+- :class:`Spatial` — the unified transform.
+- :class:`Resample` — resampling-only convenience wrapper.
+- :class:`Affine` — affine-only convenience wrapper.
+- :class:`ElasticDeformation` — elastic-only convenience wrapper.
+
+The module-level helpers handle coordinate math, grid construction,
+serialization for history replay, and parameter parsing/validation.
+"""
+
+from __future__ import annotations
+
+import warnings
+from collections.abc import Sequence
+from numbers import Number
+from pathlib import Path
+from typing import Any
+from typing import Literal
+from typing import TypeAlias
+from typing import TypeGuard
+from typing import cast
+
+import numpy as np
+import numpy.typing as npt
+import torch
+import torch.nn.functional as functional
+from einops import rearrange
+from torch import Tensor
+from torch.distributions import Distribution
+
+from ..data.affine import AffineMatrix
+from ..data.batch import ImagesBatch
+from ..data.batch import SubjectsBatch
+from ..data.image import Image
+from ..data.image import LabelMap
+from ..data.image import ScalarImage
+from ..types import TypeSpacing
+from ..types import TypeThreeInts
+from .parameter_range import ParameterRange
+from .transform import SpatialTransform
+
+TypeParameterValue: TypeAlias = (
+    int
+    | float
+    | tuple[int | float]
+    | tuple[int | float, int | float]
+    | tuple[int | float, int | float, int | float]
+    | tuple[
+        int | float,
+        int | float,
+        int | float,
+        int | float,
+        int | float,
+        int | float,
+    ]
+    | Distribution
+)
+TypeTarget: TypeAlias = (
+    int
+    | float
+    | TypeSpacing
+    | str
+    | Path
+    | Image
+    | tuple[Sequence[int], AffineMatrix | Tensor | npt.ArrayLike]
+    | None
+)
+TypeControlPoints: TypeAlias = Tensor | npt.ArrayLike
+TypeTargetSpace: TypeAlias = tuple[TypeThreeInts, AffineMatrix]
+TypeInterpolation: TypeAlias = Literal["nearest", "linear"]
+TypeCenter: TypeAlias = Literal["image", "origin"]
+TypePadValue: TypeAlias = Literal["minimum", "mean", "otsu"]
+
+_SUPPORTED_INTERPOLATIONS = ("nearest", "linear")
+_TORCH_INTERPOLATION_MODE = {
+    "nearest": "nearest",
+    "linear": "bilinear",
+}
+_SUPPORTED_PAD_VALUES = ("minimum", "mean", "otsu")
+_SPLINE_ORDER = 3
+
+
+class Spatial(SpatialTransform):
+    r"""Apply resampling, affine motion, and elastic deformation together.
+
+    This transform can:
+
+    1. resample to a new space,
+    2. apply a global affine mapping, and
+    3. apply a dense elastic field,
+
+    using a single sampling grid.
+
+    Args:
+        target: Output space. Pass voxel spacing in mm, an image name in the
+            subject, a path, an [`Image`][torchio.Image], or a
+            ``(spatial_shape, affine)`` pair. If ``None``, the output grid
+            matches the input grid.
+        scales: Fixed value, range, or distribution for scale factors.
+        degrees: Fixed value, range, or distribution for Euler angles in
+            degrees.
+        translation: Fixed value, range, or distribution for translations in
+            mm.
+        isotropic: If ``True``, sample a single scale factor and reuse it for
+            all three axes.
+        center: Either ``"image"`` or ``"origin"``.
+        control_points: Optional coarse displacement field with shape
+            ``(n_i, n_j, n_k, 3)`` in mm. If given, it is used directly.
+        num_control_points: Grid shape used when sampling an elastic field.
+        max_displacement: Fixed value, range, or distribution for the maximum
+            control-point displacement in mm.
+        locked_borders: Number of outer control-point layers kept at zero when
+            sampling an elastic field.
+        affine_first: If ``True``, apply the affine part before the elastic
+            field. If ``False``, apply the elastic field first.
+        image_interpolation: Interpolation mode for intensity images.
+        label_interpolation: Interpolation mode for label maps.
+        default_pad_value: Fill rule for out-of-bounds intensity samples.
+            Use ``"minimum"``, ``"mean"``, ``"otsu"``, or a numeric value.
+        default_pad_label: Fill value for out-of-bounds label samples.
+        **kwargs: See [`Transform`][torchio.Transform].
+
+    Notes:
+        ``affine_first`` changes the mapping. Large rotations or large
+        displacements can produce visibly different outputs.
+
+        Inversion restores the original grid geometry. Affine inversion is
+        exact. Elastic inversion negates the sampled field, which is an
+        approximation for large deformations. Resampling back restores the
+        original space, but not the original high-frequency detail.
+
+    Examples:
+        >>> import torchio as tio
+        >>> transform = tio.Spatial(
+        ...     target=1,
+        ...     degrees=(0.0, 0.0, 15.0),
+        ...     translation=(-5.0, 5.0),
+        ... )
+        >>> transformed = transform(subject)
+    """
+
+    def __init__(
+        self,
+        *,
+        target: TypeTarget = None,
+        scales: TypeParameterValue = 1.0,
+        degrees: TypeParameterValue = 0.0,
+        translation: TypeParameterValue = 0.0,
+        isotropic: bool = False,
+        center: TypeCenter = "image",
+        control_points: TypeControlPoints | None = None,
+        num_control_points: int | TypeThreeInts = 7,
+        max_displacement: TypeParameterValue = 0.0,
+        locked_borders: int = 2,
+        affine_first: bool = True,
+        image_interpolation: TypeInterpolation = "linear",
+        label_interpolation: TypeInterpolation = "nearest",
+        default_pad_value: TypePadValue | float = "minimum",
+        default_pad_label: int | float = 0,
+        **kwargs: Any,
+    ) -> None:
+        super().__init__(**kwargs)
+        self.target = target
+        _validate_isotropic(scales, isotropic)
+        self.scales = _to_positive_range(scales)
+        self.degrees = _to_parameter_range(degrees)
+        self.translation = _to_parameter_range(translation)
+        self.isotropic = isotropic
+        self.center = _parse_center(center)
+        self.control_points = (
+            _parse_control_points(control_points)
+            if control_points is not None
+            else None
+        )
+        self.num_control_points = _parse_num_control_points(num_control_points)
+        self.max_displacement = _to_nonnegative_parameter_range(max_displacement)
+        self.locked_borders = _parse_locked_borders(locked_borders)
+        if self.locked_borders == 2 and 4 in self.num_control_points:
+            msg = (
+                "locked_borders=2 with 4 control points along any axis yields an"
+                " identity elastic field"
+            )
+            raise ValueError(msg)
+        self.affine_first = affine_first
+        self.image_interpolation = _parse_interpolation(image_interpolation)
+        self.label_interpolation = _parse_interpolation(label_interpolation)
+        self.default_pad_value = _parse_default_pad_value(default_pad_value)
+        if not isinstance(default_pad_label, Number):
+            msg = f"default_pad_label must be numeric, got {type(default_pad_label)}"
+            raise TypeError(msg)
+        self.default_pad_label = float(default_pad_label)
+
+    def make_params(self, batch: SubjectsBatch) -> dict[str, Any]:
+        """Sample random parameters and resolve the output space.
+
+        Scales, degrees, translation, and control-point displacements are
+        sampled once and applied identically to every sample and every
+        image in the batch.
+
+        Returns:
+            Dict of serializable parameters for ``apply_transform`` and
+            history replay.
+        """
+        images = self._get_images(batch)
+        if not images:
+            return {"selected_images": []}
+
+        _, first_batch = next(iter(images.items()))
+        first_shape = _get_spatial_shape(first_batch)
+        first_affine = first_batch.affines[0]
+
+        sampled_scales = _sample_scales(self.scales, self.isotropic)
+        sampled_degrees = self.degrees.sample()
+        sampled_translation = self.translation.sample()
+        has_affine = _has_affine_component(
+            sampled_scales,
+            sampled_degrees,
+            sampled_translation,
+        )
+        control_points, max_displacement = _resolve_control_points(
+            self.control_points,
+            self.num_control_points,
+            self.max_displacement,
+            self.locked_borders,
+        )
+        has_elastic = control_points is not None
+
+        if has_affine or has_elastic:
+            _check_shared_space(images, first_shape, first_affine)
+
+        target_space = _resolve_target_space(
+            self.target,
+            batch,
+            first_shape,
+            first_affine,
+        )
+        forward_affine = None
+        if has_affine:
+            forward_affine = _build_forward_affine(
+                scales=sampled_scales,
+                degrees=sampled_degrees,
+                translation=sampled_translation,
+                center=self.center,
+                shape=first_shape,
+                affine=first_affine,
+            )
+
+        return {
+            "selected_images": list(images.keys()),
+            "target": _serialize_space(target_space),
+            "original": _serialize_space((first_shape, first_affine)),
+            "affine_matrix": _serialize_matrix(forward_affine),
+            "control_points": _serialize_control_points(control_points),
+            "max_displacement": list(max_displacement) if max_displacement else None,
+            "affine_first": self.affine_first,
+            "image_interpolation": self.image_interpolation,
+            "label_interpolation": self.label_interpolation,
+            "default_pad_value": self.default_pad_value,
+            "default_pad_label": self.default_pad_label,
+        }
+
+    def apply_transform(
+        self,
+        batch: SubjectsBatch,
+        params: dict[str, Any],
+    ) -> SubjectsBatch:
+        """Apply the spatial mapping to every selected image in *batch*.
+
+        The sampling grid is built once from the parameters produced by
+        ``make_params`` and reused for all images and all batch samples.
+        """
+        selected_images = params.get("selected_images", [])
+        if not selected_images:
+            return batch
+
+        target_space = _deserialize_space(params["target"])
+        affine_matrix = _deserialize_matrix(params["affine_matrix"])
+        control_points = _deserialize_control_points(params["control_points"])
+        max_displacement = _deserialize_max_displacement(params["max_displacement"])
+
+        _apply_spatial_to_batch(
+            batch=batch,
+            image_names=selected_images,
+            target_space=target_space,
+            affine_matrix=affine_matrix,
+            control_points=control_points,
+            max_displacement=max_displacement,
+            affine_first=params["affine_first"],
+            image_interpolation=params["image_interpolation"],
+            label_interpolation=params["label_interpolation"],
+            default_pad_value=params["default_pad_value"],
+            default_pad_label=float(params["default_pad_label"]),
+        )
+        return batch
+
+    @property
+    def invertible(self) -> bool:
+        """Whether this transform can be inverted."""
+        return True
+
+    def inverse(self, params: dict[str, Any]) -> _SpatialInverse:
+        """Build the inverse transform from recorded parameters.
+
+        The affine component is inverted exactly.  The elastic component
+        is approximated by negating the sampled displacement field.  The
+        ``affine_first`` flag is flipped so that the inverse operations
+        run in the opposite order.
+
+        Args:
+            params: The parameter dict produced by ``make_params``.
+
+        Returns:
+            A ``_SpatialInverse`` that resamples back to the original grid.
+        """
+        affine_matrix = _deserialize_matrix(params["affine_matrix"])
+        inverse_affine = None
+        if affine_matrix is not None:
+            inverse_affine = np.linalg.inv(affine_matrix)
+
+        control_points = _deserialize_control_points(params["control_points"])
+        inverse_control_points = None
+        if control_points is not None:
+            inverse_control_points = -control_points
+        original_space = _deserialize_space(params["original"])
+        if original_space is None:
+            msg = "Spatial inverse needs the original output space"
+            raise RuntimeError(msg)
+
+        return _SpatialInverse(
+            target=original_space,
+            affine_matrix=inverse_affine,
+            control_points=inverse_control_points,
+            affine_first=not params["affine_first"],
+            image_interpolation=params["image_interpolation"],
+            label_interpolation=params["label_interpolation"],
+            default_pad_value=params["default_pad_value"],
+            default_pad_label=float(params["default_pad_label"]),
+            copy=False,
+        )
+
+
+class _SpatialInverse(SpatialTransform):
+    """Concrete inverse of :class:`Spatial`, used for history replay.
+
+    Stores the exact inverse affine matrix, the negated elastic field,
+    and the original output space so that ``apply_inverse_transform``
+    can restore the geometry of images transformed by :class:`Spatial`.
+    """
+
+    def __init__(
+        self,
+        *,
+        target: TypeTargetSpace,
+        affine_matrix: npt.ArrayLike | None,
+        control_points: TypeControlPoints | None,
+        affine_first: bool,
+        image_interpolation: TypeInterpolation,
+        label_interpolation: TypeInterpolation,
+        default_pad_value: TypePadValue | float,
+        default_pad_label: float,
+        **kwargs: Any,
+    ) -> None:
+        super().__init__(**kwargs)
+        self.target = target
+        self.affine_matrix = (
+            np.asarray(affine_matrix, dtype=np.float64).copy()
+            if affine_matrix is not None
+            else None
+        )
+        self.control_points = (
+            _parse_control_points(control_points)
+            if control_points is not None
+            else None
+        )
+        self.affine_first = affine_first
+        self.image_interpolation = _parse_interpolation(image_interpolation)
+        self.label_interpolation = _parse_interpolation(label_interpolation)
+        self.default_pad_value = _parse_default_pad_value(default_pad_value)
+        self.default_pad_label = float(default_pad_label)
+
+    def make_params(self, batch: SubjectsBatch) -> dict[str, Any]:
+        """Return empty params; all state is stored in instance attributes."""
+        return {}
+
+    def apply_transform(
+        self,
+        batch: SubjectsBatch,
+        params: dict[str, Any],
+    ) -> SubjectsBatch:
+        """Resample back to the recorded original space."""
+        max_displacement = None
+        if self.control_points is not None:
+            max_displacement = _max_abs_displacement(self.control_points)
+        _apply_spatial_to_batch(
+            batch=batch,
+            image_names=list(self._get_images(batch)),
+            target_space=self.target,
+            affine_matrix=self.affine_matrix,
+            control_points=self.control_points,
+            max_displacement=max_displacement,
+            affine_first=self.affine_first,
+            image_interpolation=self.image_interpolation,
+            label_interpolation=self.label_interpolation,
+            default_pad_value=self.default_pad_value,
+            default_pad_label=self.default_pad_label,
+        )
+        return batch
+
+
+class Resample(Spatial):
+    r"""Resample to a different space.
+
+    This wrapper exposes the resampling subset of
+    [`Spatial`][torchio.Spatial].
+
+    Args:
+        target: Output space. By default, images are resampled to 1 mm isotropic
+            spacing, matching the v1 `Resample` default.
+        image_interpolation: Interpolation mode for intensity images.
+        label_interpolation: Interpolation mode for label maps.
+        **kwargs: See [`Transform`][torchio.Transform].
+    """
+
+    def __init__(
+        self,
+        target: TypeTarget = 1,
+        image_interpolation: TypeInterpolation = "linear",
+        label_interpolation: TypeInterpolation = "nearest",
+        **kwargs: Any,
+    ) -> None:
+        super().__init__(
+            target=target,
+            image_interpolation=image_interpolation,
+            label_interpolation=label_interpolation,
+            **kwargs,
+        )
+
+
+class Affine(Spatial):
+    r"""Apply an affine transform.
+
+    This wrapper exposes the affine subset of
+    [`Spatial`][torchio.Spatial]. The affine matrix class is available as
+    ``torchio.AffineMatrix``.
+
+    Args:
+        scales: Fixed value, range, or distribution for scale factors.
+        degrees: Fixed value, range, or distribution for Euler angles in
+            degrees.
+        translation: Fixed value, range, or distribution for translations in
+            mm.
+        isotropic: If ``True``, reuse a single sampled scale factor on all
+            axes.
+        center: Either ``"image"`` or ``"origin"``.
+        default_pad_value: Fill rule for out-of-bounds intensity samples.
+        default_pad_label: Fill value for out-of-bounds label samples.
+        image_interpolation: Interpolation mode for intensity images.
+        label_interpolation: Interpolation mode for label maps.
+        **kwargs: See [`Transform`][torchio.Transform].
+    """
+
+    def __init__(
+        self,
+        *,
+        scales: TypeParameterValue = (0.9, 1.1),
+        degrees: TypeParameterValue = (-10.0, 10.0),
+        translation: TypeParameterValue = 0.0,
+        isotropic: bool = False,
+        center: TypeCenter = "image",
+        default_pad_value: TypePadValue | float = "minimum",
+        default_pad_label: int | float = 0,
+        image_interpolation: TypeInterpolation = "linear",
+        label_interpolation: TypeInterpolation = "nearest",
+        **kwargs: Any,
+    ) -> None:
+        super().__init__(
+            scales=scales,
+            degrees=degrees,
+            translation=translation,
+            isotropic=isotropic,
+            center=center,
+            default_pad_value=default_pad_value,
+            default_pad_label=default_pad_label,
+            image_interpolation=image_interpolation,
+            label_interpolation=label_interpolation,
+            **kwargs,
+        )
+
+
+class ElasticDeformation(Spatial):
+    r"""Apply a dense elastic deformation.
+
+    This wrapper exposes the elastic subset of
+    [`Spatial`][torchio.Spatial].
+
+    Args:
+        control_points: Optional coarse displacement field with shape
+            ``(n_i, n_j, n_k, 3)`` in mm.
+        num_control_points: Grid shape used when sampling an elastic field.
+        max_displacement: Fixed value, range, or distribution for the maximum
+            control-point displacement in mm.
+        locked_borders: Number of outer control-point layers kept at zero when
+            sampling an elastic field.
+        image_interpolation: Interpolation mode for intensity images.
+        label_interpolation: Interpolation mode for label maps.
+        **kwargs: See [`Transform`][torchio.Transform].
+    """
+
+    def __init__(
+        self,
+        *,
+        control_points: TypeControlPoints | None = None,
+        num_control_points: int | TypeThreeInts = 7,
+        max_displacement: TypeParameterValue = 7.5,
+        locked_borders: int = 2,
+        image_interpolation: TypeInterpolation = "linear",
+        label_interpolation: TypeInterpolation = "nearest",
+        **kwargs: Any,
+    ) -> None:
+        super().__init__(
+            control_points=control_points,
+            num_control_points=num_control_points,
+            max_displacement=max_displacement,
+            locked_borders=locked_borders,
+            image_interpolation=image_interpolation,
+            label_interpolation=label_interpolation,
+            **kwargs,
+        )
+
+
+def _apply_spatial_to_batch(
+    *,
+    batch: SubjectsBatch,
+    image_names: list[str],
+    target_space: TypeTargetSpace | None,
+    affine_matrix: np.ndarray | None,
+    control_points: Tensor | None,
+    max_displacement: tuple[float, float, float] | None,
+    affine_first: bool,
+    image_interpolation: TypeInterpolation,
+    label_interpolation: TypeInterpolation,
+    default_pad_value: TypePadValue | float,
+    default_pad_label: float,
+) -> None:
+    """Apply the spatial mapping to all selected images in *batch*.
+
+    A single sampling grid is built from the first image's geometry and
+    reused for every image and every sample in the batch.  Only the
+    interpolation mode and fill value change per image type.
+    """
+    if not image_names:
+        return
+
+    first_img_batch = batch.images[image_names[0]]
+    input_shape = _get_spatial_shape(first_img_batch)
+    input_affine = first_img_batch.affines[0]
+    output_shape = target_space[0] if target_space is not None else input_shape
+    output_affine = target_space[1] if target_space is not None else input_affine
+
+    # Build the sampling grid once; it is shared across all images
+    # and all samples in the batch.
+    grid = _build_sampling_grid(
+        input_shape=input_shape,
+        input_affine=input_affine,
+        output_shape=output_shape,
+        output_affine=output_affine,
+        affine_matrix=affine_matrix,
+        control_points=control_points,
+        max_displacement=max_displacement,
+        affine_first=affine_first,
+        device=first_img_batch.data.device,
+    )
+
+    for name in image_names:
+        img_batch = batch.images[name]
+        interpolation = _interpolation_for_batch(
+            img_batch,
+            image_interpolation=image_interpolation,
+            label_interpolation=label_interpolation,
+        )
+        fill_value = _batch_fill_value(
+            img_batch,
+            default_pad_value=default_pad_value,
+            default_pad_label=default_pad_label,
+        )
+        img_batch.data = _sample_batch(
+            img_batch.data,
+            grid,
+            mode=_TORCH_INTERPOLATION_MODE[interpolation],
+            fill_value=fill_value,
+        )
+        new_affine = output_affine.clone()
+        img_batch.affines[:] = [new_affine.clone() for _ in img_batch.affines]
+
+
+def _resolve_target_space(
+    target: TypeTarget,
+    batch: SubjectsBatch,
+    first_shape: TypeThreeInts,
+    first_affine: AffineMatrix,
+) -> TypeTargetSpace | None:
+    """Convert the user-facing *target* specification to ``(shape, affine)``.
+
+    Accepts scalars (isotropic spacing), 3-tuples (per-axis spacing), image
+    names in the subject, file paths, ``Image`` instances, or explicit
+    ``(shape, affine)`` pairs.  Returns ``None`` when the output grid should
+    match the input grid.
+    """
+    if target is None:
+        return None
+
+    if isinstance(target, Image):
+        return target.spatial_shape, target.affine.clone()
+
+    if isinstance(target, Path):
+        image = ScalarImage(target)
+        return image.spatial_shape, image.affine.clone()
+
+    if isinstance(target, str):
+        if Path(target).is_file():
+            image = ScalarImage(target)
+            return image.spatial_shape, image.affine.clone()
+        if target in batch.images:
+            reference = batch.images[target]
+            return _get_spatial_shape(reference), reference.affines[0].clone()
+        msg = (
+            f'Unknown target "{target}". Pass a file path, an image name in the'
+            " subject, an Image, or a spacing specification"
+        )
+        raise ValueError(msg)
+
+    if isinstance(target, (int, float)):
+        spacing = _parse_spacing(target)
+        return _compute_new_shape_affine(first_shape, first_affine, spacing)
+
+    if isinstance(target, np.ndarray) and target.size == 3:
+        values = tuple(float(v) for v in target.flat)
+        spacing = _parse_spacing(values)
+        return _compute_new_shape_affine(first_shape, first_affine, spacing)
+
+    if _is_spacing_tuple(target):
+        spacing = _parse_spacing(target)
+        return _compute_new_shape_affine(first_shape, first_affine, spacing)
+
+    if _is_target_space_tuple(target):
+        shape, affine = target
+        return _parse_target_space_tuple(shape, affine)
+
+    if _is_spacing_list(target):
+        spacing = _parse_spacing(target)
+        return _compute_new_shape_affine(first_shape, first_affine, spacing)
+
+    msg = f'Target not understood: "{target}"'
+    raise ValueError(msg)
+
+
+def _compute_new_shape_affine(
+    shape: TypeThreeInts,
+    affine: AffineMatrix,
+    spacing: TypeSpacing,
+) -> TypeTargetSpace:
+    """Compute the output shape and affine for a target voxel spacing.
+
+    The output grid is centered on the same physical center as the input
+    grid.  Axes with a single voxel (size 1) are left unchanged.
+    """
+    old_spacing = np.asarray(affine.spacing, dtype=np.float64)
+    new_spacing = np.asarray(spacing, dtype=np.float64)
+    old_shape = np.asarray(shape, dtype=np.float64)
+
+    new_shape = np.floor(old_shape * old_spacing / new_spacing)
+    new_shape[old_shape == 1] = 1
+
+    # Keep the physical center of the volume fixed when changing spacing.
+    rotation = affine.direction.cpu().numpy()
+    old_origin = np.asarray(affine.origin, dtype=np.float64)
+    old_center = old_origin + rotation @ (((old_shape - 1) / 2) * old_spacing)
+    new_origin = old_center - rotation @ (((new_shape - 1) / 2) * new_spacing)
+
+    new_affine = np.eye(4, dtype=np.float64)
+    new_affine[:3, :3] = rotation * new_spacing
+    new_affine[:3, 3] = new_origin
+    return (
+        (int(new_shape[0]), int(new_shape[1]), int(new_shape[2])),
+        AffineMatrix(new_affine),
+    )
+
+
+def _build_sampling_grid(
+    *,
+    input_shape: TypeThreeInts,
+    input_affine: AffineMatrix,
+    output_shape: TypeThreeInts,
+    output_affine: AffineMatrix,
+    affine_matrix: np.ndarray | None,
+    control_points: Tensor | None,
+    max_displacement: tuple[float, float, float] | None,
+    affine_first: bool,
+    device: torch.device,
+) -> Tensor:
+    """Build a normalized sampling grid for ``F.grid_sample``.
+
+    The grid maps each output voxel to its source location in the input
+    volume.  The mapping is:
+
+    .. code-block:: text
+
+        output voxel  →  world  →  (optional inverse affine)  →  input voxel
+
+    When elastic control points are provided, the dense displacement
+    field (in mm) is converted to voxel offsets and added to the mapped
+    coordinates.  The ``affine_first`` flag controls whether the affine
+    mapping or the elastic displacement is applied first.
+
+    Returns:
+        Grid tensor with shape ``(1, K_out, J_out, I_out, 3)`` in the
+        ``[-1, 1]`` range expected by ``F.grid_sample``.
+    """
+    mapping = _output_to_input_voxel_matrix(
+        input_affine=input_affine,
+        output_affine=output_affine,
+        affine_matrix=affine_matrix,
+        device=device,
+    )
+    output_coords = _output_voxel_coordinates(output_shape, device)
+
+    if control_points is None:
+        input_voxels = _apply_voxel_mapping(output_coords, mapping)
+        return _voxel_coordinates_to_grid(input_voxels, input_shape)
+
+    output_spacing = np.asarray(output_affine.spacing, dtype=np.float64)
+    if max_displacement is None:
+        max_displacement = _max_abs_displacement(control_points)
+    _check_folding(
+        control_points.cpu().numpy(),
+        max_displacement,
+        output_shape,
+        output_spacing,
+    )
+    displacement = _upsample_displacement_field(
+        control_points.to(device=device, dtype=torch.float32),
+        output_shape,
+    )
+    # Convert mm displacements to voxel offsets using the spacing.
+    output_spacing_t = torch.as_tensor(
+        output_affine.spacing,
+        dtype=torch.float32,
+        device=device,
+    )
+    input_spacing_t = torch.as_tensor(
+        input_affine.spacing,
+        dtype=torch.float32,
+        device=device,
+    )
+
+    if affine_first:
+        input_voxels = _apply_voxel_mapping(output_coords, mapping)
+        input_voxels = input_voxels + displacement / input_spacing_t
+    else:
+        deformed_output = output_coords + displacement / output_spacing_t
+        input_voxels = _apply_voxel_mapping(deformed_output, mapping)
+
+    return _voxel_coordinates_to_grid(input_voxels, input_shape)
+
+
+def _output_to_input_voxel_matrix(
+    *,
+    input_affine: AffineMatrix,
+    output_affine: AffineMatrix,
+    affine_matrix: np.ndarray | None,
+    device: torch.device,
+) -> Tensor:
+    input_affine_inv = np.linalg.inv(input_affine.numpy())
+    transform_inv = (
+        np.eye(4, dtype=np.float64)
+        if affine_matrix is None
+        else np.linalg.inv(np.asarray(affine_matrix, dtype=np.float64))
+    )
+    matrix = input_affine_inv @ transform_inv @ output_affine.numpy()
+    return torch.as_tensor(matrix, dtype=torch.float32, device=device)
+
+
+def _output_voxel_coordinates(
+    shape: TypeThreeInts,
+    device: torch.device,
+) -> Tensor:
+    i = torch.arange(shape[0], dtype=torch.float32, device=device)
+    j = torch.arange(shape[1], dtype=torch.float32, device=device)
+    k = torch.arange(shape[2], dtype=torch.float32, device=device)
+    grid_i, grid_j, grid_k = torch.meshgrid(i, j, k, indexing="ij")
+    return torch.stack([grid_i, grid_j, grid_k], dim=-1)
+
+
+def _apply_voxel_mapping(
+    coords: Tensor,
+    matrix: Tensor,
+) -> Tensor:
+    ones = torch.ones(*coords.shape[:-1], 1, dtype=coords.dtype, device=coords.device)
+    homogeneous = torch.cat([coords, ones], dim=-1)
+    mapped = homogeneous @ matrix.T
+    return mapped[..., :3]
+
+
+def _voxel_coordinates_to_grid(
+    coords: Tensor,
+    input_shape: TypeThreeInts,
+) -> Tensor:
+    size_i = max(input_shape[0] - 1, 1)
+    size_j = max(input_shape[1] - 1, 1)
+    size_k = max(input_shape[2] - 1, 1)
+    sizes = torch.tensor(
+        [size_i, size_j, size_k],
+        dtype=torch.float32,
+        device=coords.device,
+    )
+    grid = 2.0 * coords / sizes - 1.0
+    # (I, J, K, 3) -> (1, K, J, I, 3) for grid_sample
+    return rearrange(grid, "i j k d -> 1 k j i d")
+
+
+def _sample_batch(
+    data: Tensor,
+    grid: Tensor,
+    *,
+    mode: str,
+    fill_value: float | Tensor,
+) -> Tensor:
+    """Resample a 5D batch using a shared sampling grid.
+
+    Args:
+        data: ``(B, C, I, J, K)`` image batch.
+        grid: ``(1, K_out, J_out, I_out, 3)`` sampling grid (broadcast to B).
+        mode: Interpolation mode for ``grid_sample``.
+        fill_value: Scalar or per-channel fill for out-of-bounds samples.
+
+    Returns:
+        Resampled ``(B, C, I_out, J_out, K_out)`` tensor.
+    """
+    batch_size = data.shape[0]
+    # (B, C, I, J, K) -> (B, C, K, J, I) for grid_sample
+    input_5d = rearrange(data, "b c i j k -> b c k j i").float()
+    # Expand grid from (1, ...) to (B, ...)
+    grid_b = grid.expand(batch_size, -1, -1, -1, -1)
+    sampled = functional.grid_sample(
+        input_5d,
+        grid_b,
+        mode=mode,
+        padding_mode="zeros",
+        align_corners=True,
+    )
+
+    fill_tensor = _prepare_fill_value(fill_value, input_5d)
+    if fill_tensor is not None:
+        ones = torch.ones_like(input_5d)
+        mask = functional.grid_sample(
+            ones,
+            grid_b,
+            mode="nearest",
+            padding_mode="zeros",
+            align_corners=True,
+        )
+        sampled = torch.where(mask > 0.5, sampled, fill_tensor)
+
+    # (B, C, K, J, I) -> (B, C, I, J, K)
+    return rearrange(sampled, "b c k j i -> b c i j k").to(data.dtype)
+
+
+def _batch_fill_value(
+    img_batch: ImagesBatch,
+    *,
+    default_pad_value: TypePadValue | float,
+    default_pad_label: float,
+) -> float | Tensor:
+    """Compute a single fill value for the whole image batch."""
+    if issubclass(img_batch._image_class, LabelMap):
+        return float(default_pad_label)
+
+    if isinstance(default_pad_value, Number):
+        return float(default_pad_value)
+
+    if not isinstance(default_pad_value, str):
+        msg = (
+            "default_pad_value must be a string or number, got"
+            f" {type(default_pad_value)}"
+        )
+        raise TypeError(msg)
+
+    # Use the first sample to compute the channel-wise fill value
+    first_tensor = img_batch.data[0]
+    values = [
+        _compute_channel_pad_value(channel, default_pad_value)
+        for channel in first_tensor
+    ]
+    return torch.as_tensor(values, dtype=torch.float32)
+
+
+def _prepare_fill_value(
+    fill_value: float | Tensor,
+    reference: Tensor,
+) -> Tensor | None:
+    if isinstance(fill_value, Tensor):
+        fill_tensor = fill_value.to(device=reference.device, dtype=reference.dtype)
+    else:
+        if float(fill_value) == 0.0:
+            return None
+        fill_tensor = torch.as_tensor(
+            fill_value,
+            device=reference.device,
+            dtype=reference.dtype,
+        )
+    if fill_tensor.ndim == 0:
+        return fill_tensor
+    if fill_tensor.ndim == 1:
+        return rearrange(fill_tensor, "c -> 1 c 1 1 1")
+    return fill_tensor
+
+
+def _compute_channel_pad_value(
+    tensor: Tensor,
+    default_pad_value: TypePadValue,
+) -> float:
+    if default_pad_value == "minimum":
+        return float(tensor.min().item())
+    if default_pad_value == "mean":
+        return _border_mean(tensor, filter_otsu=False)
+    if default_pad_value == "otsu":
+        return _border_mean(tensor, filter_otsu=True)
+    msg = f'Unknown default_pad_value "{default_pad_value}"'
+    raise ValueError(msg)
+
+
+def _border_mean(
+    tensor: Tensor,
+    *,
+    filter_otsu: bool,
+) -> float:
+    borders = torch.cat(
+        [
+            tensor[0, :, :].ravel(),
+            tensor[-1, :, :].ravel(),
+            tensor[:, 0, :].ravel(),
+            tensor[:, -1, :].ravel(),
+            tensor[:, :, 0].ravel(),
+            tensor[:, :, -1].ravel(),
+        ]
+    ).float()
+    if not filter_otsu:
+        return float(borders.mean().item())
+    threshold = _otsu_threshold(borders)
+    values = borders[borders < threshold]
+    if values.numel() > 0:
+        return float(values.mean().item())
+    return float(borders.mean().item())
+
+
+def _otsu_threshold(values: Tensor) -> float:
+    sorted_values, _ = values.sort()
+    num_values = sorted_values.numel()
+    if num_values == 0:
+        return 0.0
+
+    total_sum = float(sorted_values.sum().item())
+    best_threshold = float(sorted_values[0].item())
+    best_variance = 0.0
+    background_sum = 0.0
+    background_count = 0
+
+    for background_count, item in enumerate(sorted_values[:-1], start=1):
+        value = float(item.item())
+        foreground_count = num_values - background_count
+        background_sum += value
+
+        mean_background = background_sum / background_count
+        mean_foreground = (total_sum - background_sum) / foreground_count
+        weight_background = background_count / num_values
+        weight_foreground = foreground_count / num_values
+        between_variance = (
+            weight_background
+            * weight_foreground
+            * (mean_background - mean_foreground) ** 2
+        )
+        if between_variance > best_variance:
+            best_variance = between_variance
+            best_threshold = value
+    return best_threshold
+
+
+def _upsample_displacement_field(
+    control_points: Tensor,
+    output_shape: TypeThreeInts,
+) -> Tensor:
+    # (I, J, K, 3) -> (1, 3, I, J, K) for interpolate
+    field = rearrange(control_points, "i j k d -> 1 d i j k").float()
+    dense = functional.interpolate(
+        field,
+        size=list(output_shape),
+        mode="trilinear",
+        align_corners=True,
+    )
+    # (1, 3, I, J, K) -> (I, J, K, 3)
+    return rearrange(dense, "1 d i j k -> i j k d")
+
+
+def _check_folding(
+    control_points: np.ndarray,
+    max_displacement: tuple[float, float, float],
+    shape: TypeThreeInts,
+    spacing: np.ndarray,
+) -> None:
+    num_control_points = np.array(control_points.shape[:-1], dtype=np.float64)
+    image_bounds = np.array(shape, dtype=np.float64) * spacing
+    mesh_shape = num_control_points - _SPLINE_ORDER
+    grid_spacing = image_bounds / mesh_shape
+    conflicts = np.array(max_displacement, dtype=np.float64) > grid_spacing / 2
+    if np.any(conflicts):
+        (where,) = np.where(conflicts)
+        warnings.warn(
+            "The maximum displacement is larger than half the coarse-grid"
+            f" spacing for dimensions {where.tolist()}, so folding may occur",
+            RuntimeWarning,
+            stacklevel=3,
+        )
+
+
+def _resolve_control_points(
+    control_points: Tensor | None,
+    num_control_points: TypeThreeInts,
+    max_displacement: ParameterRange,
+    locked_borders: int,
+) -> tuple[Tensor | None, tuple[float, float, float] | None]:
+    if control_points is not None:
+        return control_points.clone(), _max_abs_displacement(control_points)
+
+    sampled = max_displacement.sample()
+    if all(value == 0.0 for value in sampled):
+        return None, None
+    field = _sample_control_points(num_control_points, sampled, locked_borders)
+    return field, sampled
+
+
+def _sample_control_points(
+    grid_shape: TypeThreeInts,
+    max_displacement: tuple[float, float, float],
+    locked_borders: int,
+) -> Tensor:
+    field = torch.rand(*grid_shape, 3, dtype=torch.float32)
+    field -= 0.5
+    field *= 2
+    for axis in range(3):
+        field[..., axis] *= max_displacement[axis]
+
+    for border in range(locked_borders):
+        field[border, :] = 0
+        field[-1 - border, :] = 0
+        field[:, border] = 0
+        field[:, -1 - border] = 0
+        field[:, :, border] = 0
+        field[:, :, -1 - border] = 0
+    return field
+
+
+def _build_forward_affine(
+    *,
+    scales: tuple[float, float, float],
+    degrees: tuple[float, float, float],
+    translation: tuple[float, float, float],
+    center: TypeCenter,
+    shape: TypeThreeInts,
+    affine: AffineMatrix,
+) -> np.ndarray:
+    scaling = np.asarray(scales, dtype=np.float64)
+    rotation = np.asarray(degrees, dtype=np.float64)
+    shift = np.asarray(translation, dtype=np.float64)
+
+    if shape[-1] == 1:
+        scaling[2] = 1.0
+        rotation[0] = 0.0
+        rotation[1] = 0.0
+        shift[2] = 0.0
+
+    center_world = _image_center_world(shape, affine) if center == "image" else None
+    return _physical_affine_matrix(
+        scales=scaling,
+        degrees=rotation,
+        translation=shift,
+        center_world=center_world,
+    )
+
+
+def _physical_affine_matrix(
+    *,
+    scales: np.ndarray,
+    degrees: np.ndarray,
+    translation: np.ndarray,
+    center_world: np.ndarray | None,
+) -> np.ndarray:
+    rotation = _euler_to_rotation_matrix(degrees)
+    scale = np.diag(scales)
+    transform = np.eye(4, dtype=np.float64)
+    rotation_scale = rotation @ scale
+    transform[:3, :3] = rotation_scale
+    if center_world is not None:
+        transform[:3, 3] = center_world - rotation_scale @ center_world
+    transform[:3, 3] += translation
+    return transform
+
+
+def _euler_to_rotation_matrix(degrees: np.ndarray) -> np.ndarray:
+    radians = np.radians(degrees)
+    rx, ry, rz = radians
+
+    cos_x, sin_x = np.cos(rx), np.sin(rx)
+    cos_y, sin_y = np.cos(ry), np.sin(ry)
+    cos_z, sin_z = np.cos(rz), np.sin(rz)
+
+    rotation_x = np.array(
+        [
+            [1, 0, 0],
+            [0, cos_x, -sin_x],
+            [0, sin_x, cos_x],
+        ],
+        dtype=np.float64,
+    )
+    rotation_y = np.array(
+        [
+            [cos_y, 0, sin_y],
+            [0, 1, 0],
+            [-sin_y, 0, cos_y],
+        ],
+        dtype=np.float64,
+    )
+    rotation_z = np.array(
+        [
+            [cos_z, -sin_z, 0],
+            [sin_z, cos_z, 0],
+            [0, 0, 1],
+        ],
+        dtype=np.float64,
+    )
+    return rotation_z @ rotation_y @ rotation_x
+
+
+def _image_center_world(
+    shape: TypeThreeInts,
+    affine: AffineMatrix,
+) -> np.ndarray:
+    center_index = (np.asarray(shape, dtype=np.float64) - 1) / 2
+    matrix = affine.numpy()
+    return matrix[:3, 3] + matrix[:3, :3] @ center_index
+
+
+def _check_shared_space(
+    images: dict[str, ImagesBatch],
+    reference_shape: TypeThreeInts,
+    reference_affine: AffineMatrix,
+) -> None:
+    reference_matrix = reference_affine.data
+    for name, img_batch in images.items():
+        current_shape = _get_spatial_shape(img_batch)
+        if current_shape != reference_shape:
+            msg = (
+                f'Image "{name}" has shape {current_shape}, expected {reference_shape}'
+            )
+            raise RuntimeError(msg)
+        for affine in img_batch.affines:
+            if not torch.allclose(
+                affine.data,
+                reference_matrix,
+                rtol=1e-6,
+                atol=1e-6,
+            ):
+                msg = (
+                    "Spatial transforms with affine or elastic components require"
+                    " selected images to share the same affine"
+                )
+                raise RuntimeError(msg)
+
+
+def _get_spatial_shape(img_batch: ImagesBatch) -> TypeThreeInts:
+    return (
+        int(img_batch.data.shape[-3]),
+        int(img_batch.data.shape[-2]),
+        int(img_batch.data.shape[-1]),
+    )
+
+
+def _interpolation_for_batch(
+    img_batch: ImagesBatch,
+    *,
+    image_interpolation: TypeInterpolation,
+    label_interpolation: TypeInterpolation,
+) -> str:
+    if issubclass(img_batch._image_class, LabelMap):
+        return label_interpolation
+    return image_interpolation
+
+
+def _serialize_space(space: TypeTargetSpace | None) -> dict[str, Any] | None:
+    if space is None:
+        return None
+    shape, affine = space
+    return {
+        "shape": list(shape),
+        "affine": affine.numpy().tolist(),
+    }
+
+
+def _deserialize_space(data: dict[str, Any] | None) -> TypeTargetSpace | None:
+    if data is None:
+        return None
+    shape = (
+        int(data["shape"][0]),
+        int(data["shape"][1]),
+        int(data["shape"][2]),
+    )
+    return shape, AffineMatrix(np.asarray(data["affine"], dtype=np.float64))
+
+
+def _serialize_matrix(matrix: np.ndarray | None) -> list[list[float]] | None:
+    if matrix is None:
+        return None
+    return matrix.tolist()
+
+
+def _deserialize_matrix(data: list[list[float]] | None) -> np.ndarray | None:
+    if data is None:
+        return None
+    return np.asarray(data, dtype=np.float64)
+
+
+def _serialize_control_points(control_points: Tensor | None) -> list | None:
+    if control_points is None:
+        return None
+    return control_points.cpu().tolist()
+
+
+def _deserialize_control_points(data: list | None) -> Tensor | None:
+    if data is None:
+        return None
+    return torch.as_tensor(data, dtype=torch.float32)
+
+
+def _deserialize_max_displacement(
+    values: list[float] | None,
+) -> tuple[float, float, float] | None:
+    if values is None:
+        return None
+    return (float(values[0]), float(values[1]), float(values[2]))
+
+
+def _max_abs_displacement(control_points: Tensor) -> tuple[float, float, float]:
+    absolute = control_points.abs()
+    return (
+        float(absolute[..., 0].max().item()),
+        float(absolute[..., 1].max().item()),
+        float(absolute[..., 2].max().item()),
+    )
+
+
+def _sample_scales(
+    scales: ParameterRange,
+    isotropic: bool,
+) -> tuple[float, float, float]:
+    if isotropic:
+        value = scales.sample_1d()
+        return (value, value, value)
+    return scales.sample()
+
+
+def _has_affine_component(
+    scales: tuple[float, float, float],
+    degrees: tuple[float, float, float],
+    translation: tuple[float, float, float],
+) -> bool:
+    return not (
+        np.allclose(scales, (1.0, 1.0, 1.0))
+        and np.allclose(degrees, (0.0, 0.0, 0.0))
+        and np.allclose(translation, (0.0, 0.0, 0.0))
+    )
+
+
+def _parse_target_space_tuple(
+    shape: Sequence[int],
+    affine: AffineMatrix | Tensor | npt.ArrayLike,
+) -> TypeTargetSpace:
+    if len(shape) != 3:
+        msg = f"Target shape must have length 3, got {len(shape)}"
+        raise ValueError(msg)
+    target_shape = (int(shape[0]), int(shape[1]), int(shape[2]))
+    return target_shape, AffineMatrix(affine)
+
+
+def _is_spacing_sequence(target: Sequence[Any]) -> bool:
+    return len(target) == 3 and all(isinstance(value, Number) for value in target)
+
+
+def _is_spacing_tuple(
+    target: object,
+) -> TypeGuard[tuple[int | float, int | float, int | float]]:
+    return isinstance(target, tuple) and _is_spacing_sequence(target)
+
+
+def _is_spacing_list(target: object) -> TypeGuard[list[int | float]]:
+    return isinstance(target, list) and _is_spacing_sequence(target)
+
+
+def _is_target_space_tuple(
+    target: object,
+) -> TypeGuard[tuple[Sequence[int], AffineMatrix | Tensor | npt.ArrayLike]]:
+    return isinstance(target, tuple) and len(target) == 2
+
+
+def _parse_spacing(
+    value: TypeSpacing | Sequence[float] | np.ndarray | float | int,
+) -> TypeSpacing:
+    if isinstance(value, (int, float)):
+        spacing = (float(value), float(value), float(value))
+    elif isinstance(value, np.ndarray):
+        if value.size != 3:
+            msg = f"Spacing array must have 3 values, got {value.size}"
+            raise ValueError(msg)
+        flat = [float(v) for v in value.flat]
+        spacing = (flat[0], flat[1], flat[2])
+    else:
+        if len(value) != 3:
+            msg = f"Spacing must have 3 values, got {len(value)}"
+            raise ValueError(msg)
+        spacing = (float(value[0]), float(value[1]), float(value[2]))
+    if any(v <= 0 for v in spacing):
+        msg = f"Spacing must be strictly positive, got {spacing}"
+        raise ValueError(msg)
+    return spacing
+
+
+def _parse_interpolation(interpolation: TypeInterpolation) -> TypeInterpolation:
+    if not isinstance(interpolation, str):
+        msg = f"Interpolation must be a string, got {type(interpolation)}"
+        raise TypeError(msg)
+    lowered = interpolation.lower()
+    if lowered not in _SUPPORTED_INTERPOLATIONS:
+        msg = (
+            f'Interpolation "{lowered}" is not supported. Supported values are'
+            f" {_SUPPORTED_INTERPOLATIONS}"
+        )
+        raise ValueError(msg)
+    return cast(TypeInterpolation, lowered)
+
+
+def _parse_default_pad_value(value: TypePadValue | float) -> TypePadValue | float:
+    if isinstance(value, Number):
+        return float(value)
+    if value in _SUPPORTED_PAD_VALUES:
+        return value
+    msg = 'default_pad_value must be "minimum", "mean", "otsu", or a numeric value'
+    raise ValueError(msg)
+
+
+def _parse_center(center: TypeCenter) -> TypeCenter:
+    if center not in ("image", "origin"):
+        msg = f'center must be "image" or "origin", got "{center}"'
+        raise ValueError(msg)
+    return center
+
+
+def _to_positive_range(
+    value: TypeParameterValue,
+) -> ParameterRange:
+    result = _to_parameter_range(value)
+    if result._distribution is None:
+        for low, high in result._ranges:
+            if low <= 0 or high <= 0:
+                msg = f"Scale factors must be strictly positive, got {value}"
+                raise ValueError(msg)
+    return result
+
+
+def _validate_isotropic(
+    value: TypeParameterValue,
+    isotropic: bool,
+) -> None:
+    if not isotropic or isinstance(value, Distribution):
+        return
+    if isinstance(value, tuple) and len(value) in (3, 6):
+        msg = "If isotropic=True, scales must be a single value or a 2-value range"
+        raise ValueError(msg)
+
+
+def _parse_num_control_points(
+    value: int | TypeThreeInts,
+) -> TypeThreeInts:
+    parsed = (value, value, value) if isinstance(value, int) else value
+    for axis, number in enumerate(parsed):
+        if not isinstance(number, int) or number < 4:
+            msg = (
+                "Each num_control_points value must be an integer greater than 3;"
+                f" axis {axis} got {number}"
+            )
+            raise ValueError(msg)
+    return parsed
+
+
+def _parse_locked_borders(value: int) -> int:
+    if value not in (0, 1, 2):
+        msg = f"locked_borders must be 0, 1, or 2, got {value}"
+        raise ValueError(msg)
+    return value
+
+
+def _parse_control_points(control_points: TypeControlPoints) -> Tensor:
+    tensor = (
+        control_points.clone().detach().to(torch.float32)
+        if isinstance(control_points, Tensor)
+        else torch.as_tensor(np.asarray(control_points), dtype=torch.float32)
+    )
+    if tensor.ndim != 4 or tensor.shape[-1] != 3:
+        msg = (
+            "control_points must have shape (n_i, n_j, n_k, 3), got"
+            f" {tuple(tensor.shape)}"
+        )
+        raise ValueError(msg)
+    for axis, size in enumerate(tensor.shape[:-1]):
+        if size < 4:
+            msg = (
+                "Each control-point axis must have at least 4 elements;"
+                f" axis {axis} got {size}"
+            )
+            raise ValueError(msg)
+    return tensor.contiguous()
+
+
+def _normalize_parameter_value(
+    value: TypeParameterValue,
+) -> float | tuple[float, ...] | Distribution:
+    if isinstance(value, Distribution):
+        return value
+    if isinstance(value, (int, float)):
+        return float(value)
+    return tuple(float(v) for v in value)
+
+
+def _to_parameter_range(value: TypeParameterValue) -> ParameterRange:
+    return ParameterRange(_normalize_parameter_value(value))
+
+
+def _to_nonnegative_parameter_range(value: TypeParameterValue) -> ParameterRange:
+    result = _to_parameter_range(value)
+    if result._distribution is None:
+        for low, high in result._ranges:
+            if low < 0 or high < 0:
+                msg = f"Value must be non-negative, got {value}"
+                raise ValueError(msg)
+    return result

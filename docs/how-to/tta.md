@@ -79,6 +79,10 @@ restored = tio.apply_inverse_transform(data)
 | `Flip` | ✅ | Self-inverse (flip twice = identity) |
 | `Crop` | ✅ | Inverse is Pad (lost voxels filled with zeros) |
 | `Pad` | ✅ | Inverse is Crop |
+| `Resample` | ✅ | Restores the original output grid |
+| `Affine` | ✅ | Uses the inverse affine matrix |
+| `ElasticDeformation` | ✅ | Negates the sampled displacement field |
+| `Spatial` | ✅ | Inverts resampling, affine, and elastic parts together |
 | `Noise` | ❌ | Skipped silently when ``ignore_intensity=True`` |
 
 Non-invertible transforms are **skipped with a warning** (not

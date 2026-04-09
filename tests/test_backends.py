@@ -12,6 +12,7 @@ import torch
 from torchio import ScalarImage
 from torchio.data.backends import NibabelBackend
 from torchio.data.backends import NumpyBackend
+from torchio.data.backends import TensorBackend
 
 
 class TestNumpyBackend:
@@ -113,9 +114,9 @@ class TestNibabelBackend:
 
 
 class TestImageWithBackends:
-    def test_from_tensor_uses_numpy_backend(self):
+    def test_from_tensor_uses_tensor_backend(self):
         image = ScalarImage(torch.randn(1, 10, 10, 10))
-        assert isinstance(image._backend, NumpyBackend)
+        assert isinstance(image._backend, TensorBackend)
 
     def test_nifti_uses_nibabel_backend(self, tmp_path: Path):
         data = np.random.randn(10, 10, 10).astype(np.float32)
@@ -153,7 +154,7 @@ class TestImageWithBackends:
     def test_dataobj_from_tensor(self):
         image = ScalarImage(torch.randn(1, 10, 10, 10))
         dataobj = image.dataobj
-        assert isinstance(dataobj, NumpyBackend)
+        assert isinstance(dataobj, TensorBackend)
 
     def test_data_caches_tensor(self, tmp_path: Path):
         data = np.random.randn(10, 10, 10).astype(np.float32)

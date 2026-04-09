@@ -8,6 +8,7 @@ and `.dataobj` (lazy backend for advanced use like slicing).
 
 from __future__ import annotations
 
+from typing import Any
 from typing import Protocol
 from typing import runtime_checkable
 
@@ -245,16 +246,17 @@ class ZarrBackend:
     Requires the `nifti-zarr` package.
 
     Args:
-        path: Path to a `.nii.zarr` directory.
+        path: Path to a `.nii.zarr` directory or a remote `.nii.zarr` URI.
+        **kwargs: Extra keyword arguments forwarded to `niizarr.zarr2nii()`.
     """
 
     __slots__ = ("_nibabel_backend",)
 
-    def __init__(self, path: str | object) -> None:
+    def __init__(self, path: str | object, **kwargs: Any) -> None:
         from ..external.imports import get_niizarr
 
         niizarr = get_niizarr()
-        nii = niizarr.zarr2nii(str(path))
+        nii = niizarr.zarr2nii(str(path), **kwargs)
         self._nibabel_backend = NibabelBackend(nii)
 
     @property

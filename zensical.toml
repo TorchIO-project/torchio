@@ -59,6 +59,10 @@ nav = [
       "reference/parameter_range.md",
       "reference/compose.md",
       { "Spatial" = [
+        "reference/transforms/spatial.md",
+        "reference/transforms/resample.md",
+        "reference/transforms/affine_transform.md",
+        "reference/transforms/elastic_deformation.md",
         "reference/transforms/flip.md",
         "reference/transforms/reorient.md",
         "reference/transforms/crop.md",

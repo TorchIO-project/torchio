@@ -1,3 +1,3 @@
-# Affine
+# AffineMatrix
 
-::: torchio.Affine
+::: torchio.AffineMatrix

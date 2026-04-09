@@ -135,7 +135,12 @@ test = [
 ]
 docs = ["mkdocstrings-python", "zensical"]
 quality = ["ruff"]
-types = ["ty"]
+types = [
+    "ipykernel",
+    "matplotlib",
+    "ty",
+    "zarr",
+]
 zarr = ["nifti-zarr"]
 plot = ["matplotlib", "colorcet"]
 video = ["ffmpeg-python"]

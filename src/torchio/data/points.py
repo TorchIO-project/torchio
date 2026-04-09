@@ -10,7 +10,7 @@ import torch
 from torch import Tensor
 from typing_extensions import Self
 
-from .affine import Affine
+from .affine import AffineMatrix
 from .axes import AxesType
 from .axes import axes_type
 from .axes import get_axis_mapping
@@ -48,7 +48,7 @@ class Points:
         data: Tensor | npt.ArrayLike,
         *,
         axes: str = "IJK",
-        affine: Affine | npt.ArrayLike | None = None,
+        affine: AffineMatrix | npt.ArrayLike | None = None,
         metadata: dict[str, Any] | None = None,
     ) -> None:
         self._data = self._parse_data(data)
@@ -68,12 +68,12 @@ class Points:
         return data
 
     @staticmethod
-    def _parse_affine(affine: Affine | npt.ArrayLike | None) -> Affine:
+    def _parse_affine(affine: AffineMatrix | npt.ArrayLike | None) -> AffineMatrix:
         if affine is None:
-            return Affine()
-        if isinstance(affine, Affine):
+            return AffineMatrix()
+        if isinstance(affine, AffineMatrix):
             return affine
-        return Affine(affine)
+        return AffineMatrix(affine)
 
     # --- Properties ---
 
@@ -88,7 +88,7 @@ class Points:
         return self._axes
 
     @property
-    def affine(self) -> Affine:
+    def affine(self) -> AffineMatrix:
         """$4 \\times 4$ affine mapping voxel to world coordinates."""
         return self._affine
 
@@ -162,7 +162,7 @@ class Points:
         self,
         *,
         data: Tensor | npt.ArrayLike,
-        affine: Affine | npt.ArrayLike | None = None,
+        affine: AffineMatrix | npt.ArrayLike | None = None,
     ) -> Self:
         """Create a new Points with the same metadata and axes.
 

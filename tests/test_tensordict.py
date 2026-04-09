@@ -115,4 +115,4 @@ class TestImagesLoader:
         loader = tio.ImagesLoader(dataset, batch_size=4)
         batch = next(iter(loader))
         assert len(batch.affines) == 4
-        assert isinstance(batch.affines[0], tio.Affine)
+        assert isinstance(batch.affines[0], tio.AffineMatrix)

@@ -93,9 +93,9 @@ class TestImageCreationFromTensor:
         np.testing.assert_array_equal(image.affine, affine)
 
     def test_from_tensor_affine_object(self):
-        from torchio import Affine
+        from torchio import AffineMatrix
 
-        aff = Affine(np.diag([2.0, 2.0, 2.0, 1.0]))
+        aff = AffineMatrix(np.diag([2.0, 2.0, 2.0, 1.0]))
         image = ScalarImage(
             torch.randn(1, 10, 10, 10),
             affine=aff,
