@@ -612,50 +612,55 @@ def _resolve_target_space(
     """
     if target is None:
         return None
-
     if isinstance(target, Image):
         return target.spatial_shape, target.affine.clone()
-
-    if isinstance(target, Path):
-        image = ScalarImage(target)
-        return image.spatial_shape, image.affine.clone()
-
-    if isinstance(target, str):
-        if Path(target).is_file():
-            image = ScalarImage(target)
-            return image.spatial_shape, image.affine.clone()
-        if target in batch.images:
-            reference = batch.images[target]
-            return _get_spatial_shape(reference), reference.affines[0].clone()
-        msg = (
-            f'Unknown target "{target}". Pass a file path, an image name in the'
-            " subject, an Image, or a spacing specification"
-        )
-        raise ValueError(msg)
-
-    if isinstance(target, (int, float)):
-        spacing = _parse_spacing(target)
-        return _compute_new_shape_affine(first_shape, first_affine, spacing)
-
-    if isinstance(target, np.ndarray) and target.size == 3:
-        values = tuple(float(v) for v in target.flat)
-        spacing = _parse_spacing(values)
-        return _compute_new_shape_affine(first_shape, first_affine, spacing)
-
-    if _is_spacing_tuple(target):
-        spacing = _parse_spacing(target)
-        return _compute_new_shape_affine(first_shape, first_affine, spacing)
-
+    if isinstance(target, (str, Path)):
+        return _target_from_string_or_path(target, batch, first_shape, first_affine)
     if _is_target_space_tuple(target):
         shape, affine = target
         return _parse_target_space_tuple(shape, affine)
+    # Remaining cases: int, float, tuple of numbers, list, ndarray.
+    if not isinstance(target, (int, float, tuple, list, np.ndarray)):
+        msg = f'Target not understood: "{target}"'
+        raise ValueError(msg)
+    spacing_value = cast(
+        "TypeSpacing | Sequence[float] | np.ndarray | float | int",
+        target,
+    )
+    return _target_from_spacing(spacing_value, first_shape, first_affine)
 
-    if _is_spacing_list(target):
-        spacing = _parse_spacing(target)
-        return _compute_new_shape_affine(first_shape, first_affine, spacing)
 
-    msg = f'Target not understood: "{target}"'
+def _target_from_string_or_path(
+    target: str | Path,
+    batch: SubjectsBatch,
+    first_shape: TypeThreeInts,
+    first_affine: AffineMatrix,
+) -> TypeTargetSpace:
+    """Resolve a string or Path target (file, image name, or spacing)."""
+    path = Path(target)
+    if path.is_file():
+        image = ScalarImage(path)
+        return image.spatial_shape, image.affine.clone()
+    if isinstance(target, str) and target in batch.images:
+        reference = batch.images[target]
+        return _get_spatial_shape(reference), reference.affines[0].clone()
+    msg = (
+        f'Unknown target "{target}". Pass a file path, an image name in the'
+        " subject, an Image, or a spacing specification"
+    )
     raise ValueError(msg)
+
+
+def _target_from_spacing(
+    value: TypeSpacing | Sequence[float] | np.ndarray | float | int,
+    first_shape: TypeThreeInts,
+    first_affine: AffineMatrix,
+) -> TypeTargetSpace:
+    """Resolve a numeric spacing target to ``(shape, affine)``."""
+    if isinstance(value, np.ndarray):
+        value = tuple(float(v) for v in value.flat)
+    spacing = _parse_spacing(value)
+    return _compute_new_shape_affine(first_shape, first_affine, spacing)
 
 
 def _compute_new_shape_affine(
@@ -758,9 +763,11 @@ def _build_sampling_grid(
     )
 
     if affine_first:
+        # Affine first: map to input space, then add elastic offset.
         input_voxels = _apply_voxel_mapping(output_coords, mapping)
         input_voxels = input_voxels + displacement / input_spacing_t
     else:
+        # Elastic first: deform in output space, then map to input.
         deformed_output = output_coords + displacement / output_spacing_t
         input_voxels = _apply_voxel_mapping(deformed_output, mapping)
 
@@ -774,6 +781,11 @@ def _output_to_input_voxel_matrix(
     affine_matrix: np.ndarray | None,
     device: torch.device,
 ) -> Tensor:
+    """Compute the 4x4 matrix mapping output voxels to input voxels.
+
+    The composition is ``A_in^{-1} @ T^{-1} @ A_out`` where *T* is the
+    optional world-space affine transform.
+    """
     input_affine_inv = np.linalg.inv(input_affine.numpy())
     transform_inv = (
         np.eye(4, dtype=np.float64)
@@ -788,6 +800,7 @@ def _output_voxel_coordinates(
     shape: TypeThreeInts,
     device: torch.device,
 ) -> Tensor:
+    """Create an ``(I, J, K, 3)`` meshgrid of output voxel indices."""
     i = torch.arange(shape[0], dtype=torch.float32, device=device)
     j = torch.arange(shape[1], dtype=torch.float32, device=device)
     k = torch.arange(shape[2], dtype=torch.float32, device=device)
@@ -799,6 +812,7 @@ def _apply_voxel_mapping(
     coords: Tensor,
     matrix: Tensor,
 ) -> Tensor:
+    """Apply a 4x4 homogeneous matrix to an ``(..., 3)`` coordinate tensor."""
     ones = torch.ones(*coords.shape[:-1], 1, dtype=coords.dtype, device=coords.device)
     homogeneous = torch.cat([coords, ones], dim=-1)
     mapped = homogeneous @ matrix.T
@@ -809,6 +823,13 @@ def _voxel_coordinates_to_grid(
     coords: Tensor,
     input_shape: TypeThreeInts,
 ) -> Tensor:
+    """Normalize ``(I, J, K, 3)`` voxel coords to the ``[-1, 1]`` grid.
+
+    ``F.grid_sample`` expects coordinates in ``[-1, 1]`` where ``-1``
+    maps to the first voxel and ``+1`` to the last.  The output is
+    rearranged to ``(1, K, J, I, 3)`` to match PyTorch's ``(D, H, W)``
+    convention.
+    """
     size_i = max(input_shape[0] - 1, 1)
     size_j = max(input_shape[1] - 1, 1)
     size_k = max(input_shape[2] - 1, 1)
@@ -902,6 +923,11 @@ def _prepare_fill_value(
     fill_value: float | Tensor,
     reference: Tensor,
 ) -> Tensor | None:
+    """Convert a fill value to a broadcast-compatible tensor.
+
+    Returns ``None`` when the fill is zero (so the caller can skip the
+    masking step, since ``grid_sample`` already pads with zeros).
+    """
     if isinstance(fill_value, Tensor):
         fill_tensor = fill_value.to(device=reference.device, dtype=reference.dtype)
     else:
@@ -923,6 +949,7 @@ def _compute_channel_pad_value(
     tensor: Tensor,
     default_pad_value: TypePadValue,
 ) -> float:
+    """Compute a scalar fill value for a single 3D channel tensor."""
     if default_pad_value == "minimum":
         return float(tensor.min().item())
     if default_pad_value == "mean":
@@ -938,6 +965,11 @@ def _border_mean(
     *,
     filter_otsu: bool,
 ) -> float:
+    """Mean intensity of the six boundary faces of a 3D tensor.
+
+    When *filter_otsu* is ``True``, only voxels below the Otsu threshold
+    are averaged, giving a background-aware fill value.
+    """
     borders = torch.cat(
         [
             tensor[0, :, :].ravel(),
@@ -958,6 +990,11 @@ def _border_mean(
 
 
 def _otsu_threshold(values: Tensor) -> float:
+    """Compute the Otsu threshold for a 1D tensor of values.
+
+    Sweeps over sorted values, maximizing the between-class variance
+    to find the threshold that best separates foreground from background.
+    """
     sorted_values, _ = values.sort()
     num_values = sorted_values.numel()
     if num_values == 0:
@@ -978,6 +1015,7 @@ def _otsu_threshold(values: Tensor) -> float:
         mean_foreground = (total_sum - background_sum) / foreground_count
         weight_background = background_count / num_values
         weight_foreground = foreground_count / num_values
+        # Between-class variance: maximize this to find the best split.
         between_variance = (
             weight_background
             * weight_foreground
@@ -993,6 +1031,11 @@ def _upsample_displacement_field(
     control_points: Tensor,
     output_shape: TypeThreeInts,
 ) -> Tensor:
+    """Trilinearly upsample a coarse ``(n_i, n_j, n_k, 3)`` field.
+
+    The result has shape ``(*output_shape, 3)`` and approximates
+    cubic B-spline interpolation for smooth deformations.
+    """
     # (I, J, K, 3) -> (1, 3, I, J, K) for interpolate
     field = rearrange(control_points, "i j k d -> 1 d i j k").float()
     dense = functional.interpolate(
@@ -1011,6 +1054,12 @@ def _check_folding(
     shape: TypeThreeInts,
     spacing: np.ndarray,
 ) -> None:
+    """Warn if the displacement magnitude may cause grid folding.
+
+    Folding occurs when a control point moves past its neighbor,
+    inverting the local Jacobian.  The heuristic checks whether the
+    maximum displacement exceeds half the coarse-grid spacing.
+    """
     num_control_points = np.array(control_points.shape[:-1], dtype=np.float64)
     image_bounds = np.array(shape, dtype=np.float64) * spacing
     mesh_shape = num_control_points - _SPLINE_ORDER
@@ -1032,6 +1081,12 @@ def _resolve_control_points(
     max_displacement: ParameterRange,
     locked_borders: int,
 ) -> tuple[Tensor | None, tuple[float, float, float] | None]:
+    """Return a concrete control-point field and its max displacement.
+
+    If *control_points* is already provided, clone it.  Otherwise sample
+    a random field from the displacement range.  Returns ``(None, None)``
+    when the sampled displacement is zero everywhere.
+    """
     if control_points is not None:
         return control_points.clone(), _max_abs_displacement(control_points)
 
@@ -1047,12 +1102,19 @@ def _sample_control_points(
     max_displacement: tuple[float, float, float],
     locked_borders: int,
 ) -> Tensor:
+    """Sample a random control-point displacement field.
+
+    Each component is drawn uniformly from ``[-max, +max]`` along each
+    axis, then the outermost *locked_borders* layers are zeroed to
+    prevent boundary artifacts.
+    """
     field = torch.rand(*grid_shape, 3, dtype=torch.float32)
     field -= 0.5
     field *= 2
     for axis in range(3):
         field[..., axis] *= max_displacement[axis]
 
+    # Zero out outermost control-point layers to avoid boundary artifacts.
     for border in range(locked_borders):
         field[border, :] = 0
         field[-1 - border, :] = 0
@@ -1072,10 +1134,17 @@ def _build_forward_affine(
     shape: TypeThreeInts,
     affine: AffineMatrix,
 ) -> np.ndarray:
+    """Build a 4x4 world-space affine from scale, rotation, translation.
+
+    When *center* is ``"image"``, the rotation and scaling pivot around
+    the image center.  For 2D slices (last axis size 1), out-of-plane
+    components are suppressed.
+    """
     scaling = np.asarray(scales, dtype=np.float64)
     rotation = np.asarray(degrees, dtype=np.float64)
     shift = np.asarray(translation, dtype=np.float64)
 
+    # Suppress out-of-plane components for 2D (single-slice) images.
     if shape[-1] == 1:
         scaling[2] = 1.0
         rotation[0] = 0.0
@@ -1098,11 +1167,17 @@ def _physical_affine_matrix(
     translation: np.ndarray,
     center_world: np.ndarray | None,
 ) -> np.ndarray:
+    """Compose rotation, scaling, and translation into a 4x4 matrix.
+
+    If *center_world* is given the transform pivots around that point:
+    ``T = R @ S`` with ``t = center - R @ S @ center + translation``.
+    """
     rotation = _euler_to_rotation_matrix(degrees)
     scale = np.diag(scales)
     transform = np.eye(4, dtype=np.float64)
     rotation_scale = rotation @ scale
     transform[:3, :3] = rotation_scale
+    # Pivot: translate so center is at origin, apply R@S, translate back.
     if center_world is not None:
         transform[:3, 3] = center_world - rotation_scale @ center_world
     transform[:3, 3] += translation
@@ -1110,6 +1185,11 @@ def _physical_affine_matrix(
 
 
 def _euler_to_rotation_matrix(degrees: np.ndarray) -> np.ndarray:
+    """Convert XYZ Euler angles in degrees to a 3x3 rotation matrix.
+
+    Uses the ZYX extrinsic (= XYZ intrinsic) convention:
+    ``R = Rz @ Ry @ Rx``.
+    """
     radians = np.radians(degrees)
     rx, ry, rz = radians
 
@@ -1148,6 +1228,7 @@ def _image_center_world(
     shape: TypeThreeInts,
     affine: AffineMatrix,
 ) -> np.ndarray:
+    """Return the world-space coordinates of the image center."""
     center_index = (np.asarray(shape, dtype=np.float64) - 1) / 2
     matrix = affine.numpy()
     return matrix[:3, 3] + matrix[:3, :3] @ center_index
@@ -1158,6 +1239,7 @@ def _check_shared_space(
     reference_shape: TypeThreeInts,
     reference_affine: AffineMatrix,
 ) -> None:
+    """Raise if any image has a different shape or affine than the first."""
     reference_matrix = reference_affine.data
     for name, img_batch in images.items():
         current_shape = _get_spatial_shape(img_batch)
@@ -1181,6 +1263,7 @@ def _check_shared_space(
 
 
 def _get_spatial_shape(img_batch: ImagesBatch) -> TypeThreeInts:
+    """Extract the ``(I, J, K)`` spatial shape from a batched image."""
     return (
         int(img_batch.data.shape[-3]),
         int(img_batch.data.shape[-2]),
@@ -1194,12 +1277,14 @@ def _interpolation_for_batch(
     image_interpolation: TypeInterpolation,
     label_interpolation: TypeInterpolation,
 ) -> str:
+    """Choose the interpolation mode based on the image class."""
     if issubclass(img_batch._image_class, LabelMap):
         return label_interpolation
     return image_interpolation
 
 
 def _serialize_space(space: TypeTargetSpace | None) -> dict[str, Any] | None:
+    """Convert a ``(shape, AffineMatrix)`` pair to a JSON-safe dict."""
     if space is None:
         return None
     shape, affine = space
@@ -1210,6 +1295,7 @@ def _serialize_space(space: TypeTargetSpace | None) -> dict[str, Any] | None:
 
 
 def _deserialize_space(data: dict[str, Any] | None) -> TypeTargetSpace | None:
+    """Reconstruct a ``(shape, AffineMatrix)`` pair from a dict."""
     if data is None:
         return None
     shape = (
@@ -1221,24 +1307,28 @@ def _deserialize_space(data: dict[str, Any] | None) -> TypeTargetSpace | None:
 
 
 def _serialize_matrix(matrix: np.ndarray | None) -> list[list[float]] | None:
+    """Convert a numpy matrix to a nested list for JSON serialization."""
     if matrix is None:
         return None
     return matrix.tolist()
 
 
 def _deserialize_matrix(data: list[list[float]] | None) -> np.ndarray | None:
+    """Reconstruct a numpy matrix from a nested list."""
     if data is None:
         return None
     return np.asarray(data, dtype=np.float64)
 
 
 def _serialize_control_points(control_points: Tensor | None) -> list | None:
+    """Convert a control-point tensor to a nested list."""
     if control_points is None:
         return None
     return control_points.cpu().tolist()
 
 
 def _deserialize_control_points(data: list | None) -> Tensor | None:
+    """Reconstruct a control-point tensor from a nested list."""
     if data is None:
         return None
     return torch.as_tensor(data, dtype=torch.float32)
@@ -1247,12 +1337,14 @@ def _deserialize_control_points(data: list | None) -> Tensor | None:
 def _deserialize_max_displacement(
     values: list[float] | None,
 ) -> tuple[float, float, float] | None:
+    """Reconstruct a max-displacement 3-tuple from a list."""
     if values is None:
         return None
     return (float(values[0]), float(values[1]), float(values[2]))
 
 
 def _max_abs_displacement(control_points: Tensor) -> tuple[float, float, float]:
+    """Return the per-axis maximum absolute displacement."""
     absolute = control_points.abs()
     return (
         float(absolute[..., 0].max().item()),
@@ -1265,6 +1357,7 @@ def _sample_scales(
     scales: ParameterRange,
     isotropic: bool,
 ) -> tuple[float, float, float]:
+    """Sample a 3-tuple of scale factors, optionally isotropic."""
     if isotropic:
         value = scales.sample_1d()
         return (value, value, value)
@@ -1276,6 +1369,7 @@ def _has_affine_component(
     degrees: tuple[float, float, float],
     translation: tuple[float, float, float],
 ) -> bool:
+    """Return ``True`` if any sampled affine parameter is non-identity."""
     return not (
         np.allclose(scales, (1.0, 1.0, 1.0))
         and np.allclose(degrees, (0.0, 0.0, 0.0))
@@ -1287,6 +1381,7 @@ def _parse_target_space_tuple(
     shape: Sequence[int],
     affine: AffineMatrix | Tensor | npt.ArrayLike,
 ) -> TypeTargetSpace:
+    """Validate and convert a ``(shape, affine)`` target pair."""
     if len(shape) != 3:
         msg = f"Target shape must have length 3, got {len(shape)}"
         raise ValueError(msg)
@@ -1295,28 +1390,33 @@ def _parse_target_space_tuple(
 
 
 def _is_spacing_sequence(target: Sequence[Any]) -> bool:
+    """Return ``True`` if *target* looks like a 3-element numeric spacing."""
     return len(target) == 3 and all(isinstance(value, Number) for value in target)
 
 
 def _is_spacing_tuple(
     target: object,
 ) -> TypeGuard[tuple[int | float, int | float, int | float]]:
+    """Type-guard: *target* is a 3-number tuple."""
     return isinstance(target, tuple) and _is_spacing_sequence(target)
 
 
 def _is_spacing_list(target: object) -> TypeGuard[list[int | float]]:
+    """Type-guard: *target* is a 3-number list."""
     return isinstance(target, list) and _is_spacing_sequence(target)
 
 
 def _is_target_space_tuple(
     target: object,
 ) -> TypeGuard[tuple[Sequence[int], AffineMatrix | Tensor | npt.ArrayLike]]:
+    """Type-guard: *target* is a 2-element ``(shape, affine)`` tuple."""
     return isinstance(target, tuple) and len(target) == 2
 
 
 def _parse_spacing(
     value: TypeSpacing | Sequence[float] | np.ndarray | float | int,
 ) -> TypeSpacing:
+    """Normalize a spacing specification to a strictly-positive 3-tuple."""
     if isinstance(value, (int, float)):
         spacing = (float(value), float(value), float(value))
     elif isinstance(value, np.ndarray):
@@ -1337,6 +1437,7 @@ def _parse_spacing(
 
 
 def _parse_interpolation(interpolation: TypeInterpolation) -> TypeInterpolation:
+    """Validate and lower-case an interpolation mode string."""
     if not isinstance(interpolation, str):
         msg = f"Interpolation must be a string, got {type(interpolation)}"
         raise TypeError(msg)
@@ -1351,6 +1452,7 @@ def _parse_interpolation(interpolation: TypeInterpolation) -> TypeInterpolation:
 
 
 def _parse_default_pad_value(value: TypePadValue | float) -> TypePadValue | float:
+    """Validate a pad-value specification (string keyword or number)."""
     if isinstance(value, Number):
         return float(value)
     if value in _SUPPORTED_PAD_VALUES:
@@ -1360,6 +1462,7 @@ def _parse_default_pad_value(value: TypePadValue | float) -> TypePadValue | floa
 
 
 def _parse_center(center: TypeCenter) -> TypeCenter:
+    """Validate the *center* argument."""
     if center not in ("image", "origin"):
         msg = f'center must be "image" or "origin", got "{center}"'
         raise ValueError(msg)
@@ -1369,6 +1472,7 @@ def _parse_center(center: TypeCenter) -> TypeCenter:
 def _to_positive_range(
     value: TypeParameterValue,
 ) -> ParameterRange:
+    """Convert to a ``ParameterRange``, rejecting non-positive scales."""
     result = _to_parameter_range(value)
     if result._distribution is None:
         for low, high in result._ranges:
@@ -1382,6 +1486,7 @@ def _validate_isotropic(
     value: TypeParameterValue,
     isotropic: bool,
 ) -> None:
+    """Raise if *isotropic* is ``True`` but per-axis values were given."""
     if not isotropic or isinstance(value, Distribution):
         return
     if isinstance(value, tuple) and len(value) in (3, 6):
@@ -1392,6 +1497,7 @@ def _validate_isotropic(
 def _parse_num_control_points(
     value: int | TypeThreeInts,
 ) -> TypeThreeInts:
+    """Normalize to a 3-tuple and validate each axis has >= 4 points."""
     parsed = (value, value, value) if isinstance(value, int) else value
     for axis, number in enumerate(parsed):
         if not isinstance(number, int) or number < 4:
@@ -1404,6 +1510,7 @@ def _parse_num_control_points(
 
 
 def _parse_locked_borders(value: int) -> int:
+    """Validate that *value* is 0, 1, or 2."""
     if value not in (0, 1, 2):
         msg = f"locked_borders must be 0, 1, or 2, got {value}"
         raise ValueError(msg)
@@ -1411,6 +1518,7 @@ def _parse_locked_borders(value: int) -> int:
 
 
 def _parse_control_points(control_points: TypeControlPoints) -> Tensor:
+    """Validate and convert a control-point field to a contiguous float32 tensor."""
     tensor = (
         control_points.clone().detach().to(torch.float32)
         if isinstance(control_points, Tensor)
@@ -1435,6 +1543,7 @@ def _parse_control_points(control_points: TypeControlPoints) -> Tensor:
 def _normalize_parameter_value(
     value: TypeParameterValue,
 ) -> float | tuple[float, ...] | Distribution:
+    """Cast ints to floats so ``ParameterRange`` always receives floats."""
     if isinstance(value, Distribution):
         return value
     if isinstance(value, (int, float)):
@@ -1443,10 +1552,12 @@ def _normalize_parameter_value(
 
 
 def _to_parameter_range(value: TypeParameterValue) -> ParameterRange:
+    """Convert a ``TypeParameterValue`` to a ``ParameterRange``."""
     return ParameterRange(_normalize_parameter_value(value))
 
 
 def _to_nonnegative_parameter_range(value: TypeParameterValue) -> ParameterRange:
+    """Like ``_to_parameter_range``, but rejects negative values."""
     result = _to_parameter_range(value)
     if result._distribution is None:
         for low, high in result._ranges:

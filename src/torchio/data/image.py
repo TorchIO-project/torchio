@@ -20,10 +20,10 @@ from einops import rearrange
 from torch import Tensor
 from typing_extensions import Self
 
+from ..external.imports import get_niizarr
 from ..types import TypeImageData
 from ..types import TypeSpatialShape
 from ..types import TypeTensorShape
-from ..external.imports import get_niizarr
 from .affine import AffineMatrix
 from .backends import ImageDataBackend
 from .backends import NibabelBackend
@@ -867,6 +867,19 @@ class Image(Invertible):
             )
         return self.data[sc, si, sj, sk]
 
+    def _repr_path_line(self) -> str:
+        """Build the ``path:`` line for ``__repr__``."""
+        if self._remote_zarr_uri is not None:
+            status = "loaded" if self.is_loaded else "lazy, NIfTI-Zarr"
+            return f"    path:        {self._remote_zarr_uri} ({status})"
+        if self._path is not None:
+            name = self._path.name
+            if self.is_loaded:
+                return f"    path:        {name} (loaded)"
+            fmt = _backend_label(self._backend)
+            return f"    path:        {name} (lazy, {fmt})"
+        return "    path:        (in memory)"
+
     def __repr__(self) -> str:
         import humanize
 
@@ -880,22 +893,7 @@ class Image(Invertible):
             mem = humanize.naturalsize(self.memory, binary=True)
 
             # Path / loading status (after header read so backend is set)
-            if self._remote_zarr_uri is not None:
-                if self.is_loaded:
-                    lines.append(f"    path:        {self._remote_zarr_uri} (loaded)")
-                else:
-                    lines.append(
-                        f"    path:        {self._remote_zarr_uri} (lazy, NIfTI-Zarr)"
-                    )
-            elif self._path is not None:
-                name = self._path.name
-                if self.is_loaded:
-                    lines.append(f"    path:        {name} (loaded)")
-                else:
-                    fmt = _backend_label(self._backend)
-                    lines.append(f"    path:        {name} (lazy, {fmt})")
-            else:
-                lines.append("    path:        (in memory)")
+            lines.append(self._repr_path_line())
 
             lines.append(f"    channels:    {self.num_channels}")
             lines.append(f"    spatial:     {self.spatial_shape}")
