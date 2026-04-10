@@ -1,22 +1,24 @@
-"""Tests for the torchio CLI."""
+"""Tests for the torchio CLI.
+
+Commands are invoked in-process via their dataclass ``.run()`` method
+rather than through ``subprocess``, avoiding the ~1s per-test overhead
+of spawning a new Python interpreter and re-importing PyTorch.
+"""
 
 from __future__ import annotations
 
-import subprocess
-import sys
 from pathlib import Path
 
 import nibabel as nib
 import numpy as np
 import pytest
 
-
-def _run(*args: str) -> subprocess.CompletedProcess[str]:
-    return subprocess.run(
-        [sys.executable, "-m", "torchio.cli", *args],
-        capture_output=True,
-        text=True,
-    )
+from torchio.cli import Cache
+from torchio.cli import Convert
+from torchio.cli import Dir
+from torchio.cli import Info
+from torchio.cli import Plot
+from torchio.cli import Transform
 
 
 @pytest.fixture
@@ -26,63 +28,65 @@ def nii_path(tmp_path: Path) -> Path:
     return path
 
 
-@pytest.mark.slow
 class TestInfo:
-    def test_prints_metadata(self, nii_path: Path) -> None:
-        result = _run("info", str(nii_path))
-        assert result.returncode == 0
-        assert "spatial:" in result.stdout
-        assert "spacing:" in result.stdout
-        assert "orientation:" in result.stdout
+    def test_prints_metadata(
+        self,
+        nii_path: Path,
+        capsys: pytest.CaptureFixture[str],
+    ) -> None:
+        Info(path=nii_path).run()
+        captured = capsys.readouterr()
+        assert "spatial:" in captured.out
+        assert "spacing:" in captured.out
+        assert "orientation:" in captured.out
 
 
-@pytest.mark.slow
 class TestConvert:
     def test_convert_nii_to_nii(self, nii_path: Path, tmp_path: Path) -> None:
         output = tmp_path / "out.nii"
-        result = _run("convert", str(nii_path), str(output))
-        assert result.returncode == 0
+        Convert(input=nii_path, output=output).run()
         assert output.exists()
 
     def test_convert_nonexistent(self, tmp_path: Path) -> None:
-        result = _run("convert", "nonexistent.nii", str(tmp_path / "out.nii"))
-        assert result.returncode != 0
+        with pytest.raises(FileNotFoundError):
+            Convert(
+                input=Path("nonexistent.nii"),
+                output=tmp_path / "out.nii",
+            ).run()
 
 
-@pytest.mark.slow
 class TestTransform:
     def test_apply_noise(self, nii_path: Path, tmp_path: Path) -> None:
         output = tmp_path / "noisy.nii.gz"
-        result = _run(
-            "transform",
-            str(nii_path),
-            str(output),
-            "Noise",
-            "std=0.1",
-        )
-        assert result.returncode == 0
+        Transform(
+            input=nii_path,
+            output=output,
+            name="Noise",
+            args=["std=0.1"],
+        ).run()
         assert output.exists()
 
     def test_unknown_transform(self, nii_path: Path, tmp_path: Path) -> None:
         output = tmp_path / "out.nii.gz"
-        result = _run("transform", str(nii_path), str(output), "FakeTransform")
-        assert result.returncode != 0
-        assert "Unknown transform" in result.stderr
+        with pytest.raises(SystemExit):
+            Transform(
+                input=nii_path,
+                output=output,
+                name="FakeTransform",
+                args=[],
+            ).run()
 
 
-@pytest.mark.slow
 class TestCacheDir:
-    def test_prints_path(self) -> None:
-        result = _run("cache", "dir")
-        assert result.returncode == 0
-        assert "torchio" in result.stdout.strip()
+    def test_prints_path(self, capsys: pytest.CaptureFixture[str]) -> None:
+        Cache(command=Dir()).run()
+        captured = capsys.readouterr()
+        assert "torchio" in captured.out.strip()
 
 
-@pytest.mark.slow
 class TestPlot:
     def test_plot_to_file(self, nii_path: Path, tmp_path: Path) -> None:
         output = tmp_path / "plot.png"
-        result = _run("plot", str(nii_path), "--output", str(output))
-        assert result.returncode == 0
+        Plot(path=nii_path, output=output).run()
         assert output.exists()
         assert output.stat().st_size > 0
