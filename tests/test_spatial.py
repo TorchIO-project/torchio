@@ -180,6 +180,26 @@ class TestResample:
         transformed = tio.Resample(target=np.array([2.0, 2.0, 2.0]))(subject)
         assert transformed.t1.spatial_shape == (6, 6, 6)
 
+    def test_antialias_smooths_before_downsample(self) -> None:
+        subject = _make_subject(shape=(20, 20, 20), spacing=(0.5, 0.5, 0.5))
+        no_aa = tio.Resample(2)(subject)
+        with_aa = tio.Resample(2, antialias=True)(subject)
+        assert with_aa.t1.spatial_shape == no_aa.t1.spatial_shape
+        # Antialiased result should be smoother (lower high-freq energy)
+        assert not torch.allclose(with_aa.t1.data, no_aa.t1.data)
+
+    def test_antialias_skips_label_maps(self) -> None:
+        subject = _make_subject(shape=(20, 20, 20), spacing=(0.5, 0.5, 0.5))
+        transformed = tio.Resample(2, antialias=True)(subject)
+        unique = set(transformed.seg.data.unique().tolist())
+        assert unique <= {0.0, 1.0}
+
+    def test_antialias_noop_on_upsample(self) -> None:
+        subject = _make_subject(shape=(6, 6, 6), spacing=(2.0, 2.0, 2.0))
+        no_aa = tio.Resample(1)(subject)
+        with_aa = tio.Resample(1, antialias=True)(subject)
+        torch.testing.assert_close(with_aa.t1.data, no_aa.t1.data)
+
 
 class TestAffine:
     def test_transform_changes_data(self) -> None:
@@ -576,6 +596,7 @@ class TestEdgeCases:
             affine_first=True,
             image_interpolation="linear",
             label_interpolation="nearest",
+            antialias=False,
             default_pad_value="minimum",
             default_pad_label=0.0,
         )

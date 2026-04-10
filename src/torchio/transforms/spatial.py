@@ -119,6 +119,9 @@ class Spatial(SpatialTransform):
             field. If ``False``, apply the elastic field first.
         image_interpolation: Interpolation mode for intensity images.
         label_interpolation: Interpolation mode for label maps.
+        antialias: If ``True``, apply Gaussian smoothing before downsampling
+            intensity images. Label maps are never smoothed. The standard
+            deviations follow Cardoso et al., MICCAI 2015.
         default_pad_value: Fill rule for out-of-bounds intensity samples.
             Use ``"minimum"``, ``"mean"``, ``"otsu"``, or a numeric value.
         default_pad_label: Fill value for out-of-bounds label samples.
@@ -159,6 +162,7 @@ class Spatial(SpatialTransform):
         affine_first: bool = True,
         image_interpolation: TypeInterpolation = "linear",
         label_interpolation: TypeInterpolation = "nearest",
+        antialias: bool = False,
         default_pad_value: TypePadValue | float = "minimum",
         default_pad_label: int | float = 0,
         **kwargs: Any,
@@ -188,6 +192,7 @@ class Spatial(SpatialTransform):
         self.affine_first = affine_first
         self.image_interpolation = _parse_interpolation(image_interpolation)
         self.label_interpolation = _parse_interpolation(label_interpolation)
+        self.antialias = antialias
         self.default_pad_value = _parse_default_pad_value(default_pad_value)
         if not isinstance(default_pad_label, Number):
             msg = f"default_pad_label must be numeric, got {type(default_pad_label)}"
@@ -259,6 +264,7 @@ class Spatial(SpatialTransform):
             "affine_first": self.affine_first,
             "image_interpolation": self.image_interpolation,
             "label_interpolation": self.label_interpolation,
+            "antialias": self.antialias,
             "default_pad_value": self.default_pad_value,
             "default_pad_label": self.default_pad_label,
         }
@@ -292,6 +298,7 @@ class Spatial(SpatialTransform):
             affine_first=params["affine_first"],
             image_interpolation=params["image_interpolation"],
             label_interpolation=params["label_interpolation"],
+            antialias=params.get("antialias", False),
             default_pad_value=params["default_pad_value"],
             default_pad_label=float(params["default_pad_label"]),
         )
@@ -405,6 +412,7 @@ class _SpatialInverse(SpatialTransform):
             affine_first=self.affine_first,
             image_interpolation=self.image_interpolation,
             label_interpolation=self.label_interpolation,
+            antialias=False,
             default_pad_value=self.default_pad_value,
             default_pad_label=self.default_pad_label,
         )
@@ -422,6 +430,8 @@ class Resample(Spatial):
             spacing, matching the v1 `Resample` default.
         image_interpolation: Interpolation mode for intensity images.
         label_interpolation: Interpolation mode for label maps.
+        antialias: If ``True``, apply Gaussian smoothing before downsampling
+            intensity images. Recommended for large (> 2x) downsampling.
         **kwargs: See [`Transform`][torchio.Transform].
     """
 
@@ -430,12 +440,14 @@ class Resample(Spatial):
         target: TypeTarget = 1,
         image_interpolation: TypeInterpolation = "linear",
         label_interpolation: TypeInterpolation = "nearest",
+        antialias: bool = False,
         **kwargs: Any,
     ) -> None:
         super().__init__(
             target=target,
             image_interpolation=image_interpolation,
             label_interpolation=label_interpolation,
+            antialias=antialias,
             **kwargs,
         )
 
@@ -543,6 +555,7 @@ def _apply_spatial_to_batch(
     affine_first: bool,
     image_interpolation: TypeInterpolation,
     label_interpolation: TypeInterpolation,
+    antialias: bool,
     default_pad_value: TypePadValue | float,
     default_pad_label: float,
 ) -> None:
@@ -577,6 +590,7 @@ def _apply_spatial_to_batch(
 
     for name in image_names:
         img_batch = batch.images[name]
+        is_label = issubclass(img_batch._image_class, LabelMap)
         interpolation = _interpolation_for_batch(
             img_batch,
             image_interpolation=image_interpolation,
@@ -587,8 +601,12 @@ def _apply_spatial_to_batch(
             default_pad_value=default_pad_value,
             default_pad_label=default_pad_label,
         )
+        data = img_batch.data
+        # Antialias: blur ScalarImages before downsampling.
+        if antialias and not is_label:
+            data = _antialias_batch(data, input_affine, output_affine)
         img_batch.data = _sample_batch(
-            img_batch.data,
+            data,
             grid,
             mode=_TORCH_INTERPOLATION_MODE[interpolation],
             fill_value=fill_value,
@@ -888,6 +906,119 @@ def _sample_batch(
 
     # (B, C, K, J, I) -> (B, C, I, J, K)
     return rearrange(sampled, "b c k j i -> b c i j k").to(data.dtype)
+
+
+def _antialias_batch(
+    data: Tensor,
+    input_affine: AffineMatrix,
+    output_affine: AffineMatrix,
+) -> Tensor:
+    """Apply Gaussian smoothing before downsampling.
+
+    Only axes whose output spacing is larger than the input spacing
+    (i.e., axes being downsampled) are smoothed. The standard deviations
+    follow Cardoso et al., `Scale factor point spread function matching
+    <https://link.springer.com/chapter/10.1007/978-3-319-24571-3_81>`_,
+    MICCAI 2015.
+
+    Args:
+        data: ``(B, C, I, J, K)`` image batch.
+        input_affine: Affine of the input grid.
+        output_affine: Affine of the output grid.
+
+    Returns:
+        Smoothed ``(B, C, I, J, K)`` tensor.
+    """
+    input_spacing = np.asarray(input_affine.spacing, dtype=np.float64)
+    output_spacing = np.asarray(output_affine.spacing, dtype=np.float64)
+    factors = output_spacing / input_spacing
+    sigmas = _antialias_sigmas(factors, input_spacing)
+    if np.all(sigmas == 0):
+        return data
+    return _gaussian_smooth_batch(data, sigmas)
+
+
+def _antialias_sigmas(
+    factors: np.ndarray,
+    spacing: np.ndarray,
+) -> np.ndarray:
+    """Compute per-axis Gaussian sigma for antialiasing.
+
+    From Cardoso et al., MICCAI 2015, Eq. at top of p. 678:
+    ``variance = (k^2 - 1) / (2 * sqrt(2 * ln(2)))^2``
+
+    Args:
+        factors: Per-axis downsampling factor (output / input spacing).
+        spacing: Input voxel spacing in mm.
+
+    Returns:
+        Per-axis sigma in voxels. Zero for axes not being downsampled.
+    """
+    sigmas = np.zeros(3, dtype=np.float64)
+    for axis in range(3):
+        k = factors[axis]
+        if k <= 1.0:
+            continue
+        # Cardoso et al. formula: sigma in mm
+        variance = (k**2 - 1) * (2 * np.sqrt(2 * np.log(2))) ** (-2)
+        sigma_mm = spacing[axis] * np.sqrt(variance)
+        # Convert to voxels for the separable convolution
+        sigmas[axis] = sigma_mm / spacing[axis]
+    return sigmas
+
+
+def _gaussian_smooth_batch(data: Tensor, sigmas: np.ndarray) -> Tensor:
+    """Apply separable Gaussian smoothing along spatial axes of a 5D tensor.
+
+    Args:
+        data: ``(B, C, I, J, K)`` tensor.
+        sigmas: Per-axis sigma in voxels. Zero means skip that axis.
+
+    Returns:
+        Smoothed ``(B, C, I, J, K)`` tensor.
+    """
+    result = data.float()
+    b, c = result.shape[:2]
+    for axis_idx in range(3):
+        sigma = float(sigmas[axis_idx])
+        if sigma <= 0:
+            continue
+        # Kernel radius: 3 sigma, at least 1
+        radius = max(int(np.ceil(3 * sigma)), 1)
+        kernel_size = 2 * radius + 1
+        x = (
+            torch.arange(
+                kernel_size,
+                dtype=torch.float32,
+                device=data.device,
+            )
+            - radius
+        )
+        kernel_1d = torch.exp(-0.5 * (x / sigma) ** 2)
+        kernel_1d = kernel_1d / kernel_1d.sum()
+
+        # Build a 5D depthwise kernel for F.conv3d with groups=C.
+        # Shape: (C, 1, kI, kJ, kK) with the kernel along the target axis.
+        k_shape = [1, 1, 1]
+        k_shape[axis_idx] = kernel_size
+        kernel_3d = kernel_1d.reshape(1, 1, *k_shape).expand(c, 1, -1, -1, -1)
+
+        # Replicate-pad along the target spatial axis.
+        # F.pad order: (K_before, K_after, J_before, J_after, I_before, I_after)
+        pad = [0] * 6
+        pad_idx = 2 * (2 - axis_idx)
+        pad[pad_idx] = radius
+        pad[pad_idx + 1] = radius
+
+        padded = functional.pad(result, pad, mode="replicate")
+        # Convolve each (B, C, ...) slice with groups=C so channels are independent.
+        result = functional.conv3d(
+            rearrange(padded, "b c i j k -> (b c) 1 i j k"),
+            kernel_3d[:1],
+            padding=0,
+        )
+        result = rearrange(result, "(b c) 1 i j k -> b c i j k", b=b, c=c)
+    return result.to(data.dtype)
 
 
 def _batch_fill_value(
