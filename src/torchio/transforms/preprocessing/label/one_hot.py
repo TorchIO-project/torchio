@@ -1,6 +1,7 @@
 import torch.nn.functional as F  # noqa: N812
 
 from ....data.image import Image
+from ....data.subject import Subject
 from .label_transform import LabelTransform
 
 
@@ -19,7 +20,7 @@ class OneHot(LabelTransform):
         self.args_names = ['num_classes']
         self.invert_transform = False
 
-    def apply_transform(self, subject):
+    def apply_transform(self, subject: Subject) -> Subject:
         for image in self.get_images(subject):
             if self.invert_transform:
                 self.argmax(image)

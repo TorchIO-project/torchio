@@ -1,5 +1,6 @@
 import SimpleITK as sitk
 
+from ....data.subject import Subject
 from .label_transform import LabelTransform
 
 
@@ -11,7 +12,7 @@ class Contour(LabelTransform):
             keyword arguments.
     """
 
-    def apply_transform(self, subject):
+    def apply_transform(self, subject: Subject) -> Subject:
         for image in self.get_images(subject):
             if image.num_channels > 1:
                 message = (
