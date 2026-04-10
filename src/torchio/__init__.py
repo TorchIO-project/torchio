@@ -39,6 +39,7 @@ from .transforms import Compose
 from .transforms import Crop
 from .transforms import CropOrPad
 from .transforms import ElasticDeformation
+from .transforms import EnsureShapeMultiple
 from .transforms import Flip
 from .transforms import IntensityTransform
 from .transforms import MonaiAdapter
@@ -75,6 +76,7 @@ __all__ = [
     "Crop",
     "CropOrPad",
     "ElasticDeformation",
+    "EnsureShapeMultiple",
     "Flip",
     "GridSampler",
     "Image",

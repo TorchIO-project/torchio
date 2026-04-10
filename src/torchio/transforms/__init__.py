@@ -5,6 +5,7 @@ from .compose import OneOf
 from .compose import SomeOf
 from .crop import Crop
 from .crop_or_pad import CropOrPad
+from .ensure_shape_multiple import EnsureShapeMultiple
 from .flip import Flip
 from .monai_adapter import MonaiAdapter
 from .noise import Noise
@@ -28,6 +29,7 @@ __all__ = [
     "Crop",
     "CropOrPad",
     "ElasticDeformation",
+    "EnsureShapeMultiple",
     "Flip",
     "IntensityTransform",
     "MonaiAdapter",
