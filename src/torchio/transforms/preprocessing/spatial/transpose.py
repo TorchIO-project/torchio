@@ -10,14 +10,12 @@ class Transpose(SpatialTransform):
     all voxels in the input and output spaces match.
 
     Examples:
-    >>> import torchio as tio
-    >>> image = tio.datasets.FPG().t1
-    >>> image
-    ScalarImage(shape: (1, 256, 256, 176); spacing: (1.00, 1.00, 1.00); orientation: PIR+; path: "/home/fernando/.cache/torchio/fpg/t1.nii.gz")
-    >>> transpose = tio.Transpose()
-    >>> transposed = transpose(image)
-    >>> transposed
-    ScalarImage(shape: (1, 176, 256, 256); spacing: (1.00, 1.00, 1.00); orientation: RIP+; dtype: torch.IntTensor; memory: 44.0 MiB)
+        >>> import torch
+        >>> import torchio as tio
+        >>> image = tio.ScalarImage(tensor=torch.rand(1, 256, 256, 176))
+        >>> transposed = tio.Transpose()(image)
+        >>> transposed.shape
+        torch.Size([1, 176, 256, 256])
     """
 
     def apply_transform(self, subject: Subject) -> Subject:
