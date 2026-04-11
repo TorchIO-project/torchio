@@ -71,7 +71,8 @@ nav = [
       ] },
       { "Intensity" = [
         "reference/transforms/noise.md",
-        "reference/transforms/rescale.md",
+        "reference/transforms/normalize.md",
+        "reference/transforms/standardize.md",
       ] },
       { "Other" = [
         "reference/transforms/to.md",

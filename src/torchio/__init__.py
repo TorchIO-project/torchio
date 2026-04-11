@@ -44,6 +44,7 @@ from .transforms import Flip
 from .transforms import IntensityTransform
 from .transforms import MonaiAdapter
 from .transforms import Noise
+from .transforms import Normalize
 from .transforms import OneOf
 from .transforms import Pad
 from .transforms import ParameterRange
@@ -53,8 +54,10 @@ from .transforms import RescaleIntensity
 from .transforms import SomeOf
 from .transforms import Spatial
 from .transforms import SpatialTransform
+from .transforms import Standardize
 from .transforms import To
 from .transforms import Transform
+from .transforms import ZNormalization
 from .transforms.inverse import apply_inverse_transform
 from .types import TypeAffineMatrix
 from .types import TypeDirection
@@ -88,6 +91,7 @@ __all__ = [
     "LabelSampler",
     "MonaiAdapter",
     "Noise",
+    "Normalize",
     "OneOf",
     "Pad",
     "ParameterRange",
@@ -104,6 +108,7 @@ __all__ = [
     "SomeOf",
     "Spatial",
     "SpatialTransform",
+    "Standardize",
     "StudiesBatch",
     "StudiesLoader",
     "Study",
@@ -124,6 +129,7 @@ __all__ = [
     "TypeWorldPoints",
     "UniformSampler",
     "WeightedSampler",
+    "ZNormalization",
     "apply_inverse_transform",
     "collate_images",
     "collate_studies",

@@ -9,14 +9,17 @@ from .ensure_shape_multiple import EnsureShapeMultiple
 from .flip import Flip
 from .monai_adapter import MonaiAdapter
 from .noise import Noise
+from .normalize import Normalize
+from .normalize import RescaleIntensity
 from .pad import Pad
 from .parameter_range import ParameterRange
 from .reorient import Reorient
-from .rescale import RescaleIntensity
 from .spatial import Affine
 from .spatial import ElasticDeformation
 from .spatial import Resample
 from .spatial import Spatial
+from .standardize import Standardize
+from .standardize import ZNormalization
 from .to import To
 from .transform import AppliedTransform
 from .transform import IntensityTransform
@@ -35,6 +38,7 @@ __all__ = [
     "IntensityTransform",
     "MonaiAdapter",
     "Noise",
+    "Normalize",
     "OneOf",
     "Pad",
     "ParameterRange",
@@ -44,6 +48,8 @@ __all__ = [
     "SomeOf",
     "Spatial",
     "SpatialTransform",
+    "Standardize",
     "To",
     "Transform",
+    "ZNormalization",
 ]

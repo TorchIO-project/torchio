@@ -1,4 +1,4 @@
-"""Tests for RescaleIntensity."""
+"""Tests for Normalize."""
 
 from __future__ import annotations
 
@@ -26,21 +26,21 @@ def _make_subject(
 class TestBasic:
     def test_default_rescales_to_minus1_1(self) -> None:
         subject = _make_subject()
-        result = tio.RescaleIntensity()(subject)
+        result = tio.Normalize()(subject)
         data = result.t1.data
         assert abs(data.min().item() - (-1.0)) < 1e-5
         assert abs(data.max().item() - 1.0) < 1e-5
 
     def test_rescale_to_0_1(self) -> None:
         subject = _make_subject()
-        result = tio.RescaleIntensity(out_min=0.0, out_max=1.0)(subject)
+        result = tio.Normalize(out_min=0.0, out_max=1.0)(subject)
         data = result.t1.data
         assert abs(data.min().item()) < 1e-5
         assert abs(data.max().item() - 1.0) < 1e-5
 
     def test_rescale_to_0_255(self) -> None:
         subject = _make_subject()
-        result = tio.RescaleIntensity(out_min=0.0, out_max=255.0)(subject)
+        result = tio.Normalize(out_min=0.0, out_max=255.0)(subject)
         data = result.t1.data
         assert abs(data.min().item()) < 1e-3
         assert abs(data.max().item() - 255.0) < 1e-3
@@ -49,7 +49,7 @@ class TestBasic:
         data = torch.tensor([-1500, -1000, 0, 500, 1000, 2000], dtype=torch.float32)
         data = data.reshape(1, 1, 1, 6)
         subject = tio.Subject(ct=tio.ScalarImage(data))
-        result = tio.RescaleIntensity(
+        result = tio.Normalize(
             out_min=0.0,
             out_max=1.0,
             in_min=-1000.0,
@@ -75,7 +75,7 @@ class TestPercentiles:
         )
         # First 50% is 0, second 50% is 100
         subject = tio.Subject(t1=tio.ScalarImage(data))
-        result = tio.RescaleIntensity(
+        result = tio.Normalize(
             out_min=0.0,
             out_max=1.0,
             percentile_low=1.0,
@@ -88,7 +88,7 @@ class TestPercentiles:
         torch.manual_seed(42)
         data = torch.randn(1, 20, 20, 20) * 100
         subject = tio.Subject(t1=tio.ScalarImage(data))
-        result = tio.RescaleIntensity(
+        result = tio.Normalize(
             out_min=0.0,
             out_max=1.0,
             percentile_low=0.5,
@@ -102,7 +102,7 @@ class TestPercentiles:
 class TestMasking:
     def test_masking_with_label_key(self) -> None:
         subject = _make_subject(with_label=True)
-        result = tio.RescaleIntensity(
+        result = tio.Normalize(
             out_min=0.0,
             out_max=1.0,
             masking_method="brain",
@@ -111,7 +111,7 @@ class TestMasking:
 
     def test_masking_with_callable(self) -> None:
         subject = _make_subject()
-        result = tio.RescaleIntensity(
+        result = tio.Normalize(
             out_min=0.0,
             out_max=1.0,
             masking_method=lambda x: x > 500,
@@ -121,7 +121,7 @@ class TestMasking:
     def test_masking_key_not_found_raises(self) -> None:
         subject = _make_subject()
         with pytest.raises(KeyError, match="nonexistent"):
-            tio.RescaleIntensity(
+            tio.Normalize(
                 masking_method="nonexistent",
             )(subject)
 
@@ -131,13 +131,13 @@ class TestMasking:
             t2=tio.ScalarImage(torch.rand(1, 4, 4, 4)),
         )
         with pytest.raises(TypeError, match="LabelMap"):
-            tio.RescaleIntensity(masking_method="t2")(subject)
+            tio.Normalize(masking_method="t2")(subject)
 
 
 class TestRandom:
     def test_random_out_range(self) -> None:
         subject = _make_subject()
-        transform = tio.RescaleIntensity(
+        transform = tio.Normalize(
             out_min=(-2.0, -0.5),
             out_max=(0.5, 2.0),
         )
@@ -148,7 +148,7 @@ class TestRandom:
     def test_random_percentiles(self) -> None:
         torch.manual_seed(0)
         subject = _make_subject()
-        transform = tio.RescaleIntensity(
+        transform = tio.Normalize(
             out_min=0.0,
             out_max=1.0,
             percentile_low=(0.0, 5.0),
@@ -166,14 +166,14 @@ class TestEdgeCases:
         data = torch.ones(1, 4, 4, 4) * 42.0
         subject = tio.Subject(t1=tio.ScalarImage(data))
         with pytest.warns(RuntimeWarning, match="zero"):
-            result = tio.RescaleIntensity()(subject)
+            result = tio.Normalize()(subject)
         # Data unchanged
         torch.testing.assert_close(result.t1.data, data)
 
     def test_empty_mask_warns(self) -> None:
         subject = _make_subject()
         with pytest.warns(RuntimeWarning, match="empty"):
-            tio.RescaleIntensity(
+            tio.Normalize(
                 out_min=0.0,
                 out_max=1.0,
                 masking_method=lambda x: torch.zeros_like(x, dtype=torch.bool),
@@ -182,7 +182,7 @@ class TestEdgeCases:
     def test_leaves_label_maps_unchanged(self) -> None:
         subject = _make_subject(with_label=True)
         original_label = subject.brain.data.clone()
-        result = tio.RescaleIntensity()(subject)
+        result = tio.Normalize()(subject)
         torch.testing.assert_close(result.brain.data, original_label)
 
 
@@ -190,7 +190,7 @@ class TestInverse:
     def test_inverse_restores_values(self) -> None:
         subject = _make_subject()
         original = subject.t1.data.clone()
-        transformed = tio.RescaleIntensity(
+        transformed = tio.Normalize(
             out_min=0.0,
             out_max=1.0,
         )(subject)
@@ -204,7 +204,7 @@ class TestInverse:
     def test_inverse_with_ct_windowing(self) -> None:
         data = torch.linspace(-500, 500, 1000).reshape(1, 10, 10, 10)
         subject = tio.Subject(ct=tio.ScalarImage(data))
-        transformed = tio.RescaleIntensity(
+        transformed = tio.Normalize(
             out_min=0.0,
             out_max=1.0,
             in_min=-1000.0,
@@ -222,3 +222,8 @@ class TestInverse:
 class TestExports:
     def test_available_at_top_level(self) -> None:
         assert hasattr(tio, "RescaleIntensity")
+
+
+class TestAlias:
+    def test_rescale_intensity_alias(self) -> None:
+        assert tio.RescaleIntensity is tio.Normalize

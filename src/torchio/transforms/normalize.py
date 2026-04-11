@@ -1,4 +1,4 @@
-"""RescaleIntensity: linearly map voxel intensities to a target range."""
+"""Normalize: linearly map voxel intensities to a target range."""
 
 from __future__ import annotations
 
@@ -27,7 +27,7 @@ def _to_range(value: TypeParameterValue) -> ParameterRange:
     return ParameterRange(tuple(float(v) for v in value))
 
 
-class RescaleIntensity(IntensityTransform):
+class Normalize(IntensityTransform):
     r"""Linearly rescale voxel intensities to a target range.
 
     The transform clips values to an input range, then applies the
@@ -59,18 +59,18 @@ class RescaleIntensity(IntensityTransform):
     Examples:
         >>> import torchio as tio
         >>> # Rescale to [-1, 1] (default)
-        >>> transform = tio.RescaleIntensity()
+        >>> transform = tio.Normalize()
         >>> # CT windowing
-        >>> transform = tio.RescaleIntensity(
+        >>> transform = tio.Normalize(
         ...     out_min=0.0, out_max=1.0,
         ...     in_min=-1000.0, in_max=1000.0,
         ... )
         >>> # nn-UNet percentile clipping
-        >>> transform = tio.RescaleIntensity(
+        >>> transform = tio.Normalize(
         ...     percentile_low=0.5, percentile_high=99.5,
         ... )
         >>> # Random output range
-        >>> transform = tio.RescaleIntensity(
+        >>> transform = tio.Normalize(
         ...     out_min=(-1.0, 0.0), out_max=(0.5, 1.0),
         ... )
     """
@@ -221,7 +221,7 @@ class RescaleIntensity(IntensityTransform):
 
 
 class _RescaleInverse(IntensityTransform):
-    """Inverse of RescaleIntensity for history replay."""
+    """Inverse of Normalize for history replay."""
 
     def __init__(
         self,
@@ -306,3 +306,7 @@ def _percentile_range(
     low = float(torch.quantile(values.float(), pct_low / 100.0).item())
     high = float(torch.quantile(values.float(), pct_high / 100.0).item())
     return low, high
+
+
+# Backwards-compatible alias.
+RescaleIntensity = Normalize
