@@ -13,6 +13,7 @@ import nibabel as nib
 import numpy as np
 import pytest
 
+from torchio.cli import Animate
 from torchio.cli import Cache
 from torchio.cli import Convert
 from torchio.cli import Dir
@@ -90,3 +91,20 @@ class TestPlot:
         Plot(path=nii_path, output=output).run()
         assert output.exists()
         assert output.stat().st_size > 0
+
+
+class TestAnimate:
+    def test_animate_gif(self, nii_path: Path, tmp_path: Path) -> None:
+        output = tmp_path / "anim.gif"
+        Animate(path=nii_path, output=output, seconds=1.0, direction="I").run()
+        assert output.exists()
+        assert output.stat().st_size > 0
+
+    def test_animate_unsupported_format(
+        self,
+        nii_path: Path,
+        tmp_path: Path,
+    ) -> None:
+        output = tmp_path / "bad.avi"
+        with pytest.raises(SystemExit):
+            Animate(path=nii_path, output=output).run()

@@ -206,3 +206,31 @@ The data is flipped and transposed as needed so these directions are
 always in the same screen positions. The axis labels show which tensor
 axis (I, J, K) maps to each direction, making it easy to relate what
 you see to the underlying data layout.
+
+## Animated GIFs and videos
+
+You can export an animation sweeping through slices along any
+anatomical direction:
+
+<!-- pytest-codeblocks:skip -->
+```python
+image.to_gif("brain.gif", seconds=5, direction="I")
+image.to_video("brain.mp4", seconds=5, direction="S")
+```
+
+The ``direction`` parameter accepts ``"I"`` (inferior), ``"S"``
+(superior), ``"A"`` (anterior), ``"P"`` (posterior), ``"R"`` (right),
+or ``"L"`` (left). The image is automatically reoriented so slices
+appear in the correct anatomical view.
+
+From the command line:
+
+```bash
+torchio animate brain.nii.gz brain.gif
+torchio animate brain.nii.gz brain.mp4 --seconds 10 --direction S
+```
+
+!!! note "Optional dependencies"
+    GIFs require ``Pillow`` (included in the ``[plot]`` extra).
+    Videos require ``ffmpeg-python`` (``pip install torchio[video]``)
+    and a working ``ffmpeg`` installation.

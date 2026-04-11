@@ -83,6 +83,8 @@ restored = tio.apply_inverse_transform(data)
 | `Affine` | ✅ | Uses the inverse affine matrix |
 | `ElasticDeformation` | ✅ | Negates the sampled displacement field |
 | `Spatial` | ✅ | Inverts resampling, affine, and elastic parts together |
+| `Normalize` | ✅ | Reverses the linear rescaling |
+| `Standardize` | ✅ | Multiplies by std and adds mean |
 | `Noise` | ❌ | Skipped silently when ``ignore_intensity=True`` |
 
 Non-invertible transforms are **skipped with a warning** (not

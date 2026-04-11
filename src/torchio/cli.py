@@ -49,6 +49,53 @@ class Plot:
 
 
 @dataclass
+class Animate:
+    """Create an animated GIF or MP4 sweeping through slices.
+
+    The output format is inferred from the file extension:
+    ``.gif`` produces an animated GIF, ``.mp4`` produces a video.
+
+    Examples::
+
+        torchio animate brain.nii.gz brain.gif
+        torchio animate brain.nii.gz brain.mp4 --seconds 10 --direction S
+    """
+
+    path: Annotated[Path, tyro.conf.Positional]
+    """Path to the input image."""
+
+    output: Annotated[Path, tyro.conf.Positional]
+    """Output path (.gif or .mp4)."""
+
+    seconds: float = 5.0
+    """Duration of the animation in seconds."""
+
+    direction: str = "I"
+    """Anatomical sweep direction (I, S, A, P, R, or L)."""
+
+    def run(self) -> None:
+        image = tio.ScalarImage(self.path)
+        suffix = self.output.suffix.lower()
+        if suffix == ".gif":
+            image.to_gif(
+                self.output,
+                seconds=self.seconds,
+                direction=self.direction,
+            )
+        elif suffix == ".mp4":
+            image.to_video(
+                self.output,
+                seconds=self.seconds,
+                direction=self.direction,
+            )
+        else:
+            msg = f"Unsupported output format {self.output.suffix!r}. Use .gif or .mp4."
+            print(msg, file=sys.stderr)
+            sys.exit(1)
+        print(f"Created {self.output}")
+
+
+@dataclass
 class Info:
     """Print image metadata to stdout."""
 
@@ -162,7 +209,7 @@ class Cache:
         self.command.run()
 
 
-Command = Union[Plot, Info, Convert, Transform, Cache]  # noqa: UP007 (tyro needs Union)
+Command = Union[Plot, Animate, Info, Convert, Transform, Cache]  # noqa: UP007 (tyro needs Union)
 
 
 # ---------------------------------------------------------------------------
