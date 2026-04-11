@@ -254,3 +254,45 @@ class TestPlotSubject:
         )
         html = subject._repr_html_()
         assert "data:image/png;base64" in html
+
+
+class TestMakeGif:
+    def test_to_gif_creates_file(self, tmp_path) -> None:
+        img = tio.ScalarImage(torch.rand(1, 10, 10, 10))
+        out = tmp_path / "test.gif"
+        img.to_gif(out, direction="I")
+        assert out.exists()
+        assert out.stat().st_size > 0
+
+    def test_to_gif_reverse(self, tmp_path) -> None:
+        img = tio.ScalarImage(torch.rand(1, 10, 10, 10))
+        out = tmp_path / "rev.gif"
+        img.to_gif(out, direction="S", reverse=True)
+        assert out.exists()
+
+    def test_to_gif_no_rescale(self, tmp_path) -> None:
+        data = torch.randint(0, 256, (1, 8, 8, 8), dtype=torch.uint8)
+        img = tio.ScalarImage(data.float())
+        out = tmp_path / "noscale.gif"
+        img.to_gif(out, direction="A", rescale=False)
+        assert out.exists()
+
+    def test_to_gif_multichannel(self, tmp_path) -> None:
+        img = tio.ScalarImage(torch.rand(3, 8, 8, 8))
+        out = tmp_path / "rgb.gif"
+        img.to_gif(out, direction="R")
+        assert out.exists()
+
+    def test_to_gif_warns_on_quantization(self, tmp_path) -> None:
+        # 200 slices at 0.01s → <1ms/frame → clamped to 20ms → big mismatch
+        img = tio.ScalarImage(torch.rand(1, 200, 4, 4))
+        out = tmp_path / "fast.gif"
+        with pytest.warns(RuntimeWarning, match="quantized"):
+            img.to_gif(out, direction="I", seconds=0.01)
+
+    def test_to_gif_all_directions(self, tmp_path) -> None:
+        img = tio.ScalarImage(torch.rand(1, 10, 12, 14))
+        for direction in ("I", "S", "A", "P", "R", "L"):
+            out = tmp_path / f"{direction}.gif"
+            img.to_gif(out, direction=direction, seconds=1.0)
+            assert out.exists()

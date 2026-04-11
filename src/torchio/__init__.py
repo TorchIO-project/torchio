@@ -49,6 +49,7 @@ from .transforms import Pad
 from .transforms import ParameterRange
 from .transforms import Reorient
 from .transforms import Resample
+from .transforms import RescaleIntensity
 from .transforms import SomeOf
 from .transforms import Spatial
 from .transforms import SpatialTransform
@@ -98,6 +99,7 @@ __all__ = [
     "Reorient",
     "Representation",
     "Resample",
+    "RescaleIntensity",
     "ScalarImage",
     "SomeOf",
     "Spatial",

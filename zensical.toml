@@ -71,6 +71,7 @@ nav = [
       ] },
       { "Intensity" = [
         "reference/transforms/noise.md",
+        "reference/transforms/rescale.md",
       ] },
       { "Other" = [
         "reference/transforms/to.md",
@@ -95,6 +96,8 @@ favicon = "images/favicon.ico"
 language = "en"
 
 features = [
+  "content.action.edit",
+  "content.action.view",
   "content.code.copy",
   "navigation.footer",
   "navigation.instant",
@@ -150,7 +153,7 @@ paths = ["src"]
 [project.plugins.mkdocstrings.handlers.python.options]
 docstring_style = "google"
 inherited_members = true
-show_source = false
+show_source = true
 show_bases = true
 show_root_heading = true
 show_root_full_path = false

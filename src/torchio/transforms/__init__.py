@@ -12,6 +12,7 @@ from .noise import Noise
 from .pad import Pad
 from .parameter_range import ParameterRange
 from .reorient import Reorient
+from .rescale import RescaleIntensity
 from .spatial import Affine
 from .spatial import ElasticDeformation
 from .spatial import Resample
@@ -39,6 +40,7 @@ __all__ = [
     "ParameterRange",
     "Reorient",
     "Resample",
+    "RescaleIntensity",
     "SomeOf",
     "Spatial",
     "SpatialTransform",

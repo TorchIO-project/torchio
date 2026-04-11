@@ -934,6 +934,73 @@ class Image(Invertible):
 
         return plot_image(self, **kwargs)
 
+    def to_gif(
+        self,
+        output_path: str | Path,
+        *,
+        seconds: float = 5.0,
+        direction: str = "I",
+        loop: int = 0,
+        rescale: bool = True,
+        optimize: bool = True,
+        reverse: bool = False,
+    ) -> None:
+        """Save an animated GIF sweeping through slices.
+
+        Requires ``Pillow`` (``pip install torchio[plot]``).
+
+        Args:
+            output_path: Path to the output ``.gif`` file.
+            seconds: Duration of the full animation in seconds.
+            direction: Anatomical sweep direction (``"I"``, ``"S"``,
+                ``"A"``, ``"P"``, ``"R"``, or ``"L"``).
+            loop: Number of loops (0 = infinite).
+            rescale: Rescale intensities to ``[0, 255]``.
+            optimize: Attempt to compress the GIF palette.
+            reverse: Reverse the temporal order of frames.
+        """
+        from ..visualization import make_gif
+
+        make_gif(
+            self,
+            output_path,
+            seconds=seconds,
+            direction=direction,
+            loop=loop,
+            rescale=rescale,
+            optimize=optimize,
+            reverse=reverse,
+        )
+
+    def to_video(
+        self,
+        output_path: str | Path,
+        *,
+        seconds: float = 5.0,
+        direction: str = "I",
+        verbosity: str = "error",
+    ) -> None:
+        """Create an MP4 video sweeping through slices.
+
+        Requires ``ffmpeg-python`` (``pip install torchio[video]``).
+
+        Args:
+            output_path: Path to the output ``.mp4`` file.
+            seconds: Duration of the full video in seconds.
+            direction: Anatomical sweep direction (``"I"``, ``"S"``,
+                ``"A"``, ``"P"``, ``"R"``, or ``"L"``).
+            verbosity: ffmpeg log level.
+        """
+        from ..visualization import make_video
+
+        make_video(
+            self,
+            output_path,
+            seconds=seconds,
+            direction=direction,
+            verbosity=verbosity,
+        )
+
     def __getattr__(self, name: str) -> Any:
         """Look up metadata by attribute name."""
         if name.startswith("_"):

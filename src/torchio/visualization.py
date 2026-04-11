@@ -898,3 +898,230 @@ def _world_dim(code: str) -> int:
             return 1
         case _:
             return 2
+
+
+# ── GIF and video export ─────────────────────────────────────────────
+
+
+def make_gif(
+    image: Image,
+    output_path: TypePath,
+    *,
+    seconds: float = 5.0,
+    direction: str = "I",
+    loop: int = 0,
+    optimize: bool = True,
+    rescale: bool = True,
+    reverse: bool = False,
+) -> None:
+    """Save an animated GIF sweeping through slices of a 3D image.
+
+    The image is reoriented so slices appear in the expected anatomical
+    view for the given direction, matching ``make_video`` behavior.
+
+    Args:
+        image: A :class:`~torchio.Image` instance.
+        output_path: Path to the output ``.gif`` file.
+        seconds: Duration of the full animation in seconds.
+        direction: Anatomical sweep direction: one of
+            ``"I"``, ``"S"``, ``"A"``, ``"P"``, ``"R"``, ``"L"``.
+        loop: Number of loops (0 = infinite).
+        optimize: Attempt to compress the GIF palette.
+        rescale: Rescale intensities to ``[0, 255]`` before encoding.
+        reverse: Reverse the temporal order of frames.
+    """
+    import warnings
+    from importlib import import_module
+    from pathlib import Path
+
+    from .external.imports import get_pillow
+    from .transforms import Reorient
+
+    get_pillow()  # raises ImportError with install hint if missing
+    pil_image = import_module("PIL.Image")
+
+    # Reorient so the sweep direction is the first spatial axis and the
+    # remaining two axes produce an anatomically correct 2D view.
+    target = _video_orientation(direction)
+    reoriented = Reorient(orientation=target)(image)
+    tensor = reoriented.data
+
+    tensor = _rescale_to_uint8(tensor) if rescale else tensor.byte()
+
+    single_channel = tensor.shape[0] == 1
+
+    # Tensor is (C, sweep, H, W). Iterate over the sweep axis.
+    frames = tensor.cpu().byte().numpy()
+    mode = "P" if single_channel else "RGB"
+
+    images = []
+    for i in range(frames.shape[1]):
+        # Single channel: (H, W); multi-channel: (C, H, W) -> (H, W, C)
+        frame_2d = frames[0, i] if single_channel else np.moveaxis(frames[:, i], 0, -1)
+        images.append(pil_image.fromarray(frame_2d).convert(mode))
+
+    if reverse:
+        images = list(reversed(images))
+
+    num_images = len(images)
+    # GIF frame delay is stored in centiseconds (10ms units).
+    # Most browsers/viewers silently clamp delays ≤ 20ms to ~100ms,
+    # so we enforce a 20ms floor for reliable playback timing.
+    min_frame_ms = 20
+    frame_duration_ms = round(seconds / num_images * 1000 / 10) * 10
+    frame_duration_ms = max(frame_duration_ms, min_frame_ms)
+    actual_seconds = frame_duration_ms * num_images / 1000
+    if abs(actual_seconds - seconds) > 0.5 * seconds / num_images:
+        warnings.warn(
+            f"GIF frame delay is quantized to 10ms steps (minimum"
+            f" {min_frame_ms}ms for browser compatibility). Actual"
+            f" duration will be {actual_seconds:.2f}s instead of"
+            f" {seconds:.2f}s. Consider reducing the number of slices"
+            f" or increasing the requested duration.",
+            RuntimeWarning,
+            stacklevel=2,
+        )
+
+    images[0].save(
+        Path(output_path),
+        save_all=True,
+        append_images=images[1:],
+        optimize=optimize,
+        duration=frame_duration_ms,
+        loop=loop,
+    )
+
+
+def make_video(
+    image: Image,
+    output_path: TypePath,
+    *,
+    seconds: float = 5.0,
+    direction: str = "I",
+    verbosity: str = "error",
+) -> None:
+    """Create an MP4 video sweeping through slices of a 3D image.
+
+    The image is reoriented so slices are shown in the expected
+    anatomical view for the given direction. Requires ``ffmpeg-python``.
+
+    Args:
+        image: A single-channel :class:`~torchio.ScalarImage`.
+        output_path: Path to the output ``.mp4`` file.
+        seconds: Duration of the full video in seconds.
+        direction: Anatomical sweep direction: one of
+            ``"I"``, ``"S"``, ``"A"``, ``"P"``, ``"R"``, ``"L"``.
+        verbosity: ffmpeg log level.
+    """
+    import warnings
+    from pathlib import Path
+
+    import torch
+
+    from .external.imports import get_ffmpeg
+
+    ffmpeg = get_ffmpeg()
+
+    if image.num_channels > 1:
+        msg = "Only single-channel images are supported for video export."
+        raise ValueError(msg)
+
+    # Reorient to the target sweep direction.
+    target_orientation = _video_orientation(direction)
+    from .transforms import Reorient
+
+    reoriented = Reorient(orientation=target_orientation)(image)
+    tensor = reoriented.data
+
+    # Rescale to [0, 255] uint8 if needed.
+    if tensor.min() < 0 or tensor.max() > 255:
+        warnings.warn(
+            "Tensor values outside [0, 256). Rescaling to [0, 255].",
+            RuntimeWarning,
+            stacklevel=2,
+        )
+        tensor = _rescale_to_uint8(tensor)
+    if tensor.dtype != torch.uint8:
+        tensor = tensor.byte()
+
+    # Crop to even dimensions (required by H.265).
+    num_frames, height, width = (
+        tensor.shape[-3],
+        tensor.shape[-2],
+        tensor.shape[-1],
+    )
+    if height % 2 != 0:
+        tensor = tensor[:, :, : height - 1, :]
+        height -= 1
+    if width % 2 != 0:
+        tensor = tensor[:, :, :, : width - 1]
+        width -= 1
+
+    frame_rate = num_frames / seconds
+
+    out = Path(output_path)
+    if out.suffix.lower() != ".mp4":
+        msg = "Only .mp4 output is supported."
+        raise NotImplementedError(msg)
+
+    frames = tensor[0].cpu().numpy()
+
+    process = (
+        ffmpeg.input(
+            "pipe:",
+            format="rawvideo",
+            pix_fmt="gray",
+            s=f"{width}x{height}",
+            framerate=frame_rate,
+        )
+        .output(
+            str(out),
+            vcodec="libx264",
+            pix_fmt="yuv420p",
+            movflags="+faststart",
+            # Baseline profile for maximum browser/Jupyter compatibility.
+            profile="baseline",
+            level="3.0",
+            loglevel=verbosity,
+        )
+        .overwrite_output()
+        .run_async(pipe_stdin=True)
+    )
+
+    for frame in frames:
+        process.stdin.write(frame.tobytes())
+
+    process.stdin.close()
+    process.wait()
+
+
+def _rescale_to_uint8(tensor: Any) -> Any:
+    """Rescale a tensor to ``[0, 255]`` uint8."""
+
+    t = tensor.float()
+    tmin = t.min()
+    tmax = t.max()
+    if tmax - tmin > 0:
+        t = (t - tmin) / (tmax - tmin) * 255
+    return t.byte()
+
+
+_VIDEO_ORIENTATIONS: dict[str, str] = {
+    "I": "IPL",
+    "S": "SPL",
+    "A": "AIL",
+    "P": "PIL",
+    "R": "RIP",
+    "L": "LIP",
+}
+
+
+def _video_orientation(direction: str) -> str:
+    """Map a sweep direction letter to a 3-character orientation string."""
+    direction = direction.upper()
+    if direction not in _VIDEO_ORIENTATIONS:
+        msg = (
+            f"Direction must be one of {list(_VIDEO_ORIENTATIONS)}, got {direction!r}."
+        )
+        raise ValueError(msg)
+    return _VIDEO_ORIENTATIONS[direction]
