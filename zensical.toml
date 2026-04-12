@@ -57,7 +57,11 @@ nav = [
     { "Transforms" = [
       "reference/transforms.md",
       "reference/parameter_range.md",
-      "reference/compose.md",
+      { "Composition" = [
+        "reference/transforms/compose.md",
+        "reference/transforms/one_of.md",
+        "reference/transforms/some_of.md",
+      ] },
       { "Spatial" = [
         "reference/transforms/spatial.md",
         "reference/transforms/resample.md",

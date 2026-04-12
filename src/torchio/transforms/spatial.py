@@ -95,53 +95,98 @@ class Spatial(SpatialTransform):
 
     using a single sampling grid.
 
+    The convenience wrappers [`Resample`][torchio.Resample],
+    [`Affine`][torchio.Affine], and
+    [`ElasticDeformation`][torchio.ElasticDeformation] expose subsets
+    of these parameters with sensible defaults.
+
     Args:
-        target: Output space. Pass voxel spacing in mm, an image name in the
-            subject, a path, an [`Image`][torchio.Image], or a
-            ``(spatial_shape, affine)`` pair. If ``None``, the output grid
-            matches the input grid.
-        scales: Fixed value, range, or distribution for scale factors.
-        degrees: Fixed value, range, or distribution for Euler angles in
-            degrees.
-        translation: Fixed value, range, or distribution for translations in
-            mm.
-        isotropic: If ``True``, sample a single scale factor and reuse it for
-            all three axes.
-        center: Either ``"image"`` or ``"origin"``.
-        control_points: Optional coarse displacement field with shape
-            ``(n_i, n_j, n_k, 3)`` in mm. If given, it is used directly.
-        num_control_points: Grid shape used when sampling an elastic field.
-        max_displacement: Fixed value, range, or distribution for the maximum
-            control-point displacement in mm.
-        locked_borders: Number of outer control-point layers kept at zero when
-            sampling an elastic field.
-        affine_first: If ``True``, apply the affine part before the elastic
-            field. If ``False``, apply the elastic field first.
-        image_interpolation: Interpolation mode for intensity images.
-        label_interpolation: Interpolation mode for label maps.
-        antialias: If ``True``, apply Gaussian smoothing before downsampling
-            intensity images. Label maps are never smoothed. The standard
-            deviations follow Cardoso et al., MICCAI 2015.
-        default_pad_value: Fill rule for out-of-bounds intensity samples.
-            Use ``"minimum"``, ``"mean"``, ``"otsu"``, or a numeric value.
-        default_pad_label: Fill value for out-of-bounds label samples.
+        target: Output space.  Can be one of:
+
+            - A scalar or 3-tuple of floats: output voxel spacing in mm.
+              E.g., ``1`` for 1 mm isotropic, ``(0.5, 0.5, 2.0)`` for
+              anisotropic.
+            - A ``str``: either a path to an image file, or the name of
+              an image in the subject (e.g., ``"t1"``).
+            - An [`Image`][torchio.Image] instance.
+            - A ``(spatial_shape, affine)`` pair.
+            - ``None`` (default): the output grid matches the input grid.
+        scales: Scale factors $(s_1, s_2, s_3)$ for each axis.
+            If a single value $x$ is given, all axes use $x$.
+            If two values $(a, b)$ are given,
+            $s_i \sim \mathcal{U}(a, b)$.
+            If six values $(a_1, b_1, a_2, b_2, a_3, b_3)$ are given,
+            $s_i \sim \mathcal{U}(a_i, b_i)$ independently.
+            A ``torch.distributions.Distribution`` may also be passed.
+            For example, ``scales=0.5`` halves the apparent object
+            size (zoom out), and ``scales=2`` doubles it (zoom in).
+        degrees: Euler rotation angles $(\theta_1, \theta_2, \theta_3)$
+            in degrees, following the same value/range/distribution
+            convention as *scales*.
+        translation: Translation $(t_1, t_2, t_3)$ in mm, following
+            the same convention.  The direction depends on the image
+            orientation: in RAS+, ``translation=(10, 0, 0)`` shifts
+            10 mm to the right.
+        isotropic: If ``True``, sample a single scale factor and
+            reuse it for all three axes.  *scales* must then be a
+            scalar or 2-value range.
+        center: Pivot point for rotation and scaling.
+            ``"image"`` (default) uses the image center;
+            ``"origin"`` uses the world-coordinate origin.
+        control_points: Optional pre-computed coarse displacement
+            field with shape ``(n_i, n_j, n_k, 3)`` in mm.  If given,
+            *num_control_points*, *max_displacement*, and
+            *locked_borders* are ignored.
+        num_control_points: Number of control points along each
+            dimension of the coarse grid.  Can be a single ``int``
+            (isotropic) or a 3-tuple.  Minimum is 4.  Smaller values
+            produce smoother deformations.
+        max_displacement: Maximum displacement at each control point,
+            in mm.  Follows the same value/range/distribution
+            convention as *scales*.  Zero (default) disables elastic
+            deformation.
+        locked_borders: Number of outer control-point layers whose
+            displacement is forced to zero.  ``0`` keeps all
+            displacements; ``1`` zeros the outermost layer; ``2``
+            (default) zeros the two outermost layers.
+        affine_first: If ``True`` (default), apply the affine mapping
+            before the elastic field.  If ``False``, apply the elastic
+            field first.  The difference is significant for large
+            transforms.
+        image_interpolation: ``"linear"`` (default) or ``"nearest"``.
+            Used for [`ScalarImage`][torchio.ScalarImage] instances.
+        label_interpolation: ``"nearest"`` (default) or ``"linear"``.
+            Used for [`LabelMap`][torchio.LabelMap] instances.
+        antialias: If ``True``, apply Gaussian smoothing before
+            downsampling intensity images.  Label maps are never
+            smoothed.  The standard deviations follow
+            [Cardoso et al., MICCAI 2015](https://link.springer.com/chapter/10.1007/978-3-319-24571-3_81).
+        default_pad_value: Fill rule for out-of-bounds intensity
+            voxels.  ``"minimum"`` (default), ``"mean"``, ``"otsu"``,
+            or a numeric value.
+        default_pad_label: Numeric fill value for out-of-bounds label
+            voxels.
         **kwargs: See [`Transform`][torchio.Transform].
 
-    Notes:
-        ``affine_first`` changes the mapping. Large rotations or large
-        displacements can produce visibly different outputs.
-
-        Inversion restores the original grid geometry. Affine inversion is
-        exact. Elastic inversion negates the sampled field, which is an
-        approximation for large deformations. Resampling back restores the
-        original space, but not the original high-frequency detail.
+    Note:
+        All parameters that accept a value/range/distribution use the
+        [`ParameterRange`][torchio.ParameterRange] convention:
+        a scalar is deterministic, a 2-tuple $(a, b)$ samples
+        uniformly, and a ``torch.distributions.Distribution`` samples
+        from the given distribution.
 
     Examples:
         >>> import torchio as tio
+        >>> # Resample to 1 mm isotropic with a random rotation
         >>> transform = tio.Spatial(
         ...     target=1,
-        ...     degrees=(0.0, 0.0, 15.0),
-        ...     translation=(-5.0, 5.0),
+        ...     degrees=(-10, 10),
+        ...     translation=(-5, 5),
+        ... )
+        >>> # Elastic deformation only
+        >>> transform = tio.Spatial(
+        ...     max_displacement=7.5,
+        ...     num_control_points=7,
         ... )
         >>> transformed = transform(subject)
     """
@@ -420,19 +465,24 @@ class _SpatialInverse(SpatialTransform):
 
 
 class Resample(Spatial):
-    r"""Resample to a different space.
+    r"""Resample images to a different space.
 
-    This wrapper exposes the resampling subset of
-    [`Spatial`][torchio.Spatial].
+    Convenience wrapper around [`Spatial`][torchio.Spatial] exposing
+    only the resampling parameters.
 
     Args:
-        target: Output space. By default, images are resampled to 1 mm isotropic
-            spacing, matching the v1 `Resample` default.
-        image_interpolation: Interpolation mode for intensity images.
-        label_interpolation: Interpolation mode for label maps.
-        antialias: If ``True``, apply Gaussian smoothing before downsampling
-            intensity images. Recommended for large (> 2x) downsampling.
+        target: Output space (see [`Spatial`][torchio.Spatial]).
+            Defaults to 1 mm isotropic.
+        image_interpolation: See [`Spatial`][torchio.Spatial].
+        label_interpolation: See [`Spatial`][torchio.Spatial].
+        antialias: See [`Spatial`][torchio.Spatial].
         **kwargs: See [`Transform`][torchio.Transform].
+
+    Examples:
+        >>> import torchio as tio
+        >>> transform = tio.Resample(2)               # 2 mm isotropic
+        >>> transform = tio.Resample("t1")            # match "t1" space
+        >>> transform = tio.Resample((1, 1, 3))       # anisotropic
     """
 
     def __init__(
@@ -453,26 +503,30 @@ class Resample(Spatial):
 
 
 class Affine(Spatial):
-    r"""Apply an affine transform.
+    r"""Apply a random or fixed affine transform.
 
-    This wrapper exposes the affine subset of
-    [`Spatial`][torchio.Spatial]. The affine matrix class is available as
-    ``torchio.AffineMatrix``.
+    Convenience wrapper around [`Spatial`][torchio.Spatial] exposing
+    only the affine parameters.  The affine matrix data structure is
+    available as [`AffineMatrix`][torchio.AffineMatrix].
 
     Args:
-        scales: Fixed value, range, or distribution for scale factors.
-        degrees: Fixed value, range, or distribution for Euler angles in
-            degrees.
-        translation: Fixed value, range, or distribution for translations in
-            mm.
-        isotropic: If ``True``, reuse a single sampled scale factor on all
-            axes.
-        center: Either ``"image"`` or ``"origin"``.
-        default_pad_value: Fill rule for out-of-bounds intensity samples.
-        default_pad_label: Fill value for out-of-bounds label samples.
-        image_interpolation: Interpolation mode for intensity images.
-        label_interpolation: Interpolation mode for label maps.
+        scales: See [`Spatial`][torchio.Spatial].
+            Default: ``(0.9, 1.1)`` (uniform).
+        degrees: See [`Spatial`][torchio.Spatial].
+            Default: ``(-10, 10)`` (uniform).
+        translation: See [`Spatial`][torchio.Spatial].
+        isotropic: See [`Spatial`][torchio.Spatial].
+        center: See [`Spatial`][torchio.Spatial].
+        default_pad_value: See [`Spatial`][torchio.Spatial].
+        default_pad_label: See [`Spatial`][torchio.Spatial].
+        image_interpolation: See [`Spatial`][torchio.Spatial].
+        label_interpolation: See [`Spatial`][torchio.Spatial].
         **kwargs: See [`Transform`][torchio.Transform].
+
+    Examples:
+        >>> import torchio as tio
+        >>> transform = tio.Affine(degrees=(-15, 15))
+        >>> transform = tio.Affine(scales=1.0, degrees=(0, 0, 90))
     """
 
     def __init__(
@@ -504,22 +558,31 @@ class Affine(Spatial):
 
 
 class ElasticDeformation(Spatial):
-    r"""Apply a dense elastic deformation.
+    r"""Apply a dense random elastic deformation.
 
-    This wrapper exposes the elastic subset of
-    [`Spatial`][torchio.Spatial].
+    Convenience wrapper around [`Spatial`][torchio.Spatial] exposing
+    only the elastic parameters.
+
+    A random displacement is assigned to a coarse grid of control
+    points and trilinearly upsampled to the image resolution.
 
     Args:
-        control_points: Optional coarse displacement field with shape
-            ``(n_i, n_j, n_k, 3)`` in mm.
-        num_control_points: Grid shape used when sampling an elastic field.
-        max_displacement: Fixed value, range, or distribution for the maximum
-            control-point displacement in mm.
-        locked_borders: Number of outer control-point layers kept at zero when
-            sampling an elastic field.
-        image_interpolation: Interpolation mode for intensity images.
-        label_interpolation: Interpolation mode for label maps.
+        control_points: See [`Spatial`][torchio.Spatial].
+        num_control_points: See [`Spatial`][torchio.Spatial].
+        max_displacement: See [`Spatial`][torchio.Spatial].
+            Default: ``7.5`` mm.
+        locked_borders: See [`Spatial`][torchio.Spatial].
+        image_interpolation: See [`Spatial`][torchio.Spatial].
+        label_interpolation: See [`Spatial`][torchio.Spatial].
         **kwargs: See [`Transform`][torchio.Transform].
+
+    Examples:
+        >>> import torchio as tio
+        >>> transform = tio.ElasticDeformation()
+        >>> transform = tio.ElasticDeformation(
+        ...     max_displacement=10,
+        ...     num_control_points=5,
+        ... )
     """
 
     def __init__(
