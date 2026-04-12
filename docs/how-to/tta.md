@@ -85,6 +85,7 @@ restored = tio.apply_inverse_transform(data)
 | `Spatial` | ✅ | Inverts resampling, affine, and elastic parts together |
 | `Normalize` | ✅ | Reverses the linear rescaling |
 | `Standardize` | ✅ | Multiplies by std and adds mean |
+| `BiasField` | ✅ | Divides by the same bias field |
 | `Noise` | ❌ | Skipped silently when ``ignore_intensity=True`` |
 
 Non-invertible transforms are **skipped with a warning** (not

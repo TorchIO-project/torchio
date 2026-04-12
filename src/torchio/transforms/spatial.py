@@ -898,7 +898,6 @@ def _sample_batch(
         mask = functional.grid_sample(
             ones,
             grid_b,
-            mode="nearest",
             padding_mode="zeros",
             align_corners=True,
         )

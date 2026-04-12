@@ -152,6 +152,9 @@ class Transform:
     name: Annotated[str, tyro.conf.Positional]
     """Transform class name (e.g., Noise, Flip, CropOrPad)."""
 
+    device: str = "cpu"
+    """Device to run the transform on (e.g., "cpu", "cuda", "cuda:0" or "mps")."""
+
     args: Annotated[list[str], tyro.conf.Positional] = field(
         default_factory=list,
     )
@@ -161,10 +164,9 @@ class Transform:
         transform_cls = _get_transform_class(self.name)
         kwargs = _parse_kwargs(self.args)
         transform = transform_cls(**kwargs)
-        image = tio.ScalarImage(self.input)
+        image = tio.ScalarImage(self.input).to(self.device)
         result = transform(image)
         result.save(self.output)
-        print(f"Applied {self.name} to {self.input} -> {self.output}")
 
 
 @dataclass

@@ -35,6 +35,7 @@ from .loader import collate_subjects
 from .logging import enable_logging
 from .transforms import Affine
 from .transforms import AppliedTransform
+from .transforms import BiasField
 from .transforms import Compose
 from .transforms import Crop
 from .transforms import CropOrPad
@@ -74,6 +75,7 @@ __all__ = [
     "Affine",
     "AffineMatrix",
     "AppliedTransform",
+    "BiasField",
     "BoundingBoxFormat",
     "BoundingBoxes",
     "Compose",

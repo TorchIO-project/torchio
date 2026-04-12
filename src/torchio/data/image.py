@@ -615,6 +615,18 @@ class Image(Invertible):
             self._affine.to(*args, **kwargs)
         return self
 
+    def numpy(self) -> np.ndarray:
+        """Return the image data as a NumPy array.
+
+        If the data is not loaded, reads it from disk first. The returned
+        array shares memory with the tensor if possible (i.e., if the
+        tensor is on CPU and not a view).
+
+        Returns:
+            4D array with shape (C, I, J, K).
+        """
+        return self.data.cpu().numpy()
+
     def new_like(
         self,
         *,
@@ -671,7 +683,7 @@ class Image(Invertible):
     def _save_sitk(self, path: Path, **kwargs: Any) -> None:
         from .io import _RAS_TO_LPS
 
-        data = self.data.numpy()
+        data = self.numpy()
         n_channels = data.shape[0]
         if n_channels == 1:
             array = rearrange(data, "1 i j k -> k j i")

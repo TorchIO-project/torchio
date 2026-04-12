@@ -1,5 +1,6 @@
 """TorchIO transforms."""
 
+from .bias_field import BiasField
 from .compose import Compose
 from .compose import OneOf
 from .compose import SomeOf
@@ -29,6 +30,7 @@ from .transform import Transform
 __all__ = [
     "Affine",
     "AppliedTransform",
+    "BiasField",
     "Compose",
     "Crop",
     "CropOrPad",

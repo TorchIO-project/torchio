@@ -70,6 +70,7 @@ nav = [
         "reference/transforms/crop_or_pad.md",
       ] },
       { "Intensity" = [
+        "reference/transforms/bias_field.md",
         "reference/transforms/noise.md",
         "reference/transforms/normalize.md",
         "reference/transforms/standardize.md",
