@@ -322,3 +322,67 @@ class TestSomeOf:
         )
         result = some_of(subject)
         assert 1 <= len(result.applied_transforms) <= 3
+
+
+# ── Operator sugar ───────────────────────────────────────────────────
+
+
+class TestAddOperator:
+    def test_add_creates_compose(self) -> None:
+        t1 = tio.Flip(axes=(0,))
+        t2 = tio.Noise(std=0.1)
+        result = t1 + t2
+        assert isinstance(result, tio.Compose)
+        assert len(result.transforms) == 2
+
+    def test_add_flattens_compose(self) -> None:
+        t1 = tio.Flip(axes=(0,))
+        t2 = tio.Noise(std=0.1)
+        t3 = tio.BiasField()
+        result = t1 + t2 + t3
+        assert isinstance(result, tio.Compose)
+        assert len(result.transforms) == 3
+
+    def test_add_compose_plus_transform(self) -> None:
+        c = tio.Compose([tio.Flip(axes=(0,)), tio.Noise(std=0.1)])
+        t = tio.BiasField()
+        result = c + t
+        assert isinstance(result, tio.Compose)
+        assert len(result.transforms) == 3
+
+    def test_add_not_implemented_for_non_transform(self) -> None:
+        with pytest.raises(TypeError):
+            tio.Flip(axes=(0,)) + 42  # type: ignore[operator]
+
+    def test_add_produces_working_pipeline(self) -> None:
+        subject = _make_subject()
+        pipeline = tio.Flip(axes=(0,)) + tio.Noise(std=0.01)
+        result = pipeline(subject)
+        assert result.t1.shape == subject.t1.shape
+
+
+class TestOrOperator:
+    def test_or_creates_oneof(self) -> None:
+        t1 = tio.Flip(axes=(0,))
+        t2 = tio.Noise(std=0.1)
+        result = t1 | t2
+        assert isinstance(result, tio.OneOf)
+        assert len(result.transforms) == 2
+
+    def test_or_flattens_oneof(self) -> None:
+        t1 = tio.Flip(axes=(0,))
+        t2 = tio.Noise(std=0.1)
+        t3 = tio.BiasField()
+        result = t1 | t2 | t3
+        assert isinstance(result, tio.OneOf)
+        assert len(result.transforms) == 3
+
+    def test_or_not_implemented_for_non_transform(self) -> None:
+        with pytest.raises(TypeError):
+            tio.Flip(axes=(0,)) | "bad"  # type: ignore[operator]
+
+    def test_or_produces_working_pipeline(self) -> None:
+        subject = _make_subject()
+        pipeline = tio.Flip(axes=(0,)) | tio.Noise(std=0.01)
+        result = pipeline(subject)
+        assert result.t1.shape == subject.t1.shape

@@ -28,9 +28,9 @@ class BiasField(IntensityTransform):
     3. Taking the voxel-wise exponential to make it strictly positive.
     4. Multiplying the image by the resulting field.
 
-    This follows the approach used in
-    [SynthSeg](https://github.com/BBillot/SynthSeg) (Billot et al.).
-    The operation is GPU-native and differentiable.
+    This follows the approach used in [SynthSeg: Segmentation of brain MRI
+    scans of any contrast and resolution without
+    retraining](https://www.sciencedirect.com/science/article/pii/S1361841523000506).
 
     Args:
         std: Standard deviation $\sigma$ of the normal distribution

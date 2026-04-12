@@ -5,7 +5,10 @@ Requires the ``[plot]`` extras: ``pip install torchio[plot]``.
 
 from __future__ import annotations
 
+import warnings
 from collections.abc import Sequence
+from importlib import import_module
+from pathlib import Path
 from typing import TYPE_CHECKING
 from typing import Any
 from typing import Literal
@@ -13,6 +16,13 @@ from typing import cast
 from typing import overload
 
 import numpy as np
+import torch
+
+from .data.image import LabelMap
+from .external.imports import get_colorcet
+from .external.imports import get_ffmpeg
+from .external.imports import get_pillow
+from .transforms import Reorient
 
 if TYPE_CHECKING:
     from matplotlib.axes import Axes
@@ -111,8 +121,6 @@ def _get_categorical_cmap(
         (1.0, 1.0, 1.0),  # white for class 1
     ]
     if num_classes > 1:
-        from .external.imports import get_colorcet
-
         if (cc := get_colorcet()) is not None:
             cc_cmap = getattr(cc.cm, cmap_name)
             color_cycle = cycle(cc_cmap.colors)
@@ -203,8 +211,6 @@ def _build_imshow_kwargs(
 
     Returns the kwargs dict and (possibly RGB-converted) slices.
     """
-    from .data.image import LabelMap
-
     kw = dict(imshow_kwargs)
     is_label = isinstance(image, LabelMap)
 
@@ -496,8 +502,6 @@ def _coordinates_to_indices(
     coordinates: tuple[float | None, float | None, float | None],
 ) -> tuple[int | None, int | None, int | None]:
     """Convert world coordinates (mm) to voxel indices."""
-    import torch
-
     inv_affine = image.affine.inverse()
     voxel_coords = inv_affine.apply(
         torch.tensor(
@@ -930,13 +934,6 @@ def make_gif(
         rescale: Rescale intensities to ``[0, 255]`` before encoding.
         reverse: Reverse the temporal order of frames.
     """
-    import warnings
-    from importlib import import_module
-    from pathlib import Path
-
-    from .external.imports import get_pillow
-    from .transforms import Reorient
-
     get_pillow()  # raises ImportError with install hint if missing
     pil_image = import_module("PIL.Image")
 
@@ -1013,13 +1010,6 @@ def make_video(
             ``"I"``, ``"S"``, ``"A"``, ``"P"``, ``"R"``, ``"L"``.
         verbosity: ffmpeg log level.
     """
-    import warnings
-    from pathlib import Path
-
-    import torch
-
-    from .external.imports import get_ffmpeg
-
     ffmpeg = get_ffmpeg()
 
     if image.num_channels > 1:
@@ -1028,8 +1018,6 @@ def make_video(
 
     # Reorient to the target sweep direction.
     target_orientation = _video_orientation(direction)
-    from .transforms import Reorient
-
     reoriented = Reorient(orientation=target_orientation)(image)
     tensor = reoriented.data
 

@@ -111,6 +111,26 @@ class Transform(nn.Module):
             parts.append(f"{name}={value!r}")
         return f"{type(self).__name__}({', '.join(parts)})"
 
+    def __add__(self, other: object) -> Transform:
+        """Compose two transforms: ``t1 + t2`` → ``Compose([t1, t2])``."""
+        if not isinstance(other, Transform):
+            return NotImplemented
+        from .compose import Compose
+
+        left = self.transforms if isinstance(self, Compose) else [self]
+        right = other.transforms if isinstance(other, Compose) else [other]
+        return Compose([*left, *right])
+
+    def __or__(self, other: object) -> Transform:
+        """Random choice: ``t1 | t2`` → ``OneOf([t1, t2])``."""
+        if not isinstance(other, Transform):
+            return NotImplemented
+        from .compose import OneOf
+
+        left = self.transforms if isinstance(self, OneOf) else [self]
+        right = other.transforms if isinstance(other, OneOf) else [other]
+        return OneOf([*left, *right])
+
     @overload
     def forward(self, data: Subject) -> Subject: ...
     @overload
