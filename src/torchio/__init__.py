@@ -33,7 +33,9 @@ from .loader import collate_images
 from .loader import collate_studies
 from .loader import collate_subjects
 from .logging import enable_logging
+from .transforms import PCA
 from .transforms import Affine
+from .transforms import Anisotropy
 from .transforms import AppliedTransform
 from .transforms import BiasField
 from .transforms import Blur
@@ -41,6 +43,7 @@ from .transforms import Choice
 from .transforms import Clamp
 from .transforms import Compose
 from .transforms import Contour
+from .transforms import CopyAffine
 from .transforms import Crop
 from .transforms import CropOrPad
 from .transforms import ElasticDeformation
@@ -51,6 +54,7 @@ from .transforms import Ghosting
 from .transforms import HistogramStandardization
 from .transforms import IntensityTransform
 from .transforms import KeepLargestComponent
+from .transforms import LabelsToImage
 from .transforms import Lambda
 from .transforms import Mask
 from .transforms import MonaiAdapter
@@ -76,6 +80,7 @@ from .transforms import Standardize
 from .transforms import Swap
 from .transforms import To
 from .transforms import Transform
+from .transforms import Transpose
 from .transforms import ZNormalization
 from .transforms.inverse import apply_inverse_transform
 from .types import TypeAffineMatrix
@@ -90,8 +95,10 @@ from .types import TypeTensorShape
 from .types import TypeWorldPoints
 
 __all__ = [
+    "PCA",
     "Affine",
     "AffineMatrix",
+    "Anisotropy",
     "AppliedTransform",
     "BiasField",
     "Blur",
@@ -101,6 +108,7 @@ __all__ = [
     "Clamp",
     "Compose",
     "Contour",
+    "CopyAffine",
     "Crop",
     "CropOrPad",
     "ElasticDeformation",
@@ -117,6 +125,7 @@ __all__ = [
     "KeepLargestComponent",
     "LabelMap",
     "LabelSampler",
+    "LabelsToImage",
     "Lambda",
     "Mask",
     "MonaiAdapter",
@@ -155,6 +164,7 @@ __all__ = [
     "Swap",
     "To",
     "Transform",
+    "Transpose",
     "TypeAffineMatrix",
     "TypeDirection",
     "TypeImageData",
