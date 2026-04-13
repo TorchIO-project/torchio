@@ -113,35 +113,34 @@ def _apply_motion(
     """
     result = data.float()
     num_transforms = len(motion_transforms)
+    num_segments = num_transforms + 1
 
     for b in range(result.shape[0]):
-        for c in range(result.shape[1]):
-            channel = result[b, c]
-            shape = channel.shape
-            spectrum = torch.fft.fftn(channel)
+        volume = result[b]  # (C, I, J, K)
+        spatial_shape = volume.shape[1:]
+        segment_size = spatial_shape[0] // num_segments
 
-            # Split k-space along the first axis into segments.
-            num_segments = num_transforms + 1
-            segment_size = shape[0] // num_segments
+        # FFT all channels at once.
+        spectrum = torch.fft.fftn(volume, dim=(-3, -2, -1))
 
-            for seg_idx in range(1, num_segments):
-                transform = motion_transforms[seg_idx - 1]
-                moved = _apply_rigid_transform(
-                    channel,
-                    transform["degrees"],
-                    transform["translation"],
-                )
-                moved_spectrum = torch.fft.fftn(moved)
-                start = seg_idx * segment_size
-                end = (
-                    (seg_idx + 1) * segment_size
-                    if seg_idx < num_segments - 1
-                    else shape[0]
-                )
-                spectrum[start:end] = moved_spectrum[start:end]
+        for seg_idx in range(1, num_segments):
+            transform = motion_transforms[seg_idx - 1]
+            moved = _apply_rigid_transform(
+                volume,
+                transform["degrees"],
+                transform["translation"],
+            )
+            moved_spectrum = torch.fft.fftn(moved, dim=(-3, -2, -1))
+            start = seg_idx * segment_size
+            end = (
+                (seg_idx + 1) * segment_size
+                if seg_idx < num_segments - 1
+                else spatial_shape[0]
+            )
+            spectrum[:, start:end] = moved_spectrum[:, start:end]
 
-            reconstructed = torch.fft.ifftn(spectrum)
-            result[b, c] = reconstructed.real
+        reconstructed = torch.fft.ifftn(spectrum, dim=(-3, -2, -1))
+        result[b] = reconstructed.real
 
     return result
 
@@ -151,17 +150,21 @@ def _apply_rigid_transform(
     degrees: tuple[float, float, float],
     translation: tuple[float, float, float],
 ) -> Tensor:
-    """Apply a rigid-body transform to a 3D tensor using affine_grid.
+    """Apply a rigid-body transform to a 4-D tensor using affine_grid.
+
+    All channels share the same grid so only one ``affine_grid`` call
+    is needed.
 
     Args:
-        tensor: ``(I, J, K)`` tensor.
+        tensor: ``(C, I, J, K)`` tensor.
         degrees: Euler angles in degrees.
         translation: Translation in voxels (approximation).
 
     Returns:
-        Transformed ``(I, J, K)`` tensor.
+        Transformed ``(C, I, J, K)`` tensor.
     """
-    shape = tensor.shape
+    c = tensor.shape[0]
+    shape = tensor.shape[1:]  # (I, J, K)
     radians = [np.radians(d) for d in degrees]
     rx, ry, rz = radians
 
@@ -208,18 +211,20 @@ def _apply_rigid_transform(
     theta[0, :3, :3] = rotation
     theta[0, :3, 3] = t_normalized
 
-    # affine_grid expects (N, C, D, H, W) input size.
+    # Single grid, reused for all channels.
     grid = functional.affine_grid(
         theta,
         [1, 1, shape[0], shape[1], shape[2]],
         align_corners=True,
     )
-    input_5d = rearrange(tensor, "i j k -> 1 1 i j k").float()
+    # Treat each channel as a batch element: (C, 1, I, J, K).
+    input_5d = rearrange(tensor, "c i j k -> c 1 i j k").float()
+    grid_c = grid.expand(c, -1, -1, -1, -1)
     output = functional.grid_sample(
         input_5d,
-        grid,
+        grid_c,
         mode="bilinear",
         padding_mode="zeros",
         align_corners=True,
     )
-    return rearrange(output, "1 1 i j k -> i j k")
+    return rearrange(output, "c 1 i j k -> c i j k")

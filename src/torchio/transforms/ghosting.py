@@ -117,35 +117,36 @@ def _add_ghosting(
         return data
 
     result = data.float()
+    # FFT over spatial dims only: dims 2, 3, 4.
+    spectrum = torch.fft.fftshift(
+        torch.fft.fftn(result, dim=(-3, -2, -1)),
+        dim=(-3, -2, -1),
+    )
 
-    for b in range(result.shape[0]):
-        for c in range(result.shape[1]):
-            channel = result[b, c]
-            spectrum = torch.fft.fftshift(torch.fft.fftn(channel))
+    # Build mask along the chosen axis.
+    fft_dim = axis + 2  # map spatial axis to tensor dim
+    size = result.shape[fft_dim]
+    mask = torch.ones(size, device=data.device)
+    step = max(size // num_ghosts, 1)
+    mask[::step] = 1 - intensity
 
-            size = spectrum.shape[axis]
-            # Zero every num_ghosts-th plane along the axis.
-            mask = torch.ones(size, device=data.device)
-            step = max(size // num_ghosts, 1)
-            mask[::step] = 1 - intensity
+    # Reshape mask for broadcasting: (1, 1, 1, 1, 1) with size at fft_dim.
+    shape = [1] * 5
+    shape[fft_dim] = size
+    mask = mask.reshape(*shape)
+    corrupted = spectrum * mask
 
-            # Reshape mask for broadcasting.
-            shape = [1, 1, 1]
-            shape[axis] = size
-            mask = mask.reshape(*shape)
-            spectrum = spectrum * mask
+    # Restore the center of k-space.
+    if restore > 0:
+        mid = size // 2
+        half_restore = max(int(size * restore / 2), 1)
+        lo, hi = mid - half_restore, mid + half_restore
+        slices: list[slice] = [slice(None)] * 5
+        slices[fft_dim] = slice(lo, hi)
+        corrupted[tuple(slices)] = spectrum[tuple(slices)]
 
-            # Restore the center of k-space.
-            if restore > 0:
-                mid = size // 2
-                half_restore = max(int(size * restore / 2), 1)
-                lo, hi = mid - half_restore, mid + half_restore
-                orig_spectrum = torch.fft.fftshift(torch.fft.fftn(channel))
-                slices = [slice(None)] * 3
-                slices[axis] = slice(lo, hi)
-                spectrum[tuple(slices)] = orig_spectrum[tuple(slices)]
-
-            channel_back = torch.fft.ifftn(torch.fft.ifftshift(spectrum))
-            result[b, c] = channel_back.real
-
+    result = torch.fft.ifftn(
+        torch.fft.ifftshift(corrupted, dim=(-3, -2, -1)),
+        dim=(-3, -2, -1),
+    ).real
     return result

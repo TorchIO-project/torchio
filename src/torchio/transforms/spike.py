@@ -90,7 +90,8 @@ def _add_spikes(
     Args:
         data: ``(B, C, I, J, K)`` image tensor.
         positions: List of ``[pi, pj, pk]`` in ``[0, 1)`` range.
-        intensity: Spike amplitude relative to spectrum max.
+        intensity: Ratio between the spike amplitude and the spectrum
+            maximum.
 
     Returns:
         Corrupted ``(B, C, I, J, K)`` tensor.
@@ -101,15 +102,20 @@ def _add_spikes(
     result = data.float()
     shape = result.shape[2:]  # (I, J, K)
 
-    for b in range(result.shape[0]):
-        for c in range(result.shape[1]):
-            channel = result[b, c]
-            spectrum = torch.fft.fftshift(torch.fft.fftn(channel))
-            peak = spectrum.abs().max()
-            for pos in positions:
-                idx = [int(p * s) % s for p, s in zip(pos, shape, strict=True)]
-                spectrum[idx[0], idx[1], idx[2]] += peak * intensity
-            channel_back = torch.fft.ifftn(torch.fft.ifftshift(spectrum))
-            result[b, c] = channel_back.real
+    # FFT over spatial dims.
+    spectrum = torch.fft.fftshift(
+        torch.fft.fftn(result, dim=(-3, -2, -1)),
+        dim=(-3, -2, -1),
+    )
+    # Peak per (B, C): shape (B, C, 1, 1, 1) for broadcasting.
+    peak = spectrum.abs().amax(dim=(-3, -2, -1), keepdim=True)
 
+    for pos in positions:
+        idx = [int(p * s) % s for p, s in zip(pos, shape, strict=True)]
+        spectrum[:, :, idx[0], idx[1], idx[2]] += peak.squeeze() * intensity
+
+    result = torch.fft.ifftn(
+        torch.fft.ifftshift(spectrum, dim=(-3, -2, -1)),
+        dim=(-3, -2, -1),
+    ).real
     return result
