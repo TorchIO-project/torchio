@@ -454,3 +454,96 @@ class TestLaziness:
         assert not subject.t1.is_loaded
         tio.CropOrPad(target_shape=10)(subject)
         assert not subject.t1.is_loaded
+
+
+# ---------------------------------------------------------------------------
+# Lazy backend coverage
+# ---------------------------------------------------------------------------
+
+
+class TestLazyBackends:
+    """Test _CroppedBackend and _PaddedBackend properties and data access."""
+
+    @staticmethod
+    def _make_nii(path, shape=(20, 20, 20)):
+        import nibabel as nib
+        import numpy as np
+
+        data = np.random.rand(*shape).astype(np.float32)
+        nib.save(nib.Nifti1Image(data, np.eye(4)), path)
+        return data
+
+    def test_crop_lazy_backend_shape(self, tmp_path) -> None:
+        path = tmp_path / "test.nii.gz"
+        self._make_nii(path)
+        image = tio.ScalarImage(path)
+        subject = tio.Subject(t1=image)
+        assert not subject.t1.is_loaded
+        result = tio.CropOrPad(target_shape=10)(subject)
+        # Should be cropped to 10x10x10.
+        assert result.t1.shape == (1, 10, 10, 10)
+
+    def test_crop_lazy_backend_data(self, tmp_path) -> None:
+        path = tmp_path / "test.nii.gz"
+        self._make_nii(path)
+        image = tio.ScalarImage(path)
+        subject = tio.Subject(t1=image)
+        result = tio.CropOrPad(target_shape=10)(subject)
+        # Access the data (triggers lazy load).
+        data = result.t1.data
+        assert data.shape == (1, 10, 10, 10)
+        assert data.dtype == torch.float32
+
+    def test_crop_lazy_backend_affine(self, tmp_path) -> None:
+        path = tmp_path / "test.nii.gz"
+        self._make_nii(path)
+        image = tio.ScalarImage(path)
+        subject = tio.Subject(t1=image)
+        result = tio.CropOrPad(target_shape=10)(subject)
+        assert result.t1.affine is not None
+
+    def test_pad_lazy_backend_shape(self, tmp_path) -> None:
+        path = tmp_path / "test.nii.gz"
+        self._make_nii(path, shape=(8, 8, 8))
+        image = tio.ScalarImage(path)
+        subject = tio.Subject(t1=image)
+        assert not subject.t1.is_loaded
+        result = tio.CropOrPad(target_shape=12)(subject)
+        assert result.t1.shape == (1, 12, 12, 12)
+
+    def test_pad_lazy_backend_data(self, tmp_path) -> None:
+        path = tmp_path / "test.nii.gz"
+        self._make_nii(path, shape=(8, 8, 8))
+        image = tio.ScalarImage(path)
+        subject = tio.Subject(t1=image)
+        result = tio.CropOrPad(target_shape=12)(subject)
+        data = result.t1.data
+        assert data.shape == (1, 12, 12, 12)
+
+    def test_pad_lazy_backend_affine(self, tmp_path) -> None:
+        path = tmp_path / "test.nii.gz"
+        self._make_nii(path, shape=(8, 8, 8))
+        image = tio.ScalarImage(path)
+        subject = tio.Subject(t1=image)
+        result = tio.CropOrPad(target_shape=12)(subject)
+        assert result.t1.affine is not None
+
+    def test_crop_and_pad_lazy_mixed(self, tmp_path) -> None:
+        """Anisotropic shape needing both crop and pad."""
+        path = tmp_path / "test.nii.gz"
+        self._make_nii(path, shape=(20, 8, 15))
+        image = tio.ScalarImage(path)
+        subject = tio.Subject(t1=image)
+        result = tio.CropOrPad(target_shape=12)(subject)
+        assert result.t1.shape == (1, 12, 12, 12)
+        data = result.t1.data
+        assert data.shape == (1, 12, 12, 12)
+
+    def test_lazy_dtype(self, tmp_path) -> None:
+        path = tmp_path / "test.nii.gz"
+        self._make_nii(path)
+        image = tio.ScalarImage(path)
+        subject = tio.Subject(t1=image)
+        result = tio.CropOrPad(target_shape=10)(subject)
+        # Access dtype through the lazy backend.
+        assert result.t1.shape == (1, 10, 10, 10)
