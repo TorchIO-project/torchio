@@ -264,6 +264,28 @@ class TestAffine:
         transformed = transform(subject)
         assert transformed.t1.spatial_shape == subject.t1.spatial_shape
 
+    def test_choice_degrees(self) -> None:
+        subject = _make_subject()
+        transform = AffineTransform(
+            scales=1.0,
+            degrees=tio.Choice([-90, 0, 90, 180]),
+            translation=0.0,
+            default_pad_value=0.0,
+        )
+        transformed = transform(subject)
+        assert transformed.t1.spatial_shape == subject.t1.spatial_shape
+
+    def test_per_axis_mixed_specs(self) -> None:
+        subject = _make_subject()
+        transform = AffineTransform(
+            scales=1.0,
+            degrees=(0, 0, tio.Choice([-90, 0, 90])),
+            translation=0.0,
+            default_pad_value=0.0,
+        )
+        transformed = transform(subject)
+        assert transformed.t1.spatial_shape == subject.t1.spatial_shape
+
     def test_distribution_parameter(self) -> None:
         from torch.distributions import Normal
 

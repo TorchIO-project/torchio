@@ -36,16 +36,22 @@ from .logging import enable_logging
 from .transforms import Affine
 from .transforms import AppliedTransform
 from .transforms import BiasField
+from .transforms import Blur
+from .transforms import Choice
+from .transforms import Clamp
 from .transforms import Compose
 from .transforms import Crop
 from .transforms import CropOrPad
 from .transforms import ElasticDeformation
 from .transforms import EnsureShapeMultiple
 from .transforms import Flip
+from .transforms import Gamma
 from .transforms import IntensityTransform
+from .transforms import Mask
 from .transforms import MonaiAdapter
 from .transforms import Noise
 from .transforms import Normalize
+from .transforms import OneHot
 from .transforms import OneOf
 from .transforms import Pad
 from .transforms import ParameterRange
@@ -76,14 +82,18 @@ __all__ = [
     "AffineMatrix",
     "AppliedTransform",
     "BiasField",
+    "Blur",
     "BoundingBoxFormat",
     "BoundingBoxes",
+    "Choice",
+    "Clamp",
     "Compose",
     "Crop",
     "CropOrPad",
     "ElasticDeformation",
     "EnsureShapeMultiple",
     "Flip",
+    "Gamma",
     "GridSampler",
     "Image",
     "ImagesBatch",
@@ -91,9 +101,11 @@ __all__ = [
     "IntensityTransform",
     "LabelMap",
     "LabelSampler",
+    "Mask",
     "MonaiAdapter",
     "Noise",
     "Normalize",
+    "OneHot",
     "OneOf",
     "Pad",
     "ParameterRange",

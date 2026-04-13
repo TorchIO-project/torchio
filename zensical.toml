@@ -75,9 +75,16 @@ nav = [
       ] },
       { "Intensity" = [
         "reference/transforms/bias_field.md",
+        "reference/transforms/blur.md",
+        "reference/transforms/clamp.md",
+        "reference/transforms/gamma.md",
+        "reference/transforms/mask.md",
         "reference/transforms/noise.md",
         "reference/transforms/normalize.md",
         "reference/transforms/standardize.md",
+      ] },
+      { "Label" = [
+        "reference/transforms/one_hot.md",
       ] },
       { "Other" = [
         "reference/transforms/to.md",

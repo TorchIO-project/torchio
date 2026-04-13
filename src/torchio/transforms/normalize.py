@@ -12,15 +12,18 @@ from torch import Tensor
 from ..data.batch import ImagesBatch
 from ..data.batch import SubjectsBatch
 from ..data.image import LabelMap
+from .parameter_range import Choice
 from .parameter_range import ParameterRange
 from .transform import IntensityTransform
 
-TypeParameterValue = float | tuple[float, float] | torch.distributions.Distribution
+TypeParameterValue = float | tuple | Choice | torch.distributions.Distribution
 
 
-def _to_range(value: TypeParameterValue) -> ParameterRange:
-    """Convert a scalar, 2-tuple, or Distribution to a ParameterRange."""
-    if isinstance(value, torch.distributions.Distribution):
+def _to_range(
+    value: TypeParameterValue,
+) -> ParameterRange:
+    """Convert a scalar, tuple, Choice, or Distribution to a ParameterRange."""
+    if isinstance(value, (torch.distributions.Distribution, Choice)):
         return ParameterRange(value)
     if isinstance(value, (int, float)):
         return ParameterRange(float(value))

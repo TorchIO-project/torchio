@@ -40,6 +40,7 @@ from ..data.image import LabelMap
 from ..data.image import ScalarImage
 from ..types import TypeSpacing
 from ..types import TypeThreeInts
+from .parameter_range import Choice
 from .parameter_range import ParameterRange
 from .transform import SpatialTransform
 
@@ -57,6 +58,8 @@ TypeParameterValue: TypeAlias = (
         int | float,
         int | float,
     ]
+    | tuple  # per-axis mixed specs like (0, Choice([...]), (-10, 10))
+    | Choice
     | Distribution
 )
 TypeTarget: TypeAlias = (
@@ -1735,13 +1738,19 @@ def _parse_control_points(control_points: TypeControlPoints) -> Tensor:
 
 def _normalize_parameter_value(
     value: TypeParameterValue,
-) -> float | tuple[float, ...] | Distribution:
+) -> float | tuple | Distribution | Choice:
     """Cast ints to floats so ``ParameterRange`` always receives floats."""
-    if isinstance(value, Distribution):
+    if isinstance(value, (Distribution, Choice)):
         return value
     if isinstance(value, (int, float)):
         return float(value)
-    return tuple(float(v) for v in value)
+    # Tuple: may contain mixed specs (Choice, Distribution, sub-tuples)
+    # so pass through if any element is non-numeric.
+    if isinstance(value, tuple):
+        if all(isinstance(v, (int, float)) for v in value):
+            return tuple(float(v) for v in value)
+        return value
+    return value
 
 
 def _to_parameter_range(value: TypeParameterValue) -> ParameterRange:

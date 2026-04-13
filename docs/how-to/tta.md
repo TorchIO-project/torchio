@@ -86,6 +86,11 @@ restored = tio.apply_inverse_transform(data)
 | `Normalize` | ✅ | Reverses the linear rescaling |
 | `Standardize` | ✅ | Multiplies by std and adds mean |
 | `BiasField` | ✅ | Divides by the same bias field |
+| `Gamma` | ✅ | Applies $1/\gamma$ |
+| `OneHot` | ✅ | Takes argmax back to single-channel labels |
+| `Blur` | ❌ | Skipped silently when ``ignore_intensity=True`` |
+| `Clamp` | ❌ | Skipped silently when ``ignore_intensity=True`` |
+| `Mask` | ❌ | Skipped silently when ``ignore_intensity=True`` |
 | `Noise` | ❌ | Skipped silently when ``ignore_intensity=True`` |
 
 Non-invertible transforms are **skipped with a warning** (not
