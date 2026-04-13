@@ -6,13 +6,17 @@ from .clamp import Clamp
 from .compose import Compose
 from .compose import OneOf
 from .compose import SomeOf
+from .contour import Contour
 from .crop import Crop
 from .crop_or_pad import CropOrPad
 from .ensure_shape_multiple import EnsureShapeMultiple
 from .flip import Flip
 from .gamma import Gamma
+from .ghosting import Ghosting
+from .lambda_transform import Lambda
 from .mask import Mask
 from .monai_adapter import MonaiAdapter
+from .motion import Motion
 from .noise import Noise
 from .normalize import Normalize
 from .normalize import RescaleIntensity
@@ -20,11 +24,15 @@ from .one_hot import OneHot
 from .pad import Pad
 from .parameter_range import Choice
 from .parameter_range import ParameterRange
+from .remap_labels import RemapLabels
 from .reorient import Reorient
+from .resize import Resize
+from .sequential_labels import SequentialLabels
 from .spatial import Affine
 from .spatial import ElasticDeformation
 from .spatial import Resample
 from .spatial import Spatial
+from .spike import Spike
 from .standardize import Standardize
 from .standardize import ZNormalization
 from .to import To
@@ -41,27 +49,35 @@ __all__ = [
     "Choice",
     "Clamp",
     "Compose",
+    "Contour",
     "Crop",
     "CropOrPad",
     "ElasticDeformation",
     "EnsureShapeMultiple",
     "Flip",
     "Gamma",
+    "Ghosting",
     "IntensityTransform",
+    "Lambda",
     "Mask",
     "MonaiAdapter",
+    "Motion",
     "Noise",
     "Normalize",
     "OneHot",
     "OneOf",
     "Pad",
     "ParameterRange",
+    "RemapLabels",
     "Reorient",
     "Resample",
     "RescaleIntensity",
+    "Resize",
+    "SequentialLabels",
     "SomeOf",
     "Spatial",
     "SpatialTransform",
+    "Spike",
     "Standardize",
     "To",
     "Transform",

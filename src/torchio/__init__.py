@@ -40,27 +40,35 @@ from .transforms import Blur
 from .transforms import Choice
 from .transforms import Clamp
 from .transforms import Compose
+from .transforms import Contour
 from .transforms import Crop
 from .transforms import CropOrPad
 from .transforms import ElasticDeformation
 from .transforms import EnsureShapeMultiple
 from .transforms import Flip
 from .transforms import Gamma
+from .transforms import Ghosting
 from .transforms import IntensityTransform
+from .transforms import Lambda
 from .transforms import Mask
 from .transforms import MonaiAdapter
+from .transforms import Motion
 from .transforms import Noise
 from .transforms import Normalize
 from .transforms import OneHot
 from .transforms import OneOf
 from .transforms import Pad
 from .transforms import ParameterRange
+from .transforms import RemapLabels
 from .transforms import Reorient
 from .transforms import Resample
 from .transforms import RescaleIntensity
+from .transforms import Resize
+from .transforms import SequentialLabels
 from .transforms import SomeOf
 from .transforms import Spatial
 from .transforms import SpatialTransform
+from .transforms import Spike
 from .transforms import Standardize
 from .transforms import To
 from .transforms import Transform
@@ -88,12 +96,14 @@ __all__ = [
     "Choice",
     "Clamp",
     "Compose",
+    "Contour",
     "Crop",
     "CropOrPad",
     "ElasticDeformation",
     "EnsureShapeMultiple",
     "Flip",
     "Gamma",
+    "Ghosting",
     "GridSampler",
     "Image",
     "ImagesBatch",
@@ -101,8 +111,10 @@ __all__ = [
     "IntensityTransform",
     "LabelMap",
     "LabelSampler",
+    "Lambda",
     "Mask",
     "MonaiAdapter",
+    "Motion",
     "Noise",
     "Normalize",
     "OneHot",
@@ -114,14 +126,18 @@ __all__ = [
     "PatchSampler",
     "Points",
     "Queue",
+    "RemapLabels",
     "Reorient",
     "Representation",
     "Resample",
     "RescaleIntensity",
+    "Resize",
     "ScalarImage",
+    "SequentialLabels",
     "SomeOf",
     "Spatial",
     "SpatialTransform",
+    "Spike",
     "Standardize",
     "StudiesBatch",
     "StudiesLoader",

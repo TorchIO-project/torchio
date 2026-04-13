@@ -225,6 +225,7 @@ appear in the correct anatomical view.
 
 From the command line:
 
+<!-- pytest-codeblocks:skip -->
 ```bash
 torchio animate brain.nii.gz brain.gif
 torchio animate brain.nii.gz brain.mp4 --seconds 10 --direction S

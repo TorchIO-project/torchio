@@ -88,10 +88,18 @@ restored = tio.apply_inverse_transform(data)
 | `BiasField` | ✅ | Divides by the same bias field |
 | `Gamma` | ✅ | Applies $1/\gamma$ |
 | `OneHot` | ✅ | Takes argmax back to single-channel labels |
+| `RemapLabels` | ✅ | Swaps keys and values in the remapping dict |
+| `SequentialLabels` | ✅ | Restores original label values |
 | `Blur` | ❌ | Skipped silently when ``ignore_intensity=True`` |
 | `Clamp` | ❌ | Skipped silently when ``ignore_intensity=True`` |
+| `Contour` | ❌ | Destructive: interior information is lost |
+| `Ghosting` | ❌ | Skipped silently when ``ignore_intensity=True`` |
+| `Lambda` | ❌ | Skipped silently when ``ignore_intensity=True`` |
 | `Mask` | ❌ | Skipped silently when ``ignore_intensity=True`` |
+| `Motion` | ❌ | Skipped silently when ``ignore_intensity=True`` |
 | `Noise` | ❌ | Skipped silently when ``ignore_intensity=True`` |
+| `Resize` | ❌ | Not automatically invertible |
+| `Spike` | ❌ | Skipped silently when ``ignore_intensity=True`` |
 
 Non-invertible transforms are **skipped with a warning** (not
 errored), so TTA works even with mixed pipelines:
