@@ -15,23 +15,24 @@ extra_javascript = [
 ]
 
 nav = [
-  { Home = "index.md" },
-  { "Getting started" = "getting-started.md" },
+  { "Get Started" = [
+    "index.md",
+    "get-started/installation.md",
+    "get-started/quickstart.md",
+    "get-started/migration.md",
+  ] },
   { Concepts = [
-    "concepts/index.md",
     "concepts/data-model.md",
     "concepts/lazy-loading.md",
     "concepts/transforms.md",
   ] },
   { Tutorials = [
-    "tutorials/index.md",
     "tutorials/first-pipeline.md",
     "tutorials/augmentation.md",
     "tutorials/large-volumes.md",
     "tutorials/annotations.md",
   ] },
   { "How-to guides" = [
-    "how-to/index.md",
     "how-to/dataloader.md",
     "how-to/monai.md",
     "how-to/custom-reader.md",
@@ -43,8 +44,7 @@ nav = [
     "how-to/patch-training.md",
     "how-to/tta.md",
   ] },
-  { Reference = [
-    "reference/index.md",
+  { "API Reference" = [
     { "Data structures" = [
       "reference/image.md",
       "reference/subject.md",

@@ -30,49 +30,8 @@ print(subject.t1.spacing)  # (1.0, 1.0, 1.0)
 
 ## Where to go next
 
-<div class="grid cards" markdown>
-
--   **Getting started**
-
-    ---
-
-    Install TorchIO and run your first code.
-
-    → [Getting started](getting-started.md)
-
--   **Tutorials**
-
-    ---
-
-    Step-by-step walkthroughs for common workflows.
-
-    → [Tutorials](tutorials/index.md)
-
--   **How-to guides**
-
-    ---
-
-    Recipes for specific tasks: custom readers, NIfTI-Zarr, etc.
-
-    → [How-to guides](how-to/index.md)
-
--   **Concepts**
-
-    ---
-
-    Understand the design: lazy loading, affines, backends.
-
-    → [Concepts](concepts/index.md)
-
--   **API Reference**
-
-    ---
-
-    Complete reference for all classes and functions.
-
-    → [Reference](reference/index.md)
-
-</div>
+New to TorchIO? Start with the [quickstart](get-started/quickstart.md).
+Upgrading from v1? See the [migration guide](get-started/migration.md).
 
 ## Credits
 

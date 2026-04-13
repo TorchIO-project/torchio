@@ -1,58 +1,6 @@
-# Getting started
+# Quickstart
 
-## Installation
-
-=== "uv"
-
-    ```
-    uv add torchio
-    ```
-
-=== "pip"
-
-    ```
-    pip install torchio
-    ```
-
-!!! note "Optional extras"
-
-    For NIfTI-Zarr support (chunked, lazy-loadable volumes):
-
-    === "uv"
-
-        ```
-        uv add torchio --extra zarr
-        ```
-
-    === "pip"
-
-        ```
-        pip install "torchio[zarr]"
-        ```
-
-    For cloud storage (HTTP/HTTPS URLs work out of the box):
-
-    === "Azure Blob"
-
-        ```
-        pip install "torchio[azure]"
-        ```
-
-    === "S3"
-
-        ```
-        pip install "torchio[s3]"
-        ```
-
-    === "Google Cloud"
-
-        ```
-        pip install "torchio[gcs]"
-        ```
-
-## Quick tour
-
-### Loading an image
+## Loading an image
 
 <!-- pytest-codeblocks:skip -->
 ```python
@@ -76,7 +24,7 @@ buf = io.BytesIO(open("t1.nii.gz", "rb").read())
 image = tio.ScalarImage(buf, suffix=".nii.gz")
 ```
 
-### Creating from a tensor
+## Creating from a tensor
 
 <!-- pytest-codeblocks:skip -->
 ```python
@@ -86,7 +34,7 @@ tensor = torch.randn(1, 128, 128, 128)
 image = tio.ScalarImage(tensor)
 ```
 
-### Creating from SimpleITK or NiBabel
+## Creating from SimpleITK or NiBabel
 
 <!-- pytest-codeblocks:skip -->
 ```python
@@ -102,7 +50,7 @@ nifti = nib.load("t1.nii.gz")
 image = tio.ScalarImage(nifti)
 ```
 
-### Creating from bytes
+## Creating from bytes
 
 If you have raw image bytes (e.g., from an HTTP response or a
 database), pass them directly:
@@ -118,7 +66,7 @@ buf = io.BytesIO(some_bytes)
 image = tio.ScalarImage(buf, suffix=".nii.gz")
 ```
 
-### Creating from a Zarr store
+## Creating from a Zarr store
 
 For large-scale datasets stored as `.nii.zarr`, you can pass a
 `zarr.abc.store.Store` directly. Instantiation is O(1) — the store
@@ -137,7 +85,7 @@ image.data                                  # triggers full load
 image = tio.ScalarImage(store, reader_kwargs={"level": 1})
 ```
 
-### Attaching metadata
+## Attaching metadata
 
 Pass any extra keyword arguments to attach metadata to an image:
 
@@ -149,7 +97,7 @@ image["te"]          # 3.5     (dict-style access)
 image.metadata       # {"protocol": "MPRAGE", "te": 3.5}
 ```
 
-### Slicing
+## Slicing
 
 Slicing follows the `(C, I, J, K)` layout and keeps things lazy. Only
 the requested region is read from disk:
@@ -164,7 +112,7 @@ patch.data.mean()  # reads only this region
 The affine origin is updated automatically so the patch stays in the
 correct world coordinates.
 
-### Grouping data into a Subject
+## Grouping data into a Subject
 
 A `Subject` (also available as `Study`) holds images, spatial
 annotations, and metadata:
@@ -191,7 +139,7 @@ subject["seg"]       # dict-style access
 subject.age          # metadata access (returns 45)
 ```
 
-### Saving
+## Saving
 
 <!-- pytest-codeblocks:skip -->
 ```python
@@ -203,7 +151,7 @@ image.save("output.nrrd")
 image.save("output.nii.zarr")
 ```
 
-### Batching with a DataLoader
+## Batching with a DataLoader
 
 <!-- pytest-codeblocks:skip -->
 ```python
@@ -230,10 +178,10 @@ batch = next(iter(loader))
 batch.t1.data.shape  # (4, 1, 256, 256, 176)
 ```
 
-See the [DataLoader how-to guide](how-to/dataloader.md) for more
+See the [DataLoader how-to guide](../how-to/dataloader.md) for more
 details.
 
-### Applying transforms
+## Applying transforms
 
 Transforms accept Subjects, Images, Tensors, NumPy arrays,
 SimpleITK Images, NiBabel images, or MONAI-style dicts, and return
@@ -267,5 +215,43 @@ batch = next(iter(loader))  # SubjectsBatch
 augmented_batch = augment(batch)
 ```
 
-See the [transform design concepts](concepts/transforms.md) for
+See the [transform design concepts](../concepts/transforms.md) for
 the full picture.
+
+## Where to go next
+
+<div class="grid cards" markdown>
+
+-   **Tutorials**
+
+    ---
+
+    Step-by-step walkthroughs for common workflows.
+
+    → [Tutorials](../tutorials/first-pipeline.md)
+
+-   **How-to guides**
+
+    ---
+
+    Recipes for specific tasks: custom readers, NIfTI-Zarr, etc.
+
+    → [How-to guides](../how-to/dataloader.md)
+
+-   **Concepts**
+
+    ---
+
+    Understand the design: lazy loading, affines, backends.
+
+    → [Concepts](../concepts/data-model.md)
+
+-   **API Reference**
+
+    ---
+
+    Complete reference for all classes and functions.
+
+    → [Reference](../reference/image.md)
+
+</div>
