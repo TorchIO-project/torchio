@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import pytest
 import torch
 
@@ -85,3 +87,52 @@ class TestHistogramStandardization:
         images = self._make_images()
         with pytest.raises(ValueError, match="at least 2"):
             compute_histogram_landmarks(images, quantiles=(0.5,))
+
+
+class TestHistogramStandardizationEdgeCases:
+    def test_quantiles_out_of_range_raises(self) -> None:
+        images = [tio.ScalarImage(torch.randn(1, 5, 5, 5)) for _ in range(3)]
+        with pytest.raises(ValueError, match="\\[0, 1\\]"):
+            compute_histogram_landmarks(images, quantiles=(-0.1, 0.5, 1.1))
+
+    def test_cutoff_not_in_quantiles_raises(self) -> None:
+        images = [tio.ScalarImage(torch.randn(1, 5, 5, 5)) for _ in range(3)]
+        with pytest.raises(ValueError, match="Cutoff"):
+            compute_histogram_landmarks(
+                images, quantiles=(0.25, 0.5, 0.75), cutoff=(0.01, 0.99)
+            )
+
+    def test_load_landmarks_from_npy(self, tmp_path: Path) -> None:
+        import numpy as np
+
+        arr = np.linspace(0, 100, 13).astype(np.float32)
+        npy_path = tmp_path / "landmarks.npy"
+        np.save(npy_path, arr)
+        subject = _make_subject(with_label=False)
+        result = tio.HistogramStandardization(npy_path)(subject)
+        assert result.t1.data.shape == subject.t1.data.shape
+
+    def test_load_landmarks_from_pt(self, tmp_path: Path) -> None:
+        landmarks = torch.linspace(0, 100, 13)
+        pt_path = tmp_path / "landmarks.pt"
+        torch.save(landmarks, pt_path)
+        subject = _make_subject(with_label=False)
+        result = tio.HistogramStandardization(pt_path)(subject)
+        assert result.t1.data.shape == subject.t1.data.shape
+
+    def test_unsupported_format_raises(self, tmp_path: Path) -> None:
+        bad_path = tmp_path / "landmarks.csv"
+        bad_path.write_text("1,2,3")
+        with pytest.raises(ValueError, match="Unsupported"):
+            tio.HistogramStandardization(bad_path)
+
+    def test_pt_with_wrong_type_raises(self, tmp_path: Path) -> None:
+        pt_path = tmp_path / "landmarks.pt"
+        torch.save({"not": "a tensor"}, pt_path)
+        with pytest.raises(TypeError, match="Expected a Tensor"):
+            tio.HistogramStandardization(pt_path)
+
+    def test_load_from_path_string(self) -> None:
+        images = [tio.ScalarImage(torch.randn(1, 5, 5, 5)) for _ in range(3)]
+        landmarks = compute_histogram_landmarks(images)
+        assert landmarks.ndim == 1

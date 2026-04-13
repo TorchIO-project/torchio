@@ -204,3 +204,20 @@ class TestPowerOfTwo:
         result = tio.EnsureShapeMultiple(2**4)(subject)
         for s in result.t1.spatial_shape:
             assert s % 16 == 0
+
+
+# ── Coverage gap tests ───────────────────────────────────────────────
+
+
+class TestEnsureShapeMultipleValidation:
+    def test_zero_multiple_raises(self) -> None:
+        with pytest.raises(ValueError, match=">= 1"):
+            tio.EnsureShapeMultiple(target_multiple=0)
+
+    def test_wrong_tuple_length_raises(self) -> None:
+        with pytest.raises(ValueError, match="1 or 3"):
+            tio.EnsureShapeMultiple(target_multiple=(2, 4))
+
+    def test_negative_in_tuple_raises(self) -> None:
+        with pytest.raises(ValueError, match=">= 1"):
+            tio.EnsureShapeMultiple(target_multiple=(2, -1, 4))

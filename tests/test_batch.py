@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import pytest
 import torch
 
 import torchio as tio
@@ -194,3 +195,104 @@ class TestBatchTransforms:
         tio.Noise(std=1.0)(batch)
         # Original should be unchanged (copy=True default)
         torch.testing.assert_close(batch.data, original)
+
+
+# ── Coverage gap tests ───────────────────────────────────────────────
+
+
+class TestImagesBatchValidation:
+    def test_non_5d_raises(self) -> None:
+        from torchio.data.batch import ImagesBatch
+
+        with pytest.raises(ValueError, match="5"):
+            ImagesBatch(
+                data=torch.rand(1, 10, 10),
+                affines=[tio.AffineMatrix()],
+                image_class=tio.ScalarImage,
+            )
+
+    def test_affine_count_mismatch_raises(self) -> None:
+        from torchio.data.batch import ImagesBatch
+
+        with pytest.raises(ValueError, match="affines"):
+            ImagesBatch(
+                data=torch.rand(2, 1, 5, 5, 5),
+                affines=[tio.AffineMatrix()],  # only 1 for batch of 2
+                image_class=tio.ScalarImage,
+            )
+
+    def test_from_images_empty_raises(self) -> None:
+        from torchio.data.batch import ImagesBatch
+
+        with pytest.raises(ValueError, match="empty"):
+            ImagesBatch.from_images([])
+
+    def test_data_setter_non_5d_raises(self) -> None:
+        from torchio.data.batch import ImagesBatch
+
+        batch = ImagesBatch(
+            data=torch.rand(1, 1, 5, 5, 5),
+            affines=[tio.AffineMatrix()],
+            image_class=tio.ScalarImage,
+        )
+        with pytest.raises(ValueError, match="5"):
+            batch.data = torch.rand(1, 5, 5)
+
+    def test_device_property(self) -> None:
+        from torchio.data.batch import ImagesBatch
+
+        batch = ImagesBatch(
+            data=torch.rand(1, 1, 5, 5, 5),
+            affines=[tio.AffineMatrix()],
+            image_class=tio.ScalarImage,
+        )
+        assert batch.device.type == "cpu"
+
+    def test_len(self) -> None:
+        from torchio.data.batch import ImagesBatch
+
+        batch = ImagesBatch(
+            data=torch.rand(3, 1, 5, 5, 5),
+            affines=[tio.AffineMatrix() for _ in range(3)],
+            image_class=tio.ScalarImage,
+        )
+        assert len(batch) == 3
+
+
+class TestSubjectsBatchEdgeCases:
+    def test_from_subjects_empty_raises(self) -> None:
+        from torchio.data.batch import SubjectsBatch
+
+        with pytest.raises(ValueError, match="empty"):
+            SubjectsBatch.from_subjects([])
+
+    def test_device_property(self) -> None:
+        subject = tio.Subject(t1=tio.ScalarImage(torch.rand(1, 5, 5, 5)))
+        from torchio.data.batch import SubjectsBatch
+
+        batch = SubjectsBatch.from_subjects([subject])
+        assert batch.device.type == "cpu"
+
+    def test_getattr_invalid_raises(self) -> None:
+        subject = tio.Subject(t1=tio.ScalarImage(torch.rand(1, 5, 5, 5)))
+        from torchio.data.batch import SubjectsBatch
+
+        batch = SubjectsBatch.from_subjects([subject])
+        with pytest.raises(AttributeError):
+            _ = batch.nonexistent_image
+
+    def test_len(self) -> None:
+        subject = tio.Subject(t1=tio.ScalarImage(torch.rand(1, 5, 5, 5)))
+        from torchio.data.batch import SubjectsBatch
+
+        batch = SubjectsBatch.from_subjects([subject])
+        assert len(batch) == 1
+
+    def test_repr(self) -> None:
+        subject = tio.Subject(t1=tio.ScalarImage(torch.rand(1, 5, 5, 5)))
+        from torchio.data.batch import SubjectsBatch
+
+        batch = SubjectsBatch.from_subjects([subject])
+        r = repr(batch)
+        assert "SubjectsBatch" in r
+        assert "t1" in r

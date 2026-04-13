@@ -386,3 +386,55 @@ class TestOrOperator:
         pipeline = tio.Flip(axes=(0,)) | tio.Noise(std=0.01)
         result = pipeline(subject)
         assert result.t1.shape == subject.t1.shape
+
+
+# ── Coverage gap tests ───────────────────────────────────────────────
+
+
+class TestTransformEdgeCases:
+    def test_invalid_probability_raises(self) -> None:
+        with pytest.raises(ValueError, match="Probability"):
+            tio.Flip(axes=(0,), p=1.5)
+
+    def test_repr_shows_params(self) -> None:
+        t = tio.Flip(axes=(0,))
+        r = repr(t)
+        assert "Flip" in r
+
+    def test_base_apply_transform_raises(self) -> None:
+        t = tio.Transform()
+        subject = tio.Subject(t1=tio.ScalarImage(torch.rand(1, 5, 5, 5)))
+        with pytest.raises(NotImplementedError):
+            t(subject)
+
+    def test_non_invertible_raises(self) -> None:
+        subject = tio.Subject(t1=tio.ScalarImage(torch.rand(1, 5, 5, 5)))
+        result = tio.Blur(std=1.0)(subject)
+        # Blur is not invertible; inverse should warn/skip
+        restored = result.apply_inverse_transform()
+        assert restored.t1.data.shape == subject.t1.data.shape
+
+    def test_exclude_images(self) -> None:
+        subject = tio.Subject(
+            t1=tio.ScalarImage(torch.rand(1, 5, 5, 5)),
+            t2=tio.ScalarImage(torch.rand(1, 5, 5, 5)),
+        )
+        original_t2 = subject.t2.data.clone()
+        result = tio.Gamma(log_gamma=0.5, exclude=["t2"])(subject)
+        torch.testing.assert_close(result.t2.data, original_t2)
+
+
+class TestOneOfSkip:
+    def test_one_of_with_p_zero_is_identity(self) -> None:
+        subject = tio.Subject(t1=tio.ScalarImage(torch.rand(1, 5, 5, 5)))
+        original = subject.t1.data.clone()
+        result = tio.OneOf([tio.Flip(axes=(0,))], p=0.0)(subject)
+        torch.testing.assert_close(result.t1.data, original)
+
+
+class TestSomeOfSkip:
+    def test_some_of_with_p_zero_is_identity(self) -> None:
+        subject = tio.Subject(t1=tio.ScalarImage(torch.rand(1, 5, 5, 5)))
+        original = subject.t1.data.clone()
+        result = tio.SomeOf([tio.Flip(axes=(0,))], num_transforms=1, p=0.0)(subject)
+        torch.testing.assert_close(result.t1.data, original)

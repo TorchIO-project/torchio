@@ -76,6 +76,7 @@ nav = [
         "reference/transforms/crop_or_pad.md",
         "reference/transforms/resize.md",
         "reference/transforms/copy_affine.md",
+        "reference/transforms/ensure_shape_multiple.md",
       ] },
       { "Intensity" = [
         "reference/transforms/bias_field.md",

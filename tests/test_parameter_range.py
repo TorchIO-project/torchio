@@ -5,6 +5,7 @@ from __future__ import annotations
 import pytest
 import torch
 
+import torchio as tio
 from torchio.transforms.parameter_range import ParameterRange
 
 
@@ -125,3 +126,55 @@ class TestParameterRangeDistribution:
 
         pr = ParameterRange(Normal(0.0, 1.0))
         assert "Normal" in repr(pr)
+
+
+# ── Coverage gap tests ───────────────────────────────────────────────
+
+
+class TestChoiceEdgeCases:
+    def test_empty_choice_raises(self) -> None:
+        with pytest.raises(ValueError, match="at least one"):
+            tio.Choice([])
+
+    def test_mismatched_probabilities_raises(self) -> None:
+        with pytest.raises(ValueError, match="probabilities"):
+            tio.Choice([1, 2, 3], probabilities=[0.5, 0.5])
+
+    def test_repr_uniform(self) -> None:
+        c = tio.Choice([1.0, 2.0, 3.0])
+        r = repr(c)
+        assert "Choice(" in r
+        assert "p=" not in r
+
+    def test_repr_custom_probs(self) -> None:
+        c = tio.Choice([1.0, 2.0], probabilities=[0.3, 0.7])
+        r = repr(c)
+        assert "p=" in r
+
+
+class TestParameterRangeEdgeCases:
+    def test_invalid_type_raises(self) -> None:
+        with pytest.raises(TypeError, match="Expected float"):
+            tio.ParameterRange("bad")  # type: ignore[arg-type]
+
+    def test_ranges_for_choice_axis(self) -> None:
+        pr = tio.ParameterRange(tio.Choice([1.0, 2.0]))
+        lo, hi = pr._ranges[0]
+        assert lo == 0.0
+        assert hi == 0.0
+
+    def test_mixed_specs_wrong_count_raises(self) -> None:
+        with pytest.raises(ValueError, match="Mixed per-axis"):
+            tio.ParameterRange((tio.Choice([1.0]), tio.Choice([2.0])))
+
+    def test_single_element_tuple(self) -> None:
+        pr = tio.ParameterRange((5.0,))
+        assert pr._ranges == ((5.0, 5.0), (5.0, 5.0), (5.0, 5.0))
+
+    def test_invalid_axis_spec_raises(self) -> None:
+        with pytest.raises(TypeError, match="Per-axis spec"):
+            tio.ParameterRange(("a", "b", "c"))  # type: ignore[arg-type]
+
+    def test_invalid_tuple_length_raises(self) -> None:
+        with pytest.raises(ValueError, match="1, 2, 3, or 6"):
+            tio.ParameterRange((1.0, 2.0, 3.0, 4.0))
