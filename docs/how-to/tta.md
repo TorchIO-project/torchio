@@ -94,12 +94,16 @@ restored = tio.apply_inverse_transform(data)
 | `Clamp` | ❌ | Skipped silently when ``ignore_intensity=True`` |
 | `Contour` | ❌ | Destructive: interior information is lost |
 | `Ghosting` | ❌ | Skipped silently when ``ignore_intensity=True`` |
+| `HistogramStandardization` | ❌ | Piecewise-linear map is lossy |
+| `KeepLargestComponent` | ❌ | Destructive: removed components are lost |
 | `Lambda` | ❌ | Skipped silently when ``ignore_intensity=True`` |
 | `Mask` | ❌ | Skipped silently when ``ignore_intensity=True`` |
 | `Motion` | ❌ | Skipped silently when ``ignore_intensity=True`` |
 | `Noise` | ❌ | Skipped silently when ``ignore_intensity=True`` |
+| `RemoveLabels` | ❌ | Destructive: removed labels are lost |
 | `Resize` | ❌ | Not automatically invertible |
 | `Spike` | ❌ | Skipped silently when ``ignore_intensity=True`` |
+| `Swap` | ❌ | Skipped silently when ``ignore_intensity=True`` |
 
 Non-invertible transforms are **skipped with a warning** (not
 errored), so TTA works even with mixed pipelines:

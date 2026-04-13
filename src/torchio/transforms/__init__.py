@@ -13,6 +13,8 @@ from .ensure_shape_multiple import EnsureShapeMultiple
 from .flip import Flip
 from .gamma import Gamma
 from .ghosting import Ghosting
+from .histogram_standardization import HistogramStandardization
+from .keep_largest import KeepLargestComponent
 from .lambda_transform import Lambda
 from .mask import Mask
 from .monai_adapter import MonaiAdapter
@@ -25,6 +27,7 @@ from .pad import Pad
 from .parameter_range import Choice
 from .parameter_range import ParameterRange
 from .remap_labels import RemapLabels
+from .remove_labels import RemoveLabels
 from .reorient import Reorient
 from .resize import Resize
 from .sequential_labels import SequentialLabels
@@ -35,6 +38,7 @@ from .spatial import Spatial
 from .spike import Spike
 from .standardize import Standardize
 from .standardize import ZNormalization
+from .swap import Swap
 from .to import To
 from .transform import AppliedTransform
 from .transform import IntensityTransform
@@ -57,7 +61,9 @@ __all__ = [
     "Flip",
     "Gamma",
     "Ghosting",
+    "HistogramStandardization",
     "IntensityTransform",
+    "KeepLargestComponent",
     "Lambda",
     "Mask",
     "MonaiAdapter",
@@ -69,6 +75,7 @@ __all__ = [
     "Pad",
     "ParameterRange",
     "RemapLabels",
+    "RemoveLabels",
     "Reorient",
     "Resample",
     "RescaleIntensity",
@@ -79,6 +86,7 @@ __all__ = [
     "SpatialTransform",
     "Spike",
     "Standardize",
+    "Swap",
     "To",
     "Transform",
     "ZNormalization",

@@ -48,7 +48,9 @@ from .transforms import EnsureShapeMultiple
 from .transforms import Flip
 from .transforms import Gamma
 from .transforms import Ghosting
+from .transforms import HistogramStandardization
 from .transforms import IntensityTransform
+from .transforms import KeepLargestComponent
 from .transforms import Lambda
 from .transforms import Mask
 from .transforms import MonaiAdapter
@@ -60,6 +62,7 @@ from .transforms import OneOf
 from .transforms import Pad
 from .transforms import ParameterRange
 from .transforms import RemapLabels
+from .transforms import RemoveLabels
 from .transforms import Reorient
 from .transforms import Resample
 from .transforms import RescaleIntensity
@@ -70,6 +73,7 @@ from .transforms import Spatial
 from .transforms import SpatialTransform
 from .transforms import Spike
 from .transforms import Standardize
+from .transforms import Swap
 from .transforms import To
 from .transforms import Transform
 from .transforms import ZNormalization
@@ -105,10 +109,12 @@ __all__ = [
     "Gamma",
     "Ghosting",
     "GridSampler",
+    "HistogramStandardization",
     "Image",
     "ImagesBatch",
     "ImagesLoader",
     "IntensityTransform",
+    "KeepLargestComponent",
     "LabelMap",
     "LabelSampler",
     "Lambda",
@@ -127,6 +133,7 @@ __all__ = [
     "Points",
     "Queue",
     "RemapLabels",
+    "RemoveLabels",
     "Reorient",
     "Representation",
     "Resample",
@@ -145,6 +152,7 @@ __all__ = [
     "Subject",
     "SubjectsBatch",
     "SubjectsLoader",
+    "Swap",
     "To",
     "Transform",
     "TypeAffineMatrix",
