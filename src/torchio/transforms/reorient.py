@@ -66,24 +66,26 @@ def _apply_reorientation(
 ) -> Tensor:
     """Apply an orientation transform to a tensor.
 
-    Works on both 4D (C, I, J, K) and 5D (B, C, I, J, K) tensors.
-    Spatial axes are always addressed as -3, -2, -1.
+    Mirrors nibabel's ``apply_orientation``: flip axes first, then
+    transpose.  Works on both 4D ``(C, I, J, K)`` and 5D
+    ``(B, C, I, J, K)`` tensors.  Spatial axes are always the last 3.
 
     Args:
         data: Input tensor.
-        ornt: (3, 2) orientation transform from nibabel.
+        ornt: ``(3, 2)`` orientation transform from nibabel.
     """
-    input_axes = ornt[:, 0].astype(int)
-    flip_flags = ornt[:, 1]
-
-    # Step 1: flip input axes where direction is -1
-    if flip_dims := [int(input_axes[i]) - 3 for i in range(3) if flip_flags[i] == -1]:
-        data = torch.flip(data, flip_dims)
-
-    # Step 2: permute spatial axes (-3, -2, -1)
     n_leading = data.ndim - 3
+
+    # Step 1: flip axes where direction is -1 (on original axis indices).
+    for ax in range(3):
+        if ornt[ax, 1] == -1:
+            data = torch.flip(data, [ax + n_leading])
+
+    # Step 2: permute using argsort of the source-axis column, matching
+    # nibabel's ``arr.transpose(np.argsort(ornt[:, 0]))``.
+    perm = np.argsort(ornt[:, 0]).astype(int)
     leading = list(range(n_leading))
-    spatial_perm = [int(a) + n_leading for a in input_axes]
+    spatial_perm = [int(p) + n_leading for p in perm]
     data = data.permute(leading + spatial_perm)
 
     return data.contiguous()
@@ -152,11 +154,11 @@ class Reorient(SpatialTransform):
             return batch
 
         for _name, img_batch in self._get_images(batch).items():
+            original_shape = img_batch.data.shape[-3:]
             img_batch.data = _apply_reorientation(img_batch.data, ornt)
 
             for affine in img_batch.affines:
-                spatial_shape = img_batch.data.shape[-3:]
-                inv_aff = orientations.inv_ornt_aff(ornt, spatial_shape)
+                inv_aff = orientations.inv_ornt_aff(ornt, original_shape)
                 new_matrix = affine.numpy() @ inv_aff
                 affine._matrix = torch.as_tensor(
                     new_matrix,

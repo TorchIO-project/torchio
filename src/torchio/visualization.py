@@ -792,8 +792,8 @@ def _label_image_header(
 
 
 def _axis_name(axis: int) -> str:
-    """Return the tensor axis name: I, J, or K."""
-    return ("I", "J", "K")[axis]
+    """Return the tensor axis name: i, j, or k."""
+    return ("i", "j", "k")[axis]
 
 
 def _draw_intersections(

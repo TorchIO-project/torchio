@@ -211,3 +211,48 @@ class TestProbability:
         subject = _make_subject(orientation="RAS")
         result = tio.Reorient(orientation="LAS", p=0)(subject)
         assert result.t1.affine.orientation == ("R", "A", "S")
+
+
+# ---------------------------------------------------------------------------
+# World coordinate preservation
+# ---------------------------------------------------------------------------
+
+
+class TestWorldCoordinates:
+    """Reorientation must not change the physical position of voxels."""
+
+    @staticmethod
+    def _world_bbox(image: tio.Image) -> torch.Tensor:
+        s = image.spatial_shape
+        corners = torch.tensor(
+            [[0, 0, 0, 1], [s[0] - 1, s[1] - 1, s[2] - 1, 1]],
+            dtype=torch.float64,
+        )
+        aff = torch.as_tensor(image.affine.data, dtype=torch.float64)
+        return ((aff @ corners.T).T)[:, :3]
+
+    def _assert_bbox_preserved(
+        self,
+        original: tio.Image,
+        reoriented: tio.Image,
+    ) -> None:
+        orig = self._world_bbox(original).sort(dim=0).values
+        new = self._world_bbox(reoriented).sort(dim=0).values
+        torch.testing.assert_close(orig, new, atol=1e-5, rtol=0)
+
+    @pytest.mark.parametrize("target", ["PSR", "LPS", "SLA", "AIR", "RAS"])
+    def test_bbox_preserved_identity_spacing(self, target: str) -> None:
+        subject = _make_subject(shape=(10, 12, 14), orientation="RAS")
+        result = tio.Reorient(target)(subject)
+        self._assert_bbox_preserved(subject.t1, result.t1)
+
+    def test_bbox_preserved_anisotropic_spacing(self) -> None:
+        import numpy as np
+
+        affine = np.diag([2.0, 0.5, 1.5, 1.0])
+        affine[:3, 3] = [10, 20, 30]
+        data = torch.rand(1, 10, 12, 14)
+        img = tio.ScalarImage(data, affine=AffineMatrix(affine))
+        subject = tio.Subject(t1=img)
+        result = tio.Reorient("PSR")(subject)
+        self._assert_bbox_preserved(subject.t1, result.t1)
