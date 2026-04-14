@@ -312,8 +312,8 @@ def _plot_image_on_axes(
             x_label = f"{_axis_name(x_axis)} ({x_left} ↔ {_OPPOSITE[x_left]})"
             y_label = f"{_axis_name(y_axis)} ({_OPPOSITE[y_top]} ↔ {y_top})"
         else:
-            x_label = f"{_FULL_NAME[x_left]} ({_axis_name(x_axis)})"
-            y_label = f"{_FULL_NAME[y_top]} ({_axis_name(y_axis)})"
+            x_label = f"{_FULL_NAME[x_left]} [mm] ({_axis_name(x_axis)})"
+            y_label = f"{_FULL_NAME[y_top]} [mm] ({_axis_name(y_axis)})"
         ax.set_xlabel(x_label)
         ax.set_ylabel(y_label)
 
