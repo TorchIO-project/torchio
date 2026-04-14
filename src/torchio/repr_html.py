@@ -89,7 +89,7 @@ def image_to_html(image: Image) -> str:
     table = f'{_STYLE}\n<table class="tio-table">\n' + "\n".join(rows) + "\n</table>"
 
     if plot_html := _try_plot_base64(image):
-        return f"{plot_html}\n{table}"
+        return f"{table}\n{plot_html}"
     return table
 
 

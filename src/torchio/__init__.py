@@ -44,6 +44,7 @@ from .transforms import Clamp
 from .transforms import Compose
 from .transforms import Contour
 from .transforms import CopyAffine
+from .transforms import CornucopiaAdapter
 from .transforms import Crop
 from .transforms import CropOrPad
 from .transforms import ElasticDeformation
@@ -109,6 +110,7 @@ __all__ = [
     "Compose",
     "Contour",
     "CopyAffine",
+    "CornucopiaAdapter",
     "Crop",
     "CropOrPad",
     "ElasticDeformation",

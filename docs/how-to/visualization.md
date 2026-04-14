@@ -223,7 +223,38 @@ The ``direction`` parameter accepts ``"I"`` (inferior), ``"S"``
 or ``"L"`` (left). The image is automatically reoriented so slices
 appear in the correct anatomical view.
 
-From the command line:
+### Displaying in Jupyter
+
+In Jupyter notebooks, calling ``to_gif()`` or ``to_video()`` without
+a path automatically creates a temporary file and returns an IPython
+display object:
+
+<!-- pytest-codeblocks:skip -->
+```python
+# Just this — the GIF is displayed inline
+image.to_gif()
+
+# Same for video
+image.to_video()
+```
+
+You can also pass an explicit path if you want to keep the file:
+
+<!-- pytest-codeblocks:skip -->
+```python
+image.to_gif("/tmp/image.gif")
+image.to_video("/tmp/image.mp4")
+```
+
+Outside Jupyter, a path is required:
+
+<!-- pytest-codeblocks:skip -->
+```python
+image.to_gif("brain.gif")
+image.to_video("brain.mp4")
+```
+
+### From the command line
 
 <!-- pytest-codeblocks:skip -->
 ```bash

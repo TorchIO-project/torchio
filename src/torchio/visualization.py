@@ -22,6 +22,7 @@ from .data.image import LabelMap
 from .external.imports import get_colorcet
 from .external.imports import get_ffmpeg
 from .external.imports import get_pillow
+from .transforms import Normalize
 from .transforms import Reorient
 
 if TYPE_CHECKING:
@@ -41,6 +42,15 @@ _OPPOSITE: dict[str, str] = {
     "P": "A",
     "S": "I",
     "I": "S",
+}
+
+_FULL_NAME: dict[str, str] = {
+    "R": "Right",
+    "L": "Left",
+    "A": "Anterior",
+    "P": "Posterior",
+    "S": "Superior",
+    "I": "Inferior",
 }
 
 # Each view is defined by:
@@ -298,8 +308,12 @@ def _plot_image_on_axes(
         aspect = spacing[y_axis] / spacing[x_axis]
         ax.imshow(slices_2d[view_idx], aspect=aspect, **kw)
 
-        x_label = f"{_axis_name(x_axis)} ({x_left} ↔ {_OPPOSITE[x_left]})"
-        y_label = f"{_axis_name(y_axis)} ({_OPPOSITE[y_top]} ↔ {y_top})"
+        if voxels:
+            x_label = f"{_axis_name(x_axis)} ({x_left} ↔ {_OPPOSITE[x_left]})"
+            y_label = f"{_axis_name(y_axis)} ({_OPPOSITE[y_top]} ↔ {y_top})"
+        else:
+            x_label = f"{_FULL_NAME[x_left]} ({_axis_name(x_axis)})"
+            y_label = f"{_FULL_NAME[y_top]} ({_axis_name(y_axis)})"
         ax.set_xlabel(x_label)
         ax.set_ylabel(y_label)
 
@@ -940,17 +954,15 @@ def make_gif(
     # Reorient so the sweep direction is the first spatial axis and the
     # remaining two axes produce an anatomically correct 2D view.
     target = _video_orientation(direction)
-    reoriented = Reorient(orientation=target)(image)
-    tensor = reoriented.data
+    image = Reorient(orientation=target)(image)
+    if rescale:
+        image = Normalize(out_min=0, out_max=255, copy=False)(image)
 
-    tensor = _rescale_to_uint8(tensor) if rescale else tensor.byte()
-
-    single_channel = tensor.shape[0] == 1
-
-    # Tensor is (C, sweep, H, W). Iterate over the sweep axis.
-    frames = tensor.cpu().byte().numpy()
+    single_channel = image.num_channels == 1
     mode = "P" if single_channel else "RGB"
 
+    # Tensor is (C, sweep, H, W). Iterate over the sweep axis.
+    frames = image.data.cpu().byte().numpy()
     images = []
     for i in range(frames.shape[1]):
         # Single channel: (H, W); multi-channel: (C, H, W) -> (H, W, C)

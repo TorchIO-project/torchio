@@ -106,6 +106,7 @@ nav = [
         "reference/transforms/sequential_labels.md",
       ] },
       { "Other" = [
+        "reference/transforms/cornucopia_adapter.md",
         "reference/transforms/lambda_transform.md",
         "reference/transforms/to.md",
         "reference/transforms/monai_adapter.md",

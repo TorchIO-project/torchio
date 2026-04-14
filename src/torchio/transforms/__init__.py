@@ -9,6 +9,7 @@ from .compose import OneOf
 from .compose import SomeOf
 from .contour import Contour
 from .copy_affine import CopyAffine
+from .cornucopia_adapter import CornucopiaAdapter
 from .crop import Crop
 from .crop_or_pad import CropOrPad
 from .ensure_shape_multiple import EnsureShapeMultiple
@@ -62,6 +63,7 @@ __all__ = [
     "Compose",
     "Contour",
     "CopyAffine",
+    "CornucopiaAdapter",
     "Crop",
     "CropOrPad",
     "ElasticDeformation",

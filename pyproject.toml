@@ -60,6 +60,11 @@ Documentation = "https://docs.torchio.org"
 [project.scripts]
 torchio = "torchio.cli:main"
 
+[project.optional-dependencies]
+cornucopia = [
+    "cornucopia>=0.3.0",
+]
+
 [build-system]
 requires = ["uv_build>=0.11.1,<0.12.0"]
 build-backend = "uv_build"
@@ -124,6 +129,7 @@ replace = 'version = "{new_version}"'
 dev = ["bump-my-version", "ipykernel>=7.2.0", "ipywidgets>=8.1.8", "tox-uv"]
 test = [
     "colorcet",
+    "cornucopia",
     "ffmpeg-python",
     "matplotlib",
     "monai",

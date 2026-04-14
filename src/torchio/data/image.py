@@ -42,6 +42,48 @@ from .points import Points
 _AnnotationType = TypeVar("_AnnotationType", Points, BoundingBoxes)
 
 
+def _in_jupyter() -> bool:
+    """Check whether we are running inside a Jupyter notebook."""
+    try:
+        from IPython import get_ipython
+
+        shell = get_ipython()
+        return shell is not None and shell.__class__.__name__ == "ZMQInteractiveShell"
+    except ImportError:
+        return False
+
+
+def _resolve_media_path(
+    output_path: str | Path | None,
+    *,
+    suffix: str,
+) -> Path:
+    """Resolve an optional output path for media files.
+
+    Args:
+        output_path: User-provided path, or ``None``.
+        suffix: File extension (e.g., ``".gif"``, ``".mp4"``).
+
+    Returns:
+        Resolved :class:`~pathlib.Path`.
+
+    Raises:
+        ValueError: If *output_path* is ``None`` outside Jupyter.
+    """
+    if output_path is not None:
+        return Path(output_path)
+    if _in_jupyter():
+        import tempfile
+
+        with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as f:
+            return Path(f.name)
+    msg = (
+        f"output_path is required outside Jupyter notebooks. "
+        f"Pass a path ending in {suffix!r}."
+    )
+    raise ValueError(msg)
+
+
 def _backend_label(backend: object | None) -> str:
     """Short label for the backend type, used in ``__repr__``."""
     if backend is None:
@@ -948,7 +990,7 @@ class Image(Invertible):
 
     def to_gif(
         self,
-        output_path: str | Path,
+        output_path: str | Path | None = None,
         *,
         seconds: float = 5.0,
         direction: str = "I",
@@ -956,13 +998,19 @@ class Image(Invertible):
         rescale: bool = True,
         optimize: bool = True,
         reverse: bool = False,
-    ) -> None:
+    ) -> Any:
         """Save an animated GIF sweeping through slices.
 
         Requires ``Pillow`` (``pip install torchio[plot]``).
 
+        When *output_path* is ``None`` and the code is running inside
+        a Jupyter notebook, the GIF is written to a temporary file and
+        returned as an ``IPython.display.Image`` for inline display.
+        Outside Jupyter, *output_path* is required.
+
         Args:
-            output_path: Path to the output ``.gif`` file.
+            output_path: Path to the output ``.gif`` file.  ``None``
+                to auto-create a temporary file (Jupyter only).
             seconds: Duration of the full animation in seconds.
             direction: Anatomical sweep direction (``"I"``, ``"S"``,
                 ``"A"``, ``"P"``, ``"R"``, or ``"L"``).
@@ -970,7 +1018,16 @@ class Image(Invertible):
             rescale: Rescale intensities to ``[0, 255]``.
             optimize: Attempt to compress the GIF palette.
             reverse: Reverse the temporal order of frames.
+
+        Returns:
+            ``IPython.display.Image`` when running in Jupyter,
+            ``None`` otherwise.
+
+        Raises:
+            ValueError: If *output_path* is ``None`` and the code is
+                not running inside a Jupyter notebook.
         """
+        output_path = _resolve_media_path(output_path, suffix=".gif")
         from ..visualization import make_gif
 
         make_gif(
@@ -983,26 +1040,46 @@ class Image(Invertible):
             optimize=optimize,
             reverse=reverse,
         )
+        if _in_jupyter():
+            from IPython.display import Image as IPyImage
+
+            return IPyImage(filename=str(output_path))
+        return None
 
     def to_video(
         self,
-        output_path: str | Path,
+        output_path: str | Path | None = None,
         *,
         seconds: float = 5.0,
         direction: str = "I",
         verbosity: str = "error",
-    ) -> None:
+    ) -> Any:
         """Create an MP4 video sweeping through slices.
 
         Requires ``ffmpeg-python`` (``pip install torchio[video]``).
 
+        When *output_path* is ``None`` and the code is running inside
+        a Jupyter notebook, the video is written to a temporary file
+        and returned as an ``IPython.display.Video`` for inline
+        display.  Outside Jupyter, *output_path* is required.
+
         Args:
-            output_path: Path to the output ``.mp4`` file.
+            output_path: Path to the output ``.mp4`` file.  ``None``
+                to auto-create a temporary file (Jupyter only).
             seconds: Duration of the full video in seconds.
             direction: Anatomical sweep direction (``"I"``, ``"S"``,
                 ``"A"``, ``"P"``, ``"R"``, or ``"L"``).
             verbosity: ffmpeg log level.
+
+        Returns:
+            ``IPython.display.Video`` when running in Jupyter,
+            ``None`` otherwise.
+
+        Raises:
+            ValueError: If *output_path* is ``None`` and the code is
+                not running inside a Jupyter notebook.
         """
+        output_path = _resolve_media_path(output_path, suffix=".mp4")
         from ..visualization import make_video
 
         make_video(
@@ -1012,6 +1089,15 @@ class Image(Invertible):
             direction=direction,
             verbosity=verbosity,
         )
+        if _in_jupyter():
+            from IPython.display import Video
+
+            return Video(
+                str(output_path),
+                embed=True,
+                html_attributes="controls autoplay loop muted",
+            )
+        return None
 
     def __getattr__(self, name: str) -> Any:
         """Look up metadata by attribute name."""

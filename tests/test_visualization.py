@@ -115,11 +115,19 @@ class TestPlotImage:
         ax = fig.axes[0]
         xlabel = ax.get_xlabel()
         ylabel = ax.get_ylabel()
+        # Default (voxels=False): "Anterior (J)" format
+        assert any(c in xlabel for c in ("I", "J", "K"))
+        assert any(c in ylabel for c in ("I", "J", "K"))
+
+    def test_voxel_labels_show_arrow(self) -> None:
+        img = tio.ScalarImage(torch.rand(1, 10, 10, 10))
+        fig = img.plot(show=False, voxels=True)
+        ax = fig.axes[0]
+        xlabel = ax.get_xlabel()
+        ylabel = ax.get_ylabel()
+        # voxels=True: "J (A ↔ P)" format
         assert "↔" in xlabel
         assert "↔" in ylabel
-        # Should contain tensor axis names (I, J, or K)
-        all_labels = xlabel + ylabel
-        assert any(c in all_labels for c in ("I", "J", "K"))
 
     def test_save_to_file(self, tmp_path) -> None:
         img = tio.ScalarImage(torch.rand(1, 10, 10, 10))
@@ -296,3 +304,76 @@ class TestMakeGif:
             out = tmp_path / f"{direction}.gif"
             img.to_gif(out, direction=direction, seconds=1.0)
             assert out.exists()
+
+
+class TestJupyterReturn:
+    def test_to_gif_returns_none_outside_jupyter(self, tmp_path) -> None:
+        img = tio.ScalarImage(torch.rand(1, 8, 8, 8))
+        out = tmp_path / "test.gif"
+        result = img.to_gif(out, direction="I")
+        assert result is None
+
+    def test_to_gif_returns_ipy_image_in_jupyter(self, tmp_path, monkeypatch) -> None:
+        pytest.importorskip("IPython")
+        from torchio.data import image as image_module
+
+        monkeypatch.setattr(image_module, "_in_jupyter", lambda: True)
+        img = tio.ScalarImage(torch.rand(1, 8, 8, 8))
+        out = tmp_path / "test.gif"
+        result = img.to_gif(out, direction="I")
+        from IPython.display import Image as IPyImage
+
+        assert isinstance(result, IPyImage)
+
+    def test_to_gif_no_path_outside_jupyter_raises(self) -> None:
+        img = tio.ScalarImage(torch.rand(1, 8, 8, 8))
+        with pytest.raises(ValueError, match="output_path is required"):
+            img.to_gif()
+
+    def test_to_gif_no_path_in_jupyter(self, monkeypatch) -> None:
+        pytest.importorskip("IPython")
+        from torchio.data import image as image_module
+
+        monkeypatch.setattr(image_module, "_in_jupyter", lambda: True)
+        img = tio.ScalarImage(torch.rand(1, 8, 8, 8))
+        result = img.to_gif()
+        from IPython.display import Image as IPyImage
+
+        assert isinstance(result, IPyImage)
+
+    def test_to_video_returns_none_outside_jupyter(self, tmp_path) -> None:
+        pytest.importorskip("ffmpeg")
+        img = tio.ScalarImage(torch.rand(1, 8, 8, 8))
+        out = tmp_path / "test.mp4"
+        result = img.to_video(out, direction="I")
+        assert result is None
+
+    def test_to_video_returns_ipy_video_in_jupyter(self, tmp_path, monkeypatch) -> None:
+        pytest.importorskip("ffmpeg")
+        pytest.importorskip("IPython")
+        from torchio.data import image as image_module
+
+        monkeypatch.setattr(image_module, "_in_jupyter", lambda: True)
+        img = tio.ScalarImage(torch.rand(1, 8, 8, 8))
+        out = tmp_path / "test.mp4"
+        result = img.to_video(out, direction="I")
+        from IPython.display import Video
+
+        assert isinstance(result, Video)
+
+    def test_to_video_no_path_outside_jupyter_raises(self) -> None:
+        img = tio.ScalarImage(torch.rand(1, 8, 8, 8))
+        with pytest.raises(ValueError, match="output_path is required"):
+            img.to_video()
+
+    def test_to_video_no_path_in_jupyter(self, monkeypatch) -> None:
+        pytest.importorskip("ffmpeg")
+        pytest.importorskip("IPython")
+        from torchio.data import image as image_module
+
+        monkeypatch.setattr(image_module, "_in_jupyter", lambda: True)
+        img = tio.ScalarImage(torch.rand(1, 8, 8, 8))
+        result = img.to_video()
+        from IPython.display import Video
+
+        assert isinstance(result, Video)
