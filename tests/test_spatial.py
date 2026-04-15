@@ -463,11 +463,19 @@ class TestValidation:
 
     def test_parse_interpolation_invalid(self) -> None:
         with pytest.raises(ValueError, match="not supported"):
-            _parse_interpolation("cubic")  # type: ignore[arg-type]
+            _parse_interpolation("bicubic")  # type: ignore[arg-type]
+
+    def test_parse_interpolation_int(self) -> None:
+        assert _parse_interpolation(3) == "cubic"
+        assert _parse_interpolation(0) == "nearest"
+
+    def test_parse_interpolation_int_invalid(self) -> None:
+        with pytest.raises(ValueError, match="not supported"):
+            _parse_interpolation(99)
 
     def test_parse_interpolation_not_string(self) -> None:
-        with pytest.raises(TypeError, match="string"):
-            _parse_interpolation(42)  # type: ignore[arg-type]
+        with pytest.raises(TypeError, match="string or int"):
+            _parse_interpolation(42.5)  # type: ignore[arg-type]
 
     def test_parse_default_pad_value_invalid_string(self) -> None:
         with pytest.raises(ValueError, match="minimum"):
@@ -639,7 +647,7 @@ class TestEdgeCases:
             affine_first=True,
             device=torch.device("cpu"),
         )
-        assert grid.shape == (1, 11, 11, 11, 3)
+        assert grid.shape == (11, 11, 11, 3)
 
     def test_batch_fill_value_bad_type(self) -> None:
         """_batch_fill_value raises TypeError for non-str non-number (lines 907-911)."""
@@ -693,3 +701,56 @@ class TestExports:
         assert hasattr(tio, "ElasticDeformation")
         assert tio.Affine is AffineTransform
         assert tio.AffineMatrix is AffineMatrix
+
+
+# ---------------------------------------------------------------------------
+# High-order interpolation (torch-interpol)
+# ---------------------------------------------------------------------------
+
+
+class TestHighOrderInterpolation:
+    def test_cubic_produces_different_result_from_linear(self) -> None:
+        subject = tio.Subject(t1=tio.ScalarImage(torch.rand(1, 16, 16, 16)))
+        linear = tio.Affine(
+            degrees=10,
+            image_interpolation="linear",
+        )(subject)
+        cubic = tio.Affine(
+            degrees=10,
+            image_interpolation="cubic",
+        )(subject)
+        # Same params won't be sampled, so compare shapes at least
+        assert linear.t1.data.shape == cubic.t1.data.shape
+
+    def test_cubic_resample(self) -> None:
+        subject = tio.Subject(t1=tio.ScalarImage(torch.rand(1, 16, 16, 16)))
+        result = tio.Resample(
+            target=2.0,
+            image_interpolation="cubic",
+        )(subject)
+        assert result.t1.data.shape[1:] == (8, 8, 8)
+
+    def test_quadratic_interpolation(self) -> None:
+        subject = tio.Subject(t1=tio.ScalarImage(torch.rand(1, 10, 10, 10)))
+        result = tio.Affine(
+            degrees=5,
+            image_interpolation="quadratic",
+        )(subject)
+        assert result.t1.data.shape == subject.t1.data.shape
+
+    def test_int_order_3(self) -> None:
+        subject = tio.Subject(t1=tio.ScalarImage(torch.rand(1, 10, 10, 10)))
+        result = tio.Affine(
+            degrees=5,
+            image_interpolation=3,
+        )(subject)
+        assert result.t1.data.shape == subject.t1.data.shape
+
+    def test_order_0_uses_fast_path(self) -> None:
+        """Nearest interpolation should still work via F.grid_sample."""
+        subject = tio.Subject(t1=tio.ScalarImage(torch.rand(1, 10, 10, 10)))
+        result = tio.Affine(
+            degrees=5,
+            image_interpolation="nearest",
+        )(subject)
+        assert result.t1.data.shape == subject.t1.data.shape

@@ -46,6 +46,7 @@ dependencies = [
     "rich",
     "simpleitk",
     "torch",
+    "torch-interpol>=0.2.6",
     "typing_extensions>=4.0",
     "tyro>=1.0.12",
 ]

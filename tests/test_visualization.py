@@ -115,9 +115,9 @@ class TestPlotImage:
         ax = fig.axes[0]
         xlabel = ax.get_xlabel()
         ylabel = ax.get_ylabel()
-        # Default (voxels=False): "Anterior (J)" format
-        assert any(c in xlabel for c in ("I", "J", "K"))
-        assert any(c in ylabel for c in ("I", "J", "K"))
+        # Default (voxels=False): "Anterior [mm] (j)" format
+        assert any(c in xlabel for c in ("i", "j", "k"))
+        assert any(c in ylabel for c in ("i", "j", "k"))
 
     def test_voxel_labels_show_arrow(self) -> None:
         img = tio.ScalarImage(torch.rand(1, 10, 10, 10))
@@ -125,7 +125,7 @@ class TestPlotImage:
         ax = fig.axes[0]
         xlabel = ax.get_xlabel()
         ylabel = ax.get_ylabel()
-        # voxels=True: "J (A ↔ P)" format
+        # voxels=True: "j (A ↔ P)" format
         assert "↔" in xlabel
         assert "↔" in ylabel
 

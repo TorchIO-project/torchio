@@ -74,11 +74,39 @@ TypeTarget: TypeAlias = (
 )
 TypeControlPoints: TypeAlias = Tensor | npt.ArrayLike
 TypeTargetSpace: TypeAlias = tuple[TypeThreeInts, AffineMatrix]
-TypeInterpolation: TypeAlias = Literal["nearest", "linear"]
+TypeInterpolation: TypeAlias = Literal[
+    "nearest",
+    "linear",
+    "quadratic",
+    "cubic",
+    "fourth",
+    "fifth",
+    "sixth",
+    "seventh",
+]
 TypeCenter: TypeAlias = Literal["image", "origin"]
 TypePadValue: TypeAlias = Literal["minimum", "mean", "otsu"]
 
-_SUPPORTED_INTERPOLATIONS = ("nearest", "linear")
+_SUPPORTED_INTERPOLATIONS = (
+    "nearest",
+    "linear",
+    "quadratic",
+    "cubic",
+    "fourth",
+    "fifth",
+    "sixth",
+    "seventh",
+)
+_INTERPOLATION_TO_ORDER: dict[str, int] = {
+    "nearest": 0,
+    "linear": 1,
+    "quadratic": 2,
+    "cubic": 3,
+    "fourth": 4,
+    "fifth": 5,
+    "sixth": 6,
+    "seventh": 7,
+}
 _TORCH_INTERPOLATION_MODE = {
     "nearest": "nearest",
     "linear": "bilinear",
@@ -674,7 +702,8 @@ def _apply_spatial_to_batch(
         img_batch.data = _sample_batch(
             data,
             grid,
-            mode=_TORCH_INTERPOLATION_MODE[interpolation],
+            input_shape=input_shape,
+            interpolation=interpolation,
             fill_value=fill_value,
         )
         new_affine = output_affine.clone()
@@ -791,7 +820,7 @@ def _build_sampling_grid(
     affine_first: bool,
     device: torch.device,
 ) -> Tensor:
-    """Build a normalized sampling grid for ``F.grid_sample``.
+    """Build a sampling grid in **input voxel coordinates**.
 
     The grid maps each output voxel to its source location in the input
     volume.  The mapping is:
@@ -806,8 +835,8 @@ def _build_sampling_grid(
     mapping or the elastic displacement is applied first.
 
     Returns:
-        Grid tensor with shape ``(1, K_out, J_out, I_out, 3)`` in the
-        ``[-1, 1]`` range expected by ``F.grid_sample``.
+        Grid tensor with shape ``(I_out, J_out, K_out, 3)`` in input
+        voxel coordinates.
     """
     mapping = _output_to_input_voxel_matrix(
         input_affine=input_affine,
@@ -818,8 +847,7 @@ def _build_sampling_grid(
     output_coords = _output_voxel_coordinates(output_shape, device)
 
     if control_points is None:
-        input_voxels = _apply_voxel_mapping(output_coords, mapping)
-        return _voxel_coordinates_to_grid(input_voxels, input_shape)
+        return _apply_voxel_mapping(output_coords, mapping)
 
     output_spacing = np.asarray(output_affine.spacing, dtype=np.float64)
     if max_displacement is None:
@@ -855,7 +883,7 @@ def _build_sampling_grid(
         deformed_output = output_coords + displacement / output_spacing_t
         input_voxels = _apply_voxel_mapping(deformed_output, mapping)
 
-    return _voxel_coordinates_to_grid(input_voxels, input_shape)
+    return input_voxels
 
 
 def _output_to_input_voxel_matrix(
@@ -929,23 +957,60 @@ def _voxel_coordinates_to_grid(
 
 def _sample_batch(
     data: Tensor,
-    grid: Tensor,
+    voxel_grid: Tensor,
     *,
-    mode: str,
+    input_shape: TypeThreeInts,
+    interpolation: str,
     fill_value: float | Tensor,
 ) -> Tensor:
     """Resample a 5D batch using a shared sampling grid.
 
+    For interpolation orders 0-1 (nearest, linear), the fast
+    ``F.grid_sample`` path is used.  For orders 2+ (quadratic,
+    cubic, ...), ``interpol.grid_pull`` provides high-order B-spline
+    interpolation.
+
     Args:
         data: ``(B, C, I, J, K)`` image batch.
-        grid: ``(1, K_out, J_out, I_out, 3)`` sampling grid (broadcast to B).
-        mode: Interpolation mode for ``grid_sample``.
-        fill_value: Scalar or per-channel fill for out-of-bounds samples.
+        voxel_grid: ``(I_out, J_out, K_out, 3)`` sampling grid in
+            input voxel coordinates.
+        input_shape: Spatial shape of the input volume ``(I, J, K)``.
+        interpolation: Interpolation mode name.
+        fill_value: Scalar or per-channel fill for out-of-bounds
+            samples.
 
     Returns:
         Resampled ``(B, C, I_out, J_out, K_out)`` tensor.
     """
+    order = _INTERPOLATION_TO_ORDER[interpolation]
+    if order <= 1:
+        return _sample_batch_grid_sample(
+            data,
+            voxel_grid,
+            input_shape=input_shape,
+            mode=_TORCH_INTERPOLATION_MODE[interpolation],
+            fill_value=fill_value,
+        )
+    return _sample_batch_interpol(
+        data,
+        voxel_grid,
+        order=order,
+        fill_value=fill_value,
+    )
+
+
+def _sample_batch_grid_sample(
+    data: Tensor,
+    voxel_grid: Tensor,
+    *,
+    input_shape: TypeThreeInts,
+    mode: str,
+    fill_value: float | Tensor,
+) -> Tensor:
+    """Fast path: resample with F.grid_sample (orders 0-1)."""
     batch_size = data.shape[0]
+    # Normalize voxel coords to [-1, 1] for grid_sample.
+    grid = _voxel_coordinates_to_grid(voxel_grid, input_shape)
     # (B, C, I, J, K) -> (B, C, K, J, I) for grid_sample
     input_5d = rearrange(data, "b c i j k -> b c k j i").float()
     # Expand grid from (1, ...) to (B, ...)
@@ -971,6 +1036,36 @@ def _sample_batch(
 
     # (B, C, K, J, I) -> (B, C, I, J, K)
     return rearrange(sampled, "b c k j i -> b c i j k").to(data.dtype)
+
+
+def _sample_batch_interpol(
+    data: Tensor,
+    voxel_grid: Tensor,
+    *,
+    order: int,
+    fill_value: float | Tensor,
+) -> Tensor:
+    """High-quality path: resample with interpol.grid_pull (orders 2+).
+
+    ``interpol.grid_pull`` works in voxel coordinates natively and
+    supports B-spline orders up to 7.
+    """
+    import interpol
+
+    batch_size = data.shape[0]
+    # interpol expects: input (B, C, *spatial), grid (B, *spatial, D)
+    # Our grid is (I_out, J_out, K_out, 3) — add batch dim.
+    grid_b = voxel_grid.unsqueeze(0).expand(batch_size, -1, -1, -1, -1)
+
+    sampled = interpol.grid_pull(
+        data.float(),
+        grid_b,
+        interpolation=order,
+        bound="dct2",
+        extrapolate=False,
+        prefilter=True,
+    )
+    return sampled.to(data.dtype)
 
 
 def _antialias_batch(
@@ -1632,10 +1727,21 @@ def _parse_spacing(
     return spacing
 
 
-def _parse_interpolation(interpolation: TypeInterpolation) -> TypeInterpolation:
-    """Validate and lower-case an interpolation mode string."""
+def _parse_interpolation(
+    interpolation: TypeInterpolation | int,
+) -> TypeInterpolation:
+    """Validate an interpolation mode (string or integer order).
+
+    Integer orders (0-7) are converted to their string equivalents.
+    """
+    if isinstance(interpolation, int):
+        order_to_name = {v: k for k, v in _INTERPOLATION_TO_ORDER.items()}
+        if interpolation not in order_to_name:
+            msg = f"Interpolation order {interpolation} is not supported. Must be 0-7."
+            raise ValueError(msg)
+        return cast(TypeInterpolation, order_to_name[interpolation])
     if not isinstance(interpolation, str):
-        msg = f"Interpolation must be a string, got {type(interpolation)}"
+        msg = f"Interpolation must be a string or int, got {type(interpolation)}"
         raise TypeError(msg)
     lowered = interpolation.lower()
     if lowered not in _SUPPORTED_INTERPOLATIONS:
