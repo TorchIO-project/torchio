@@ -31,14 +31,10 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v6
 
-      - name: Install the latest version of uv
-        uses: astral-sh/setup-uv@v7
-
-      - name: Install dependencies
-        run: uv sync --group doc
-
-      - name: Install just
-        uses: extractions/setup-just@v3
+      - name: Install mise-en-place
+        uses: jdx/mise-action@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Restore TorchIO cached data
         id: cache-torchio-data-restore
@@ -47,14 +43,8 @@ jobs:
           path: ~/.cache/torchio
           key: ${{ runner.os }}-torchio-data
 
-      - name: Generate plots
-        run: just generate-plots
-
-      - name: Generate examples gallery
-        run: just generate-gallery
-
       - name: Build docs
-        run: just build-docs
+        run: mise run docs:build
 
       - name: Save TorchIO cached data
         if: steps.cache-torchio-data-restore.outputs.cache-hit != 'true'
