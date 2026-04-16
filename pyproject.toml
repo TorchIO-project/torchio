@@ -62,9 +62,15 @@ Documentation = "https://docs.torchio.org"
 torchio = "torchio.cli:main"
 
 [project.optional-dependencies]
-cornucopia = [
-    "cornucopia>=0.3.0",
-]
+cornucopia = ["cornucopia"]
+plot = ["matplotlib", "colorcet"]
+video = ["ffmpeg-python"]
+monai = ["monai"]
+s3 = ["s3fs"]
+azure = ["adlfs"]
+gcs = ["gcsfs"]
+zarr = ["nifti-zarr"]
+
 
 [build-system]
 requires = ["uv_build>=0.11.1,<0.12.0"]
@@ -140,7 +146,11 @@ test = [
     "pytest-cov",
     "pytest-sugar",
 ]
-docs = ["mkdocstrings-python", "zensical"]
+docs = [
+    "mkdocstrings-python",
+    "nbconvert",
+    "zensical",
+]
 quality = ["ruff"]
 types = [
     "ipykernel",
@@ -148,10 +158,3 @@ types = [
     "ty",
     "zarr",
 ]
-zarr = ["nifti-zarr"]
-plot = ["matplotlib", "colorcet"]
-video = ["ffmpeg-python"]
-monai = ["monai"]
-s3 = ["s3fs"]
-azure = ["adlfs"]
-gcs = ["gcsfs"]
