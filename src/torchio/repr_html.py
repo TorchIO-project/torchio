@@ -128,7 +128,7 @@ def _try_plot_base64(image: Image) -> str | None:
         return None
 
     return _render_fig_base64(
-        lambda: plot_image(image, show=False, figsize=(9, 3)),
+        lambda: plot_image(image, show=False),
     )
 
 

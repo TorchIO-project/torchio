@@ -897,6 +897,7 @@ class Image(Invertible):
         start_voxel = torch.tensor(
             [i_start, j_start, k_start],
             dtype=torch.float64,
+            device=affine_matrix.device,
         )
         affine_matrix[:3, 3] += affine_matrix[:3, :3] @ start_voxel
 
@@ -956,6 +957,8 @@ class Image(Invertible):
             lines.append(f"    orientation: {''.join(self.orientation)}+")
             lines.append(f"    angles:      ({angles})")
             lines.append(f"    dtype:       {dt}")
+            if self.is_loaded:
+                lines.append(f"    device:      {self.device}")
             lines.append(f"    memory:      {mem}")
         except Exception:
             if self._path is not None:
