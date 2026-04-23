@@ -37,11 +37,11 @@ depends = ["lint", "format-check", "types"]
 
 [tasks.bump]
 description = "Bump version (usage: mise run bump -- patch|minor|major)"
-run = "uv run -- bump-my-version bump ${1:-patch} --verbose"
+run = "uv run -- bump-my-version bump --verbose"
 
 [tasks.bump-dry]
 description = "Dry-run version bump"
-run = "uv run -- bump-my-version bump ${1:-patch} --dry-run --verbose --allow-dirty"
+run = "uv run -- bump-my-version bump --dry-run --verbose --allow-dirty"
 
 [tasks.push]
 description = "Push commits and tags"
