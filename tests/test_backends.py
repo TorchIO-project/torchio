@@ -89,6 +89,30 @@ class TestNibabelBackend:
         tensor = backend.to_tensor()
         assert tensor.shape == (3, 10, 12, 14)
 
+    @pytest.mark.parametrize(
+        ("np_dtype", "torch_dtype"),
+        [
+            (np.int16, torch.int16),
+            (np.int32, torch.int32),
+            (np.uint8, torch.uint8),
+            (np.uint16, torch.int32),  # upcast: torch has no uint16
+            (np.float32, torch.float32),
+            (np.float64, torch.float64),
+        ],
+    )
+    def test_to_tensor_preserves_dtype(
+        self,
+        tmp_path: Path,
+        np_dtype: type,
+        torch_dtype: torch.dtype,
+    ) -> None:
+        data = np.zeros((10, 12, 14), dtype=np_dtype)
+        path = tmp_path / f"dtype_{np.dtype(np_dtype).name}.nii.gz"
+        nib.save(nib.Nifti1Image(data, np.eye(4)), path)
+        backend = NibabelBackend(nib.load(path))
+        tensor = backend.to_tensor()
+        assert tensor.dtype == torch_dtype
+
     def test_getitem_3d(self, nifti_path: Path):
         nii = nib.load(nifti_path)
         backend = NibabelBackend(nii)

@@ -128,7 +128,6 @@ class Convert:
             image.to_nifti_zarr(self.output)
         else:
             image.save(self.output)
-        print(f"Converted {self.input} -> {self.output}")
 
 
 @dataclass

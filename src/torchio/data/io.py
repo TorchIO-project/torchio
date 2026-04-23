@@ -88,6 +88,37 @@ def is_remote_nifti_zarr(uri: str) -> bool:
     return _is_remote(clean) and clean.endswith(".nii.zarr")
 
 
+# ── Dtype helper ─────────────────────────────────────────────────────
+
+
+# `torch.from_numpy` does not support these numpy dtypes directly, so we
+# upcast to the next PyTorch-compatible signed/unsigned type while
+# preserving integer semantics.
+_NUMPY_DTYPE_PROMOTIONS: dict[np.dtype, np.dtype] = {
+    np.dtype("bool"): np.dtype("uint8"),
+    np.dtype("uint16"): np.dtype("int32"),
+    np.dtype("uint32"): np.dtype("int64"),
+    np.dtype("uint64"): np.dtype("int64"),
+}
+
+
+def _numpy_to_tensor(array: np.ndarray) -> torch.Tensor:
+    """Convert a numpy array to a torch tensor preserving dtype where possible.
+
+    Unsigned integer dtypes (``uint16``, ``uint32``, ``uint64``) and
+    ``bool`` are not supported by ``torch.from_numpy``; they are upcast
+    to the smallest signed/unsigned type that PyTorch supports while
+    preserving the integer range. All other dtypes keep their native
+    representation.
+    """
+    promotion = _NUMPY_DTYPE_PROMOTIONS.get(array.dtype)
+    if promotion is not None:
+        array = array.astype(promotion, copy=False)
+    if not array.flags.writeable or not array.flags.c_contiguous:
+        array = np.ascontiguousarray(array)
+    return torch.from_numpy(array)
+
+
 # ── Readers ──────────────────────────────────────────────────────────
 
 
@@ -110,7 +141,7 @@ def read_nibabel(path: Path, **kwargs: Any) -> tuple[TypeImageData, np.ndarray]:
     else:
         msg = f"Expected 3D or 4D data, got {data.ndim}D"
         raise ValueError(msg)
-    tensor = torch.as_tensor(data.copy(), dtype=torch.float32)
+    tensor = _numpy_to_tensor(data.copy())
     return tensor, affine
 
 
@@ -139,7 +170,7 @@ def read_sitk(path: Path, **kwargs: Any) -> tuple[TypeImageData, np.ndarray]:
     lps_affine[:3, :3] = direction * spacing
     lps_affine[:3, 3] = origin
     affine = _RAS_TO_LPS @ lps_affine
-    tensor = torch.as_tensor(data.copy(), dtype=torch.float32)
+    tensor = _numpy_to_tensor(data.copy())
     return tensor, affine
 
 
@@ -182,7 +213,7 @@ def read_nifti_zarr(
     else:
         msg = f"Expected 3D or 4D NIfTI-Zarr data, got {data.ndim}D"
         raise ValueError(msg)
-    tensor = torch.as_tensor(data.copy(), dtype=torch.float32)
+    tensor = _numpy_to_tensor(data.copy())
     return tensor, affine
 
 

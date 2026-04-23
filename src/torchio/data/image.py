@@ -321,7 +321,9 @@ class Image(Invertible):
         data = sitk.GetArrayFromImage(sitk_image)
         n_components = sitk_image.GetNumberOfComponentsPerPixel()
         data = data[np.newaxis] if n_components == 1 else np.moveaxis(data, -1, 0)
-        tensor = torch.as_tensor(data.copy(), dtype=torch.float32)
+        from .io import _numpy_to_tensor
+
+        tensor = _numpy_to_tensor(data.copy())
         spacing = np.array(sitk_image.GetSpacing())
         origin = np.array(sitk_image.GetOrigin())
         direction = rearrange(np.array(sitk_image.GetDirection()), "(i j) -> i j", i=3)
@@ -374,7 +376,9 @@ class Image(Invertible):
     @staticmethod
     def _parse_tensor(tensor: Tensor | np.ndarray) -> Tensor:
         if isinstance(tensor, np.ndarray):
-            tensor = torch.as_tensor(tensor.copy(), dtype=torch.float32)
+            from .io import _numpy_to_tensor
+
+            tensor = _numpy_to_tensor(tensor.copy())
         if tensor.ndim != 4:
             msg = f"Tensor must be 4D (C, I, J, K), got {tensor.ndim}D"
             raise ValueError(msg)
@@ -916,10 +920,9 @@ class Image(Invertible):
         self._ensure_backend()
         if self._backend is not None:
             array = self._backend[sc, si, sj, sk]
-            return torch.as_tensor(
-                np.asarray(array).copy(),
-                dtype=torch.float32,
-            )
+            from .io import _numpy_to_tensor
+
+            return _numpy_to_tensor(np.asarray(array).copy())
         return self.data[sc, si, sj, sk]
 
     def _repr_path_line(self) -> str:

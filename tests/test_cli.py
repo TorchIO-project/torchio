@@ -55,6 +55,26 @@ class TestConvert:
                 output=tmp_path / "out.nii",
             ).run()
 
+    def test_preserves_dtype(self, tmp_path: Path) -> None:
+        input_path = tmp_path / "in.nii.gz"
+        data = np.zeros((4, 5, 6), dtype=np.int16)
+        nib.save(nib.Nifti1Image(data, np.eye(4)), input_path)
+        output = tmp_path / "out.nii.gz"
+        Convert(input=input_path, output=output).run()
+        loaded = nib.load(output)
+        assert loaded.header.get_data_dtype() == np.int16
+
+    def test_no_stdout(
+        self,
+        nii_path: Path,
+        tmp_path: Path,
+        capsys: pytest.CaptureFixture[str],
+    ) -> None:
+        output = tmp_path / "out.nii.gz"
+        Convert(input=nii_path, output=output).run()
+        captured = capsys.readouterr()
+        assert captured.out == ""
+
 
 class TestTransform:
     def test_apply_noise(self, nii_path: Path, tmp_path: Path) -> None:

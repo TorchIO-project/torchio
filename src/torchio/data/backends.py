@@ -53,7 +53,7 @@ class ImageDataBackend(Protocol):
         ...
 
     def to_tensor(self) -> Tensor:
-        """Materialize the full data as a float32 tensor."""
+        """Materialize the full data as a tensor preserving the on-disk dtype."""
         ...
 
 
@@ -220,7 +220,7 @@ class NibabelBackend:
         return rearrange(data, "i j k c -> c i j k")
 
     def to_tensor(self) -> Tensor:
-        """Materialize the full image as a float32 tensor."""
+        """Materialize the full image preserving the on-disk dtype."""
         data = np.asarray(self._nii.dataobj)
         ndim = data.ndim
         if ndim == 3:
@@ -233,7 +233,9 @@ class NibabelBackend:
         else:
             msg = f"Expected 3D or 4D data, got {ndim}D"
             raise ValueError(msg)
-        return torch.tensor(data, dtype=torch.float32)
+        from .io import _numpy_to_tensor
+
+        return _numpy_to_tensor(np.ascontiguousarray(data))
 
 
 class ZarrBackend:
