@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import copy
+from collections.abc import Mapping
 from collections.abc import Sequence
 from typing import Any
 from typing import cast
@@ -20,7 +21,9 @@ class Compose(Transform):
     This avoids redundant copies when chaining many transforms.
 
     Args:
-        transforms: Sequence of transforms to apply sequentially.
+        transforms: Sequence of transforms to apply sequentially, or a
+            mapping whose values are the transforms (keys are used as
+            human-readable names and ignored at runtime).
         copy: If ``True`` (default), deep-copy the input before
             applying the pipeline. Set to ``False`` when this
             ``Compose`` is nested inside another ``Compose``.
@@ -34,17 +37,26 @@ class Compose(Transform):
         ...     tio.Noise(std=(0.01, 0.1)),
         ... ])
         >>> augmented = preprocessing(subject)
+        >>> named = tio.Compose({
+        ...     "flip": tio.Flip(axes=(0,), p=0.5),
+        ...     "noise": tio.Noise(std=(0.01, 0.1)),
+        ... })
     """
 
     def __init__(
         self,
-        transforms: Sequence[Transform] | None = None,
+        transforms: Sequence[Transform] | Mapping[Any, Transform] | None = None,
         *,
         copy: bool = True,
         **kwargs: Any,
     ) -> None:
         super().__init__(copy=copy, **kwargs)
-        self.transforms = list(transforms) if transforms else []
+        if transforms is None:
+            self.transforms: list[Transform] = []
+        elif isinstance(transforms, Mapping):
+            self.transforms = list(transforms.values())
+        else:
+            self.transforms = list(transforms)
 
     def forward(self, data):
         if self.copy:

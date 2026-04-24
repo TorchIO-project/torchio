@@ -60,3 +60,17 @@ class TestCompose:
         subject = _make_subject()
         result = tio.Compose([tio.Flip(axes=(0,))])(subject)
         assert len(result.applied_transforms) > 0
+
+    def test_dict_transforms(self) -> None:
+        subject = _make_subject()
+        pipeline = tio.Compose(
+            {
+                "flip": tio.Flip(axes=(0,)),
+                "gamma": tio.Gamma(log_gamma=0.0),
+            }
+        )
+        assert len(pipeline.transforms) == 2
+        assert isinstance(pipeline.transforms[0], tio.Flip)
+        assert isinstance(pipeline.transforms[1], tio.Gamma)
+        result = pipeline(subject)
+        assert result.t1.data.shape == subject.t1.data.shape
