@@ -1750,7 +1750,7 @@ def _parse_interpolation(
             f" {_SUPPORTED_INTERPOLATIONS}"
         )
         raise ValueError(msg)
-    return cast(TypeInterpolation, lowered)
+    return lowered
 
 
 def _parse_default_pad_value(value: TypePadValue | float) -> TypePadValue | float:

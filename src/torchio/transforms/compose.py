@@ -45,7 +45,7 @@ class Compose(Transform):
 
     def __init__(
         self,
-        transforms: Sequence[Transform] | Mapping[Any, Transform] | None = None,
+        transforms: Sequence[Transform] | Mapping[str, Transform] | None = None,
         *,
         copy: bool = True,
         **kwargs: Any,
@@ -54,7 +54,8 @@ class Compose(Transform):
         if transforms is None:
             self.transforms: list[Transform] = []
         elif isinstance(transforms, Mapping):
-            self.transforms = list(transforms.values())
+            mapping = cast(Mapping[str, Transform], transforms)
+            self.transforms = list(mapping.values())
         else:
             self.transforms = list(transforms)
 

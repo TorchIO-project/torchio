@@ -447,12 +447,12 @@ class CropOrPad(SpatialTransform):
             msg = f"location must be 'center' or 'random', got {location!r}"
             raise ValueError(msg)
         self.target_shape = _parse_target_shape(target_shape)
-        self.units = units
+        self.units: Units = units
         self.padding_mode = padding_mode
         self.fill = fill
         self.only_crop = only_crop
         self.only_pad = only_pad
-        self.location = location
+        self.location: Location = location
 
     def forward(self, data):
         """Apply the transform.

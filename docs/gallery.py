@@ -122,26 +122,30 @@ def _parse_section(section: str, blocks: list[dict]) -> None:
     current_code: list[str] = []
     in_code = False  # once we see a code line, stay in code mode
 
+    def flush_code() -> None:
+        if current_code:
+            blocks.append({"type": "code", "content": "\n".join(current_code)})
+            current_code.clear()
+
+    def flush_text() -> None:
+        if current_text:
+            text = _rst_to_md("\n".join(current_text))
+            blocks.append({"type": "text", "content": text})
+            current_text.clear()
+
     for line in lines:
         is_toplevel_comment = not in_code and (line.startswith("# ") or line == "#")
         if is_toplevel_comment:
-            if current_code:
-                blocks.append({"type": "code", "content": "\n".join(current_code)})
-                current_code = []
+            flush_code()
             text_line = line[2:] if line.startswith("# ") else ""
             current_text.append(text_line)
         else:
-            if current_text:
-                text = _rst_to_md("\n".join(current_text))
-                blocks.append({"type": "text", "content": text})
-                current_text = []
+            flush_text()
             current_code.append(line)
             if line.strip():
                 in_code = True
 
-    if current_text:
-        text = _rst_to_md("\n".join(current_text))
-        blocks.append({"type": "text", "content": text})
+    flush_text()
     if current_code:
         code = "\n".join(current_code)
         if code.strip():
@@ -348,6 +352,73 @@ def _generate_index(
 # ---------------------------------------------------------------------------
 
 
+def _make_thumbnail(figures: list[Path]) -> Path | None:
+    """Create a thumbnail from the first figure, returning its path."""
+    if not figures:
+        return None
+    first = figures[0]
+    thumb_path = first.with_name(first.stem + "_thumb" + first.suffix)
+    from PIL import Image as PILImage
+
+    try:
+        img = PILImage.open(first)
+        if getattr(img, "n_frames", 1) > 1:
+            thumb_path = thumb_path.with_suffix(".png")
+            img.seek(0)
+            img_copy = img.copy()
+            img_copy.thumbnail((400, 300))
+            img_copy.save(thumb_path)
+        else:
+            img.thumbnail((400, 300))
+            img.save(thumb_path)
+        print(f"  Thumbnail {thumb_path}", file=sys.stderr)
+        return thumb_path
+    except Exception:
+        return first
+
+
+def _load_cached_example(script: Path, hash_marker: str) -> dict | None:
+    """Return cached example metadata if the markdown is up to date."""
+    md_path = _EXAMPLES_DIR / f"{script.stem}.md"
+    if not (md_path.exists() and hash_marker in md_path.read_text()):
+        return None
+    print("  Cached (hash match)", file=sys.stderr)
+    title, description, _ = _parse_docstring(script.read_text())
+    thumbs = sorted(_IMAGES_DIR.glob(f"{script.stem}_*_thumb.png"))
+    return {
+        "stem": script.stem,
+        "title": title,
+        "description": description,
+        "thumbnail": thumbs[0] if thumbs else None,
+    }
+
+
+def _process_script(script: Path) -> dict:
+    """Process a single example script into a metadata dict."""
+    print(f"Processing {script.name}...", file=sys.stderr)
+
+    source_hash = hashlib.md5(script.read_bytes()).hexdigest()[:12]
+    hash_marker = f"<!-- hash:{source_hash} -->"
+
+    cached = _load_cached_example(script, hash_marker)
+    if cached is not None:
+        return cached
+
+    blocks, figures, title, description = _execute_example(script)
+    page = _generate_page(script, blocks, title, description)
+    page = f"{hash_marker}\n{page}"
+    md_path = _EXAMPLES_DIR / f"{script.stem}.md"
+    md_path.write_text(page)
+    print(f"  Generated {md_path}", file=sys.stderr)
+
+    return {
+        "stem": script.stem,
+        "title": title,
+        "description": description,
+        "thumbnail": _make_thumbnail(figures),
+    }
+
+
 def main() -> None:
     scripts = sorted(_EXAMPLES_DIR.glob("plot_*.py"))
     scripts = [s for s in scripts if s.name not in _SKIP]
@@ -356,75 +427,8 @@ def main() -> None:
         print("No example scripts found", file=sys.stderr)
         return
 
-    examples: list[dict] = []
+    examples = [_process_script(script) for script in scripts]
 
-    for script in scripts:
-        print(f"Processing {script.name}...", file=sys.stderr)
-
-        # Check if we need to regenerate
-        source_hash = hashlib.md5(script.read_bytes()).hexdigest()[:12]
-        md_path = _EXAMPLES_DIR / f"{script.stem}.md"
-        hash_marker = f"<!-- hash:{source_hash} -->"
-
-        if md_path.exists() and hash_marker in md_path.read_text():
-            print("  Cached (hash match)", file=sys.stderr)
-            # Still need to extract title for the index
-            title, description, _ = _parse_docstring(script.read_text())
-            # Find existing thumbnail
-            thumbs = sorted(_IMAGES_DIR.glob(f"{script.stem}_*_thumb.png"))
-            thumb = thumbs[0] if thumbs else None
-            examples.append(
-                {
-                    "stem": script.stem,
-                    "title": title,
-                    "description": description,
-                    "thumbnail": thumb,
-                }
-            )
-            continue
-
-        blocks, figures, title, description = _execute_example(script)
-        page = _generate_page(script, blocks, title, description)
-        page = f"{hash_marker}\n{page}"
-        md_path.write_text(page)
-        print(f"  Generated {md_path}", file=sys.stderr)
-
-        # Create thumbnail from first figure
-        thumb = None
-        if figures:
-            suffix = figures[0].suffix  # .png or .gif
-            thumb_path = figures[0].with_name(
-                figures[0].stem + "_thumb" + suffix,
-            )
-            from PIL import Image as PILImage
-
-            try:
-                img = PILImage.open(figures[0])
-                if getattr(img, "n_frames", 1) > 1:
-                    # For animated GIFs, extract the first frame as PNG thumb
-                    thumb_path = thumb_path.with_suffix(".png")
-                    img.seek(0)
-                    img_copy = img.copy()
-                    img_copy.thumbnail((400, 300))
-                    img_copy.save(thumb_path)
-                else:
-                    img.thumbnail((400, 300))
-                    img.save(thumb_path)
-                thumb = thumb_path
-                print(f"  Thumbnail {thumb_path}", file=sys.stderr)
-            except Exception:
-                thumb = figures[0]
-
-        examples.append(
-            {
-                "stem": script.stem,
-                "title": title,
-                "description": description,
-                "thumbnail": thumb,
-            }
-        )
-
-    # Generate index page
     index_content = _generate_index(examples)
     index_path = _EXAMPLES_DIR / "index.md"
     index_path.write_text(index_content)
