@@ -48,6 +48,13 @@ For cloud storage (HTTP/HTTPS URLs work out of the box):
     pip install "torchio[gcs]"
     ```
 
+For an interactive 3D viewer in Jupyter
+([NiiVue](https://niivue.com/)):
+
+```
+pip install "torchio[niivue]"
+```
+
 ## Verify
 
 ```python

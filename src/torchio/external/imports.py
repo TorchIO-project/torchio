@@ -58,3 +58,11 @@ def get_ffmpeg() -> ModuleType:
 
 def get_monai() -> ModuleType:
     return _check_and_import(module="monai", extra="monai")
+
+
+def get_ipyniivue() -> ModuleType:
+    return _check_and_import(
+        module="ipyniivue",
+        extra="niivue",
+        package="ipyniivue",
+    )

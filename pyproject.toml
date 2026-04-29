@@ -64,6 +64,7 @@ torchio = "torchio.cli:main"
 [project.optional-dependencies]
 cornucopia = ["cornucopia"]
 plot = ["matplotlib", "colorcet"]
+niivue = ["ipyniivue"]
 video = ["ffmpeg-python"]
 monai = ["monai"]
 s3 = ["s3fs"]
@@ -133,7 +134,12 @@ search = 'version = "{current_version}"'
 replace = 'version = "{new_version}"'
 
 [dependency-groups]
-dev = ["bump-my-version", "ipykernel>=7.2.0", "ipywidgets>=8.1.8", "tox-uv"]
+dev = [
+    "bump-my-version",
+    "ipykernel>=7.2.0",
+    "ipywidgets>=8.1.8",
+    "tox-uv",
+]
 test = [
     "colorcet",
     "cornucopia",

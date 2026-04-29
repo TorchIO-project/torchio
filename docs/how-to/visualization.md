@@ -266,3 +266,22 @@ torchio animate brain.nii.gz brain.mp4 --seconds 10 --direction S
     GIFs require ``Pillow`` (included in the ``[plot]`` extra).
     Videos require ``ffmpeg-python`` (``pip install torchio[video]``)
     and a working ``ffmpeg`` installation.
+
+## Interactive 3D viewer
+
+For an interactive viewer in Jupyter notebooks, use
+``plot_interactive()``.  It uses
+[NiiVue](https://niivue.com/) via
+[ipyniivue](https://github.com/niivue/ipyniivue) and supports
+scrolling through slices, zooming, and crosshair navigation:
+
+<!-- pytest-codeblocks:skip -->
+```python
+image.plot_interactive()
+```
+
+The viewer uses **radiological convention** (left hemisphere on the
+right side of the screen).
+
+!!! note "Optional dependency"
+    Requires ``ipyniivue``: ``pip install torchio[niivue]``

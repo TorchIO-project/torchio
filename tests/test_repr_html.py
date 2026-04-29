@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import pytest
 import torch
 
 import torchio as tio
@@ -163,3 +164,26 @@ class TestSubjectReprHtml:
         html = subject._repr_html_()
         assert "age" in html
         assert "42" in html
+
+
+class TestPlotInteractive:
+    def test_plot_interactive_returns_widget(self) -> None:
+        pytest.importorskip("ipyniivue")
+        img = tio.ScalarImage(torch.rand(1, 8, 8, 8))
+        widget = img.plot_interactive()
+        assert widget is not None
+        assert hasattr(widget, "_repr_mimebundle_")
+
+    def test_plot_interactive_radiological(self) -> None:
+        pytest.importorskip("ipyniivue")
+        img = tio.ScalarImage(torch.rand(1, 8, 8, 8))
+        widget = img.plot_interactive()
+        assert widget.opts.is_radiological_convention is True
+
+    def test_plot_interactive_no_ipyniivue_raises(self, monkeypatch) -> None:
+        from torchio.external import imports
+
+        monkeypatch.setattr(imports, "find_spec", lambda m: None)
+        img = tio.ScalarImage(torch.rand(1, 8, 8, 8))
+        with pytest.raises(ImportError, match="ipyniivue"):
+            img.plot_interactive()

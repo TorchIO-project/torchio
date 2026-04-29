@@ -994,6 +994,47 @@ class Image(Invertible):
 
         return plot_image(self, **kwargs)
 
+    def plot_interactive(self, *, height: int = 300) -> Any:
+        """Show an interactive NiiVue viewer in Jupyter.
+
+        Requires ``ipyniivue`` (``pip install torchio[niivue]``).
+
+        The widget supports scrolling through slices, zooming, and
+        crosshair navigation.  Left hemisphere is displayed on the
+        right side of the screen (radiological convention).
+
+        Args:
+            height: Height of the viewer in pixels.
+
+        Returns:
+            An ``ipyniivue.NiiVue`` widget.
+
+        Raises:
+            ImportError: If ``ipyniivue`` is not installed.
+        """
+        import tempfile
+
+        import nibabel as nib
+        import numpy as np
+
+        from ..external.imports import get_ipyniivue
+
+        nv = get_ipyniivue()
+
+        data = self.data.cpu().float().numpy()
+        if data.ndim == 4 and data.shape[0] == 1:
+            data = data[0]
+        affine = np.asarray(self.affine.data, dtype=np.float64)
+        nii = nib.Nifti1Image(data, affine)
+        with tempfile.NamedTemporaryFile(suffix=".nii.gz", delete=False) as f:
+            nib.save(nii, f.name)
+            path = f.name
+
+        widget = nv.NiiVue(height=height)
+        widget.opts.is_radiological_convention = True
+        widget.add_volume(nv.Volume(path=path))
+        return widget
+
     def to_gif(
         self,
         output_path: str | Path | None = None,
