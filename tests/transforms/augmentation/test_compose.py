@@ -95,9 +95,9 @@ class TestCompose(TorchioTestCase):
             compose['nonexistent']
 
     def test_list_getitem_by_name_raises(self):
-        """Accessing by name when created from a list raises KeyError."""
+        """Accessing by name when created from a list raises TypeError."""
         compose = tio.Compose([tio.RandomFlip()])
-        with pytest.raises(KeyError):
+        with pytest.raises(TypeError, match='String indexing is not supported'):
             compose['flip']
 
     def test_dict_apply(self):
@@ -111,3 +111,8 @@ class TestCompose(TorchioTestCase):
         """Non-callable values in a dict raise TypeError."""
         with pytest.raises(TypeError, match='not callable'):
             tio.Compose({'bad': cast(Any, 'not_a_transform')})
+
+    def test_dict_non_string_key_raises(self):
+        """Non-string keys in a dict raise TypeError."""
+        with pytest.raises(TypeError, match='All keys.*must be strings'):
+            tio.Compose({1: tio.RandomFlip()})

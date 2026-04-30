@@ -36,6 +36,13 @@ class Compose(Transform):
     ):
         super().__init__(parse_input=False, **kwargs)
         if isinstance(transforms, dict):
+            for key in transforms:
+                if not isinstance(key, str):
+                    message = (
+                        'All keys in the transforms dictionary must be strings,'
+                        f' but got key {key!r} of type {type(key).__name__!r}'
+                    )
+                    raise TypeError(message)
             transforms_dict = cast(dict[str, Transform], transforms)
             self._names: dict[str, int] = {
                 name: i for i, name in enumerate(transforms_dict)
@@ -56,8 +63,14 @@ class Compose(Transform):
     def __len__(self):
         return len(self.transforms)
 
-    def __getitem__(self, index: int | str) -> Transform:
+    def __getitem__(self, index: int | str | slice) -> Transform:
         if isinstance(index, str):
+            if not self._names:
+                message = (
+                    f'String indexing is not supported for {type(self).__name__}'
+                    ' instances created from a sequence'
+                )
+                raise TypeError(message)
             if index not in self._names:
                 msg = f'Transform name not found: "{index}"'
                 raise KeyError(msg)
