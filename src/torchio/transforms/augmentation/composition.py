@@ -63,7 +63,7 @@ class Compose(Transform):
     def __len__(self):
         return len(self.transforms)
 
-    def __getitem__(self, index: int | str | slice) -> Transform:
+    def __getitem__(self, index: int | str | slice) -> Transform | list[Transform]:
         if isinstance(index, str):
             if not self._names:
                 message = (
