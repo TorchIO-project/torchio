@@ -3,6 +3,7 @@ from __future__ import annotations
 import warnings
 from collections.abc import Sequence
 from typing import TypeAlias
+from typing import cast
 
 import numpy as np
 import torch
@@ -20,27 +21,60 @@ class Compose(Transform):
     """Compose several transforms together.
 
     Args:
-        transforms: Sequence of instances of
-            [`Transform`][torchio.transforms.Transform].
+        transforms: Sequence or dictionary of instances of
+            [`Transform`][torchio.transforms.Transform]. If a dictionary
+            is passed, the keys are used as names and the transforms can
+            be accessed by name using ``compose["name"]``.
         **kwargs: See [`Transform`][torchio.transforms.Transform] for additional
             keyword arguments.
     """
 
-    def __init__(self, transforms: Sequence[Transform], **kwargs):
+    def __init__(
+        self,
+        transforms: Sequence[Transform] | dict[str, Transform],
+        **kwargs,
+    ):
         super().__init__(parse_input=False, **kwargs)
-        for transform in transforms:
+        if isinstance(transforms, dict):
+            for key in transforms:
+                if not isinstance(key, str):
+                    message = (
+                        'All keys in the transforms dictionary must be strings,'
+                        f' but got key {key!r} of type {type(key).__name__!r}'
+                    )
+                    raise TypeError(message)
+            transforms_dict = cast(dict[str, Transform], transforms)
+            self._names: dict[str, int] = {
+                name: i for i, name in enumerate(transforms_dict)
+            }
+            transforms_list = list(transforms_dict.values())
+        else:
+            self._names = {}
+            transforms_list = list(transforms)
+        for transform in transforms_list:
             if not callable(transform):
                 message = (
                     'One or more of the objects passed to the Compose'
                     f' transform are not callable: "{transform}"'
                 )
                 raise TypeError(message)
-        self.transforms = list(transforms)
+        self.transforms = transforms_list
 
     def __len__(self):
         return len(self.transforms)
 
-    def __getitem__(self, index) -> Transform:
+    def __getitem__(self, index: int | str) -> Transform:
+        if isinstance(index, str):
+            if not self._names:
+                message = (
+                    f'String indexing is not supported for {type(self).__name__}'
+                    ' instances created from a sequence'
+                )
+                raise TypeError(message)
+            if index not in self._names:
+                msg = f'Transform name not found: "{index}"'
+                raise KeyError(msg)
+            return self.transforms[self._names[index]]
         return self.transforms[index]
 
     def __repr__(self) -> str:
