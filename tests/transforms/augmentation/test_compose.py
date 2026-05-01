@@ -1,3 +1,4 @@
+from types import MappingProxyType
 from typing import Any
 from typing import cast
 
@@ -71,6 +72,16 @@ class TestCompose(TorchioTestCase):
         compose = tio.Compose({'flip': flip, 'noise': noise})
         assert len(compose) == 2
         assert compose.transforms == [flip, noise]
+
+    def test_mapping_input(self):
+        """Compose accepts a non-dict mapping of names to transforms."""
+        flip = tio.RandomFlip()
+        noise = tio.RandomNoise()
+        transforms = MappingProxyType({'flip': flip, 'noise': noise})
+        compose = tio.Compose(transforms)
+        assert len(compose) == 2
+        assert compose.transforms == [flip, noise]
+        assert compose['flip'] is flip
 
     def test_dict_getitem_by_name(self):
         """Transforms can be accessed by name when created from a dict."""
