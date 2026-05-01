@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import warnings
+from collections.abc import Mapping
 from collections.abc import Sequence
 from typing import TypeAlias
 from typing import cast
@@ -31,11 +32,11 @@ class Compose(Transform):
 
     def __init__(
         self,
-        transforms: Sequence[Transform] | dict[str, Transform],
+        transforms: Sequence[Transform] | Mapping[str, Transform],
         **kwargs,
     ):
         super().__init__(parse_input=False, **kwargs)
-        if isinstance(transforms, dict):
+        if isinstance(transforms, Mapping):
             for key in transforms:
                 if not isinstance(key, str):
                     message = (
@@ -43,7 +44,7 @@ class Compose(Transform):
                         f' but got key {key!r} of type {type(key).__name__!r}'
                     )
                     raise TypeError(message)
-            transforms_dict = cast(dict[str, Transform], transforms)
+            transforms_dict = cast(Mapping[str, Transform], transforms)
             self._names: dict[str, int] = {
                 name: i for i, name in enumerate(transforms_dict)
             }
