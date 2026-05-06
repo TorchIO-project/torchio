@@ -2,8 +2,10 @@ from __future__ import annotations
 
 import warnings
 from collections.abc import Sequence
+from typing import Literal
 
 import numpy as np
+import torch
 
 from ....data.subject import Subject
 from ....utils import parse_spatial_shape
@@ -12,6 +14,8 @@ from ...transform import TypeSixBounds
 from ...transform import TypeTripletInt
 from .crop import Crop
 from .pad import Pad
+
+TypeLocation = Literal['center', 'random']
 
 
 class CropOrPad(SpatialTransform):
@@ -38,6 +42,15 @@ class CropOrPad(SpatialTransform):
             be done. `only_crop` and `only_pad` cannot both be `True`.
         only_pad: If `True`, cropping will not be applied, only padding will
             be done. `only_crop` and `only_pad` cannot both be `True`.
+        location: Where to place the crop window when an axis of the input is
+            larger than the target. ``'center'`` (default) splits the cropped
+            amount evenly between both sides; ``'random'`` picks a uniformly
+            random start position per axis using
+            [`torch.randint`][torch.randint], so seeding with
+            [`torch.manual_seed`][torch.manual_seed] makes the result
+            reproducible. Padding is always centered, regardless of this
+            parameter. ``location='random'`` cannot be combined with
+            ``mask_name``.
         **kwargs: See [`Transform`][torchio.transforms.Transform] for additional
             keyword arguments.
 
@@ -56,6 +69,8 @@ class CropOrPad(SpatialTransform):
         >>> transformed = transform(subject)
         >>> transformed.chest_ct.shape
         torch.Size([1, 120, 80, 180])
+        >>> # Random crop window (useful for data augmentation):
+        >>> transform = tio.CropOrPad((96, 96, 96), location='random')
 
     Warning:
         If `target_shape` is `None`, subjects in the dataset
@@ -75,6 +90,7 @@ class CropOrPad(SpatialTransform):
         labels: Sequence[int] | None = None,
         only_crop: bool = False,
         only_pad: bool = False,
+        location: TypeLocation = 'center',
         **kwargs,
     ):
         if target_shape is None and mask_name is None:
@@ -91,6 +107,16 @@ class CropOrPad(SpatialTransform):
                 f'If mask_name is not None, it must be a string, not {type(mask_name)}'
             )
             raise ValueError(message)
+        if location not in ('center', 'random'):
+            message = f"location must be 'center' or 'random', got {location!r}"
+            raise ValueError(message)
+        if location == 'random' and mask_name is not None:
+            message = (
+                "location='random' cannot be combined with mask_name;"
+                ' mask centering and random placement are mutually exclusive'
+            )
+            raise ValueError(message)
+        self.location: TypeLocation = location
         if mask_name is None:
             if labels is not None:
                 message = (
@@ -116,6 +142,7 @@ class CropOrPad(SpatialTransform):
             'labels',
             'only_crop',
             'only_pad',
+            'location',
         ]
 
     @staticmethod
@@ -173,7 +200,12 @@ class CropOrPad(SpatialTransform):
 
         cropping = -np.minimum(diff_shape, 0)
         if cropping.any():
-            cropping_params = self._get_six_bounds_parameters(cropping)
+            if self.location == 'random':
+                cropping_params = self._get_random_six_bounds_parameters(
+                    cropping,
+                )
+            else:
+                cropping_params = self._get_six_bounds_parameters(cropping)
         else:
             cropping_params = None
 
@@ -184,6 +216,29 @@ class CropOrPad(SpatialTransform):
             padding_params = None
 
         return padding_params, cropping_params
+
+    @staticmethod
+    def _get_random_six_bounds_parameters(
+        parameters: np.ndarray,
+    ) -> TypeSixBounds:
+        """Compute asymmetric per-axis bounds for random cropping.
+
+        For each axis with a non-zero amount ``n`` to remove, sample
+        ``ini`` uniformly from ``{0, 1, ..., n}`` using
+        [`torch.randint`][torch.randint] and use ``fin = n - ini`` so
+        the total amount removed matches ``n``. Axes with ``n == 0``
+        contribute ``(0, 0)``.
+        """
+        result: list[int] = []
+        for amount in parameters:
+            amount_int = int(amount)
+            if amount_int == 0:
+                result.extend([0, 0])
+            else:
+                ini = int(torch.randint(0, amount_int + 1, (1,)).item())
+                result.extend([ini, amount_int - ini])
+        i1, i2, j1, j2, k1, k2 = result
+        return i1, i2, j1, j2, k1, k2
 
     def _compute_center_crop_or_pad(
         self,

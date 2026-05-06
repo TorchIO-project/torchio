@@ -3,6 +3,7 @@ from typing import cast
 
 import numpy as np
 import pytest
+import torch
 
 import torchio as tio
 
@@ -259,3 +260,87 @@ class TestCropOrPad(TorchioTestCase):
         """Non-string mask_name should raise ValueError."""
         with pytest.raises(ValueError, match='must be a string'):
             tio.CropOrPad((8, 16, 24), mask_name=cast(Any, 123))
+
+    def test_location_invalid_value(self):
+        with pytest.raises(ValueError, match='location'):
+            tio.CropOrPad((8, 16, 24), location=cast(Any, 'foo'))
+
+    def test_location_random_with_mask_name_raises(self):
+        with pytest.raises(ValueError, match='location'):
+            tio.CropOrPad((8, 16, 24), mask_name='label', location='random')
+
+    def test_location_default_is_center(self):
+        target_shape = 9, 21, 30
+        transform_default = tio.CropOrPad(target_shape)
+        transform_center = tio.CropOrPad(target_shape, location='center')
+        out_default = transform_default(self.sample_subject)
+        out_center = transform_center(self.sample_subject)
+        for key in out_default.get_images_dict(intensity_only=False):
+            self.assert_tensor_equal(
+                out_default.get_image(key).data,
+                out_center.get_image(key).data,
+            )
+
+    def test_location_random_output_shape(self):
+        target_shape = 5, 10, 15
+        transform = tio.CropOrPad(target_shape, location='random')
+        torch.manual_seed(0)
+        transformed = transform(self.sample_subject)
+        for image in transformed.get_images(intensity_only=False):
+            assert image.spatial_shape == target_shape
+
+    def test_location_random_offset_reproducible(self):
+        target_shape = 5, 10, 15
+        transform = tio.CropOrPad(target_shape, location='random')
+        torch.manual_seed(0)
+        out1 = transform(self.sample_subject)
+        torch.manual_seed(0)
+        out2 = transform(self.sample_subject)
+        for key in out1.get_images_dict(intensity_only=False):
+            self.assert_tensor_equal(
+                out1.get_image(key).data,
+                out2.get_image(key).data,
+            )
+
+    def test_location_random_differs_from_center(self):
+        # With sample_subject shape ~ (10, 20, 30) cropping to (5, 10, 15) all
+        # axes need cropping, so a random offset should (with high probability)
+        # produce a different result than center.
+        target_shape = 5, 10, 15
+        center = tio.CropOrPad(target_shape, location='center')(self.sample_subject)
+        torch.manual_seed(123)
+        random_out = tio.CropOrPad(target_shape, location='random')(self.sample_subject)
+        any_diff = False
+        for key in center.get_images_dict(intensity_only=False):
+            if not torch.equal(
+                center.get_image(key).data,
+                random_out.get_image(key).data,
+            ):
+                any_diff = True
+                break
+        assert any_diff, 'Random crop produced same output as center crop'
+
+    def test_location_random_padding_is_centered(self):
+        # Target larger than source on all axes -> only padding occurs.
+        orig_shape = self.sample_subject.get_scalar_image('t1').spatial_shape
+        target_shape = tuple(s + 4 for s in orig_shape)
+        center = tio.CropOrPad(target_shape, location='center')(self.sample_subject)
+        torch.manual_seed(0)
+        random_out = tio.CropOrPad(target_shape, location='random')(self.sample_subject)
+        for key in center.get_images_dict(intensity_only=False):
+            self.assert_tensor_equal(
+                center.get_image(key).data,
+                random_out.get_image(key).data,
+            )
+
+    def test_location_random_only_crop(self):
+        target_shape = 5, 10, 15
+        transform = tio.CropOrPad(
+            target_shape,
+            location='random',
+            only_crop=True,
+        )
+        torch.manual_seed(0)
+        transformed = transform(self.sample_subject)
+        for image in transformed.get_images(intensity_only=False):
+            assert image.spatial_shape == target_shape
