@@ -344,3 +344,75 @@ class TestCropOrPad(TorchioTestCase):
         transformed = transform(self.sample_subject)
         for image in transformed.get_images(intensity_only=False):
             assert image.spatial_shape == target_shape
+
+    def test_units_invalid_value(self):
+        with pytest.raises(ValueError, match='units'):
+            tio.CropOrPad((8, 16, 24), units=cast(Any, 'foo'))
+
+    def test_units_voxels_default_unchanged(self):
+        target_shape = 9, 21, 30
+        out_default = tio.CropOrPad(target_shape)(self.sample_subject)
+        out_voxels = tio.CropOrPad(target_shape, units='voxels')(self.sample_subject)
+        for key in out_default.get_images_dict(intensity_only=False):
+            self.assert_tensor_equal(
+                out_default.get_image(key).data,
+                out_voxels.get_image(key).data,
+            )
+
+    def test_units_voxels_rejects_float(self):
+        with pytest.raises(ValueError):
+            tio.CropOrPad(cast(Any, (1.5, 2.0, 3.0)), units='voxels')
+
+    def test_units_mm_accepts_float(self):
+        spacing = self.sample_subject.spacing
+        target_mm = (
+            5 * spacing[0],
+            10 * spacing[1],
+            15 * spacing[2],
+        )
+        transform = tio.CropOrPad(target_mm, units='mm')
+        transformed = transform(self.sample_subject)
+        for image in transformed.get_images(intensity_only=False):
+            assert image.spatial_shape == (5, 10, 15)
+
+    def test_units_cm(self):
+        spacing = self.sample_subject.spacing  # mm
+        target_cm = (
+            5 * spacing[0] / 10.0,
+            10 * spacing[1] / 10.0,
+            15 * spacing[2] / 10.0,
+        )
+        transform = tio.CropOrPad(target_cm, units='cm')
+        transformed = transform(self.sample_subject)
+        for image in transformed.get_images(intensity_only=False):
+            assert image.spatial_shape == (5, 10, 15)
+
+    def test_units_int_broadcast_mm(self):
+        spacing = self.sample_subject.spacing
+        # All axes equal physical size; converted shape may differ per axis
+        # because spacings may differ. Just check it runs and shape > 0.
+        target_mm = 10.0
+        transform = tio.CropOrPad(target_mm, units='mm')
+        transformed = transform(self.sample_subject)
+        expected = tuple(int(round(target_mm / sp)) for sp in spacing)
+        for image in transformed.get_images(intensity_only=False):
+            assert image.spatial_shape == expected
+
+    def test_target_shape_none_per_axis_voxels(self):
+        orig = self.sample_subject.get_scalar_image('t1').spatial_shape
+        target = (5, None, 15)
+        transform = tio.CropOrPad(target)
+        transformed = transform(self.sample_subject)
+        expected = (5, orig[1], 15)
+        for image in transformed.get_images(intensity_only=False):
+            assert image.spatial_shape == expected
+
+    def test_target_shape_none_per_axis_mm(self):
+        orig = self.sample_subject.get_scalar_image('t1').spatial_shape
+        spacing = self.sample_subject.spacing
+        target = (5 * spacing[0], None, 15 * spacing[2])
+        transform = tio.CropOrPad(target, units='mm')
+        transformed = transform(self.sample_subject)
+        expected = (5, orig[1], 15)
+        for image in transformed.get_images(intensity_only=False):
+            assert image.spatial_shape == expected
