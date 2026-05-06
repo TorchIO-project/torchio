@@ -36,6 +36,11 @@ jobs:
 
       - name: Install the latest version of uv
         uses: astral-sh/setup-uv@v7
+        with:
+          # Bump this suffix to invalidate stale UV_CACHE_DIR entries that a
+          # newer uv binary cannot deserialize on macOS/Windows runners
+          # (error: "Failed to deserialize cache entry … invalid ID").
+          cache-suffix: v2
 
       - name: Install tox
         run: uv tool install --python ${{ matrix.python }} --with tox-uv tox
@@ -82,6 +87,8 @@ jobs:
 
       - name: Install uv
         uses: astral-sh/setup-uv@v7
+        with:
+          cache-suffix: v2
 
       - name: Test transforms CLI tool
         run: uv run -- tiotr --help
