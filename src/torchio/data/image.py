@@ -6,7 +6,6 @@ from collections.abc import Callable
 from collections.abc import Sequence
 from pathlib import Path
 from typing import TYPE_CHECKING
-from typing import Any
 from typing import TypeGuard
 from typing import cast
 from typing import overload
@@ -246,17 +245,19 @@ class Image(dict[str, object]):
         for key, value in self.items():
             if key in PROTECTED_KEYS:
                 continue
-            extra_kwargs[key] = value  # should I copy? deepcopy?
-        new_image_class = type(self)
-        new_image = new_image_class(
-            path=self.path,
-            type=self.type,
-            tensor=self.data if self._loaded else None,
-            affine=self.affine if self._loaded else None,
-            check_nans=self.check_nans,
-            reader=self.reader,
-            **cast(dict[str, Any], extra_kwargs),
-        )
+            extra_kwargs[key] = value
+        if self._loaded:
+            new_image = self.new_like(tensor=self.data, affine=self.affine)
+        else:
+            new_image = type(self)(
+                path=self.path,
+                type=self.type,
+                check_nans=self.check_nans,
+                reader=self.reader,
+            )
+        new_image.path = self.path
+        for key, value in extra_kwargs.items():
+            new_image[key] = value
         return new_image
 
     @property
@@ -829,6 +830,54 @@ class Image(dict[str, object]):
 
     def set_check_nans(self, check_nans: bool) -> None:
         self.check_nans = check_nans
+
+    def new_like(self, tensor: TypeData, affine: TypeData | None = None) -> Image:
+        """Create a new image of the same type with different data.
+
+        This is the extension point for custom :class:`Image` subclasses whose
+        ``__init__`` signature differs from the base class.  Transforms that
+        need to create a *new* image (e.g. :class:`~torchio.Crop` with
+        ``copy_patch=True``) call this method instead of ``type(image)(...)``.
+
+        The default implementation works for :class:`Image`,
+        :class:`ScalarImage`, and :class:`LabelMap`.  Subclasses that add
+        required constructor arguments **must** override this method.
+
+        Args:
+            tensor: 4D tensor with dimensions :math:`(C, W, H, D)`.
+            affine: :math:`4 \\times 4` affine matrix.  If ``None``, the
+                current image's affine is reused.
+
+        Returns:
+            A new image instance of the same type.
+
+        Example:
+            >>> import torch
+            >>> import torchio as tio
+            >>> class MyImage(tio.ScalarImage):
+            ...     def __init__(self, tensor, affine, meta, **kw):
+            ...         super().__init__(tensor=tensor, affine=affine, **kw)
+            ...         self.meta = meta
+            ...     def new_like(self, tensor, affine=None):
+            ...         return type(self)(
+            ...             tensor=tensor,
+            ...             affine=affine if affine is not None else self.affine,
+            ...             meta=self.meta,
+            ...         )
+        """
+        if affine is None:
+            affine = self.affine
+        new_image = type(self)(
+            tensor=tensor,
+            affine=affine,
+            type=self.type,
+            check_nans=self.check_nans,
+            reader=self.reader,
+        )
+        for key, value in self.items():
+            if key not in PROTECTED_KEYS:
+                new_image[key] = value
+        return new_image
 
     def plot(self, return_fig: bool = False, **kwargs) -> None | Figure:
         """Plot image."""
