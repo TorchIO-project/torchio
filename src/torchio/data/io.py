@@ -318,7 +318,7 @@ def nib_to_sitk(
         array = array[..., 0]
     if not is_multichannel and not force_4d:
         array = array[0]
-    array = array.transpose()  # (W, H, D, C) or (W, H, D)
+    array = array.transpose()  # (D, H, W, C) or (H, W, C) or (D, H, W) or (H, W)
     image = sitk.GetImageFromArray(array, isVector=is_multichannel)
 
     origin, spacing, direction = get_sitk_metadata_from_ras_affine(
