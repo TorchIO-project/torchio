@@ -109,10 +109,10 @@ class AorticValve(SubjectITKSNAP):
 
     Example::
 
-        >>  import torchio as tio
-        >>  subject = tio.datasets.AorticValve()
-        >>  subject
-        Subject(Keys: ('b14', 'b14_seg', 'b25', 'b25_seg'); images: 4)
+        >>> import torchio as tio
+        >>> subject = tio.datasets.AorticValve()
+        >>> subject
+        AorticValve(Keys: ('b14', 'b14_seg', 'b25', 'b25_seg'); images: 4)
     """
 
     def __init__(self):
