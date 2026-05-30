@@ -41,14 +41,14 @@ class BrainTumor(SubjectITKSNAP):
     plus a manual tumor segmentation label map, for a single subject from
     the BRATS dataset (case HG0015).
 
-    Keys: ``t1``, ``t1c``, ``t2``, ``flair``, ``seg``.
+    Keys: `t1`, `t1c`, `t2`, `flair`, `seg`.
 
-    Example::
+    Examples:
 
         >>> import torchio as tio
         >>> subject = tio.datasets.BrainTumor()
         >>> subject
-        Subject(Keys: ('t1', 't1c', 't2', 'flair', 'seg'); images: 5)
+        BrainTumor(Keys: ('t1', 't1c', 't2', 'flair', 'seg'); images: 5)
     """
 
     def __init__(self):
@@ -75,14 +75,14 @@ class T1T2(SubjectITKSNAP):
     T2-weighted MRI of the hippocampal region, intended for use with the
     ASHS-PMC distributed segmentation service.
 
-    Keys: ``mprage``, ``tse``.
+    Keys: `mprage`, `tse`.
 
-    Example::
+    Examples:
 
-        >> import torchio as tio
-        >> subject = tio.datasets.T1T2()
-        >> subject
-        Subject(Keys: ('mprage', 'tse'); images: 2)
+        >>> import torchio as tio
+        >>> subject = tio.datasets.T1T2()
+        >>> subject
+        T1T2(Keys: ('mprage', 'tse'); images: 2)
     """
 
     def __init__(self):
@@ -105,9 +105,9 @@ class AorticValve(SubjectITKSNAP):
     Intended as tutorial data for ITK-SNAP distributed segmentation service
     development.
 
-    Keys: ``b14``, ``b14_seg``, ``b25``, ``b25_seg``.
+    Keys: `b14`, `b14_seg`, `b25`, `b25_seg`.
 
-    Example::
+    Examples:
 
         >>> import torchio as tio
         >>> subject = tio.datasets.AorticValve()
