@@ -84,7 +84,7 @@ class T1T2(SubjectITKSNAP):
         >> subject
         Subject(Keys: ('mprage', 'tse'); images: 2)
     """
-    
+
     def __init__(self):
         super().__init__('ashs_test', '10983')
 
@@ -114,6 +114,7 @@ class AorticValve(SubjectITKSNAP):
         >>  subject
         Subject(Keys: ('b14', 'b14_seg', 'b25', 'b25_seg'); images: 4)
     """
+
     def __init__(self):
         super().__init__('bav_example', '11021')
 
