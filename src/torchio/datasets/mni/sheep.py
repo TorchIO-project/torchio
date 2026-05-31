@@ -16,8 +16,7 @@ class Sheep(SubjectMNI):
     anatomical and functional information across individual sheep and studies.
 
     More information can be found on the
-    [MNI Ovine Brain Atlas page](https://www.mcgill.ca/bic/neuroinformatics/brain-atlases-ovine-brain-atlas)`_.
-
+    [MNI Ovine Brain Atlas page](https://www.mcgill.ca/bic/neuroinformatics/brain-atlases-ovine-brain-atlas).
     Keys: `t1`.
 
     Examples:
