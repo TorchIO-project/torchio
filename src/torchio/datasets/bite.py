@@ -42,7 +42,7 @@ class BITE(SubjectsDataset, abc.ABC):
 class BITE3(BITE):
     """Pre- and post-resection MR images in BITE.
 
-    *The goal of BITE is to share in vivo medical images of patients wtith
+    *The goal of BITE is to share in vivo medical images of patients with
     brain tumors to facilitate the development and validation of new image
     processing algorithms.*
 
