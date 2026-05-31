@@ -412,6 +412,7 @@ Thanks goes to all these people ([emoji key](https://allcontributors.org/docs/en
     <tr>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/AlexanderHBerger"><img src="https://avatars.githubusercontent.com/u/52033187?v=4?s=100" width="100px;" alt="AlexanderHBerger"/><br /><sub><b>AlexanderHBerger</b></sub></a><br /><a href="https://github.com/TorchIO-project/torchio/issues?q=author%3AAlexanderHBerger" title="Bug reports">🐛</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/rhysmcneill"><img src="https://avatars.githubusercontent.com/u/33672728?v=4?s=100" width="100px;" alt="Rhys &#124; Senior DevOps Engineer &#124; 3x AWS Certified &#124; CKA &#124; Terraform Certified"/><br /><sub><b>Rhys &#124; Senior DevOps Engineer &#124; 3x AWS Certified &#124; CKA &#124; Terraform Certified</b></sub></a><br /><a href="https://github.com/TorchIO-project/torchio/issues?q=author%3Arhysmcneill" title="Bug reports">🐛</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/vcasellesb"><img src="https://avatars.githubusercontent.com/u/126575139?v=4?s=100" width="100px;" alt="Vicent Caselles-Ballester"/><br /><sub><b>Vicent Caselles-Ballester</b></sub></a><br /><a href="https://github.com/TorchIO-project/torchio/commits?author=vcasellesb" title="Documentation">📖</a></td>
     </tr>
   </tbody>
 </table>
