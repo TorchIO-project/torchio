@@ -377,6 +377,18 @@ class TestNonOrthonormalFallback(TorchioTestCase):
                 shape = io.read_shape(path)
             assert shape == (3, 8, 9, 4)
 
+    def test_read_shape_matches_loaded_tensor_4d(self):
+        """read_shape and the NiBabel data fallback agree for 4D images."""
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / 'oblique4d.nii.gz'
+            data = np.zeros((8, 9, 4, 3), dtype=np.float32)
+            nib.save(nib.Nifti1Image(data, NON_ORTHONORMAL_AFFINE), str(path))
+            with pytest.warns(UserWarning):
+                shape = io.read_shape(path)
+            tensor, _ = io._read_nibabel(path)
+            assert shape == tuple(tensor.shape)
+            assert shape == (3, 8, 9, 4)
+
     def test_scalar_image_metadata(self):
         """ScalarImage exposes shape/affine/spacing/origin without loading."""
         with tempfile.TemporaryDirectory() as tmp:

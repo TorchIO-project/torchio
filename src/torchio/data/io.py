@@ -53,8 +53,10 @@ def read_image(path: TypePath) -> TypeDataAffine:
 def _read_nibabel(path: TypePath) -> TypeDataAffine:
     img = cast(SpatialImage, nib.load(str(path), mmap=False))
     data = img.get_fdata(dtype=np.float32)
-    if data.ndim == 5:
+    if data.ndim == 5:  # (W, H, D, 1, C) -> (C, W, H, D)
         data = data[..., 0, :]
+        data = data.transpose(3, 0, 1, 2)
+    elif data.ndim == 4:  # (W, H, D, C) -> (C, W, H, D)
         data = data.transpose(3, 0, 1, 2)
     data = check_uint_to_int(data)
     tensor = torch.as_tensor(data)
@@ -125,9 +127,10 @@ def _read_shape_sitk(path: TypePath) -> TypeQuartetInt:
 def _read_shape_nibabel(path: TypePath) -> TypeQuartetInt:
     """Read the shape of an image with NiBabel without loading the data.
 
-    The returned shape follows TorchIO's ``(C, W, H, D)`` convention, matching
-    the data shape produced by :func:`_read_nibabel` followed by
-    :func:`ensure_4d`.
+    The returned shape follows TorchIO's `(C, W, H, D)` convention, so it is
+    consistent with the tensor produced by the NiBabel fallback in
+    `read_image`. Channels-last NIfTI data (4D `(W, H, D, C)` or 5D
+    `(W, H, D, 1, C)`) is reported as channels-first.
 
     Args:
         path: Path to the image file.
@@ -175,7 +178,7 @@ def _read_affine_nibabel(path: TypePath) -> np.ndarray:
         path: Path to the image file.
 
     Returns:
-        The ``4x4`` affine matrix mapping voxel indices to RAS world
+        The `4x4` affine matrix mapping voxel indices to RAS world
         coordinates.
     """
     img = cast(SpatialImage, nib.load(str(path), mmap=False))
