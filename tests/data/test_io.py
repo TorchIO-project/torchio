@@ -421,3 +421,43 @@ class TestNonOrthonormalFallback(TorchioTestCase):
                 warnings.simplefilter('error')
                 assert io.read_shape(path) == (1, 8, 9, 4)
                 io.read_affine(path)
+
+    def test_read_shape_5d_non_singleton_raises(self):
+        """read_shape rejects 5D images whose penultimate dimension is not 1."""
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / 'oblique5d.nii.gz'
+            data = np.zeros((8, 9, 4, 2, 3), dtype=np.float32)
+            nib.save(nib.Nifti1Image(data, NON_ORTHONORMAL_AFFINE), str(path))
+            with pytest.warns(UserWarning):  # noqa: SIM117
+                with pytest.raises(ValueError, match='shape'):
+                    io.read_shape(path)
+
+    def test_read_shape_nibabel_5d(self):
+        """read_shape maps a 5D (W, H, D, 1, C) image to (C, W, H, D)."""
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / 'oblique5d.nii.gz'
+            data = np.zeros((8, 9, 4, 1, 3), dtype=np.float32)
+            nib.save(nib.Nifti1Image(data, NON_ORTHONORMAL_AFFINE), str(path))
+            with pytest.warns(UserWarning):
+                shape = io.read_shape(path)
+            tensor, _ = io._read_nibabel(path)
+            assert shape == tuple(tensor.shape)
+            assert shape == (3, 8, 9, 4)
+
+    def test_read_shape_unreadable_wraps_runtime_error(self):
+        """read_shape raises RuntimeError when both readers fail."""
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / 'not_an_image.nii.gz'
+            path.write_bytes(b'not a valid image')
+            with pytest.warns(UserWarning):  # noqa: SIM117
+                with pytest.raises(RuntimeError, match='not understood'):
+                    io.read_shape(path)
+
+    def test_read_affine_unreadable_wraps_runtime_error(self):
+        """read_affine raises RuntimeError when both readers fail."""
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / 'not_an_image.nii.gz'
+            path.write_bytes(b'not a valid image')
+            with pytest.warns(UserWarning):  # noqa: SIM117
+                with pytest.raises(RuntimeError, match='not understood'):
+                    io.read_affine(path)

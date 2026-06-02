@@ -40,20 +40,34 @@ def read_image(path: TypePath) -> TypeDataAffine:
         try:
             result = _read_nibabel(path)
         except ImageFileError as e:
-            message = (
-                f'File "{path}" not understood.'
-                ' Check supported formats by at'
-                ' https://simpleitk.readthedocs.io/en/master/IO.html#images'
-                ' and https://nipy.org/nibabel/api.html#file-formats'
-            )
-            raise RuntimeError(message) from e
+            raise _file_not_understood_error(path) from e
     return result
+
+
+def _file_not_understood_error(path: TypePath) -> RuntimeError:
+    """Build the error raised when neither SimpleITK nor NiBabel can read a file.
+
+    Args:
+        path: Path to the image file that could not be read.
+
+    Returns:
+        A `RuntimeError` with a message pointing to the supported formats.
+    """
+    message = (
+        f'File "{path}" not understood.'
+        ' Check supported formats by at'
+        ' https://simpleitk.readthedocs.io/en/master/IO.html#images'
+        ' and https://nipy.org/nibabel/api.html#file-formats'
+    )
+    return RuntimeError(message)
 
 
 def _read_nibabel(path: TypePath) -> TypeDataAffine:
     img = cast(SpatialImage, nib.load(str(path), mmap=False))
     data = img.get_fdata(dtype=np.float32)
     if data.ndim == 5:  # (W, H, D, 1, C) -> (C, W, H, D)
+        if data.shape[-2] != 1:
+            raise ValueError('5D is not supported for shape[-2] > 1')
         data = data[..., 0, :]
         data = data.transpose(3, 0, 1, 2)
     elif data.ndim == 4:  # (W, H, D, C) -> (C, W, H, D)
@@ -96,7 +110,10 @@ def read_shape(path: TypePath) -> TypeQuartetInt:
     except RuntimeError as e:  # try with NiBabel
         message = f'Error loading image with SimpleITK:\n{e}\n\nTrying NiBabel...'
         warnings.warn(message, stacklevel=2)
-        return _read_shape_nibabel(path)
+        try:
+            return _read_shape_nibabel(path)
+        except ImageFileError as nib_error:
+            raise _file_not_understood_error(path) from nib_error
 
 
 def _read_shape_sitk(path: TypePath) -> TypeQuartetInt:
@@ -150,6 +167,8 @@ def _read_shape_nibabel(path: TypePath) -> TypeQuartetInt:
     elif num_dimensions == 4:  # (W, H, D, C)
         si, sj, sk, num_channels = nib_shape
     elif num_dimensions == 5:  # (W, H, D, 1, C)
+        if nib_shape[-2] != 1:
+            raise ValueError('5D is not supported for shape[-2] > 1')
         si, sj, sk, _, num_channels = nib_shape
     else:
         message = (
@@ -167,7 +186,10 @@ def read_affine(path: TypePath) -> np.ndarray:
     except RuntimeError as e:  # try with NiBabel
         message = f'Error loading image with SimpleITK:\n{e}\n\nTrying NiBabel...'
         warnings.warn(message, stacklevel=2)
-        affine = _read_affine_nibabel(path)
+        try:
+            affine = _read_affine_nibabel(path)
+        except ImageFileError as nib_error:
+            raise _file_not_understood_error(path) from nib_error
     return affine
 
 
