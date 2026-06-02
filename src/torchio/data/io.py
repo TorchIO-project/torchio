@@ -89,6 +89,15 @@ def _read_dicom(directory: TypePath):
 
 
 def read_shape(path: TypePath) -> TypeQuartetInt:
+    try:
+        return _read_shape_sitk(path)
+    except RuntimeError as e:  # try with NiBabel
+        message = f'Error loading image with SimpleITK:\n{e}\n\nTrying NiBabel...'
+        warnings.warn(message, stacklevel=2)
+        return _read_shape_nibabel(path)
+
+
+def _read_shape_sitk(path: TypePath) -> TypeQuartetInt:
     reader = sitk.ImageFileReader()
     reader.SetFileName(str(path))
     reader.ReadImageInformation()
@@ -113,9 +122,65 @@ def read_shape(path: TypePath) -> TypeQuartetInt:
     return shape
 
 
+def _read_shape_nibabel(path: TypePath) -> TypeQuartetInt:
+    """Read the shape of an image with NiBabel without loading the data.
+
+    The returned shape follows TorchIO's ``(C, W, H, D)`` convention, matching
+    the data shape produced by :func:`_read_nibabel` followed by
+    :func:`ensure_4d`.
+
+    Args:
+        path: Path to the image file.
+
+    Returns:
+        Tuple with the number of channels and the three spatial dimensions.
+    """
+    img = cast(SpatialImage, nib.load(str(path), mmap=False))
+    nib_shape = tuple(int(n) for n in img.header.get_data_shape())
+    num_dimensions = len(nib_shape)
+    num_channels = 1
+    if num_dimensions == 2:
+        si, sj = nib_shape
+        sk = 1
+    elif num_dimensions == 3:
+        si, sj, sk = nib_shape
+    elif num_dimensions == 4:  # (W, H, D, C)
+        si, sj, sk, num_channels = nib_shape
+    elif num_dimensions == 5:  # (W, H, D, 1, C)
+        si, sj, sk, _, num_channels = nib_shape
+    else:
+        message = (
+            f'{num_dimensions}D images not supported yet. Please create an'
+            f' issue in {REPO_URL} if you would like support for them'
+        )
+        raise ValueError(message)
+    return num_channels, si, sj, sk
+
+
 def read_affine(path: TypePath) -> np.ndarray:
-    reader = get_reader(path)
-    affine = get_ras_affine_from_sitk(reader)
+    try:
+        reader = get_reader(path)
+        affine = get_ras_affine_from_sitk(reader)
+    except RuntimeError as e:  # try with NiBabel
+        message = f'Error loading image with SimpleITK:\n{e}\n\nTrying NiBabel...'
+        warnings.warn(message, stacklevel=2)
+        affine = _read_affine_nibabel(path)
+    return affine
+
+
+def _read_affine_nibabel(path: TypePath) -> np.ndarray:
+    """Read the RAS affine of an image with NiBabel without loading the data.
+
+    Args:
+        path: Path to the image file.
+
+    Returns:
+        The ``4x4`` affine matrix mapping voxel indices to RAS world
+        coordinates.
+    """
+    img = cast(SpatialImage, nib.load(str(path), mmap=False))
+    affine = img.affine
+    assert isinstance(affine, np.ndarray)
     return affine
 
 
