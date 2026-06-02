@@ -55,7 +55,7 @@ def _file_not_understood_error(path: TypePath) -> RuntimeError:
     """
     message = (
         f'File "{path}" not understood.'
-        ' Check supported formats by at'
+        ' Check supported formats at'
         ' https://simpleitk.readthedocs.io/en/master/IO.html#images'
         ' and https://nipy.org/nibabel/api.html#file-formats'
     )
