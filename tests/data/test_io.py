@@ -318,7 +318,7 @@ class TestIOCoverage(TorchioTestCase):
                 assert affine.shape == (4, 4)
 
 
-# Affine with non-orthonormal direction cosines (e.g. SKM-TEA exports).
+# Affine with non-orthonormal direction cosines (e.g. some oblique MRI exports).
 # SimpleITK/ITK refuses to read NIfTI files with such an affine, so torchio
 # must fall back to NiBabel for shape and affine metadata.
 NON_ORTHONORMAL_AFFINE = np.array(
