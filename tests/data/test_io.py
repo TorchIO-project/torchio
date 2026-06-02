@@ -316,3 +316,148 @@ class TestIOCoverage(TorchioTestCase):
             if sitk_image.GetDimension() == 4:
                 affine = io.get_ras_affine_from_sitk(sitk_image)
                 assert affine.shape == (4, 4)
+
+
+# Affine with non-orthonormal direction cosines (e.g. some oblique MRI exports).
+# SimpleITK/ITK refuses to read NIfTI files with such an affine, so torchio
+# must fall back to NiBabel for shape and affine metadata.
+NON_ORTHONORMAL_AFFINE = np.array(
+    [
+        [4.13e-02, 2.07e-02, 7.913e-01, -30.26],
+        [-3.098e-01, 2.80e-03, 1.055e-01, 124.6],
+        [0.0, -3.118e-01, 5.35e-02, 54.08],
+        [0.0, 0.0, 0.0, 1.0],
+    ]
+)
+
+
+def _save_non_orthonormal_nifti(path, shape=(8, 8, 4)):
+    data = np.zeros(shape, dtype=np.float32)
+    nib.save(nib.Nifti1Image(data, NON_ORTHONORMAL_AFFINE), str(path))
+
+
+class TestNonOrthonormalFallback(TorchioTestCase):
+    """`read_shape`/`read_affine` fall back to NiBabel when SimpleITK fails."""
+
+    def test_sitk_cannot_read_fixture(self):
+        """The fixture must trigger a SimpleITK RuntimeError."""
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / 'oblique.nii.gz'
+            _save_non_orthonormal_nifti(path)
+            reader = sitk.ImageFileReader()
+            reader.SetFileName(str(path))
+            with pytest.raises(RuntimeError):
+                reader.ReadImageInformation()
+
+    def test_read_shape_nibabel_fallback(self):
+        """read_shape returns (C, W, H, D) using NiBabel when SimpleITK fails."""
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / 'oblique.nii.gz'
+            _save_non_orthonormal_nifti(path, shape=(8, 9, 4))
+            with pytest.warns(UserWarning):
+                shape = io.read_shape(path)
+            assert shape == (1, 8, 9, 4)
+
+    def test_read_affine_nibabel_fallback(self):
+        """read_affine returns the NiBabel affine when SimpleITK fails."""
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / 'oblique.nii.gz'
+            _save_non_orthonormal_nifti(path)
+            with pytest.warns(UserWarning):
+                affine = io.read_affine(path)
+            self.assert_tensor_almost_equal(affine, NON_ORTHONORMAL_AFFINE)
+
+    def test_read_shape_nibabel_4d(self):
+        """read_shape maps a 4D NiBabel image to (C, W, H, D)."""
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / 'oblique4d.nii.gz'
+            data = np.zeros((8, 9, 4, 3), dtype=np.float32)
+            nib.save(nib.Nifti1Image(data, NON_ORTHONORMAL_AFFINE), str(path))
+            with pytest.warns(UserWarning):
+                shape = io.read_shape(path)
+            assert shape == (3, 8, 9, 4)
+
+    def test_read_shape_matches_loaded_tensor_4d(self):
+        """read_shape and the NiBabel data fallback agree for 4D images."""
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / 'oblique4d.nii.gz'
+            data = np.zeros((8, 9, 4, 3), dtype=np.float32)
+            nib.save(nib.Nifti1Image(data, NON_ORTHONORMAL_AFFINE), str(path))
+            with pytest.warns(UserWarning):
+                shape = io.read_shape(path)
+            tensor, _ = io._read_nibabel(path)
+            assert shape == tuple(tensor.shape)
+            assert shape == (3, 8, 9, 4)
+
+    def test_scalar_image_metadata(self):
+        """ScalarImage exposes shape/affine/spacing/origin without loading."""
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / 'oblique.nii.gz'
+            _save_non_orthonormal_nifti(path, shape=(8, 9, 4))
+            image = ScalarImage(path)
+            with pytest.warns(UserWarning):
+                assert image.shape == (1, 8, 9, 4)
+            with pytest.warns(UserWarning):
+                self.assert_tensor_almost_equal(
+                    image.affine,
+                    NON_ORTHONORMAL_AFFINE,
+                )
+            with pytest.warns(UserWarning):
+                spacing = image.spacing
+            expected = np.sqrt((NON_ORTHONORMAL_AFFINE[:3, :3] ** 2).sum(axis=0))
+            self.assert_tensor_almost_equal(np.array(spacing), expected)
+
+    def test_normal_file_does_not_use_fallback(self):
+        """Orthonormal files keep using SimpleITK (no warning, same result)."""
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / 'normal.nii.gz'
+            data = np.zeros((8, 9, 4), dtype=np.float32)
+            affine = np.diag([1.5, 2.0, 3.0, 1.0])
+            affine[:3, 3] = [10.0, 20.0, 30.0]
+            nib.save(nib.Nifti1Image(data, affine), str(path))
+            import warnings
+
+            with warnings.catch_warnings():
+                warnings.simplefilter('error')
+                assert io.read_shape(path) == (1, 8, 9, 4)
+                io.read_affine(path)
+
+    def test_read_shape_5d_non_singleton_raises(self):
+        """read_shape rejects 5D images whose penultimate dimension is not 1."""
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / 'oblique5d.nii.gz'
+            data = np.zeros((8, 9, 4, 2, 3), dtype=np.float32)
+            nib.save(nib.Nifti1Image(data, NON_ORTHONORMAL_AFFINE), str(path))
+            with pytest.warns(UserWarning):  # noqa: SIM117
+                with pytest.raises(ValueError, match='shape'):
+                    io.read_shape(path)
+
+    def test_read_shape_nibabel_5d(self):
+        """read_shape maps a 5D (W, H, D, 1, C) image to (C, W, H, D)."""
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / 'oblique5d.nii.gz'
+            data = np.zeros((8, 9, 4, 1, 3), dtype=np.float32)
+            nib.save(nib.Nifti1Image(data, NON_ORTHONORMAL_AFFINE), str(path))
+            with pytest.warns(UserWarning):
+                shape = io.read_shape(path)
+            tensor, _ = io._read_nibabel(path)
+            assert shape == tuple(tensor.shape)
+            assert shape == (3, 8, 9, 4)
+
+    def test_read_shape_unreadable_wraps_runtime_error(self):
+        """read_shape raises RuntimeError when both readers fail."""
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / 'not_an_image.nii.gz'
+            path.write_bytes(b'not a valid image')
+            with pytest.warns(UserWarning):  # noqa: SIM117
+                with pytest.raises(RuntimeError, match='not understood'):
+                    io.read_shape(path)
+
+    def test_read_affine_unreadable_wraps_runtime_error(self):
+        """read_affine raises RuntimeError when both readers fail."""
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / 'not_an_image.nii.gz'
+            path.write_bytes(b'not a valid image')
+            with pytest.warns(UserWarning):  # noqa: SIM117
+                with pytest.raises(RuntimeError, match='not understood'):
+                    io.read_affine(path)
