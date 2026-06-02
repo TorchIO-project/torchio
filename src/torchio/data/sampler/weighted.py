@@ -193,32 +193,34 @@ class WeightedSampler(RandomSampler):
         subject: Subject,
         probability_map: np.ndarray,
         cdf: np.ndarray,
+        /,
     ) -> Subject: ...
 
     def extract_patch(
         self,
         subject: Subject,
-        index_ini_or_probability_map: TypeTripletInt | np.ndarray,
+        index_ini: TypeTripletInt | np.ndarray,
         cdf: np.ndarray | None = None,
     ) -> Subject:
         if cdf is None:
-            if isinstance(index_ini_or_probability_map, np.ndarray):
-                index_ini = (
-                    int(index_ini_or_probability_map[0]),
-                    int(index_ini_or_probability_map[1]),
-                    int(index_ini_or_probability_map[2]),
+            if isinstance(index_ini, np.ndarray):
+                index_ini_tuple = (
+                    int(index_ini[0]),
+                    int(index_ini[1]),
+                    int(index_ini[2]),
                 )
             else:
-                index_ini = index_ini_or_probability_map
-            return super().extract_patch(subject, index_ini)
+                index_ini_tuple = index_ini
+            return super().extract_patch(subject, index_ini_tuple)
 
-        if not isinstance(index_ini_or_probability_map, np.ndarray):
+        if not isinstance(index_ini, np.ndarray):
             message = 'Probability map must be a NumPy array when using a CDF'
             raise TypeError(message)
 
-        i, j, k = self.get_random_index_ini(index_ini_or_probability_map, cdf)
-        index_ini = i, j, k
-        return super().extract_patch(subject, index_ini)
+        probability_map = index_ini
+        i, j, k = self.get_random_index_ini(probability_map, cdf)
+        index_ini_tuple = i, j, k
+        return super().extract_patch(subject, index_ini_tuple)
 
     def get_random_index_ini(
         self,
