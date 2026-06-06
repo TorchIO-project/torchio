@@ -2,6 +2,13 @@
 
 This guide covers every breaking change between TorchIO v1 and v2.
 
+!!! note "Report bugs or request features"
+
+    Hit a snag migrating, or have an idea to improve TorchIO? Please
+    [start a discussion](https://github.com/TorchIO-project/torchio/discussions)
+    or [open an issue](https://github.com/TorchIO-project/torchio/issues) on
+    GitHub to report bugs or request features.
+
 ## Quick checklist
 
 - Replace `Random*` transform names with their base names (`RandomFlip` → `Flip`)
