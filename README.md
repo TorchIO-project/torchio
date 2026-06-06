@@ -9,7 +9,7 @@
 > *Tools like TorchIO are a symptom of the maturation of medical AI research using deep learning techniques*.
 
 Jack Clark, Policy Director
-at [OpenAI](https://openai.com/) ([link](https://jack-clark.net/2020/03/17/)).
+at [OpenAI](https://openai.com/), Co-Founder and Head of Policy of Anthropic ([link](https://jack-clark.net/2020/03/17/)).
 
 ---
 

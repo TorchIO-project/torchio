@@ -4,6 +4,12 @@ TorchIO is an open-source Python library for efficient loading,
 preprocessing, augmentation, and patch-based sampling of 3D medical images
 in deep learning, following the design of PyTorch.
 
+> *Tools like TorchIO are a symptom of the maturation of medical AI research
+> using deep learning techniques*.
+>
+> — Jack Clark, Policy Director at [OpenAI](https://openai.com/), Co-Founder and
+> Head of Policy of Anthropic ([link](https://jack-clark.net/2020/03/17/))
+
 !!! warning "TorchIO v2 is an experimental pre-release"
 
     This site documents **TorchIO v2**, which is under active development and
@@ -13,26 +19,36 @@ in deep learning, following the design of PyTorch.
 
 ## Quick example
 
+Augment a whole batch of subjects on the GPU in a few lines:
+
 <!-- pytest-codeblocks:skip -->
 ```python
-import torch
 import torchio as tio
 
-# Load images lazily (no data read yet)
-subject = tio.Subject(
-    t1=tio.ScalarImage("t1.nii.gz"),
-    seg=tio.LabelMap("seg.nii.gz"),
-    landmarks=tio.Points(torch.tensor([[128.0, 100.0, 90.0]])),
-    age=45,
-)
+# Build subjects (lazy — only headers are read until .data is accessed)
+dirs = ["sub-01", "sub-02", "sub-03", "sub-04"]
+subjects = [
+    tio.Subject(
+        t1=tio.ScalarImage(f"{dir}/t1.nii.gz"),
+        seg=tio.LabelMap(f"{dir}/seg.nii.gz"),
+    )
+    for dir in dirs
+]
 
-# Slice without loading the full volume
-cropped = subject.t1[:, 100:200, 100:200, 50:100]
+# Random augmentation pipeline
+transform = tio.Compose([
+    tio.Flip(),
+    tio.Affine(degrees=(-15, 15)),
+    tio.Standardize(),
+    tio.Noise(std=(0, 0.1)),
+])
 
-# Or load everything
-subject.load()
-print(subject.t1.shape)    # (1, 256, 256, 176)
-print(subject.t1.spacing)  # (1.0, 1.0, 1.0)
+# Stack into a batch and augment all subjects on the GPU in one call
+batch = tio.SubjectsBatch.from_subjects(subjects).to("cuda")  # or "mps"
+augmented = transform(batch)
+
+print(augmented.t1.data.shape)   # (4, 1, 256, 256, 176)
+print(augmented.t1.data.device)  # cuda:0
 ```
 
 ## Where to go next
