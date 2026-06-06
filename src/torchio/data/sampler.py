@@ -116,7 +116,7 @@ class GridSampler(PatchSampler, Dataset):
     def _maybe_pad(self, subject: Subject) -> Subject:
         if self.padding_mode is None:
             return subject
-        from ..transforms.pad import Pad
+        from ..transforms.spatial.pad import Pad
 
         border = tuple(v // 2 for v in self.patch_overlap)
         padding = (

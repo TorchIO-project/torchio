@@ -11,28 +11,28 @@ import torch
 import torchio as tio
 from torchio import AffineMatrix
 from torchio.transforms import Affine as AffineTransform
-from torchio.transforms.spatial import _border_mean
-from torchio.transforms.spatial import _build_sampling_grid
-from torchio.transforms.spatial import _check_folding
-from torchio.transforms.spatial import _check_shared_space
-from torchio.transforms.spatial import _compute_channel_pad_value
-from torchio.transforms.spatial import _is_spacing_list
-from torchio.transforms.spatial import _is_spacing_tuple
-from torchio.transforms.spatial import _is_target_space_tuple
-from torchio.transforms.spatial import _normalize_parameter_value
-from torchio.transforms.spatial import _otsu_threshold
-from torchio.transforms.spatial import _parse_center
-from torchio.transforms.spatial import _parse_control_points
-from torchio.transforms.spatial import _parse_default_pad_value
-from torchio.transforms.spatial import _parse_interpolation
-from torchio.transforms.spatial import _parse_locked_borders
-from torchio.transforms.spatial import _parse_num_control_points
-from torchio.transforms.spatial import _parse_spacing
-from torchio.transforms.spatial import _parse_target_space_tuple
-from torchio.transforms.spatial import _prepare_fill_value
-from torchio.transforms.spatial import _to_nonnegative_parameter_range
-from torchio.transforms.spatial import _to_positive_range
-from torchio.transforms.spatial import _validate_isotropic
+from torchio.transforms.spatial.spatial import _border_mean
+from torchio.transforms.spatial.spatial import _build_sampling_grid
+from torchio.transforms.spatial.spatial import _check_folding
+from torchio.transforms.spatial.spatial import _check_shared_space
+from torchio.transforms.spatial.spatial import _compute_channel_pad_value
+from torchio.transforms.spatial.spatial import _is_spacing_list
+from torchio.transforms.spatial.spatial import _is_spacing_tuple
+from torchio.transforms.spatial.spatial import _is_target_space_tuple
+from torchio.transforms.spatial.spatial import _normalize_parameter_value
+from torchio.transforms.spatial.spatial import _otsu_threshold
+from torchio.transforms.spatial.spatial import _parse_center
+from torchio.transforms.spatial.spatial import _parse_control_points
+from torchio.transforms.spatial.spatial import _parse_default_pad_value
+from torchio.transforms.spatial.spatial import _parse_interpolation
+from torchio.transforms.spatial.spatial import _parse_locked_borders
+from torchio.transforms.spatial.spatial import _parse_num_control_points
+from torchio.transforms.spatial.spatial import _parse_spacing
+from torchio.transforms.spatial.spatial import _parse_target_space_tuple
+from torchio.transforms.spatial.spatial import _prepare_fill_value
+from torchio.transforms.spatial.spatial import _to_nonnegative_parameter_range
+from torchio.transforms.spatial.spatial import _to_positive_range
+from torchio.transforms.spatial.spatial import _validate_isotropic
 
 
 def _make_subject(
@@ -609,7 +609,7 @@ class TestEdgeCases:
 
     def test_apply_spatial_empty_names(self) -> None:
         """_apply_spatial_to_batch returns early for empty names (line 556)."""
-        from torchio.transforms.spatial import _apply_spatial_to_batch
+        from torchio.transforms.spatial.spatial import _apply_spatial_to_batch
 
         subject = _make_subject()
         from torchio.data.batch import SubjectsBatch
@@ -652,7 +652,7 @@ class TestEdgeCases:
     def test_batch_fill_value_bad_type(self) -> None:
         """_batch_fill_value raises TypeError for non-str non-number (lines 907-911)."""
         from torchio.data.batch import ImagesBatch
-        from torchio.transforms.spatial import _batch_fill_value
+        from torchio.transforms.spatial.spatial import _batch_fill_value
 
         batch = ImagesBatch(
             torch.rand(1, 1, 4, 4, 4),

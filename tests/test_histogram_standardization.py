@@ -8,7 +8,9 @@ import pytest
 import torch
 
 import torchio as tio
-from torchio.transforms.histogram_standardization import compute_histogram_landmarks
+from torchio.transforms.intensity.histogram_standardization import (
+    compute_histogram_landmarks,
+)
 
 
 def _make_subject(with_label: bool = True) -> tio.Subject:

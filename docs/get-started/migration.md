@@ -172,7 +172,7 @@ landmarks = tio.HistogramStandardization.train(paths)
 transform = tio.HistogramStandardization({"t1": landmarks})
 
 # v2
-from torchio.transforms.histogram_standardization import (
+from torchio.transforms.intensity.histogram_standardization import (
     compute_histogram_landmarks,
 )
 landmarks = compute_histogram_landmarks(images)
