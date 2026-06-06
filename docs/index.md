@@ -4,6 +4,13 @@ TorchIO is an open-source Python library for efficient loading,
 preprocessing, augmentation, and patch-based sampling of 3D medical images
 in deep learning, following the design of PyTorch.
 
+!!! warning "TorchIO v2 is an experimental pre-release"
+
+    This site documents **TorchIO v2**, which is under active development and
+    may contain bugs and breaking changes. The current stable release is **v1**
+    (`pip install torchio`). To try v2, run `pip install --pre torchio`. Use the
+    version selector in the header to switch between versions.
+
 ## Quick example
 
 <!-- pytest-codeblocks:skip -->
@@ -48,6 +55,7 @@ If you use this library for your research, please cite our paper:
 - [MONAI](https://monai.readthedocs.io)
 - [Cornucopia](https://cornucopia.readthedocs.io/)
 - [batchgenerators](https://github.com/MIC-DKFZ/batchgenerators)[[v2](https://github.com/MIC-DKFZ/batchgeneratorsv2)]
+- [BatchAug](https://github.com/halleewong/batchaug)
 - [volumentations](https://github.com/ZFTurbo/volumentations) (low activity)
 - [Rising](https://rising.readthedocs.io) (archived)
 - [pymia](https://pymia.readthedocs.io) (low activity)
