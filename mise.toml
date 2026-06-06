@@ -3,7 +3,7 @@ prek = "latest"
 uv = "latest"
 
 [tasks.setup]
-description = "Install all dependencies and pre-commit hooks"
+description = "Install all dependencies and prek hooks"
 run = """
 uv sync --all-groups
 mise trust
@@ -35,6 +35,14 @@ run = "uv run tox -e types"
 description = "Run all quality checks (lint, format, types)"
 depends = ["lint", "format-check", "types"]
 
+[tasks.prek]
+description = "Run prek hooks on all files"
+run = "uv run --group quality -- prek run --all-files"
+
+[tasks.tox]
+description = "Run all tox environments"
+run = "uv run --group quality -- tox"
+
 [tasks.bump]
 description = "Bump version (usage: mise run bump -- patch|minor|major)"
 run = "uv run -- bump-my-version bump --verbose"
@@ -43,9 +51,21 @@ run = "uv run -- bump-my-version bump --verbose"
 description = "Dry-run version bump"
 run = "uv run -- bump-my-version bump --dry-run --verbose --allow-dirty"
 
+[tasks.deprecate-python]
+description = "Remove oldest Python, update configs, run pyupgrade and ruff"
+depends = ["deprecate-python-files"]
+run = """
+uv run --group quality -- prek run --all-files pyupgrade
+uv run --group quality -- ruff check --fix src docs tests
+"""
+
 [tasks.push]
 description = "Push commits and tags"
 run = "git push && git push --tags"
+
+[tasks.add-remote]
+description = "Add a fork as a Git remote (usage: mise run add-remote username)"
+run = 'git remote add "$1" "git@github.com:$1/torchio.git"'
 
 [tasks."docs:serve"]
 description = "Serve documentation locally"
@@ -57,15 +77,25 @@ run = "uv run --group docs -- zensical build"
 
 [tasks."docs:test"]
 description = "Test documentation code snippets"
-run = "uv run --group test -- pytest --codeblocks docs/"
+run = "uv run tox -e docs-test"
+
+[tasks."docs:plots"]
+description = "Generate plot images from docs"
+run = "uv run --group docs -- python docs/plot_directive.py"
+
+[tasks."docs:gallery"]
+description = "Generate examples gallery pages"
+run = "uv run --group docs -- python docs/gallery.py"
 
 [tasks.clean]
 description = "Remove build artifacts and caches"
 run = """
+rm -rf .mypy_cache
 rm -rf .pytest_cache
 rm -rf .ruff_cache
 rm -rf .tox
 rm -rf dist
+rm -rf site
 rm -rf **/__pycache__
 rm -rf src/*.egg-info
 rm -f .coverage

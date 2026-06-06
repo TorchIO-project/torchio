@@ -1,0 +1,53 @@
+#!/usr/bin/env -S uv run --script
+#MISE description="Update project files for Python version deprecation"
+#MISE hide=true
+# /// script
+# dependencies = [
+#     "packaging",
+# ]
+# ///
+from pathlib import Path
+from tomllib import load
+
+from packaging.version import Version
+
+pyproject_path = Path("pyproject.toml")
+with open(pyproject_path, "rb") as f:
+    pyproject = load(f)
+
+classifiers = pyproject["project"]["classifiers"]
+for classifier in classifiers:
+    if classifier.startswith("Programming Language :: Python :: 3."):
+        old_version = Version(classifier.split("::")[-1].strip())
+        break
+
+pyproject_text = pyproject_path.read_text()
+to_replace = f'    "Programming Language :: Python :: {old_version}",\n'
+pyproject_text = pyproject_text.replace(to_replace, "")
+new_version = Version(f"{old_version.major}.{old_version.minor + 1}")
+pyproject_text = pyproject_text.replace(
+    f'requires-python = ">={old_version}"',
+    f'requires-python = ">={new_version}"',
+)
+pyproject_path.write_text(pyproject_text)
+
+pre_commit_path = Path(".pre-commit-config.yaml")
+if pre_commit_path.exists():
+    pre_commit_text = pre_commit_path.read_text()
+    old_version_pyupgrade = str(old_version).replace(".", "")
+    new_version_pyupgrade = str(new_version).replace(".", "")
+    pre_commit_text = pre_commit_text.replace(
+        f"--py{old_version_pyupgrade}-plus",
+        f"--py{new_version_pyupgrade}-plus",
+    )
+    pre_commit_path.write_text(pre_commit_text)
+
+tests_workflow_path = Path(".github/workflows/tests.yml")
+tests_workflow = tests_workflow_path.read_text()
+tests_workflow = tests_workflow.replace(
+    f'["{old_version}", ',
+    "[",
+)
+tests_workflow_path.write_text(tests_workflow)
+
+print(f"Deprecated Python {old_version}, new minimum: {new_version}")
