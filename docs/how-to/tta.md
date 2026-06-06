@@ -109,6 +109,7 @@ restored = tio.apply_inverse_transform(data)
 | `Resize` | ❌ | Not automatically invertible |
 | `Spike` | ❌ | Skipped silently when ``ignore_intensity=True`` |
 | `Swap` | ❌ | Skipped silently when ``ignore_intensity=True`` |
+| `ToReferenceSpace` | ❌ | Metadata-only; not invertible |
 
 Non-invertible transforms are **skipped with a warning** (not
 errored), so TTA works even with mixed pipelines:

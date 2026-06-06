@@ -80,6 +80,7 @@ from .transforms import Spike
 from .transforms import Standardize
 from .transforms import Swap
 from .transforms import To
+from .transforms import ToReferenceSpace
 from .transforms import Transform
 from .transforms import Transpose
 from .transforms import ZNormalization
@@ -165,6 +166,7 @@ __all__ = [
     "SubjectsLoader",
     "Swap",
     "To",
+    "ToReferenceSpace",
     "Transform",
     "Transpose",
     "TypeAffineMatrix",

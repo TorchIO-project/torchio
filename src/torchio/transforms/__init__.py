@@ -45,6 +45,7 @@ from .standardize import Standardize
 from .standardize import ZNormalization
 from .swap import Swap
 from .to import To
+from .to_reference_space import ToReferenceSpace
 from .transform import AppliedTransform
 from .transform import IntensityTransform
 from .transform import SpatialTransform
@@ -99,6 +100,7 @@ __all__ = [
     "Standardize",
     "Swap",
     "To",
+    "ToReferenceSpace",
     "Transform",
     "Transpose",
     "ZNormalization",
