@@ -118,8 +118,10 @@ You can use `+` for Compose and `|` for OneOf:
 
 <!-- pytest-codeblocks:skip -->
 ```python
-pipeline = tio.Flip(axes=(0,)) + tio.Noise(std=0.05) + tio.Gamma()
-artifact = tio.Ghosting() | tio.Spike() | tio.Motion()
+pipeline = tio.Flip(axes=(0,)) + tio.Noise(std=0.05) + tio.Gamma(log_gamma=(-0.3, 0.3))
+artifact = (
+    tio.Ghosting(intensity=(0.5, 1)) | tio.Spike(intensity=(1, 3)) | tio.Motion()
+)
 ```
 
 ## Preprocessing + augmentation

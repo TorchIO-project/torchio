@@ -26,11 +26,13 @@ class Spike(IntensityTransform):
     on GPU.
 
     Args:
-        num_spikes: Number of spikes.  A 2-tuple $(a, b)$ samples
+        num_spikes: Number of spikes.  A scalar $n$ is deterministic;
+            a 2-tuple $(a, b)$ samples
             $n \sim \mathcal{U}(a, b) \cap \mathbb{N}$.
         intensity: Ratio between the spike amplitude and the spectrum
-            maximum.  A 2-tuple $(a, b)$ means
-            $r \sim \mathcal{U}(a, b)$.
+            maximum.  A scalar is deterministic; a 2-tuple $(a, b)$
+            means $r \sim \mathcal{U}(a, b)$.
+            The default ``intensity=0`` is a no-op (and warns).
         **kwargs: See [`Transform`][torchio.Transform].
 
     Note:
@@ -38,20 +40,24 @@ class Spike(IntensityTransform):
 
     Examples:
         >>> import torchio as tio
-        >>> transform = tio.Spike()
+        >>> transform = tio.Spike(intensity=2.0)
         >>> transform = tio.Spike(num_spikes=3, intensity=2.0)
     """
 
     def __init__(
         self,
         *,
-        num_spikes: int | tuple[int, int] = (1, 1),
-        intensity: float | tuple[float, float] = (1.0, 3.0),
+        num_spikes: int | tuple[int, int] = 1,
+        intensity: float | tuple[float, float] = 0.0,
         **kwargs: Any,
     ) -> None:
         super().__init__(**kwargs)
         self.num_spikes = to_nonneg_range(num_spikes)
         self.intensity = to_range(intensity)
+        self._warn_if_noop(
+            is_noop=self.intensity.is_constant(0.0) or self.num_spikes.is_constant(0.0),
+            hint="intensity=(1, 3)",
+        )
 
     def make_params(self, batch: SubjectsBatch) -> dict[str, Any]:
         """Sample the number and positions of spikes."""

@@ -67,6 +67,15 @@ This is powered by `ParameterRange`, which handles all the parsing
 and sampling. Any ``torch.distributions.Distribution`` can be used
 for full control over the sampling strategy.
 
+!!! note "No arguments means no augmentation"
+    Augmentation transforms whose strength is sampled from a range
+    (e.g. ``Affine``, ``Blur``, ``Gamma``) default to a deterministic
+    **identity** (no-op) when constructed with no arguments, and emit a
+    warning. Pass a range like ``(a, b)`` for random augmentation, or a
+    scalar for a fixed effect. Transforms that draw a random realisation
+    instead of sampling a scalar parameter (e.g. ``Noise``) still apply
+    with their default parameters.
+
 ## Input flexibility
 
 Transforms accept multiple input types and return the same type:
@@ -141,7 +150,7 @@ augment = tio.OneOf({
 <!-- pytest-codeblocks:skip -->
 ```python
 augment = tio.SomeOf(
-    [tio.Noise(), tio.Blur(), tio.Gamma()],
+    [tio.Noise(std=0.1), tio.Blur(std=(0, 2)), tio.Gamma(log_gamma=(-0.3, 0.3))],
     num_transforms=2,
 )
 ```

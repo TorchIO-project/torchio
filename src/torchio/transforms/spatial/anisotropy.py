@@ -26,18 +26,20 @@ class Anisotropy(Transform):
     Args:
         axes: Spatial axes eligible for downsampling.  One is chosen
             at random per application.
-        downsampling: Downsampling factor $m > 1$.  A 2-tuple
-            $(a, b)$ samples $m \sim \mathcal{U}(a, b)$.
+        downsampling: Downsampling factor $m \geq 1$.  A scalar is
+            deterministic; a 2-tuple $(a, b)$ samples
+            $m \sim \mathcal{U}(a, b)$.  The default ``downsampling=1``
+            is a no-op (and warns).
         image_interpolation: Interpolation mode used when upsampling
             scalar images back to the original shape.
         **kwargs: See [`Transform`][torchio.Transform].
 
     Examples:
         >>> import torchio as tio
-        >>> transform = tio.Anisotropy()
+        >>> transform = tio.Anisotropy(downsampling=4)
         >>> transform = tio.Anisotropy(
         ...     axes=(2,),
-        ...     downsampling=4,
+        ...     downsampling=(1.5, 5),
         ... )
     """
 
@@ -45,7 +47,7 @@ class Anisotropy(Transform):
         self,
         *,
         axes: tuple[int, ...] = (0, 1, 2),
-        downsampling: float | tuple[float, float] = (1.5, 5.0),
+        downsampling: float | tuple[float, float] = 1.0,
         image_interpolation: str = "linear",
         **kwargs: Any,
     ) -> None:
@@ -54,6 +56,10 @@ class Anisotropy(Transform):
         self.downsampling = to_nonneg_range(downsampling)
         self.image_interpolation = image_interpolation
         self._validate_downsampling()
+        self._warn_if_noop(
+            is_noop=self.downsampling.is_constant(1.0),
+            hint="downsampling=(1.5, 5)",
+        )
 
     def _validate_downsampling(self) -> None:
         """Ensure the range produces factors >= 1."""

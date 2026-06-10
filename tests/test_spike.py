@@ -34,7 +34,7 @@ class TestSpike:
     def test_leaves_labels_unchanged(self) -> None:
         subject = _make_subject()
         original_seg = subject.seg.data.clone()
-        result = tio.Spike()(subject)
+        result = tio.Spike(num_spikes=3, intensity=2.0)(subject)
         torch.testing.assert_close(result.seg.data, original_seg)
 
     def test_single_spike(self) -> None:

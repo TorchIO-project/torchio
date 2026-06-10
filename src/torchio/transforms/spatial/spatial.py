@@ -542,9 +542,9 @@ class Affine(Spatial):
 
     Args:
         scales: See [`Spatial`][torchio.Spatial].
-            Default: ``(0.9, 1.1)`` (uniform).
+            Default: ``1.0`` (no scaling).
         degrees: See [`Spatial`][torchio.Spatial].
-            Default: ``(-10, 10)`` (uniform).
+            Default: ``0.0`` (no rotation).
         translation: See [`Spatial`][torchio.Spatial].
         isotropic: See [`Spatial`][torchio.Spatial].
         center: See [`Spatial`][torchio.Spatial].
@@ -563,8 +563,8 @@ class Affine(Spatial):
     def __init__(
         self,
         *,
-        scales: TypeParameterValue = (0.9, 1.1),
-        degrees: TypeParameterValue = (-10.0, 10.0),
+        scales: TypeParameterValue = 1.0,
+        degrees: TypeParameterValue = 0.0,
         translation: TypeParameterValue = 0.0,
         isotropic: bool = False,
         center: TypeCenter = "image",
@@ -585,6 +585,14 @@ class Affine(Spatial):
             image_interpolation=image_interpolation,
             label_interpolation=label_interpolation,
             **kwargs,
+        )
+        self._warn_if_noop(
+            is_noop=(
+                self.scales.is_constant(1.0)
+                and self.degrees.is_constant(0.0)
+                and self.translation.is_constant(0.0)
+            ),
+            hint="degrees=(-15, 15)",
         )
 
 

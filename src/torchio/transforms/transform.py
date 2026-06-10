@@ -5,6 +5,7 @@ from __future__ import annotations
 import contextlib
 import copy as _copy
 import inspect
+import warnings
 from dataclasses import dataclass
 from dataclasses import field
 from typing import Any
@@ -95,6 +96,28 @@ class Transform(nn.Module):
     def __init_subclass__(cls, **kwargs: Any) -> None:
         super().__init_subclass__(**kwargs)
         _TRANSFORM_REGISTRY[cls.__name__] = cls
+
+    def _warn_if_noop(self, *, is_noop: bool, hint: str) -> None:
+        """Warn that the transform leaves the data unchanged.
+
+        Augmentation transforms whose parameters are sampled from a
+        range default to an identity (no-op) when constructed with no
+        arguments, so that randomness must be requested explicitly. This
+        warns the user when that happens (or whenever the given
+        parameters produce a no-op).
+
+        Args:
+            is_noop: Whether the configured transform is an identity.
+            hint: Example argument to suggest in the warning message.
+        """
+        if is_noop:
+            warnings.warn(
+                f"{type(self).__name__} is a no-op with the given parameters"
+                " and will not change the data. Pass arguments to apply an"
+                f" effect (e.g. {hint}), or a range like (a, b) for random"
+                " augmentation.",
+                stacklevel=3,
+            )
 
     def __repr__(self) -> str:
         """Show only non-default fields for a compact repr."""

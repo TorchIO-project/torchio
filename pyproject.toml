@@ -85,6 +85,10 @@ filterwarnings = [
     "ignore:Casting complex values to real discards the imaginary part",
     # Raised by SimpleITK on CI
     "ignore:invalid escape sequence",
+    # Tests deliberately construct no-op transforms (identity tests,
+    # deterministic building blocks); the user-facing no-op warning is
+    # asserted explicitly in test_identity_warning.py.
+    "ignore:.* is a no-op with the given parameters:UserWarning",
 ]
 log_level = "INFO"
 markers = [

@@ -34,7 +34,7 @@ class TestGhosting:
     def test_leaves_labels_unchanged(self) -> None:
         subject = _make_subject()
         original_seg = subject.seg.data.clone()
-        result = tio.Ghosting()(subject)
+        result = tio.Ghosting(num_ghosts=5, intensity=0.8)(subject)
         torch.testing.assert_close(result.seg.data, original_seg)
 
     def test_specific_axis(self) -> None:

@@ -139,6 +139,29 @@ class ParameterRange:
         """Whether this range always returns the same values."""
         return all(isinstance(a, (int, float)) for a in self._axes)
 
+    def is_constant(self, value: float) -> bool:
+        """Whether every axis deterministically equals ``value``.
+
+        Args:
+            value: The value to compare against on every axis.
+
+        Returns:
+            ``True`` if each axis is a fixed number, or a degenerate
+            ``(v, v)`` range, equal to ``value``. ``Choice`` and
+            ``Distribution`` axes are never constant.
+        """
+        for axis in self._axes:
+            if isinstance(axis, (int, float)):
+                if float(axis) != float(value):
+                    return False
+            elif isinstance(axis, tuple):
+                low, high = axis
+                if not (low == high == value):
+                    return False
+            else:  # Choice or Distribution
+                return False
+        return True
+
     @property
     def _ranges(
         self,

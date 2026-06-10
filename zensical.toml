@@ -56,6 +56,9 @@ nav = [
     { "Data loading" = [
       "reference/loader.md",
     ] },
+    { Datasets = [
+      "datasets.md",
+    ] },
     { "Transforms" = [
       "reference/transforms.md",
       "reference/parameter_range.md",

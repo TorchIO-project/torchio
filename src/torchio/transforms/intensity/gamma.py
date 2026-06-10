@@ -30,14 +30,14 @@ class Gamma(IntensityTransform):
 
     Args:
         log_gamma: Range for $\beta$ in $\gamma = e^{\beta}$.
-            A scalar $d$ means $\beta \sim \mathcal{U}(-d, d)$.
+            A scalar $x$ means $\beta = x$ (deterministic).
             A 2-tuple $(a, b)$ means $\beta \sim \mathcal{U}(a, b)$.
             A ``Choice`` or ``Distribution`` may also be passed.
+            The default ``log_gamma=0`` is a no-op (and warns).
         **kwargs: See [`Transform`][torchio.Transform].
 
     Examples:
         >>> import torchio as tio
-        >>> transform = tio.Gamma()
         >>> transform = tio.Gamma(log_gamma=0.5)
         >>> transform = tio.Gamma(log_gamma=(-0.3, 0.3))
     """
@@ -45,11 +45,15 @@ class Gamma(IntensityTransform):
     def __init__(
         self,
         *,
-        log_gamma: float | tuple[float, float] = (-0.3, 0.3),
+        log_gamma: float | tuple[float, float] = 0.0,
         **kwargs: Any,
     ) -> None:
         super().__init__(**kwargs)
         self.log_gamma = to_range(log_gamma)
+        self._warn_if_noop(
+            is_noop=self.log_gamma.is_constant(0.0),
+            hint="log_gamma=(-0.3, 0.3)",
+        )
 
     def make_params(self, batch: SubjectsBatch) -> dict[str, Any]:
         """Sample the log-gamma value."""

@@ -26,13 +26,15 @@ class Ghosting(IntensityTransform):
     central k-space to avoid extreme artifacts.
 
     Args:
-        num_ghosts: Number of ghost replicas.  A 2-tuple $(a, b)$
-            samples $n \sim \mathcal{U}(a, b) \cap \mathbb{N}$.
+        num_ghosts: Number of ghost replicas.  A scalar $n$ is
+            deterministic; a 2-tuple $(a, b)$ samples
+            $n \sim \mathcal{U}(a, b) \cap \mathbb{N}$.
         axes: Spatial axes along which ghosts may appear.  One is
             chosen at random per application.
         intensity: Artifact strength relative to the k-space maximum.
-            A 2-tuple $(a, b)$ means
+            A scalar is deterministic; a 2-tuple $(a, b)$ means
             $s \sim \mathcal{U}(a, b)$.
+            The default ``intensity=0`` is a no-op (and warns).
         restore: Fraction of central k-space to restore after
             zeroing.  ``None`` restores only the single central
             slice.
@@ -43,16 +45,16 @@ class Ghosting(IntensityTransform):
 
     Examples:
         >>> import torchio as tio
-        >>> transform = tio.Ghosting()
+        >>> transform = tio.Ghosting(intensity=0.8)
         >>> transform = tio.Ghosting(num_ghosts=6, intensity=0.8)
     """
 
     def __init__(
         self,
         *,
-        num_ghosts: int | tuple[int, int] = (4, 10),
+        num_ghosts: int | tuple[int, int] = 4,
         axes: tuple[int, ...] = (0, 1, 2),
-        intensity: float | tuple[float, float] = (0.5, 1.0),
+        intensity: float | tuple[float, float] = 0.0,
         restore: float | None = None,
         **kwargs: Any,
     ) -> None:
@@ -61,6 +63,10 @@ class Ghosting(IntensityTransform):
         self.axes = axes
         self.intensity = to_nonneg_range(intensity)
         self.restore = restore
+        self._warn_if_noop(
+            is_noop=self.intensity.is_constant(0.0) or self.num_ghosts.is_constant(0.0),
+            hint="intensity=(0.5, 1)",
+        )
 
     def make_params(self, batch: SubjectsBatch) -> dict[str, Any]:
         """Sample ghosting parameters."""

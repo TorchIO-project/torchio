@@ -24,12 +24,14 @@ class Blur(IntensityTransform):
 
     Args:
         std: Standard deviation of the Gaussian kernel in mm.
-            A scalar $x$ means $\sigma_i \sim \mathcal{U}(0, x)$.
+            A scalar $x$ means $\sigma_i = x$ for every axis
+            (deterministic).
             A 2-tuple $(a, b)$ means
             $\sigma_i \sim \mathcal{U}(a, b)$.
             A 6-tuple $(a_1, b_1, a_2, b_2, a_3, b_3)$ means
             $\sigma_i \sim \mathcal{U}(a_i, b_i)$ independently.
             A ``Choice`` or ``Distribution`` may also be passed.
+            The default ``std=0`` is a no-op (and warns).
         **kwargs: See [`Transform`][torchio.Transform].
 
     Examples:
@@ -41,11 +43,12 @@ class Blur(IntensityTransform):
     def __init__(
         self,
         *,
-        std: float | tuple[float, float] = (0, 2),
+        std: float | tuple[float, float] = 0.0,
         **kwargs: Any,
     ) -> None:
         super().__init__(**kwargs)
         self.std = to_nonneg_range(std)
+        self._warn_if_noop(is_noop=self.std.is_constant(0.0), hint="std=(0, 2)")
 
     def make_params(self, batch: SubjectsBatch) -> dict[str, Any]:
         """Sample per-axis standard deviations."""

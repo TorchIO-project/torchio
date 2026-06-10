@@ -12,6 +12,7 @@ This guide covers every breaking change between TorchIO v1 and v2.
 ## Quick checklist
 
 - Replace `Random*` transform names with their base names (`RandomFlip` → `Flip`)
+- Pass explicit ranges for augmentation — renamed transforms are a no-op without arguments (`RandomAffine()` → `Affine(degrees=(-10, 10), scales=(0.9, 1.1))`)
 - Replace `path=` with positional arg or `source=` in Image constructors
 - Replace `.affine` (numpy array) with `.affine.data` where a raw array is needed
 - Replace `RescaleIntensity(out_min_max=...)` with `Normalize(out_min=..., out_max=...)`
@@ -94,6 +95,16 @@ The positional dictionary form is removed.  Use keyword arguments.
 v2 removes the `Random*` prefix.  Stochasticity is controlled by
 parameter type: a scalar is deterministic, a tuple samples uniformly,
 and a `Distribution` or `Choice` gives full control.
+
+!!! warning "Renaming a `Random*` transform changes its default behavior"
+    In v1, `RandomAffine()` (no arguments) applied random augmentation.
+    In v2, the renamed `Affine()` (no arguments) is a deterministic
+    identity (no-op) that emits a warning — randomness is opt-in. Pass a
+    range like `(a, b)` for random augmentation, or a scalar for a fixed
+    effect. Transforms that draw a random realisation rather than
+    sampling a scalar parameter (e.g. `Noise`, `BiasField`,
+    `ElasticDeformation`, `Swap`) still apply with their default
+    parameters.
 
 | v1 | v2 |
 |---|---|
@@ -214,7 +225,7 @@ Apply a random subset of transforms:
 <!-- pytest-codeblocks:skip -->
 ```python
 tio.SomeOf(
-    [tio.Flip(axes=(0,)), tio.Noise(std=0.1), tio.Gamma()],
+    [tio.Flip(axes=(0,)), tio.Noise(std=0.1), tio.Gamma(log_gamma=(-0.3, 0.3))],
     num_transforms=(1, 2),
 )
 ```
@@ -224,7 +235,7 @@ tio.SomeOf(
 <!-- pytest-codeblocks:skip -->
 ```python
 pipeline = tio.Flip(axes=(0,)) + tio.Noise(std=0.1)  # Compose
-artifact = tio.Ghosting() | tio.Spike()               # OneOf
+artifact = tio.Ghosting(intensity=(0.5, 1)) | tio.Spike(intensity=(1, 3))  # OneOf
 ```
 
 ### Compose copy control
