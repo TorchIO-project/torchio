@@ -28,7 +28,7 @@ def _resolve_axes(
 ) -> tuple[int, ...]:
     """Normalise axes to a tuple of ints (0, 1, 2).
 
-    Accepts ints, anatomical strings (``'L'``, ``'Right'``, ``'AP'``,
+    Accepts ints, anatomical strings (`'L'`, `'Right'`, `'AP'`,
     etc.), or a mix. String axes are resolved using the image
     orientation.
     """
@@ -73,13 +73,13 @@ class Flip(SpatialTransform):
     Args:
         axes: Index or tuple of indices of the spatial dimensions along
             which the image might be flipped. Integers must be in
-            ``{0, 1, 2}``. Anatomical labels may also be used, such as
-            ``'Left'``, ``'Right'``, ``'Anterior'``, ``'Posterior'``,
-            ``'Inferior'``, ``'Superior'``. Only the first letter of
+            `{0, 1, 2}`. Anatomical labels may also be used, such as
+            `'Left'`, `'Right'`, `'Anterior'`, `'Posterior'`,
+            `'Inferior'`, `'Superior'`. Only the first letter of
             the string is used. Anatomical labels are resolved using
             the image orientation.
         flip_probability: Probability that each axis will be flipped
-            (per-axis coin flip). This is independent of the ``p``
+            (per-axis coin flip). This is independent of the `p`
             parameter, which gates the entire transform.
         **kwargs: See [`Transform`][torchio.Transform] for additional
             keyword arguments.

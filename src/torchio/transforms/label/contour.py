@@ -57,10 +57,10 @@ def _extract_contour(data: torch.Tensor) -> torch.Tensor:
     with a morphological erosion (min of neighbors).
 
     Args:
-        data: ``(B, C, I, J, K)`` label tensor.
+        data: `(B, C, I, J, K)` label tensor.
 
     Returns:
-        Binary ``(B, C, I, J, K)`` tensor: 1 on boundaries, 0 inside.
+        Binary `(B, C, I, J, K)` tensor: 1 on boundaries, 0 inside.
     """
     # Pad with -1 so boundary voxels at the edge are detected.
     padded = functional.pad(data.float(), [1] * 6, mode="constant", value=-1)

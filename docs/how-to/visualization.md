@@ -218,14 +218,14 @@ image.to_gif("brain.gif", seconds=5, direction="I")
 image.to_video("brain.mp4", seconds=5, direction="S")
 ```
 
-The ``direction`` parameter accepts ``"I"`` (inferior), ``"S"``
-(superior), ``"A"`` (anterior), ``"P"`` (posterior), ``"R"`` (right),
-or ``"L"`` (left). The image is automatically reoriented so slices
+The `direction` parameter accepts `"I"` (inferior), `"S"`
+(superior), `"A"` (anterior), `"P"` (posterior), `"R"` (right),
+or `"L"` (left). The image is automatically reoriented so slices
 appear in the correct anatomical view.
 
 ### Displaying in Jupyter
 
-In Jupyter notebooks, calling ``to_gif()`` or ``to_video()`` without
+In Jupyter notebooks, calling `to_gif()` or `to_video()` without
 a path automatically creates a temporary file and returns an IPython
 display object:
 
@@ -263,14 +263,14 @@ torchio animate brain.nii.gz brain.mp4 --seconds 10 --direction S
 ```
 
 !!! note "Optional dependencies"
-    GIFs require ``Pillow`` (included in the ``[plot]`` extra).
-    Videos require ``ffmpeg-python`` (``pip install torchio[video]``)
-    and a working ``ffmpeg`` installation.
+    GIFs require `Pillow` (included in the `[plot]` extra).
+    Videos require `ffmpeg-python` (`pip install torchio[video]`)
+    and a working `ffmpeg` installation.
 
 ## Interactive 3D viewer
 
 For an interactive viewer in Jupyter notebooks, use
-``plot_interactive()``.  It uses
+`plot_interactive()`.  It uses
 [NiiVue](https://niivue.com/) via
 [ipyniivue](https://github.com/niivue/ipyniivue) and supports
 scrolling through slices, zooming, and crosshair navigation:
@@ -284,4 +284,4 @@ The viewer uses **radiological convention** (left hemisphere on the
 right side of the screen).
 
 !!! note "Optional dependency"
-    Requires ``ipyniivue``: ``pip install torchio[niivue]``
+    Requires `ipyniivue`: `pip install torchio[niivue]`

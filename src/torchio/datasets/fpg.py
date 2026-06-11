@@ -20,7 +20,7 @@ class FPG(Subject):
     r"""3T :math:`T_1`-weighted brain MRI and corresponding parcellation.
 
     Args:
-        load_all: If ``True``, three more images will be loaded: a
+        load_all: If `True`, three more images will be loaded: a
             :math:`T_2`-weighted MRI, a diffusion MRI and a functional MRI.
     """
 

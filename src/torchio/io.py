@@ -22,14 +22,14 @@ def read_matrix(path: TypePath) -> Tensor:
 
     Supported formats:
 
-    - ``.tfm``, ``.h5``: ITK transforms (read via SimpleITK)
-    - ``.txt``, ``.trsf``: NiftyReg / blockmatching matrices
+    - `.tfm`, `.h5`: ITK transforms (read via SimpleITK)
+    - `.txt`, `.trsf`: NiftyReg / blockmatching matrices
 
     Args:
         path: Path to the transform file.
 
     Returns:
-        A ``(4, 4)`` float64 tensor representing the affine in RAS
+        A `(4, 4)` float64 tensor representing the affine in RAS
         convention.
     """
     path = Path(path)
@@ -46,7 +46,7 @@ def write_matrix(matrix: Tensor, path: TypePath) -> None:
     """Write a 4x4 affine matrix to a file.
 
     Args:
-        matrix: A ``(4, 4)`` tensor in RAS convention.
+        matrix: A `(4, 4)` tensor in RAS convention.
         path: Destination path. Suffix determines format.
     """
     path = Path(path)
@@ -79,7 +79,7 @@ def _from_itk_convention(matrix: np.ndarray) -> np.ndarray:
 
 
 def _read_itk_matrix(path: TypePath) -> Tensor:
-    """Read an affine transform in ITK's ``.tfm`` or ``.h5`` format."""
+    """Read an affine transform in ITK's `.tfm` or `.h5` format."""
     transform = sitk.ReadTransform(str(path))
     parameters = transform.GetParameters()
     rotation_parameters = parameters[:9]
@@ -93,7 +93,7 @@ def _read_itk_matrix(path: TypePath) -> Tensor:
 
 
 def _write_itk_matrix(matrix: Tensor, path: TypePath) -> None:
-    """Write a RAS affine as an ITK ``.tfm`` file."""
+    """Write a RAS affine as an ITK `.tfm` file."""
     itk_matrix = _to_itk_convention(matrix)
     rotation = itk_matrix[:3, :3].ravel().tolist()
     translation = itk_matrix[:3, 3].tolist()
@@ -112,7 +112,7 @@ def _read_niftyreg_matrix(path: TypePath) -> Tensor:
 
 
 def _write_niftyreg_matrix(matrix: Tensor, path: TypePath) -> None:
-    """Write a RAS affine as a NiftyReg ``.txt`` file."""
+    """Write a RAS affine as a NiftyReg `.txt` file."""
     if isinstance(matrix, Tensor):
         matrix = matrix.numpy()
     inverted = np.linalg.inv(matrix)

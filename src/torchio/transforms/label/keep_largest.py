@@ -26,11 +26,11 @@ class KeepLargestComponent(Transform):
     affected.
 
     Args:
-        labels: Label values to filter.  ``None`` means all non-zero
+        labels: Label values to filter.  `None` means all non-zero
             labels found in the data.
         background_label: Value used for removed components.
-        fully_connected: If ``True``, use 26-connectivity (voxels
-            sharing a corner are connected).  If ``False``, use
+        fully_connected: If `True`, use 26-connectivity (voxels
+            sharing a corner are connected).  If `False`, use
             6-connectivity (face-connected only).
         **kwargs: See [`Transform`][torchio.Transform].
 
@@ -96,14 +96,14 @@ def _keep_largest_per_label(
     """Keep the largest connected component for each label.
 
     Args:
-        data: ``(I, J, K)`` label tensor.
-        labels: Which labels to filter.  ``None`` means all
+        data: `(I, J, K)` label tensor.
+        labels: Which labels to filter.  `None` means all
             non-zero labels.
         background_label: Value for removed voxels.
         fully_connected: Whether to use 26- or 6-connectivity.
 
     Returns:
-        Filtered ``(I, J, K)`` tensor.
+        Filtered `(I, J, K)` tensor.
     """
     result = data.clone()
     if labels is None:

@@ -104,12 +104,12 @@ def _apply_motion(
     """Apply motion corruption to a 5D tensor.
 
     Args:
-        data: ``(B, C, I, J, K)`` image tensor.
-        motion_transforms: List of dicts with ``degrees`` and
-            ``translation`` 3-tuples.
+        data: `(B, C, I, J, K)` image tensor.
+        motion_transforms: List of dicts with `degrees` and
+            `translation` 3-tuples.
 
     Returns:
-        Motion-corrupted ``(B, C, I, J, K)`` tensor.
+        Motion-corrupted `(B, C, I, J, K)` tensor.
     """
     result = data.float()
     num_transforms = len(motion_transforms)
@@ -152,16 +152,16 @@ def _apply_rigid_transform(
 ) -> Tensor:
     """Apply a rigid-body transform to a 4-D tensor using affine_grid.
 
-    All channels share the same grid so only one ``affine_grid`` call
+    All channels share the same grid so only one `affine_grid` call
     is needed.
 
     Args:
-        tensor: ``(C, I, J, K)`` tensor.
+        tensor: `(C, I, J, K)` tensor.
         degrees: Euler angles in degrees.
         translation: Translation in voxels (approximation).
 
     Returns:
-        Transformed ``(C, I, J, K)`` tensor.
+        Transformed `(C, I, J, K)` tensor.
     """
     c = tensor.shape[0]
     shape = tensor.shape[1:]  # (I, J, K)

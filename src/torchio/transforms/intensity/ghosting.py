@@ -34,9 +34,9 @@ class Ghosting(IntensityTransform):
         intensity: Artifact strength relative to the k-space maximum.
             A scalar is deterministic; a 2-tuple $(a, b)$ means
             $s \sim \mathcal{U}(a, b)$.
-            The default ``intensity=0`` is a no-op (and warns).
+            The default `intensity=0` is a no-op (and warns).
         restore: Fraction of central k-space to restore after
-            zeroing.  ``None`` restores only the single central
+            zeroing.  `None` restores only the single central
             slice.
         **kwargs: See [`Transform`][torchio.Transform].
 
@@ -110,14 +110,14 @@ def _add_ghosting(
     """Add ghosting artifacts to a 5D tensor via k-space manipulation.
 
     Args:
-        data: ``(B, C, I, J, K)`` image tensor.
+        data: `(B, C, I, J, K)` image tensor.
         num_ghosts: Number of ghost replicas.
         axis: Spatial axis (0, 1, or 2) for the phase-encode direction.
         intensity: Artifact strength (0 = none, 1 = strong).
         restore: Fraction of central k-space to restore.
 
     Returns:
-        Corrupted ``(B, C, I, J, K)`` tensor.
+        Corrupted `(B, C, I, J, K)` tensor.
     """
     if not num_ghosts or intensity == 0:
         return data

@@ -12,9 +12,9 @@ from ...types import TypeThreeInts
 from ..transform import SpatialTransform
 
 #: Accepted padding specifications.
-#: ``int`` → same amount on each side of each axis.
-#: 3-tuple → symmetric per axis ``(i, j, k)``.
-#: 6-tuple → per-side ``(i_ini, i_fin, j_ini, j_fin, k_ini, k_fin)``.
+#: `int` → same amount on each side of each axis.
+#: 3-tuple → symmetric per axis `(i, j, k)`.
+#: 6-tuple → per-side `(i_ini, i_fin, j_ini, j_fin, k_ini, k_fin)`.
 PaddingParam = int | TypeThreeInts | TypeSixInts
 
 
@@ -49,10 +49,10 @@ class Pad(SpatialTransform):
             If only three values $(i, j, k)$ are provided, then
             $i_\text{ini} = i_\text{fin} = i$, etc.
             If only one value $n$ is provided, all six values are $n$.
-        padding_mode: One of ``'constant'``, ``'reflect'``,
-            ``'replicate'``, or ``'circular'``. See
+        padding_mode: One of `'constant'`, `'reflect'`,
+            `'replicate'`, or `'circular'`. See
             [`torch.nn.functional.pad`](https://pytorch.org/docs/stable/generated/torch.nn.functional.pad.html).
-        fill: Fill value when ``padding_mode='constant'``.
+        fill: Fill value when `padding_mode='constant'`.
         **kwargs: See [`Transform`][torchio.Transform] for additional
             keyword arguments.
 

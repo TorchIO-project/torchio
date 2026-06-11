@@ -1,7 +1,7 @@
 """Unified spatial transforms.
 
 Combines resampling, affine motion, and elastic deformation into a single
-``grid_sample`` call.  The public API consists of four classes:
+`grid_sample` call.  The public API consists of four classes:
 
 - [`Spatial`][torchio.Spatial]: the unified transform.
 - [`Resample`][torchio.Resample]: resampling-only convenience wrapper.
@@ -135,41 +135,41 @@ class Spatial(SpatialTransform):
         target: Output space.  Can be one of:
 
             - A scalar or 3-tuple of floats: output voxel spacing in mm.
-              E.g., ``1`` for 1 mm isotropic, ``(0.5, 0.5, 2.0)`` for
+              E.g., `1` for 1 mm isotropic, `(0.5, 0.5, 2.0)` for
               anisotropic.
-            - A ``str``: either a path to an image file, or the name of
-              an image in the subject (e.g., ``"t1"``).
+            - A `str`: either a path to an image file, or the name of
+              an image in the subject (e.g., `"t1"`).
             - An [`Image`][torchio.Image] instance.
-            - A ``(spatial_shape, affine)`` pair.
-            - ``None`` (default): the output grid matches the input grid.
+            - A `(spatial_shape, affine)` pair.
+            - `None` (default): the output grid matches the input grid.
         scales: Scale factors $(s_1, s_2, s_3)$ for each axis.
             If a single value $x$ is given, all axes use $x$.
             If two values $(a, b)$ are given,
             $s_i \sim \mathcal{U}(a, b)$.
             If six values $(a_1, b_1, a_2, b_2, a_3, b_3)$ are given,
             $s_i \sim \mathcal{U}(a_i, b_i)$ independently.
-            A ``torch.distributions.Distribution`` may also be passed.
-            For example, ``scales=0.5`` halves the apparent object
-            size (zoom out), and ``scales=2`` doubles it (zoom in).
+            A `torch.distributions.Distribution` may also be passed.
+            For example, `scales=0.5` halves the apparent object
+            size (zoom out), and `scales=2` doubles it (zoom in).
         degrees: Euler rotation angles $(\theta_1, \theta_2, \theta_3)$
             in degrees, following the same value/range/distribution
             convention as *scales*.
         translation: Translation $(t_1, t_2, t_3)$ in mm, following
             the same convention.  The direction depends on the image
-            orientation: in RAS+, ``translation=(10, 0, 0)`` shifts
+            orientation: in RAS+, `translation=(10, 0, 0)` shifts
             10 mm to the right.
-        isotropic: If ``True``, sample a single scale factor and
+        isotropic: If `True`, sample a single scale factor and
             reuse it for all three axes.  *scales* must then be a
             scalar or 2-value range.
         center: Pivot point for rotation and scaling.
-            ``"image"`` (default) uses the image center;
-            ``"origin"`` uses the world-coordinate origin.
+            `"image"` (default) uses the image center;
+            `"origin"` uses the world-coordinate origin.
         control_points: Optional pre-computed coarse displacement
-            field with shape ``(n_i, n_j, n_k, 3)`` in mm.  If given,
+            field with shape `(n_i, n_j, n_k, 3)` in mm.  If given,
             *num_control_points*, *max_displacement*, and
             *locked_borders* are ignored.
         num_control_points: Number of control points along each
-            dimension of the coarse grid.  Can be a single ``int``
+            dimension of the coarse grid.  Can be a single `int`
             (isotropic) or a 3-tuple.  Minimum is 4.  Smaller values
             produce smoother deformations.
         max_displacement: Maximum displacement at each control point,
@@ -177,23 +177,23 @@ class Spatial(SpatialTransform):
             convention as *scales*.  Zero (default) disables elastic
             deformation.
         locked_borders: Number of outer control-point layers whose
-            displacement is forced to zero.  ``0`` keeps all
-            displacements; ``1`` zeros the outermost layer; ``2``
+            displacement is forced to zero.  `0` keeps all
+            displacements; `1` zeros the outermost layer; `2`
             (default) zeros the two outermost layers.
-        affine_first: If ``True`` (default), apply the affine mapping
-            before the elastic field.  If ``False``, apply the elastic
+        affine_first: If `True` (default), apply the affine mapping
+            before the elastic field.  If `False`, apply the elastic
             field first.  The difference is significant for large
             transforms.
-        image_interpolation: ``"linear"`` (default) or ``"nearest"``.
+        image_interpolation: `"linear"` (default) or `"nearest"`.
             Used for [`ScalarImage`][torchio.ScalarImage] instances.
-        label_interpolation: ``"nearest"`` (default) or ``"linear"``.
+        label_interpolation: `"nearest"` (default) or `"linear"`.
             Used for [`LabelMap`][torchio.LabelMap] instances.
-        antialias: If ``True``, apply Gaussian smoothing before
+        antialias: If `True`, apply Gaussian smoothing before
             downsampling intensity images.  Label maps are never
             smoothed.  The standard deviations follow
             [Cardoso et al., MICCAI 2015](https://link.springer.com/chapter/10.1007/978-3-319-24571-3_81).
         default_pad_value: Fill rule for out-of-bounds intensity
-            voxels.  ``"minimum"`` (default), ``"mean"``, ``"otsu"``,
+            voxels.  `"minimum"` (default), `"mean"`, `"otsu"`,
             or a numeric value.
         default_pad_label: Numeric fill value for out-of-bounds label
             voxels.
@@ -203,7 +203,7 @@ class Spatial(SpatialTransform):
         All parameters that accept a value/range/distribution use the
         [`ParameterRange`][torchio.ParameterRange] convention:
         a scalar is deterministic, a 2-tuple $(a, b)$ samples
-        uniformly, and a ``torch.distributions.Distribution`` samples
+        uniformly, and a `torch.distributions.Distribution` samples
         from the given distribution.
 
     Examples:
@@ -283,7 +283,7 @@ class Spatial(SpatialTransform):
         image in the batch.
 
         Returns:
-            Dict of serializable parameters for ``apply_transform`` and
+            Dict of serializable parameters for `apply_transform` and
             history replay.
         """
         images = self._get_images(batch)
@@ -353,7 +353,7 @@ class Spatial(SpatialTransform):
         """Apply the spatial mapping to every selected image in *batch*.
 
         The sampling grid is built once from the parameters produced by
-        ``make_params`` and reused for all images and all batch samples.
+        `make_params` and reused for all images and all batch samples.
         """
         selected_images = params.get("selected_images", [])
         if not selected_images:
@@ -390,14 +390,14 @@ class Spatial(SpatialTransform):
 
         The affine component is inverted exactly.  The elastic component
         is approximated by negating the sampled displacement field.  The
-        ``affine_first`` flag is flipped so that the inverse operations
+        `affine_first` flag is flipped so that the inverse operations
         run in the opposite order.
 
         Args:
-            params: The parameter dict produced by ``make_params``.
+            params: The parameter dict produced by `make_params`.
 
         Returns:
-            A ``_SpatialInverse`` that resamples back to the original grid.
+            A `_SpatialInverse` that resamples back to the original grid.
         """
         affine_matrix = _deserialize_matrix(params["affine_matrix"])
         inverse_affine = None
@@ -430,7 +430,7 @@ class _SpatialInverse(SpatialTransform):
     """Concrete inverse of [`Spatial`][torchio.Spatial], used for history replay.
 
     Stores the exact inverse affine matrix, the negated elastic field,
-    and the original output space so that ``apply_inverse_transform``
+    and the original output space so that `apply_inverse_transform`
     can restore the geometry of images transformed by [`Spatial`][torchio.Spatial].
     """
 
@@ -542,9 +542,9 @@ class Affine(Spatial):
 
     Args:
         scales: See [`Spatial`][torchio.Spatial].
-            Default: ``1.0`` (no scaling).
+            Default: `1.0` (no scaling).
         degrees: See [`Spatial`][torchio.Spatial].
-            Default: ``0.0`` (no rotation).
+            Default: `0.0` (no rotation).
         translation: See [`Spatial`][torchio.Spatial].
         isotropic: See [`Spatial`][torchio.Spatial].
         center: See [`Spatial`][torchio.Spatial].
@@ -609,7 +609,7 @@ class ElasticDeformation(Spatial):
         control_points: See [`Spatial`][torchio.Spatial].
         num_control_points: See [`Spatial`][torchio.Spatial].
         max_displacement: See [`Spatial`][torchio.Spatial].
-            Default: ``7.5`` mm.
+            Default: `7.5` mm.
         locked_borders: See [`Spatial`][torchio.Spatial].
         image_interpolation: See [`Spatial`][torchio.Spatial].
         label_interpolation: See [`Spatial`][torchio.Spatial].
@@ -724,11 +724,11 @@ def _resolve_target_space(
     first_shape: TypeThreeInts,
     first_affine: AffineMatrix,
 ) -> TypeTargetSpace | None:
-    """Convert the user-facing *target* specification to ``(shape, affine)``.
+    """Convert the user-facing *target* specification to `(shape, affine)`.
 
     Accepts scalars (isotropic spacing), 3-tuples (per-axis spacing), image
-    names in the subject, file paths, ``Image`` instances, or explicit
-    ``(shape, affine)`` pairs.  Returns ``None`` when the output grid should
+    names in the subject, file paths, `Image` instances, or explicit
+    `(shape, affine)` pairs.  Returns `None` when the output grid should
     match the input grid.
     """
     if target is None:
@@ -777,7 +777,7 @@ def _target_from_spacing(
     first_shape: TypeThreeInts,
     first_affine: AffineMatrix,
 ) -> TypeTargetSpace:
-    """Resolve a numeric spacing target to ``(shape, affine)``."""
+    """Resolve a numeric spacing target to `(shape, affine)`."""
     if isinstance(value, np.ndarray):
         value = tuple(float(v) for v in value.flat)
     spacing = _parse_spacing(value)
@@ -839,11 +839,11 @@ def _build_sampling_grid(
 
     When elastic control points are provided, the dense displacement
     field (in mm) is converted to voxel offsets and added to the mapped
-    coordinates.  The ``affine_first`` flag controls whether the affine
+    coordinates.  The `affine_first` flag controls whether the affine
     mapping or the elastic displacement is applied first.
 
     Returns:
-        Grid tensor with shape ``(I_out, J_out, K_out, 3)`` in input
+        Grid tensor with shape `(I_out, J_out, K_out, 3)` in input
         voxel coordinates.
     """
     mapping = _output_to_input_voxel_matrix(
@@ -903,7 +903,7 @@ def _output_to_input_voxel_matrix(
 ) -> Tensor:
     """Compute the 4x4 matrix mapping output voxels to input voxels.
 
-    The composition is ``A_in^{-1} @ T^{-1} @ A_out`` where *T* is the
+    The composition is `A_in^{-1} @ T^{-1} @ A_out` where *T* is the
     optional world-space affine transform.
     """
     input_affine_inv = np.linalg.inv(input_affine.numpy())
@@ -920,7 +920,7 @@ def _output_voxel_coordinates(
     shape: TypeThreeInts,
     device: torch.device,
 ) -> Tensor:
-    """Create an ``(I, J, K, 3)`` meshgrid of output voxel indices."""
+    """Create an `(I, J, K, 3)` meshgrid of output voxel indices."""
     i = torch.arange(shape[0], dtype=torch.float32, device=device)
     j = torch.arange(shape[1], dtype=torch.float32, device=device)
     k = torch.arange(shape[2], dtype=torch.float32, device=device)
@@ -932,7 +932,7 @@ def _apply_voxel_mapping(
     coords: Tensor,
     matrix: Tensor,
 ) -> Tensor:
-    """Apply a 4x4 homogeneous matrix to an ``(..., 3)`` coordinate tensor."""
+    """Apply a 4x4 homogeneous matrix to an `(..., 3)` coordinate tensor."""
     ones = torch.ones(*coords.shape[:-1], 1, dtype=coords.dtype, device=coords.device)
     homogeneous = torch.cat([coords, ones], dim=-1)
     mapped = homogeneous @ matrix.T
@@ -943,11 +943,11 @@ def _voxel_coordinates_to_grid(
     coords: Tensor,
     input_shape: TypeThreeInts,
 ) -> Tensor:
-    """Normalize ``(I, J, K, 3)`` voxel coords to the ``[-1, 1]`` grid.
+    """Normalize `(I, J, K, 3)` voxel coords to the `[-1, 1]` grid.
 
-    ``F.grid_sample`` expects coordinates in ``[-1, 1]`` where ``-1``
-    maps to the first voxel and ``+1`` to the last.  The output is
-    rearranged to ``(1, K, J, I, 3)`` to match PyTorch's ``(D, H, W)``
+    `F.grid_sample` expects coordinates in `[-1, 1]` where `-1`
+    maps to the first voxel and `+1` to the last.  The output is
+    rearranged to `(1, K, J, I, 3)` to match PyTorch's `(D, H, W)`
     convention.
     """
     size_i = max(input_shape[0] - 1, 1)
@@ -974,21 +974,21 @@ def _sample_batch(
     """Resample a 5D batch using a shared sampling grid.
 
     For interpolation orders 0-1 (nearest, linear), the fast
-    ``F.grid_sample`` path is used.  For orders 2+ (quadratic,
-    cubic, ...), ``interpol.grid_pull`` provides high-order B-spline
+    `F.grid_sample` path is used.  For orders 2+ (quadratic,
+    cubic, ...), `interpol.grid_pull` provides high-order B-spline
     interpolation.
 
     Args:
-        data: ``(B, C, I, J, K)`` image batch.
-        voxel_grid: ``(I_out, J_out, K_out, 3)`` sampling grid in
+        data: `(B, C, I, J, K)` image batch.
+        voxel_grid: `(I_out, J_out, K_out, 3)` sampling grid in
             input voxel coordinates.
-        input_shape: Spatial shape of the input volume ``(I, J, K)``.
+        input_shape: Spatial shape of the input volume `(I, J, K)`.
         interpolation: Interpolation mode name.
         fill_value: Scalar or per-channel fill for out-of-bounds
             samples.
 
     Returns:
-        Resampled ``(B, C, I_out, J_out, K_out)`` tensor.
+        Resampled `(B, C, I_out, J_out, K_out)` tensor.
     """
     order = _INTERPOLATION_TO_ORDER[interpolation]
     if order <= 1:
@@ -1055,7 +1055,7 @@ def _sample_batch_interpol(
 ) -> Tensor:
     """High-quality path: resample with interpol.grid_pull (orders 2+).
 
-    ``interpol.grid_pull`` works in voxel coordinates natively and
+    `interpol.grid_pull` works in voxel coordinates natively and
     supports B-spline orders up to 7.
     """
     import interpol
@@ -1090,12 +1090,12 @@ def _antialias_batch(
     MICCAI 2015.
 
     Args:
-        data: ``(B, C, I, J, K)`` image batch.
+        data: `(B, C, I, J, K)` image batch.
         input_affine: Affine of the input grid.
         output_affine: Affine of the output grid.
 
     Returns:
-        Smoothed ``(B, C, I, J, K)`` tensor.
+        Smoothed `(B, C, I, J, K)` tensor.
     """
     input_spacing = np.asarray(input_affine.spacing, dtype=np.float64)
     output_spacing = np.asarray(output_affine.spacing, dtype=np.float64)
@@ -1113,7 +1113,7 @@ def _antialias_sigmas(
     """Compute per-axis Gaussian sigma for antialiasing.
 
     From Cardoso et al., MICCAI 2015, Eq. at top of p. 678:
-    ``variance = (k^2 - 1) / (2 * sqrt(2 * ln(2)))^2``
+    `variance = (k^2 - 1) / (2 * sqrt(2 * ln(2)))^2`
 
     Args:
         factors: Per-axis downsampling factor (output / input spacing).
@@ -1139,11 +1139,11 @@ def _gaussian_smooth_batch(data: Tensor, sigmas: np.ndarray) -> Tensor:
     """Apply separable Gaussian smoothing along spatial axes of a 5D tensor.
 
     Args:
-        data: ``(B, C, I, J, K)`` tensor.
+        data: `(B, C, I, J, K)` tensor.
         sigmas: Per-axis sigma in voxels. Zero means skip that axis.
 
     Returns:
-        Smoothed ``(B, C, I, J, K)`` tensor.
+        Smoothed `(B, C, I, J, K)` tensor.
     """
     result = data.float()
     b, c = result.shape[:2]
@@ -1224,8 +1224,8 @@ def _prepare_fill_value(
 ) -> Tensor | None:
     """Convert a fill value to a broadcast-compatible tensor.
 
-    Returns ``None`` when the fill is zero (so the caller can skip the
-    masking step, since ``grid_sample`` already pads with zeros).
+    Returns `None` when the fill is zero (so the caller can skip the
+    masking step, since `grid_sample` already pads with zeros).
     """
     if isinstance(fill_value, Tensor):
         fill_tensor = fill_value.to(device=reference.device, dtype=reference.dtype)
@@ -1266,7 +1266,7 @@ def _border_mean(
 ) -> float:
     """Mean intensity of the six boundary faces of a 3D tensor.
 
-    When *filter_otsu* is ``True``, only voxels below the Otsu threshold
+    When *filter_otsu* is `True`, only voxels below the Otsu threshold
     are averaged, giving a background-aware fill value.
     """
     borders = torch.cat(
@@ -1330,9 +1330,9 @@ def _upsample_displacement_field(
     control_points: Tensor,
     output_shape: TypeThreeInts,
 ) -> Tensor:
-    """Trilinearly upsample a coarse ``(n_i, n_j, n_k, 3)`` field.
+    """Trilinearly upsample a coarse `(n_i, n_j, n_k, 3)` field.
 
-    The result has shape ``(*output_shape, 3)`` and approximates
+    The result has shape `(*output_shape, 3)` and approximates
     cubic B-spline interpolation for smooth deformations.
     """
     # (I, J, K, 3) -> (1, 3, I, J, K) for interpolate
@@ -1383,7 +1383,7 @@ def _resolve_control_points(
     """Return a concrete control-point field and its max displacement.
 
     If *control_points* is already provided, clone it.  Otherwise sample
-    a random field from the displacement range.  Returns ``(None, None)``
+    a random field from the displacement range.  Returns `(None, None)`
     when the sampled displacement is zero everywhere.
     """
     if control_points is not None:
@@ -1403,7 +1403,7 @@ def _sample_control_points(
 ) -> Tensor:
     """Sample a random control-point displacement field.
 
-    Each component is drawn uniformly from ``[-max, +max]`` along each
+    Each component is drawn uniformly from `[-max, +max]` along each
     axis, then the outermost *locked_borders* layers are zeroed to
     prevent boundary artifacts.
     """
@@ -1435,7 +1435,7 @@ def _build_forward_affine(
 ) -> np.ndarray:
     """Build a 4x4 world-space affine from scale, rotation, translation.
 
-    When *center* is ``"image"``, the rotation and scaling pivot around
+    When *center* is `"image"`, the rotation and scaling pivot around
     the image center.  For 2D slices (last axis size 1), out-of-plane
     components are suppressed.
     """
@@ -1469,7 +1469,7 @@ def _physical_affine_matrix(
     """Compose rotation, scaling, and translation into a 4x4 matrix.
 
     If *center_world* is given the transform pivots around that point:
-    ``T = R @ S`` with ``t = center - R @ S @ center + translation``.
+    `T = R @ S` with `t = center - R @ S @ center + translation`.
     """
     rotation = _euler_to_rotation_matrix(degrees)
     scale = np.diag(scales)
@@ -1487,7 +1487,7 @@ def _euler_to_rotation_matrix(degrees: np.ndarray) -> np.ndarray:
     """Convert XYZ Euler angles in degrees to a 3x3 rotation matrix.
 
     Uses the ZYX extrinsic (= XYZ intrinsic) convention:
-    ``R = Rz @ Ry @ Rx``.
+    `R = Rz @ Ry @ Rx`.
     """
     radians = np.radians(degrees)
     rx, ry, rz = radians
@@ -1562,7 +1562,7 @@ def _check_shared_space(
 
 
 def _get_spatial_shape(img_batch: ImagesBatch) -> TypeThreeInts:
-    """Extract the ``(I, J, K)`` spatial shape from a batched image."""
+    """Extract the `(I, J, K)` spatial shape from a batched image."""
     return (
         int(img_batch.data.shape[-3]),
         int(img_batch.data.shape[-2]),
@@ -1583,7 +1583,7 @@ def _interpolation_for_batch(
 
 
 def _serialize_space(space: TypeTargetSpace | None) -> dict[str, Any] | None:
-    """Convert a ``(shape, AffineMatrix)`` pair to a JSON-safe dict."""
+    """Convert a `(shape, AffineMatrix)` pair to a JSON-safe dict."""
     if space is None:
         return None
     shape, affine = space
@@ -1594,7 +1594,7 @@ def _serialize_space(space: TypeTargetSpace | None) -> dict[str, Any] | None:
 
 
 def _deserialize_space(data: dict[str, Any] | None) -> TypeTargetSpace | None:
-    """Reconstruct a ``(shape, AffineMatrix)`` pair from a dict."""
+    """Reconstruct a `(shape, AffineMatrix)` pair from a dict."""
     if data is None:
         return None
     shape = (
@@ -1668,7 +1668,7 @@ def _has_affine_component(
     degrees: tuple[float, float, float],
     translation: tuple[float, float, float],
 ) -> bool:
-    """Return ``True`` if any sampled affine parameter is non-identity."""
+    """Return `True` if any sampled affine parameter is non-identity."""
     return not (
         np.allclose(scales, (1.0, 1.0, 1.0))
         and np.allclose(degrees, (0.0, 0.0, 0.0))
@@ -1680,7 +1680,7 @@ def _parse_target_space_tuple(
     shape: Sequence[int],
     affine: AffineMatrix | Tensor | npt.ArrayLike,
 ) -> TypeTargetSpace:
-    """Validate and convert a ``(shape, affine)`` target pair."""
+    """Validate and convert a `(shape, affine)` target pair."""
     if len(shape) != 3:
         msg = f"Target shape must have length 3, got {len(shape)}"
         raise ValueError(msg)
@@ -1689,7 +1689,7 @@ def _parse_target_space_tuple(
 
 
 def _is_spacing_sequence(target: Sequence[Any]) -> bool:
-    """Return ``True`` if *target* looks like a 3-element numeric spacing."""
+    """Return `True` if *target* looks like a 3-element numeric spacing."""
     return len(target) == 3 and all(isinstance(value, Number) for value in target)
 
 
@@ -1708,7 +1708,7 @@ def _is_spacing_list(target: object) -> TypeGuard[list[int | float]]:
 def _is_target_space_tuple(
     target: object,
 ) -> TypeGuard[tuple[Sequence[int], AffineMatrix | Tensor | npt.ArrayLike]]:
-    """Type-guard: *target* is a 2-element ``(shape, affine)`` tuple."""
+    """Type-guard: *target* is a 2-element `(shape, affine)` tuple."""
     return isinstance(target, tuple) and len(target) == 2
 
 
@@ -1782,7 +1782,7 @@ def _parse_center(center: TypeCenter) -> TypeCenter:
 def _to_positive_range(
     value: TypeParameterValue,
 ) -> ParameterRange:
-    """Convert to a ``ParameterRange``, rejecting non-positive scales."""
+    """Convert to a `ParameterRange`, rejecting non-positive scales."""
     result = _to_parameter_range(value)
     if result._distribution is None:
         for low, high in result._ranges:
@@ -1796,7 +1796,7 @@ def _validate_isotropic(
     value: TypeParameterValue,
     isotropic: bool,
 ) -> None:
-    """Raise if *isotropic* is ``True`` but per-axis values were given."""
+    """Raise if *isotropic* is `True` but per-axis values were given."""
     if not isotropic or isinstance(value, Distribution):
         return
     if isinstance(value, tuple) and len(value) in (3, 6):
@@ -1853,7 +1853,7 @@ def _parse_control_points(control_points: TypeControlPoints) -> Tensor:
 def _normalize_parameter_value(
     value: TypeParameterValue,
 ) -> float | tuple | Distribution | Choice:
-    """Cast ints to floats so ``ParameterRange`` always receives floats."""
+    """Cast ints to floats so `ParameterRange` always receives floats."""
     if isinstance(value, (Distribution, Choice)):
         return value
     if isinstance(value, (int, float)):
@@ -1868,12 +1868,12 @@ def _normalize_parameter_value(
 
 
 def _to_parameter_range(value: TypeParameterValue) -> ParameterRange:
-    """Convert a ``TypeParameterValue`` to a ``ParameterRange``."""
+    """Convert a `TypeParameterValue` to a `ParameterRange`."""
     return ParameterRange(_normalize_parameter_value(value))
 
 
 def _to_nonnegative_parameter_range(value: TypeParameterValue) -> ParameterRange:
-    """Like ``_to_parameter_range``, but rejects negative values."""
+    """Like `_to_parameter_range`, but rejects negative values."""
     result = _to_parameter_range(value)
     if result._distribution is None:
         for low, high in result._ranges:

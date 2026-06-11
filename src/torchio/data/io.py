@@ -35,12 +35,12 @@ def resolve_source(
 ) -> Path:
     """Resolve an ImageSource to a local Path.
 
-    - Local paths and ``Path`` objects are returned directly.
-    - Remote URIs (``http://``, ``s3://``, ``az://``, etc.) are
+    - Local paths and `Path` objects are returned directly.
+    - Remote URIs (`http://`, `s3://`, `az://`, etc.) are
       fetched via fsspec and cached to a temp file.
-    - ``fsspec.core.OpenFile`` objects are opened and written to a
+    - `fsspec.core.OpenFile` objects are opened and written to a
       temp file.
-    - File-like objects (``io.BytesIO``, open files) are written to a
+    - File-like objects (`io.BytesIO`, open files) are written to a
       temp file. A *suffix* is required so readers can detect the
       format.
     """
@@ -105,8 +105,8 @@ _NUMPY_DTYPE_PROMOTIONS: dict[np.dtype, np.dtype] = {
 def _numpy_to_tensor(array: np.ndarray) -> torch.Tensor:
     """Convert a numpy array to a torch tensor preserving dtype where possible.
 
-    Unsigned integer dtypes (``uint16``, ``uint32``, ``uint64``) and
-    ``bool`` are not supported by ``torch.from_numpy``; they are upcast
+    Unsigned integer dtypes (`uint16`, `uint32`, `uint64`) and
+    `bool` are not supported by `torch.from_numpy`; they are upcast
     to the smallest signed/unsigned type that PyTorch supports while
     preserving the integer range. All other dtypes keep their native
     representation.
@@ -127,7 +127,7 @@ def read_nibabel(path: Path, **kwargs: Any) -> tuple[TypeImageData, np.ndarray]:
 
     Args:
         path: Path to the NIfTI file.
-        **kwargs: Forwarded to ``nibabel.load()``.
+        **kwargs: Forwarded to `nibabel.load()`.
     """
     img = cast(nib.Nifti1Image, nib.load(path, **kwargs))
     data = np.asarray(img.dataobj)
@@ -150,7 +150,7 @@ def read_sitk(path: Path, **kwargs: Any) -> tuple[TypeImageData, np.ndarray]:
 
     Args:
         path: Path to the image file.
-        **kwargs: Forwarded to ``SimpleITK.ReadImage()``.
+        **kwargs: Forwarded to `SimpleITK.ReadImage()`.
     """
     sitk_image = sitk.ReadImage(str(path), **kwargs)
     data = sitk.GetArrayFromImage(sitk_image)
@@ -192,13 +192,13 @@ def read_nifti_zarr(
     path: Path,
     **kwargs: Any,
 ) -> tuple[TypeImageData, np.ndarray]:
-    """Read a NIfTI-Zarr image using ``niizarr``.
+    """Read a NIfTI-Zarr image using `niizarr`.
 
-    Requires the ``zarr`` extra: ``pip install torchio[zarr]``.
+    Requires the `zarr` extra: `pip install torchio[zarr]`.
 
     Args:
-        path: Path to a ``.nii.zarr`` directory.
-        **kwargs: Forwarded to ``niizarr.zarr2nii()``.
+        path: Path to a `.nii.zarr` directory.
+        **kwargs: Forwarded to `niizarr.zarr2nii()`.
     """
     from ..external.imports import get_niizarr
 

@@ -16,10 +16,10 @@ def collate_subjects(batch: Sequence[Any]) -> SubjectsBatch:
     """Collate a list of Subjects into a SubjectsBatch.
 
     Args:
-        batch: Sequence of ``Subject`` instances.
+        batch: Sequence of `Subject` instances.
 
     Returns:
-        A ``SubjectsBatch`` with stacked 5D tensors.
+        A `SubjectsBatch` with stacked 5D tensors.
     """
     return SubjectsBatch.from_subjects(list(batch))
 
@@ -28,23 +28,23 @@ def collate_images(batch: Sequence[Any]) -> ImagesBatch:
     """Collate a list of Images into an ImagesBatch.
 
     Args:
-        batch: Sequence of ``Image`` instances.
+        batch: Sequence of `Image` instances.
 
     Returns:
-        An ``ImagesBatch`` with a stacked 5D tensor.
+        An `ImagesBatch` with a stacked 5D tensor.
     """
     return ImagesBatch.from_images(list(batch))
 
 
 class SubjectsLoader(DataLoader):
-    """DataLoader that returns ``SubjectsBatch`` instances.
+    """DataLoader that returns `SubjectsBatch` instances.
 
-    A thin wrapper around ``torch.utils.data.DataLoader`` that
-    collates ``Subject`` instances into ``SubjectsBatch``.
+    A thin wrapper around `torch.utils.data.DataLoader` that
+    collates `Subject` instances into `SubjectsBatch`.
 
     Args:
-        dataset: A dataset that returns ``Subject`` instances.
-        **kwargs: Passed to ``DataLoader.__init__``.
+        dataset: A dataset that returns `Subject` instances.
+        **kwargs: Passed to `DataLoader.__init__`.
 
     Examples:
         >>> loader = tio.SubjectsLoader(dataset, batch_size=4)
@@ -64,14 +64,14 @@ class SubjectsLoader(DataLoader):
 
 
 class ImagesLoader(DataLoader):
-    """DataLoader that returns ``ImagesBatch`` instances.
+    """DataLoader that returns `ImagesBatch` instances.
 
-    A thin wrapper around ``torch.utils.data.DataLoader`` that
-    collates ``Image`` instances into ``ImagesBatch``.
+    A thin wrapper around `torch.utils.data.DataLoader` that
+    collates `Image` instances into `ImagesBatch`.
 
     Args:
-        dataset: A dataset that returns ``Image`` instances.
-        **kwargs: Passed to ``DataLoader.__init__``.
+        dataset: A dataset that returns `Image` instances.
+        **kwargs: Passed to `DataLoader.__init__`.
 
     Examples:
         >>> loader = tio.ImagesLoader(dataset, batch_size=4)

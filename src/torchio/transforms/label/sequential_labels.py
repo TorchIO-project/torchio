@@ -14,8 +14,8 @@ from ..transform import Transform
 class SequentialLabels(Transform):
     r"""Renumber labels in label maps to consecutive integers starting from 0.
 
-    For example, if a label map has values ``{0, 5, 10}``, this
-    transform remaps them to ``{0, 1, 2}``.
+    For example, if a label map has values `{0, 5, 10}`, this
+    transform remaps them to `{0, 1, 2}`.
 
     Only [`LabelMap`][torchio.LabelMap] images are affected.
 

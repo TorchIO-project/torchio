@@ -28,7 +28,7 @@ class Anisotropy(Transform):
             at random per application.
         downsampling: Downsampling factor $m \geq 1$.  A scalar is
             deterministic; a 2-tuple $(a, b)$ samples
-            $m \sim \mathcal{U}(a, b)$.  The default ``downsampling=1``
+            $m \sim \mathcal{U}(a, b)$.  The default `downsampling=1`
             is a no-op (and warns).
         image_interpolation: Interpolation mode used when upsampling
             scalar images back to the original shape.
@@ -105,14 +105,14 @@ def _simulate_anisotropy(
     """Downsample then upsample one axis of a 5-D tensor.
 
     Args:
-        data: ``(B, C, I, J, K)`` tensor.
+        data: `(B, C, I, J, K)` tensor.
         axis: Spatial axis (0, 1, or 2) to degrade.
         factor: Downsampling factor (> 1).
-        mode: Interpolation mode for upsampling (``"nearest"`` or
-            ``"linear"``).
+        mode: Interpolation mode for upsampling (`"nearest"` or
+            `"linear"`).
 
     Returns:
-        Degraded ``(B, C, I, J, K)`` tensor with original shape.
+        Degraded `(B, C, I, J, K)` tensor with original shape.
     """
     original_shape = list(data.shape[2:])
     down_shape = list(original_shape)

@@ -57,9 +57,9 @@ def download_url(
     Args:
         url: URL to download file from.
         root: Directory to place downloaded file in.
-        filename: Name to save the file under. If ``None``, use the
+        filename: Name to save the file under. If `None`, use the
             basename of the URL.
-        md5: MD5 checksum of the download. If ``None``, skip check.
+        md5: MD5 checksum of the download. If `None`, skip check.
 
     Returns:
         Path to the downloaded file.
@@ -118,8 +118,8 @@ def extract_archive(
 ) -> None:
     """Extract an archive file.
 
-    Supports ``.zip``, ``.tar``, ``.tar.gz``, ``.tgz``, ``.tar.xz``,
-    and ``.gz`` (single-file gzip).
+    Supports `.zip`, `.tar`, `.tar.gz`, `.tgz`, `.tar.xz`,
+    and `.gz` (single-file gzip).
     """
     from_path = str(from_path)
     if to_path is None:
@@ -186,9 +186,9 @@ def compress(
     """Compress a NIfTI file with gzip.
 
     Args:
-        input_path: Path to the ``.nii`` file.
+        input_path: Path to the `.nii` file.
         output_path: Path for the compressed file. Defaults to
-            replacing the suffix with ``.nii.gz``.
+            replacing the suffix with `.nii.gz`.
 
     Returns:
         Path to the compressed file.

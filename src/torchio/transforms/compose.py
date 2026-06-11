@@ -24,9 +24,9 @@ class Compose(Transform):
         transforms: Sequence of transforms to apply sequentially, or a
             mapping whose values are the transforms (keys are used as
             human-readable names and ignored at runtime).
-        copy: If ``True`` (default), deep-copy the input before
-            applying the pipeline. Set to ``False`` when this
-            ``Compose`` is nested inside another ``Compose``.
+        copy: If `True` (default), deep-copy the input before
+            applying the pipeline. Set to `False` when this
+            `Compose` is nested inside another `Compose`.
         **kwargs: See [`Transform`][torchio.Transform] for additional
             keyword arguments.
 
@@ -80,7 +80,7 @@ class OneOf(Transform):
     """Apply one of the given transforms, chosen at random.
 
     Args:
-        transforms: Sequence of transforms, or a ``dict`` mapping
+        transforms: Sequence of transforms, or a `dict` mapping
             transforms to their relative weights. If a sequence is
             given, all transforms have equal probability.
         **kwargs: See [`Transform`][torchio.Transform] for additional
@@ -135,10 +135,10 @@ class SomeOf(Transform):
 
     Args:
         transforms: Sequence of candidate transforms.
-        num_transforms: How many transforms to apply. An ``int`` for a
-            fixed count, or a ``(min, max)`` tuple to sample the count
+        num_transforms: How many transforms to apply. An `int` for a
+            fixed count, or a `(min, max)` tuple to sample the count
             uniformly from that range.
-        replace: If ``True``, sample with replacement (the same
+        replace: If `True`, sample with replacement (the same
             transform may be applied more than once).
         **kwargs: See [`Transform`][torchio.Transform] for additional
             keyword arguments.

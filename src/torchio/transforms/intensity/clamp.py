@@ -14,8 +14,8 @@ class Clamp(IntensityTransform):
     Wraps [`torch.clamp`][torch.clamp].
 
     Args:
-        out_min: Minimum value $a$. ``None`` means no lower bound.
-        out_max: Maximum value $b$. ``None`` means no upper bound.
+        out_min: Minimum value $a$. `None` means no lower bound.
+        out_max: Maximum value $b$. `None` means no upper bound.
         **kwargs: See [`Transform`][torchio.Transform].
 
     Examples:

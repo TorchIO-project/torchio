@@ -22,7 +22,7 @@ class Spike(IntensityTransform):
     create stripes in image space.
 
     The artifact is simulated by adding point impulses to the Fourier
-    spectrum of the image.  All operations use ``torch.fft`` and run
+    spectrum of the image.  All operations use `torch.fft` and run
     on GPU.
 
     Args:
@@ -32,7 +32,7 @@ class Spike(IntensityTransform):
         intensity: Ratio between the spike amplitude and the spectrum
             maximum.  A scalar is deterministic; a 2-tuple $(a, b)$
             means $r \sim \mathcal{U}(a, b)$.
-            The default ``intensity=0`` is a no-op (and warns).
+            The default `intensity=0` is a no-op (and warns).
         **kwargs: See [`Transform`][torchio.Transform].
 
     Note:
@@ -94,13 +94,13 @@ def _add_spikes(
     """Add point spikes to the k-space of a 5D tensor.
 
     Args:
-        data: ``(B, C, I, J, K)`` image tensor.
-        positions: List of ``[pi, pj, pk]`` in ``[0, 1)`` range.
+        data: `(B, C, I, J, K)` image tensor.
+        positions: List of `[pi, pj, pk]` in `[0, 1)` range.
         intensity: Ratio between the spike amplitude and the spectrum
             maximum.
 
     Returns:
-        Corrupted ``(B, C, I, J, K)`` tensor.
+        Corrupted `(B, C, I, J, K)` tensor.
     """
     if intensity == 0 or not positions:
         return data

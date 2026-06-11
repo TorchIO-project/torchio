@@ -17,14 +17,14 @@ from .invertible import Invertible
 class ImagesBatch(Invertible):
     """A batch of images with per-sample affines.
 
-    Wraps a 5D tensor ``(B, C, I, J, K)`` and a list of ``AffineMatrix``
-    matrices (one per sample). Created by stacking multiple ``Image``
+    Wraps a 5D tensor `(B, C, I, J, K)` and a list of `AffineMatrix`
+    matrices (one per sample). Created by stacking multiple `Image`
     objects or directly from a 5D tensor.
 
     Args:
-        data: 5D tensor with shape ``(B, C, I, J, K)``.
+        data: 5D tensor with shape `(B, C, I, J, K)`.
         affines: List of affine matrices, one per sample.
-        image_class: The ``Image`` subclass to use when unbatching.
+        image_class: The `Image` subclass to use when unbatching.
     """
 
     def __init__(
@@ -52,7 +52,7 @@ class ImagesBatch(Invertible):
         All images must have the same shape.
 
         Args:
-            images: List of ``Image`` instances to stack.
+            images: List of `Image` instances to stack.
         """
         if not images:
             msg = "Cannot create batch from empty list"
@@ -65,7 +65,7 @@ class ImagesBatch(Invertible):
 
     @property
     def data(self) -> Tensor:
-        """5D tensor with shape ``(B, C, I, J, K)``."""
+        """5D tensor with shape `(B, C, I, J, K)`."""
         return self._data
 
     @data.setter
@@ -120,10 +120,10 @@ class ImagesBatch(Invertible):
 class SubjectsBatch(Invertible):
     """A batch of subjects with stacked image data.
 
-    Each named image entry becomes an ``ImagesBatch``. Metadata is
+    Each named image entry becomes an `ImagesBatch`. Metadata is
     stored as lists (one value per sample).
 
-    Created by ``SubjectsLoader`` or ``SubjectsBatch.from_subjects()``.
+    Created by `SubjectsLoader` or `SubjectsBatch.from_subjects()`.
     """
 
     def __init__(
@@ -141,7 +141,7 @@ class SubjectsBatch(Invertible):
         """Stack a list of subjects into a batch.
 
         Args:
-            subjects: List of ``Subject`` instances.
+            subjects: List of `Subject` instances.
         """
         from .subject import Subject
 

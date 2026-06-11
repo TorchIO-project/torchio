@@ -24,8 +24,8 @@ class Standardize(IntensityTransform):
 
     Args:
         masking_method: Which voxels to include when computing the
-            mean and standard deviation. ``None`` uses all voxels.
-            A ``str`` is interpreted as a key to a
+            mean and standard deviation. `None` uses all voxels.
+            A `str` is interpreted as a key to a
             [`LabelMap`][torchio.LabelMap] in the subject.
             A callable receives the image tensor and returns a boolean
             mask.
@@ -53,7 +53,7 @@ class Standardize(IntensityTransform):
         """Compute per-image mean and std from the first sample.
 
         Returns:
-            Dict mapping image names to ``(mean, std)`` pairs.
+            Dict mapping image names to `(mean, std)` pairs.
         """
         images = self._get_images(batch)
         stats: dict[str, tuple[float, float]] = {}
@@ -128,7 +128,7 @@ class _StandardizeInverse(IntensityTransform):
         batch: SubjectsBatch,
         params: dict[str, Any],
     ) -> SubjectsBatch:
-        """Reverse the standardization: ``data * std + mean``."""
+        """Reverse the standardization: `data * std + mean`."""
         for name, img_batch in self._get_images(batch).items():
             if name not in self._stats:
                 continue
@@ -144,15 +144,15 @@ def _get_mask(
     img_batch: ImagesBatch,
     batch: SubjectsBatch,
 ) -> Tensor | None:
-    """Resolve a masking method to a boolean tensor or ``None``.
+    """Resolve a masking method to a boolean tensor or `None`.
 
     Args:
-        masking_method: ``None``, a string key, or a callable.
+        masking_method: `None`, a string key, or a callable.
         img_batch: The image batch being processed.
         batch: The full subject batch (for string-key lookup).
 
     Returns:
-        Boolean mask tensor, or ``None`` for no masking.
+        Boolean mask tensor, or `None` for no masking.
     """
     if masking_method is None:
         return None

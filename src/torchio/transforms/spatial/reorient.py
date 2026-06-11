@@ -66,13 +66,13 @@ def _apply_reorientation(
 ) -> Tensor:
     """Apply an orientation transform to a tensor.
 
-    Mirrors nibabel's ``apply_orientation``: flip axes first, then
-    transpose.  Works on both 4D ``(C, I, J, K)`` and 5D
-    ``(B, C, I, J, K)`` tensors.  Spatial axes are always the last 3.
+    Mirrors nibabel's `apply_orientation`: flip axes first, then
+    transpose.  Works on both 4D `(C, I, J, K)` and 5D
+    `(B, C, I, J, K)` tensors.  Spatial axes are always the last 3.
 
     Args:
         data: Input tensor.
-        ornt: ``(3, 2)`` orientation transform from nibabel.
+        ornt: `(3, 2)` orientation transform from nibabel.
     """
     n_leading = data.ndim - 3
 
@@ -82,7 +82,7 @@ def _apply_reorientation(
             data = torch.flip(data, [ax + n_leading])
 
     # Step 2: permute using argsort of the source-axis column, matching
-    # nibabel's ``arr.transpose(np.argsort(ornt[:, 0]))``.
+    # nibabel's `arr.transpose(np.argsort(ornt[:, 0]))`.
     perm = np.argsort(ornt[:, 0]).astype(int)
     leading = list(range(n_leading))
     spatial_perm = [int(p) + n_leading for p in perm]
@@ -100,9 +100,9 @@ class Reorient(SpatialTransform):
 
     Common orientation codes:
 
-    - ``'RAS'``: Left→\ **R**\ ight,
+    - `'RAS'`: Left→\ **R**\ ight,
       Posterior→\ **A**\ nterior, Inferior→\ **S**\ uperior.
-    - ``'LPS'``: Right→\ **L**\ eft,
+    - `'LPS'`: Right→\ **L**\ eft,
       Anterior→\ **P**\ osterior, Inferior→\ **S**\ uperior.
 
     See the `NiBabel docs on image orientation

@@ -35,16 +35,16 @@ class LabelsToImage(Transform):
     Only [`LabelMap`][torchio.LabelMap] images are used as input.
 
     Args:
-        label_key: Name of the label map to use.  If ``None``, the
-            first ``LabelMap`` found is used.
-        image_key: Name for the generated ``ScalarImage``.
-        mean: Per-label mean ranges.  If ``None``, each label gets a
+        label_key: Name of the label map to use.  If `None`, the
+            first `LabelMap` found is used.
+        image_key: Name for the generated `ScalarImage`.
+        mean: Per-label mean ranges.  If `None`, each label gets a
             mean sampled from *default_mean*.
-        std: Per-label std ranges.  If ``None``, each label gets a
+        std: Per-label std ranges.  If `None`, each label gets a
             std sampled from *default_std*.
         default_mean: Fallback range for label means.
         default_std: Fallback range for label stds.
-        ignore_background: If ``True``, label 0 is left as zero.
+        ignore_background: If `True`, label 0 is left as zero.
         **kwargs: See [`Transform`][torchio.Transform].
 
     Examples:
@@ -151,12 +151,12 @@ def _generate_from_labels(
     """Generate Gaussian tissue for each label.
 
     Args:
-        label_data: ``(B, C, I, J, K)`` label tensor.
+        label_data: `(B, C, I, J, K)` label tensor.
         means: Per-label mean values.
         stds: Per-label std values.
 
     Returns:
-        ``(B, 1, I, J, K)`` synthetic image tensor.
+        `(B, 1, I, J, K)` synthetic image tensor.
     """
     b = label_data.shape[0]
     spatial = label_data.shape[2:]

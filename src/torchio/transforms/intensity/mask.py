@@ -22,13 +22,13 @@ class Mask(IntensityTransform):
     Args:
         masking_method: Defines the mask. Can be:
 
-            - A ``str``: key to a [`LabelMap`][torchio.LabelMap] in
+            - A `str`: key to a [`LabelMap`][torchio.LabelMap] in
               the subject.
             - A callable: receives the image tensor and returns a
               boolean mask.
         outside_value: Value to assign to voxels outside the mask.
         labels: If using a label map, which label values to include
-            in the mask. ``None`` means all nonzero values.
+            in the mask. `None` means all nonzero values.
         **kwargs: See [`Transform`][torchio.Transform].
 
     Examples:

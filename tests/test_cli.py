@@ -1,7 +1,7 @@
 """Tests for the torchio CLI.
 
-Commands are invoked in-process via their dataclass ``.run()`` method
-rather than through ``subprocess``, avoiding the ~1s per-test overhead
+Commands are invoked in-process via their dataclass `.run()` method
+rather than through `subprocess`, avoiding the ~1s per-test overhead
 of spawning a new Python interpreter and re-importing PyTorch.
 """
 

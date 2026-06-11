@@ -20,7 +20,7 @@ class CornucopiaAdapter(Transform):
     """Wrap a Cornucopia transform for use in TorchIO pipelines.
 
     `Cornucopia <https://cornucopia.readthedocs.io/>`_ transforms
-    operate on ``(C, I, J, K)`` tensors and support passing multiple
+    operate on `(C, I, J, K)` tensors and support passing multiple
     tensors to share spatial parameters (e.g., the same elastic
     deformation is applied to an image and its segmentation).
 
@@ -30,9 +30,9 @@ class CornucopiaAdapter(Transform):
 
     Args:
         cornucopia_transform: A Cornucopia transform (any callable
-            accepting one or more ``(C, I, J, K)`` tensors).
-            Requires ``cornucopia`` to be installed:
-            ``pip install cornucopia``.
+            accepting one or more `(C, I, J, K)` tensors).
+            Requires `cornucopia` to be installed:
+            `pip install cornucopia`.
         **kwargs: See [`Transform`][torchio.Transform].
 
     Examples:
@@ -44,7 +44,7 @@ class CornucopiaAdapter(Transform):
         >>> result = adapter(subject)  # doctest: +SKIP
 
     Note:
-        ``CornucopiaAdapter`` does **not** record itself in the
+        `CornucopiaAdapter` does **not** record itself in the
         subject's transform history, because Cornucopia transform
         objects are not guaranteed to be serializable.
     """

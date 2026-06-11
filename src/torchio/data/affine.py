@@ -20,12 +20,12 @@ from ..types import TypeSpacing
 class AffineMatrix:
     r"""$4 \times 4$ affine matrix mapping voxel indices to world coordinates.
 
-    Stores the matrix as a ``torch.Tensor`` so it can live on the same
+    Stores the matrix as a `torch.Tensor` so it can live on the same
     device as the image data. Named properties expose spacing, origin,
-    direction, and orientation. Composition uses the ``@`` operator.
+    direction, and orientation. Composition uses the `@` operator.
 
     Args:
-        matrix: $4 \times 4$ array-like, ``torch.Tensor``, or ``None``
+        matrix: $4 \times 4$ array-like, `torch.Tensor`, or `None`
             (identity). NumPy arrays are converted to tensors.
 
     Examples:
@@ -160,7 +160,7 @@ class AffineMatrix:
         that don't support float64 (e.g., MPS), it remains on CPU.
 
         Returns:
-            ``self`` (modified in-place).
+            `self` (modified in-place).
         """
         with contextlib.suppress(TypeError):
             # MPS doesn't support float64, so keep on CPU

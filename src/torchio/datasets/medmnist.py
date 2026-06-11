@@ -63,7 +63,7 @@ def organ_mnist_3d(split: str = "train") -> list[Subject]:
     """3D organ segmentation dataset.
 
     Args:
-        split: ``'train'``, ``'val'``, or ``'test'``.
+        split: `'train'`, `'val'`, or `'test'`.
     """
     return _load_medmnist("organmnist3d", split)
 
@@ -72,7 +72,7 @@ def nodule_mnist_3d(split: str = "train") -> list[Subject]:
     """3D lung nodule dataset.
 
     Args:
-        split: ``'train'``, ``'val'``, or ``'test'``.
+        split: `'train'`, `'val'`, or `'test'`.
     """
     return _load_medmnist("nodulemnist3d", split)
 
@@ -81,7 +81,7 @@ def adrenal_mnist_3d(split: str = "train") -> list[Subject]:
     """3D adrenal gland dataset.
 
     Args:
-        split: ``'train'``, ``'val'``, or ``'test'``.
+        split: `'train'`, `'val'`, or `'test'`.
     """
     return _load_medmnist("adrenalmnist3d", split)
 
@@ -90,7 +90,7 @@ def fracture_mnist_3d(split: str = "train") -> list[Subject]:
     """3D bone fracture dataset.
 
     Args:
-        split: ``'train'``, ``'val'``, or ``'test'``.
+        split: `'train'`, `'val'`, or `'test'`.
     """
     return _load_medmnist("fracturemnist3d", split)
 
@@ -99,7 +99,7 @@ def vessel_mnist_3d(split: str = "train") -> list[Subject]:
     """3D vessel dataset.
 
     Args:
-        split: ``'train'``, ``'val'``, or ``'test'``.
+        split: `'train'`, `'val'`, or `'test'`.
     """
     return _load_medmnist("vesselmnist3d", split)
 
@@ -108,6 +108,6 @@ def synapse_mnist_3d(split: str = "train") -> list[Subject]:
     """3D synapse dataset.
 
     Args:
-        split: ``'train'``, ``'val'``, or ``'test'``.
+        split: `'train'`, `'val'`, or `'test'`.
     """
     return _load_medmnist("synapsemnist3d", split)

@@ -35,10 +35,10 @@ class Colin27(SubjectMNI):
     versions.
 
     Args:
-        version: Template year. It can be ``1998`` or ``2008``.
+        version: Template year. It can be `1998` or `2008`.
 
     Warning:
-        The resolution of the ``2008`` version is quite high. The
+        The resolution of the `2008` version is quite high. The
         subject instance will contain four images of size
         362 x 434 x 362, therefore applying a transform to
         it might take longer than expected.

@@ -17,7 +17,7 @@ class Noise(IntensityTransform):
     r"""Add Gaussian or Rician noise with random parameters.
 
     Add noise sampled from a normal distribution with random
-    parameters. When ``rician=True``, the magnitude of complex
+    parameters. When `rician=True`, the magnitude of complex
     Gaussian noise is used instead, producing
     [Rician-distributed](https://en.wikipedia.org/wiki/Rice_distribution)
     noise typical of MRI acquisitions:
@@ -31,15 +31,15 @@ class Noise(IntensityTransform):
             noise is sampled. If two values $(a, b)$ are provided,
             then $\mu \sim \mathcal{U}(a, b)$.
             If only one value $d$ is provided, $\mu = d$
-            (deterministic). A ``torch.distributions.Distribution``
+            (deterministic). A `torch.distributions.Distribution`
             may also be passed for custom sampling.
         std: Standard deviation $\sigma$ of the Gaussian distribution
             from which the noise is sampled. If two values $(a, b)$
             are provided, then $\sigma \sim \mathcal{U}(a, b)$.
             If only one value $d$ is provided, $\sigma = d$
             (deterministic). Must be non-negative.
-            A ``torch.distributions.Distribution`` may also be passed.
-        rician: If ``True``, add Rician noise instead of Gaussian.
+            A `torch.distributions.Distribution` may also be passed.
+        rician: If `True`, add Rician noise instead of Gaussian.
         **kwargs: See [`Transform`][torchio.Transform] for additional
             keyword arguments.
 

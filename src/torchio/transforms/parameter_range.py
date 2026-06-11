@@ -1,8 +1,8 @@
 """ParameterRange: scalar, range, choice, or distribution for transform parameters.
 
 Each axis can be specified independently when a 3-element tuple is
-used, where each element can be a float, ``(lo, hi)`` range,
-``Choice``, or ``Distribution``.
+used, where each element can be a float, `(lo, hi)` range,
+`Choice`, or `Distribution`.
 
 Examples:
     >>> ParameterRange(0.5)                              # deterministic
@@ -29,7 +29,7 @@ class Choice:
     Args:
         values: Sequence of numeric values to choose from.
         probabilities: Optional per-value probabilities.
-            If ``None``, all values are equally likely.
+            If `None`, all values are equally likely.
 
     Examples:
         >>> Choice([-10, 0, 10])
@@ -102,15 +102,15 @@ class ParameterRange:
     Args:
         value: Parameter specification. Accepted forms:
 
-            - ``float``: deterministic value broadcast to 3 axes.
-            - ``(lo, hi)``: uniform range for all axes.
-            - ``(a, b, c)``: deterministic per-axis (when all plain
+            - `float`: deterministic value broadcast to 3 axes.
+            - `(lo, hi)`: uniform range for all axes.
+            - `(a, b, c)`: deterministic per-axis (when all plain
               numbers).
-            - ``(lo0, hi0, lo1, hi1, lo2, hi2)``: per-axis ranges.
-            - ``Choice``: discrete random, same for all axes.
-            - ``Distribution``: sample from any distribution.
+            - `(lo0, hi0, lo1, hi1, lo2, hi2)`: per-axis ranges.
+            - `Choice`: discrete random, same for all axes.
+            - `Distribution`: sample from any distribution.
             - 3-tuple of mixed specs, e.g.,
-              ``(0, Choice([-90, 0, 90]), (-10, 10))``.
+              `(0, Choice([-90, 0, 90]), (-10, 10))`.
     """
 
     def __init__(
@@ -140,15 +140,15 @@ class ParameterRange:
         return all(isinstance(a, (int, float)) for a in self._axes)
 
     def is_constant(self, value: float) -> bool:
-        """Whether every axis deterministically equals ``value``.
+        """Whether every axis deterministically equals `value`.
 
         Args:
             value: The value to compare against on every axis.
 
         Returns:
-            ``True`` if each axis is a fixed number, or a degenerate
-            ``(v, v)`` range, equal to ``value``. ``Choice`` and
-            ``Distribution`` axes are never constant.
+            `True` if each axis is a fixed number, or a degenerate
+            `(v, v)` range, equal to `value`. `Choice` and
+            `Distribution` axes are never constant.
         """
         for axis in self._axes:
             if isinstance(axis, (int, float)):
@@ -296,7 +296,7 @@ def to_range(
 def to_nonneg_range(
     value: float | tuple | Distribution | Choice,
 ) -> ParameterRange:
-    """Like ``to_range``, but rejects negative values in tuple ranges."""
+    """Like `to_range`, but rejects negative values in tuple ranges."""
     pr = ParameterRange(value)
     if pr._distribution is None:
         for lo, hi in pr._ranges:

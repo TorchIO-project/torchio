@@ -8,13 +8,13 @@ from typing_extensions import Self
 
 
 class Invertible:
-    """Mixin for objects that carry ``applied_transforms`` history.
+    """Mixin for objects that carry `applied_transforms` history.
 
-    Provides ``apply_inverse_transform()`` and
-    ``get_inverse_transform()`` to undo recorded transforms.
+    Provides `apply_inverse_transform()` and
+    `get_inverse_transform()` to undo recorded transforms.
 
     Classes that inherit from this mixin must initialise
-    ``self.applied_transforms = []`` in their constructor.
+    `self.applied_transforms = []` in their constructor.
     """
 
     applied_transforms: list[Any]
@@ -29,14 +29,14 @@ class Invertible:
 
         Returns a [`Compose`][torchio.Compose] of the inverse of each
         applied transform, in reverse order. Non-invertible transforms
-        are skipped (with a warning if ``warn=True``).
+        are skipped (with a warning if `warn=True`).
 
         Args:
             warn: Issue a warning for non-invertible transforms.
             ignore_intensity: Skip all intensity transforms.
 
         Returns:
-            A ``Compose`` transform that undoes the history.
+            A `Compose` transform that undoes the history.
         """
         from ..transforms.inverse import get_inverse_transform
 
@@ -50,12 +50,12 @@ class Invertible:
         """Apply the inverse of all applied transforms, in reverse order.
 
         Non-invertible transforms are skipped. Intensity transforms
-        can be ignored with ``ignore_intensity=True``.
+        can be ignored with `ignore_intensity=True`.
 
         Args:
             **kwargs: Forwarded to
-                ``get_inverse_transform()`` (``warn``,
-                ``ignore_intensity``).
+                `get_inverse_transform()` (`warn`,
+                `ignore_intensity`).
 
         Returns:
             Data with transforms undone.

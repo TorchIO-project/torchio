@@ -11,16 +11,16 @@ from .transform import Transform
 class To(Transform):
     """Move all data to a device and/or cast to a dtype.
 
-    Wraps the ``to()`` method as a transform so it can be used inside
+    Wraps the `to()` method as a transform so it can be used inside
     [`Compose`][torchio.Compose] pipelines.
 
     Args:
         *to_args: Positional arguments forwarded to
             [`torch.Tensor.to()`](https://pytorch.org/docs/stable/generated/torch.Tensor.to.html).
-            Typically a device string (``"cpu"``, ``"cuda"``,
-            ``"mps"``) or a ``torch.dtype`` (``torch.float16``).
+            Typically a device string (`"cpu"`, `"cuda"`,
+            `"mps"`) or a `torch.dtype` (`torch.float16`).
         **to_kwargs: Keyword arguments forwarded to
-            ``torch.Tensor.to()``.
+            `torch.Tensor.to()`.
 
     Examples:
         >>> import torchio as tio

@@ -26,9 +26,9 @@ class Resize(SpatialTransform):
     Args:
         target_shape: Target spatial shape $(I, J, K)$.  A single
             integer $N$ means $(N, N, N)$.
-        image_interpolation: ``"linear"`` (default) for intensity
+        image_interpolation: `"linear"` (default) for intensity
             images.
-        label_interpolation: ``"nearest"`` (default) for label maps.
+        label_interpolation: `"nearest"` (default) for label maps.
         **kwargs: See [`Transform`][torchio.Transform].
 
     Examples:

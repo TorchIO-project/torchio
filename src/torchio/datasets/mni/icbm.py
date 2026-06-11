@@ -22,7 +22,7 @@ class ICBM2009CNonlinearSymmetric(SubjectMNI):
     `website <http://www.bic.mni.mcgill.ca/ServicesAtlases/ICBM152NLin2009>`_.
 
     Args:
-        load_4d_tissues: If ``True``, the tissue probability maps will be
+        load_4d_tissues: If `True`, the tissue probability maps will be
             loaded together into a 4D image. Otherwise, they will be loaded
             into independent images.
     """

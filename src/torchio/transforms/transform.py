@@ -67,8 +67,8 @@ class Transform(nn.Module):
         p: Probability that this transform will be applied.
         copy: Make a deep copy of the input before applying the
             transform. When transforms are composed with
-            [`Compose`][torchio.Compose], the outer ``Compose``
-            copies once and sets ``copy=False`` on inner transforms
+            [`Compose`][torchio.Compose], the outer `Compose`
+            copies once and sets `copy=False` on inner transforms
             to avoid redundant copies.
         include: Sequence of strings with the names of the only images
             to which the transform will be applied.
@@ -135,7 +135,7 @@ class Transform(nn.Module):
         return f"{type(self).__name__}({', '.join(parts)})"
 
     def __add__(self, other: object) -> Transform:
-        """Compose two transforms: ``t1 + t2`` → ``Compose([t1, t2])``."""
+        """Compose two transforms: `t1 + t2` → `Compose([t1, t2])`."""
         if not isinstance(other, Transform):
             return NotImplemented
         from .compose import Compose
@@ -145,7 +145,7 @@ class Transform(nn.Module):
         return Compose([*left, *right])
 
     def __or__(self, other: object) -> Transform:
-        """Random choice: ``t1 | t2`` → ``OneOf([t1, t2])``."""
+        """Random choice: `t1 | t2` → `OneOf([t1, t2])`."""
         if not isinstance(other, Transform):
             return NotImplemented
         from .compose import OneOf
@@ -210,7 +210,7 @@ class Transform(nn.Module):
         Override in subclasses that have random behavior.
 
         Args:
-            batch: A ``SubjectsBatch``.
+            batch: A `SubjectsBatch`.
 
         Returns:
             Dict of sampled parameters.
@@ -224,17 +224,17 @@ class Transform(nn.Module):
     ) -> SubjectsBatch:
         """Apply the transform with the given parameters.
 
-        Must be overridden by subclasses. Receives a ``SubjectsBatch``
-        whose ``ImagesBatch`` entries contain 5D tensors
-        ``(B, C, I, J, K)``. Use negative indexing (``-3``, ``-2``,
-        ``-1``) for spatial dims.
+        Must be overridden by subclasses. Receives a `SubjectsBatch`
+        whose `ImagesBatch` entries contain 5D tensors
+        `(B, C, I, J, K)`. Use negative indexing (`-3`, `-2`,
+        `-1`) for spatial dims.
 
         Args:
-            batch: A ``SubjectsBatch`` to transform.
-            params: Parameters from ``make_params``.
+            batch: A `SubjectsBatch` to transform.
+            params: Parameters from `make_params`.
 
         Returns:
-            Transformed ``SubjectsBatch``.
+            Transformed `SubjectsBatch`.
         """
         raise NotImplementedError
 
@@ -254,7 +254,7 @@ class Transform(nn.Module):
             params: The parameters recorded in the forward pass.
 
         Returns:
-            A new ``Transform`` instance that inverts this one.
+            A new `Transform` instance that inverts this one.
         """
         msg = f"{type(self).__name__} is not invertible"
         raise NotImplementedError(msg)
@@ -271,11 +271,11 @@ class Transform(nn.Module):
     def to_hydra(self) -> dict[str, Any]:
         """Export as a Hydra-compatible config dict.
 
-        Returns a dict with ``_target_`` set to the fully qualified
+        Returns a dict with `_target_` set to the fully qualified
         class name and only non-default field values included.
 
         Returns:
-            Dict suitable for ``hydra.utils.instantiate()``.
+            Dict suitable for `hydra.utils.instantiate()`.
         """
         from .parameter_range import ParameterRange
 
@@ -379,8 +379,8 @@ def _collect_init_params(cls: type) -> dict[str, Any]:
     """Collect all __init__ params with defaults from the full MRO.
 
     Walks from the leaf class up through parent classes, collecting
-    named parameters (skipping ``self``, ``*args``, ``**kwargs``).
-    Returns an ordered dict of ``{name: default}``.
+    named parameters (skipping `self`, `*args`, `**kwargs`).
+    Returns an ordered dict of `{name: default}`.
     """
     params: dict[str, Any] = {}
     for klass in cls.__mro__:
@@ -489,8 +489,8 @@ class SpatialTransform(Transform):
 class IntensityTransform(Transform):
     """Base for transforms that modify voxel intensities.
 
-    Intensity transforms apply only to ``ScalarImage`` instances,
-    leaving ``LabelMap`` and annotations unchanged.
+    Intensity transforms apply only to `ScalarImage` instances,
+    leaving `LabelMap` and annotations unchanged.
     """
 
     def _get_images(self, batch: SubjectsBatch) -> dict[str, ImagesBatch]:

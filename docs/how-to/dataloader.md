@@ -78,13 +78,13 @@ loader = DataLoader(
 
 ## How it works
 
-Each image's 4D tensor is stacked into a 5D ``ImagesBatch``
-``(B, C, I, J, K)``. Per-sample affine matrices are stored as a
+Each image's 4D tensor is stacked into a 5D `ImagesBatch`
+`(B, C, I, J, K)`. Per-sample affine matrices are stored as a
 list. Metadata is collected into lists.
 
 ## Applying transforms to batches
 
-Transforms work directly on ``SubjectsBatch``. Parameters are
+Transforms work directly on `SubjectsBatch`. Parameters are
 sampled once and applied identically to all samples:
 
 <!-- pytest-codeblocks:skip -->

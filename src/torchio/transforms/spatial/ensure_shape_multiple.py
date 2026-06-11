@@ -13,7 +13,7 @@ from ..transform import SpatialTransform
 from .crop_or_pad import CropOrPad
 
 #: Accepted target_multiple specifications.
-#: ``int`` → same value for all axes.
+#: `int` → same value for all axes.
 #: 3-tuple → per-axis values.
 TargetMultipleParam = int | TypeThreeInts
 
@@ -69,13 +69,13 @@ class EnsureShapeMultiple(SpatialTransform):
         target_multiple: Tuple $(n_i, n_j, n_k)$ so that the output
             size along axis $d$ is a multiple of $n_d$. If a single
             value $n$ is provided, then $n_i = n_j = n_k = n$.
-        method: Either ``'pad'`` (default) to pad up to the next
-            multiple, or ``'crop'`` to crop down to the previous
+        method: Either `'pad'` (default) to pad up to the next
+            multiple, or `'crop'` to crop down to the previous
             multiple.
-        padding_mode: Padding mode forwarded to ``CropOrPad`` when
-            ``method='pad'``. One of ``'constant'``, ``'reflect'``,
-            ``'replicate'``, or ``'circular'``.
-        fill: Fill value when ``padding_mode='constant'``.
+        padding_mode: Padding mode forwarded to `CropOrPad` when
+            `method='pad'`. One of `'constant'`, `'reflect'`,
+            `'replicate'`, or `'circular'`.
+        fill: Fill value when `padding_mode='constant'`.
         **kwargs: See [`Transform`][torchio.Transform] for additional
             keyword arguments.
 
@@ -108,7 +108,7 @@ class EnsureShapeMultiple(SpatialTransform):
     def forward(self, data: Any) -> Any:
         """Apply the transform.
 
-        For ``Subject`` and ``Image`` inputs, delegates to ``CropOrPad``
+        For `Subject` and `Image` inputs, delegates to `CropOrPad`
         for lazy operation without loading data from disk.
         """
         if isinstance(data, (Subject, Image)):

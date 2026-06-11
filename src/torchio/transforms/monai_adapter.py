@@ -23,19 +23,19 @@ class MonaiAdapter(Transform):
     """Wrap a MONAI transform for use in TorchIO pipelines.
 
     Both **dictionary transforms** (subclasses of MONAI's
-    ``MapTransform``, e.g., ``NormalizeIntensityd``) and **array
-    transforms** (e.g., ``NormalizeIntensity``) are supported.
+    `MapTransform`, e.g., `NormalizeIntensityd`) and **array
+    transforms** (e.g., `NormalizeIntensity`) are supported.
 
     Dictionary transforms operate on the full subject dictionary:
     only the keys specified in the MONAI transform are modified.
 
     Array transforms are applied to each
     [`ScalarImage`][torchio.ScalarImage] in the subject individually,
-    respecting the ``include`` / ``exclude`` parameters.
+    respecting the `include` / `exclude` parameters.
 
     Args:
         monai_transform: A MONAI transform or any callable. Requires
-            MONAI to be installed: ``pip install torchio[monai]``.
+            MONAI to be installed: `pip install torchio[monai]`.
         **kwargs: See [`Transform`][torchio.Transform] for additional
             keyword arguments.
 
@@ -52,7 +52,7 @@ class MonaiAdapter(Transform):
         ... ])
 
     Note:
-        ``MonaiAdapter`` does **not** record itself in the subject's
+        `MonaiAdapter` does **not** record itself in the subject's
         transform history, because MONAI transform objects are not
         serializable.
     """

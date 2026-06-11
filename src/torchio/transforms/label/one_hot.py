@@ -25,8 +25,8 @@ class OneHot(Transform):
     original single-channel label map.
 
     Args:
-        num_classes: Total number of classes. ``-1`` (default) infers
-            from the data as ``max_label + 1``.
+        num_classes: Total number of classes. `-1` (default) infers
+            from the data as `max_label + 1`.
         **kwargs: See [`Transform`][torchio.Transform].
 
     Examples:

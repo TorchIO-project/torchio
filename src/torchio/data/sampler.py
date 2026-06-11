@@ -20,7 +20,7 @@ class PatchSampler:
     """Base class for patch samplers.
 
     Args:
-        patch_size: Spatial size of each patch. A single ``int``
+        patch_size: Spatial size of each patch. A single `int`
             is broadcast to all three axes.
     """
 
@@ -40,7 +40,7 @@ class PatchSampler:
 
         Args:
             subject: Subject to extract patches from.
-            num_patches: Number of patches to yield. If ``None``,
+            num_patches: Number of patches to yield. If `None`,
                 yields indefinitely (for random samplers) or yields
                 all grid positions (for GridSampler).
         """
@@ -66,8 +66,8 @@ class PatchSampler:
 class GridSampler(PatchSampler, Dataset):
     """Extract patches on a regular grid for dense inference.
 
-    A map-style ``Dataset`` with known length and random access.
-    Pass directly to a ``DataLoader`` for batched inference.
+    A map-style `Dataset` with known length and random access.
+    Pass directly to a `DataLoader` for batched inference.
     Typically used with
     [`PatchAggregator`][torchio.data.PatchAggregator].
 
@@ -75,10 +75,10 @@ class GridSampler(PatchSampler, Dataset):
         subject: Subject to extract patches from.
         patch_size: Spatial size of each patch.
         patch_overlap: Overlap between adjacent patches. Must be even.
-            A single ``int`` is broadcast to all axes.
-        padding_mode: If not ``None``, pad the volume by
-            ``overlap // 2`` on each side before sampling.
-        fill: Fill value when ``padding_mode='constant'``.
+            A single `int` is broadcast to all axes.
+        padding_mode: If not `None`, pad the volume by
+            `overlap // 2` on each side before sampling.
+        fill: Fill value when `padding_mode='constant'`.
 
     Examples:
         >>> sampler = tio.GridSampler(subject, patch_size=64, patch_overlap=8)
@@ -167,13 +167,13 @@ class GridSampler(PatchSampler, Dataset):
 class UniformSampler(PatchSampler, IterableDataset):
     """Random patches with uniform spatial probability.
 
-    An ``IterableDataset`` for training. Also callable for use with
+    An `IterableDataset` for training. Also callable for use with
     [`Queue`][torchio.data.Queue].
 
     Args:
         subject: Subject to sample patches from (for Dataset use).
         patch_size: Spatial size of each patch.
-        num_patches: Number of patches per epoch. If ``None``,
+        num_patches: Number of patches per epoch. If `None`,
             yields indefinitely.
 
     Examples:
@@ -222,14 +222,14 @@ class UniformSampler(PatchSampler, IterableDataset):
 class WeightedSampler(PatchSampler, IterableDataset):
     """Random patches weighted by a probability map.
 
-    An ``IterableDataset`` for training with spatial priors.
+    An `IterableDataset` for training with spatial priors.
 
     Args:
         subject: Subject to sample patches from.
         patch_size: Spatial size of each patch.
         probability_map: Name of the image in the subject to use
             as sampling weights.
-        num_patches: Number of patches per epoch. If ``None``,
+        num_patches: Number of patches per epoch. If `None`,
             yields indefinitely.
     """
 
@@ -284,14 +284,14 @@ class WeightedSampler(PatchSampler, IterableDataset):
 class LabelSampler(WeightedSampler):
     """Random patches centered on labeled voxels.
 
-    An ``IterableDataset`` for training with class imbalance.
+    An `IterableDataset` for training with class imbalance.
 
     Args:
         subject: Subject to sample patches from.
         patch_size: Spatial size of each patch.
         label_name: Name of the label image in the subject.
         label_probabilities: Dict mapping label values to sampling
-            weights. If ``None``, all non-zero labels have equal
+            weights. If `None`, all non-zero labels have equal
             weight.
         num_patches: Number of patches per epoch.
     """

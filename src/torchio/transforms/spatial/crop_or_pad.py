@@ -30,8 +30,8 @@ from .crop import Crop
 from .pad import Pad
 
 #: Accepted target shape specifications.
-#: ``int`` or ``float`` → same size for each axis.
-#: 3-tuple → per axis; use ``None`` to leave an axis unchanged.
+#: `int` or `float` → same size for each axis.
+#: 3-tuple → per axis; use `None` to leave an axis unchanged.
 TargetShapeParam = (
     int | float | tuple[int | float | None, int | float | None, int | float | None]
 )
@@ -70,7 +70,7 @@ def _to_voxels(
 ) -> TypeThreeInts:
     """Convert a target shape from the given units to integer voxels.
 
-    ``None`` entries are replaced with the current size along that axis.
+    `None` entries are replaced with the current size along that axis.
     """
     result: list[int] = []
     for t, sp, cur in zip(target, spacing, current_shape, strict=True):
@@ -114,12 +114,12 @@ def _compute_crop_and_pad(
     """Compute per-side crop and pad amounts to go from current to target.
 
     Args:
-        location: ``"center"`` splits evenly; ``"random"`` picks a
+        location: `"center"` splits evenly; `"random"` picks a
             random crop start position for axes that need cropping.
 
     Returns:
-        ``(padding_six, cropping_six)``: either may be ``None`` when no
-        padding or cropping is needed (or when ``only_crop`` / ``only_pad``
+        `(padding_six, cropping_six)`: either may be `None` when no
+        padding or cropping is needed (or when `only_crop` / `only_pad`
         suppress it).
     """
     pad_values: list[int] = []
@@ -387,28 +387,28 @@ class CropOrPad(SpatialTransform):
     or centimetres. When physical units are used, the target is converted to
     voxels at transform time using the image spacing.
 
-    When the input is a ``Subject`` or ``Image``, the transform operates
+    When the input is a `Subject` or `Image`, the transform operates
     lazily (data is not loaded from disk until it is actually accessed).
 
     Args:
-        target_shape: Desired spatial shape. A single ``int`` broadcasts
-            to all three axes. When ``units`` is ``"mm"`` or ``"cm"``,
+        target_shape: Desired spatial shape. A single `int` broadcasts
+            to all three axes. When `units` is `"mm"` or `"cm"`,
             values may be floats representing the physical extent along
-            each axis. Use ``None`` for an axis to leave it unchanged,
-            e.g., ``(256, 256, None)``.
-        units: Coordinate system for ``target_shape``. One of
-            ``"voxels"`` (default), ``"mm"``, or ``"cm"``.
-        padding_mode: One of ``'constant'``, ``'reflect'``,
-            ``'replicate'``, or ``'circular'``. See
+            each axis. Use `None` for an axis to leave it unchanged,
+            e.g., `(256, 256, None)`.
+        units: Coordinate system for `target_shape`. One of
+            `"voxels"` (default), `"mm"`, or `"cm"`.
+        padding_mode: One of `'constant'`, `'reflect'`,
+            `'replicate'`, or `'circular'`. See
             [`torch.nn.functional.pad`](https://pytorch.org/docs/stable/generated/torch.nn.functional.pad.html).
-        fill: Fill value when ``padding_mode='constant'``.
-        only_crop: If ``True``, padding is never applied. Mutually
-            exclusive with ``only_pad``.
-        only_pad: If ``True``, cropping is never applied. Mutually
-            exclusive with ``only_crop``.
+        fill: Fill value when `padding_mode='constant'`.
+        only_crop: If `True`, padding is never applied. Mutually
+            exclusive with `only_pad`.
+        only_pad: If `True`, cropping is never applied. Mutually
+            exclusive with `only_crop`.
         location: Where to place the crop window when the image is
-            larger than the target. ``"center"`` (default) centres the
-            window; ``"random"`` picks a uniformly random position.
+            larger than the target. `"center"` (default) centres the
+            window; `"random"` picks a uniformly random position.
             Padding is always centred regardless of this parameter.
         **kwargs: See [`Transform`][torchio.Transform] for additional
             keyword arguments.
@@ -457,9 +457,9 @@ class CropOrPad(SpatialTransform):
     def forward(self, data):
         """Apply the transform.
 
-        For ``Subject`` and ``Image`` inputs, operates lazily per-image
+        For `Subject` and `Image` inputs, operates lazily per-image
         without loading data from disk. For batched inputs, falls back
-        to the standard ``SubjectsBatch`` path.
+        to the standard `SubjectsBatch` path.
         """
         if isinstance(data, (Subject, Image)):
             return self._forward_lazy(data)

@@ -34,10 +34,10 @@ class Pediatric(SubjectMNI):
     for more information.
 
     Args:
-        years: Tuple of 2 ages. Possible values are: ``(4.5, 18.5)``,
-            ``(4.5, 8.5)``, ``(7, 11)``, ``(7.5, 13.5)``,
-            ``(10, 14)`` and ``(13, 18.5)``.
-        symmetric: If ``True``, the left-right symmetric templates will be
+        years: Tuple of 2 ages. Possible values are: `(4.5, 18.5)`,
+            `(4.5, 8.5)`, `(7, 11)`, `(7.5, 13.5)`,
+            `(10, 14)` and `(13, 18.5)`.
+        symmetric: If `True`, the left-right symmetric templates will be
             used. Otherwise, the asymmetric (natural) templates will be used.
     """
 

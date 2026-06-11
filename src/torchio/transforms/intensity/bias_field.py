@@ -37,7 +37,7 @@ class BiasField(IntensityTransform):
             used to sample the coarse bias field. Larger values produce
             stronger inhomogeneity. If two values $(a, b)$ are provided,
             $\sigma \sim \mathcal{U}(a, b)$. A
-            ``torch.distributions.Distribution`` may also be passed.
+            `torch.distributions.Distribution` may also be passed.
         scale: Ratio between the coarse field size and the image spatial
             shape. Smaller values produce smoother fields.
         **kwargs: See [`Transform`][torchio.Transform].
@@ -164,14 +164,14 @@ def _generate_bias_field(
     """Generate a smooth multiplicative bias field.
 
     Args:
-        shape: ``(B, C, I, J, K)`` tensor shape.
+        shape: `(B, C, I, J, K)` tensor shape.
         std: Standard deviation of the normal distribution.
         scale: Ratio between the coarse field and the spatial shape.
         seed: Random seed for reproducibility.
         device: Device to create the field on.
 
     Returns:
-        ``(B, C, I, J, K)`` bias field (strictly positive).
+        `(B, C, I, J, K)` bias field (strictly positive).
     """
     batch_size, channels = shape[0], shape[1]
     spatial = shape[2:]

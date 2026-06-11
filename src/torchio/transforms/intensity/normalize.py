@@ -40,20 +40,20 @@ class Normalize(IntensityTransform):
     \cdot (n_{\max} - n_{\min}) + n_{\min}$$
 
     All six numeric parameters are independently randomizable via
-    scalar, ``(low, high)`` range, or ``torch.distributions.Distribution``.
+    scalar, `(low, high)` range, or `torch.distributions.Distribution`.
 
     Args:
         out_min: Lower bound of the output range.
         out_max: Upper bound of the output range.
-        in_min: Lower bound of the input range. If ``None``, determined
+        in_min: Lower bound of the input range. If `None`, determined
             from *percentile_low* of the (masked) input data.
-        in_max: Upper bound of the input range. If ``None``, determined
+        in_max: Upper bound of the input range. If `None`, determined
             from *percentile_high* of the (masked) input data.
         percentile_low: Lower percentile for auto input range.
         percentile_high: Upper percentile for auto input range.
-            Use ``(0.5, 99.5)`` for the nn-UNet convention.
+            Use `(0.5, 99.5)` for the nn-UNet convention.
         masking_method: Which voxels to include when computing
-            percentiles. ``None`` uses all voxels. A ``str`` is
+            percentiles. `None` uses all voxels. A `str` is
             interpreted as a key to a
             [`LabelMap`][torchio.LabelMap] in the subject. A callable
             receives the image tensor and returns a boolean mask.
@@ -103,7 +103,7 @@ class Normalize(IntensityTransform):
         """Sample random parameters and compute the input range.
 
         Returns:
-            Dict with ``out_min``, ``out_max``, ``in_min``, ``in_max``
+            Dict with `out_min`, `out_max`, `in_min`, `in_max`
             (per image name).
         """
         out_min = self.out_min.sample_1d()
@@ -286,14 +286,14 @@ def _percentile_range(
     """Compute the input range from percentiles of (masked) data.
 
     Args:
-        tensor: ``(C, I, J, K)`` image tensor (first sample).
-        mask: Optional boolean mask with compatible shape, or ``None``.
+        tensor: `(C, I, J, K)` image tensor (first sample).
+        mask: Optional boolean mask with compatible shape, or `None`.
         pct_low: Lower percentile (0-100).
         pct_high: Upper percentile (0-100).
         image_name: Used in warning messages.
 
     Returns:
-        ``(in_min, in_max)`` tuple.
+        `(in_min, in_max)` tuple.
     """
     values = tensor[mask.expand_as(tensor)] if mask is not None else tensor.reshape(-1)
 

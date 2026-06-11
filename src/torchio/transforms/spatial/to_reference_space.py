@@ -75,7 +75,7 @@ class ToReferenceSpace(SpatialTransform):
         """Build a TorchIO image from a tensor and a reference image.
 
         Args:
-            tensor: A ``(C, I, J, K)`` tensor (e.g., a network
+            tensor: A `(C, I, J, K)` tensor (e.g., a network
                 embedding) whose spatial metadata should match the
                 reference space.
             reference: Reference image whose field of view and
@@ -107,7 +107,7 @@ def _reference_space_affine(
 
     Args:
         reference: The reference image.
-        output_shape: Spatial shape ``(I, J, K)`` of the target grid.
+        output_shape: Spatial shape `(I, J, K)` of the target grid.
 
     Returns:
         The reference-space affine for the target grid.

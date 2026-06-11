@@ -21,16 +21,16 @@ def get_inverse_transform(
     """Build a Compose that inverts a list of applied transforms.
 
     Walks the history in reverse order. For each invertible transform,
-    calls ``transform.inverse(params)`` to get the inverse transform
+    calls `transform.inverse(params)` to get the inverse transform
     instance. Non-invertible transforms are skipped.
 
     Args:
-        history: List of ``AppliedTransform`` records.
+        history: List of `AppliedTransform` records.
         warn: Issue a warning for non-invertible transforms.
         ignore_intensity: Skip all intensity transforms.
 
     Returns:
-        A ``Compose`` of inverse transforms.
+        A `Compose` of inverse transforms.
     """
     steps: list[Transform] = []
     for trace in reversed(history):
@@ -64,11 +64,11 @@ def apply_inverse_transform(
 ) -> Any:
     """Apply the inverse of all recorded transforms on the data.
 
-    Works on any type that has ``applied_transforms`` (Subject,
+    Works on any type that has `applied_transforms` (Subject,
     SubjectsBatch, Image, etc.). Non-invertible transforms are skipped.
 
     Args:
-        data: Transformed data with an ``applied_transforms`` attribute.
+        data: Transformed data with an `applied_transforms` attribute.
         warn: Issue a warning for non-invertible transforms.
         ignore_intensity: Skip all intensity transforms.
 

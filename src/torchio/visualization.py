@@ -1,6 +1,6 @@
 """Visualization utilities for TorchIO images.
 
-Requires the ``[plot]`` extras: ``pip install torchio[plot]``.
+Requires the `[plot]` extras: `pip install torchio[plot]`.
 """
 
 from __future__ import annotations
@@ -120,7 +120,7 @@ def _get_categorical_cmap(
     """Build a categorical ListedColormap for label maps.
 
     Uses colorcet if available, otherwise falls back to matplotlib's
-    ``tab10`` colors.
+    `tab10` colors.
     """
     from itertools import cycle
 
@@ -217,7 +217,7 @@ def _build_imshow_kwargs(
     percentiles: tuple[float, float],
     imshow_kwargs: dict[str, Any],
 ) -> tuple[dict[str, Any], list[np.ndarray]]:
-    """Prepare the keyword arguments for ``ax.imshow()``.
+    """Prepare the keyword arguments for `ax.imshow()`.
 
     Returns the kwargs dict and (possibly RGB-converted) slices.
     """
@@ -411,39 +411,39 @@ def plot_image(
 
     Always displays Sagittal, Coronal, Axial with fixed anatomical
     positions regardless of image orientation. Data is flipped and
-    transposed as needed. Uses lazy ``Image.__getitem__`` so only
+    transposed as needed. Uses lazy `Image.__getitem__` so only
     the 3 requested planes are read from disk.
 
     Args:
         image: The image to plot.
         channel: Which channel to display.
-        indices: Slice index for each spatial axis. ``None`` entries
-            default to the mid-slice. Pass ``None`` for all mid-slices.
-            Mutually exclusive with ``coordinates``.
+        indices: Slice index for each spatial axis. `None` entries
+            default to the mid-slice. Pass `None` for all mid-slices.
+            Mutually exclusive with `coordinates`.
         coordinates: World coordinates in mm for each slice.
-            ``None`` entries default to the mid-slice. Converted to
+            `None` entries default to the mid-slice. Converted to
             the nearest voxel index via the inverse affine. Mutually
-            exclusive with ``indices``.
-        axes: Pre-created sequence of 3 matplotlib ``Axes``. If
-            ``None``, a new figure with correct proportions is created.
-        cmap: Colormap. Defaults to ``'gray'`` for intensity images.
+            exclusive with `indices`.
+        axes: Pre-created sequence of 3 matplotlib `Axes`. If
+            `None`, a new figure with correct proportions is created.
+        cmap: Colormap. Defaults to `'gray'` for intensity images.
         percentiles: Intensity percentile range for display windowing.
             Ignored for label maps.
-        figsize: Figure size in inches ``(width, height)``.
+        figsize: Figure size in inches `(width, height)`.
         title: Figure super-title.
         output_path: Save figure to this path.
-        show: Call ``plt.show()`` after plotting.
-        savefig_kwargs: Extra keyword arguments for ``fig.savefig()``.
+        show: Call `plt.show()` after plotting.
+        savefig_kwargs: Extra keyword arguments for `fig.savefig()`.
         voxels: Show voxel indices on ticks instead of world
             coordinates in mm.
         figsize_multiplier: Scale factor applied to the default
-            ``rcParams["figure.figsize"]`` when ``figsize`` is ``None``.
+            `rcParams["figure.figsize"]` when `figsize` is `None`.
         intersections: Draw coloured cross-hair lines showing where
             the other two slices intersect each view.
-        **imshow_kwargs: Forwarded to ``ax.imshow()``.
+        **imshow_kwargs: Forwarded to `ax.imshow()`.
 
     Returns:
-        The matplotlib ``Figure``, or ``None`` when ``show=True``
+        The matplotlib `Figure`, or `None` when `show=True`
         (the figure is displayed and closed to prevent duplicate
         rendering in notebooks).
     """
@@ -622,23 +622,23 @@ def plot_subject(
         subject: The subject to plot.
         channel: Which channel to display.
         indices: Voxel indices for each slice. Mutually exclusive
-            with ``coordinates``.
+            with `coordinates`.
         coordinates: World coordinates in mm. Mutually exclusive
-            with ``indices``.
+            with `indices`.
         cmap_dict: Per-image colormap overrides, keyed by image name.
         percentiles: Intensity percentile range for windowing.
         figsize: Figure size in inches.
         title: Figure super-title.
         output_path: Save figure to this path.
-        show: Call ``plt.show()`` after plotting.
-        savefig_kwargs: Extra keyword arguments for ``fig.savefig()``.
+        show: Call `plt.show()` after plotting.
+        savefig_kwargs: Extra keyword arguments for `fig.savefig()`.
         voxels: Show voxel ticks instead of world coordinates.
         figsize_multiplier: Scale factor for default figure size.
         intersections: Draw slice intersection cross-hairs.
-        **imshow_kwargs: Forwarded to ``ax.imshow()``.
+        **imshow_kwargs: Forwarded to `ax.imshow()`.
 
     Returns:
-        The ``Figure``, or ``None`` when ``show=True``.
+        The `Figure`, or `None` when `show=True`.
     """
     mpl, plt = _get_mpl()
 
@@ -698,7 +698,7 @@ def _create_subject_grid(
     mpl: Any,
     plt: Any,
 ) -> tuple[Any, list[list[Any]]]:
-    """Create the figure and axes grid for ``plot_subject``."""
+    """Create the figure and axes grid for `plot_subject`."""
     orientation = first_image.orientation
     spacing = first_image.spacing
     spatial_shape = first_image.spatial_shape
@@ -935,17 +935,17 @@ def make_gif(
     """Save an animated GIF sweeping through slices of a 3D image.
 
     The image is reoriented so slices appear in the expected anatomical
-    view for the given direction, matching ``make_video`` behavior.
+    view for the given direction, matching `make_video` behavior.
 
     Args:
         image: A [`Image`][torchio.Image] instance.
-        output_path: Path to the output ``.gif`` file.
+        output_path: Path to the output `.gif` file.
         seconds: Duration of the full animation in seconds.
         direction: Anatomical sweep direction: one of
-            ``"I"``, ``"S"``, ``"A"``, ``"P"``, ``"R"``, ``"L"``.
+            `"I"`, `"S"`, `"A"`, `"P"`, `"R"`, `"L"`.
         loop: Number of loops (0 = infinite).
         optimize: Attempt to compress the GIF palette.
-        rescale: Rescale intensities to ``[0, 255]`` before encoding.
+        rescale: Rescale intensities to `[0, 255]` before encoding.
         reverse: Reverse the temporal order of frames.
     """
     get_pillow()  # raises ImportError with install hint if missing
@@ -1012,14 +1012,14 @@ def make_video(
     """Create an MP4 video sweeping through slices of a 3D image.
 
     The image is reoriented so slices are shown in the expected
-    anatomical view for the given direction. Requires ``ffmpeg-python``.
+    anatomical view for the given direction. Requires `ffmpeg-python`.
 
     Args:
         image: A single-channel [`ScalarImage`][torchio.ScalarImage].
-        output_path: Path to the output ``.mp4`` file.
+        output_path: Path to the output `.mp4` file.
         seconds: Duration of the full video in seconds.
         direction: Anatomical sweep direction: one of
-            ``"I"``, ``"S"``, ``"A"``, ``"P"``, ``"R"``, ``"L"``.
+            `"I"`, `"S"`, `"A"`, `"P"`, `"R"`, `"L"`.
         verbosity: ffmpeg log level.
     """
     ffmpeg = get_ffmpeg()
@@ -1096,7 +1096,7 @@ def make_video(
 
 
 def _rescale_to_uint8(tensor: Any) -> Any:
-    """Rescale a tensor to ``[0, 255]`` uint8."""
+    """Rescale a tensor to `[0, 255]` uint8."""
 
     t = tensor.float()
     tmin = t.min()

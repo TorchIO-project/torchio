@@ -53,7 +53,7 @@ class Animate:
     """Create an animated GIF or MP4 sweeping through slices.
 
     The output format is inferred from the file extension:
-    ``.gif`` produces an animated GIF, ``.mp4`` produces a video.
+    `.gif` produces an animated GIF, `.mp4` produces a video.
 
     Examples::
 

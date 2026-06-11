@@ -1,6 +1,6 @@
 """3D bounding boxes with flexible axis conventions.
 
-Inspired by ``torchvision.tv_tensors.BoundingBoxes``, extended to 3D with
+Inspired by `torchvision.tv_tensors.BoundingBoxes`, extended to 3D with
 support for arbitrary voxel and anatomical axis orderings.
 """
 
@@ -40,9 +40,9 @@ class BoundingBoxFormat:
     A format is defined by two components:
 
     - **axes**: a 3-character string specifying the coordinate system.
-      Voxel axes are permutations of ``"IJK"``.
+      Voxel axes are permutations of `"IJK"`.
       Anatomical axes use one letter from each pair
-      ``{R, L}``, ``{A, P}``, ``{S, I}`` (e.g., ``"RAS"``, ``"LPI"``).
+      `{R, L}`, `{A, P}`, `{S, I}` (e.g., `"RAS"`, `"LPI"`).
     - **representation**: either *corners* (two opposite corners) or
       *center_size* (center point + extent along each axis).
 
@@ -76,7 +76,7 @@ class BoundingBoxFormat:
 
     @property
     def axes(self) -> str:
-        """3-character axis string (e.g., ``'IJK'``, ``'RAS'``)."""
+        """3-character axis string (e.g., `'IJK'`, `'RAS'`)."""
         return self._axes
 
     @property
@@ -207,7 +207,7 @@ def _world_corners_to_ijk(
 class BoundingBoxes:
     r"""3D bounding boxes with flexible axis conventions.
 
-    Inspired by ``torchvision.tv_tensors.BoundingBoxes``, extended to 3D.
+    Inspired by `torchvision.tv_tensors.BoundingBoxes`, extended to 3D.
     One instance holds $N$ boxes, each a 6-element vector whose meaning
     is determined by the
     [`format`][torchio.data.bboxes.BoundingBoxFormat].
@@ -286,7 +286,7 @@ class BoundingBoxes:
 
     @property
     def labels(self) -> Tensor | None:
-        """$(N,)$ integer labels, or ``None``."""
+        """$(N,)$ integer labels, or `None`."""
         return self._labels
 
     @property
@@ -313,7 +313,7 @@ class BoundingBoxes:
         """Move bounding box data to a device and/or cast to a dtype.
 
         Returns:
-            ``self`` (modified in-place).
+            `self` (modified in-place).
         """
         self._data = self._data.to(*args, **kwargs)
         if self._labels is not None:
@@ -333,7 +333,7 @@ class BoundingBoxes:
             format: Target format.
 
         Returns:
-            New ``BoundingBoxes`` in the target format.
+            New `BoundingBoxes` in the target format.
         """
         if format == self._format:
             return self._clone(format=format)
@@ -384,8 +384,8 @@ class BoundingBoxes:
 
         Args:
             data: New $(N, 6)$ coordinates.
-            labels: New labels. If ``None``, no labels.
-            affine: New affine. If ``None``, uses ``self.affine``.
+            labels: New labels. If `None`, no labels.
+            affine: New affine. If `None`, uses `self.affine`.
         """
         new_affine = (
             self._parse_affine(affine) if affine is not None else self._affine.clone()

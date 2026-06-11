@@ -26,7 +26,7 @@ class Swap(IntensityTransform):
         This transform is intended for **self-supervised** or
         **unsupervised** workflows.  Because the spatial content is
         rearranged, aligned label maps become inconsistent with the
-        swapped image.  A warning is emitted if ``LabelMap`` images
+        swapped image.  A warning is emitted if `LabelMap` images
         are present in the subject.
 
     Args:
@@ -104,12 +104,12 @@ def _sample_swap_locations(
     """Sample pairs of non-overlapping patch origins.
 
     Args:
-        spatial_shape: ``(I, J, K)`` spatial dimensions.
-        patch_size: ``(pi, pj, pk)`` patch dimensions.
+        spatial_shape: `(I, J, K)` spatial dimensions.
+        patch_size: `(pi, pj, pk)` patch dimensions.
         num_iterations: Number of pairs to sample.
 
     Returns:
-        List of ``(origin_a, origin_b)`` tuples.
+        List of `(origin_a, origin_b)` tuples.
     """
     locations: list[tuple[tuple[int, int, int], tuple[int, int, int]]] = []
     max_ini = [s - p for s, p in zip(spatial_shape, patch_size, strict=True)]
@@ -165,9 +165,9 @@ def _apply_swaps(
     """Swap patch pairs in a 5D tensor.
 
     Args:
-        data: ``(B, C, I, J, K)`` tensor.
-        locations: List of ``(origin_a, origin_b)`` pairs.
-        patch_size: ``(pi, pj, pk)`` patch dimensions.
+        data: `(B, C, I, J, K)` tensor.
+        locations: List of `(origin_a, origin_b)` pairs.
+        patch_size: `(pi, pj, pk)` patch dimensions.
 
     Returns:
         Tensor with patches swapped.

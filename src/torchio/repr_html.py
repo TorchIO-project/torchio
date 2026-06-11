@@ -121,7 +121,7 @@ def _render_fig_base64(render_fn: Any) -> str | None:
 
 
 def _try_plot_base64(image: Image) -> str | None:
-    """Render a 3-slice plot as an inline base64 ``<img>`` tag."""
+    """Render a 3-slice plot as an inline base64 `<img>` tag."""
     try:
         from .visualization import plot_image
     except ImportError:
@@ -216,7 +216,7 @@ def _metadata_table_html(subject: Subject) -> str:
 
 
 def _try_subject_plot_base64(subject: Subject) -> str | None:
-    """Render a subject grid plot as an inline base64 ``<img>`` tag."""
+    """Render a subject grid plot as an inline base64 `<img>` tag."""
     try:
         from .visualization import plot_subject
     except ImportError:

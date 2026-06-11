@@ -101,14 +101,14 @@ class Subject(Invertible):
     ) -> _SpatialData | Subject:
         """Look up a named entry, or spatially slice all images.
 
-        When *item* is a ``str``, the corresponding data entry is
+        When *item* is a `str`, the corresponding data entry is
         returned (image, points, or bounding boxes).
 
-        When *item* is an ``int``, ``slice``, or ``tuple`` of
+        When *item* is an `int`, `slice`, or `tuple` of
         slices/ints, a **new** [`Subject`][torchio.Subject] is returned with every
         image sliced identically.  All images must be spatially
-        consistent (same ``spatial_shape``).  Only the **spatial**
-        dimensions ``(I, J, K)`` are sliced. The channel dimension of
+        consistent (same `spatial_shape`).  Only the **spatial**
+        dimensions `(I, J, K)` are sliced. The channel dimension of
         each image is preserved.
 
         Args:
@@ -116,7 +116,7 @@ class Subject(Invertible):
                 indexing.
 
         Returns:
-            A single data entry (when *item* is ``str``), or a new
+            A single data entry (when *item* is `str`), or a new
             [`Subject`][torchio.Subject] with sliced images.
 
         Examples:
@@ -215,8 +215,8 @@ class Subject(Invertible):
     def all_points(self) -> dict[str | tuple[str, str], Points]:
         """Collect points from both subject-level and image-level.
 
-        Subject-level points are keyed by their name (``str``).
-        Image-level points are keyed by a ``(image_name, points_name)``
+        Subject-level points are keyed by their name (`str`).
+        Image-level points are keyed by a `(image_name, points_name)`
         tuple.
 
         Returns:
@@ -234,8 +234,8 @@ class Subject(Invertible):
     ) -> dict[str | tuple[str, str], BoundingBoxes]:
         """Collect bounding boxes from both subject-level and image-level.
 
-        Subject-level boxes are keyed by their name (``str``).
-        Image-level boxes are keyed by a ``(image_name, boxes_name)``
+        Subject-level boxes are keyed by their name (`str`).
+        Image-level boxes are keyed by a `(image_name, boxes_name)`
         tuple.
 
         Returns:
@@ -256,10 +256,10 @@ class Subject(Invertible):
     def to(self, *args: Any, **kwargs: Any) -> Self:
         """Move all data to a device and/or cast to a dtype.
 
-        Calls ``.to()`` on every Image, Points, and BoundingBoxes.
+        Calls `.to()` on every Image, Points, and BoundingBoxes.
 
         Returns:
-            ``self`` (modified in-place).
+            `self` (modified in-place).
         """
         for image in self._images.values():
             image.to(*args, **kwargs)
@@ -303,7 +303,7 @@ class Subject(Invertible):
         """Slice all images along spatial dimensions (I, J, K).
 
         The channel dimension of each image is preserved. All images
-        must have the same ``spatial_shape``.
+        must have the same `spatial_shape`.
         """
         if not self._images:
             msg = "Cannot spatially slice a Subject with no images"
@@ -352,7 +352,7 @@ class Subject(Invertible):
     def plot(self, **kwargs: Any) -> Any:
         """Plot all images as a grid of orthogonal slices.
 
-        Requires the ``[plot]`` extras (``pip install torchio[plot]``).
+        Requires the `[plot]` extras (`pip install torchio[plot]`).
         See [`plot_subject`][torchio.visualization.plot_subject] for the
         full list of keyword arguments.
         """

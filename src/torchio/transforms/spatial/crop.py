@@ -10,9 +10,9 @@ from ...types import TypeThreeInts
 from ..transform import SpatialTransform
 
 #: Accepted cropping specifications.
-#: ``int`` → same amount from each side of each axis.
-#: 3-tuple → symmetric per axis ``(i, j, k)``.
-#: 6-tuple → per-side ``(i_ini, i_fin, j_ini, j_fin, k_ini, k_fin)``.
+#: `int` → same amount from each side of each axis.
+#: 3-tuple → symmetric per axis `(i, j, k)`.
+#: 6-tuple → per-side `(i_ini, i_fin, j_ini, j_fin, k_ini, k_fin)`.
 CroppingParam = int | TypeThreeInts | TypeSixInts
 
 

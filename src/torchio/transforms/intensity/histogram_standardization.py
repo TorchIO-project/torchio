@@ -64,15 +64,15 @@ def compute_histogram_landmarks(
         images: Training images.  Each element can be a
             [`ScalarImage`][torchio.ScalarImage], a file path, or a
             string path.
-        quantiles: Quantile positions in ``[0, 1]`` used as control
+        quantiles: Quantile positions in `[0, 1]` used as control
             points.  Must be sorted and include the cutoff endpoints.
-            ``None`` uses the default 13-point scheme (v1-compatible).
+            `None` uses the default 13-point scheme (v1-compatible).
         cutoff: Lower and upper quantile bounds for the intensity
-            range of interest.  Defaults to ``(0.01, 0.99)``.
+            range of interest.  Defaults to `(0.01, 0.99)`.
         masking_method: Optional callable that takes a 4-D tensor
-            ``(C, I, J, K)`` and returns a boolean mask of the same
-            shape.  Only ``True`` voxels are used for percentile
-            computation.  ``None`` uses all voxels.
+            `(C, I, J, K)` and returns a boolean mask of the same
+            shape.  Only `True` voxels are used for percentile
+            computation.  `None` uses all voxels.
 
     Returns:
         1-D tensor of landmark values, one per quantile.
@@ -149,11 +149,11 @@ def _compute_average_mapping(database: np.ndarray) -> np.ndarray:
     """Map percentile landmarks to the standard range via linear regression.
 
     Args:
-        database: ``(N, P)`` array of percentile values for *N* images
+        database: `(N, P)` array of percentile values for *N* images
             and *P* quantile positions.
 
     Returns:
-        ``(P,)`` array of averaged landmark values in the standard range.
+        `(P,)` array of averaged landmark values in the standard range.
     """
     pc_low = database[:, 0]
     pc_high = database[:, -1]
@@ -176,7 +176,7 @@ class HistogramStandardization(IntensityTransform):
     [`compute_histogram_landmarks`][torchio.transforms.histogram_standardization.compute_histogram_landmarks]
     and are passed directly to this transform.  Each instance targets
     **one modality**; for multi-modal subjects, compose multiple
-    instances with the ``include`` parameter:
+    instances with the `include` parameter:
 
     ```python
     tio.Compose([
@@ -186,7 +186,7 @@ class HistogramStandardization(IntensityTransform):
     ```
 
     Args:
-        landmarks: 1-D tensor (or path to a ``.npy`` / ``.pt`` file)
+        landmarks: 1-D tensor (or path to a `.npy` / `.pt` file)
             of standard-space landmark values, as returned by
             [`compute_histogram_landmarks`][torchio.transforms.histogram_standardization.compute_histogram_landmarks].
         cutoff: Lower and upper quantile bounds.
@@ -255,12 +255,12 @@ def _apply_histogram_standardization(
     """Apply piecewise-linear histogram mapping to a 4-D tensor.
 
     Args:
-        tensor: ``(C, I, J, K)`` image tensor.
+        tensor: `(C, I, J, K)` image tensor.
         landmarks: 1-D standard-space landmarks.
-        cutoff: ``(low, high)`` quantile cutoff.
+        cutoff: `(low, high)` quantile cutoff.
 
     Returns:
-        Standardized ``(C, I, J, K)`` tensor.
+        Standardized `(C, I, J, K)` tensor.
     """
     quantiles = _build_quantiles(cutoff)
     percentiles = [100.0 * q for q in quantiles]

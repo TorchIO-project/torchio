@@ -16,16 +16,16 @@ from .transform import Transform
 class Lambda(Transform):
     """Apply a user-defined function as a transform.
 
-    The callable receives and returns a 4D tensor ``(C, I, J, K)``.
+    The callable receives and returns a 4D tensor `(C, I, J, K)`.
     Use *types_to_apply* to restrict which image types are affected.
 
     Args:
         function: Callable that receives and returns a 4D
             [`torch.Tensor`][torch.Tensor].
         types_to_apply: Which image types the function applies to.
-            ``"scalar"`` for [`ScalarImage`][torchio.ScalarImage] only,
-            ``"label"`` for [`LabelMap`][torchio.LabelMap] only,
-            ``None`` for all images.
+            `"scalar"` for [`ScalarImage`][torchio.ScalarImage] only,
+            `"label"` for [`LabelMap`][torchio.LabelMap] only,
+            `None` for all images.
         **kwargs: See [`Transform`][torchio.Transform].
 
     Examples:

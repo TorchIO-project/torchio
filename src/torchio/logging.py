@@ -24,11 +24,11 @@ def enable_logging(level: str = "INFO", *, rich: bool = True) -> None:
     """Enable TorchIO logging.
 
     Args:
-        level: Minimum log level (``DEBUG``, ``INFO``, ``WARNING``,
-            ``ERROR``).
-        rich: If ``True`` (default), use `rich.logging.RichHandler`
+        level: Minimum log level (`DEBUG`, `INFO`, `WARNING`,
+            `ERROR`).
+        rich: If `True` (default), use `rich.logging.RichHandler`
             for colourful, markup-enabled output with pretty tracebacks.
-            Set to ``False`` for plain stderr output.
+            Set to `False` for plain stderr output.
     """
     logger.enable("torchio")
     logger.remove()

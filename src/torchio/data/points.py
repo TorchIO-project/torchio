@@ -23,14 +23,14 @@ class Points:
     Stores an $(N, 3)$ tensor of coordinates alongside an affine matrix
     and an axis string describing the coordinate system.
 
-    The default axis convention is ``"IJK"`` (voxel indices). Points can
+    The default axis convention is `"IJK"` (voxel indices). Points can
     be converted to any other axis convention (including anatomical
-    systems like ``"RAS"`` or ``"LPI"``) via
+    systems like `"RAS"` or `"LPI"`) via
     [`to_axes`][torchio.data.points.Points.to_axes].
 
     Args:
         data: $(N, 3)$ tensor or array of point coordinates.
-        axes: 3-character axis string (default ``"IJK"``).
+        axes: 3-character axis string (default `"IJK"`).
         affine: $4 \\times 4$ affine matrix. Identity if not given.
         metadata: Arbitrary metadata dict.
 
@@ -84,7 +84,7 @@ class Points:
 
     @property
     def axes(self) -> str:
-        """3-character axis string (e.g., ``'IJK'``, ``'RAS'``)."""
+        """3-character axis string (e.g., `'IJK'`, `'RAS'`)."""
         return self._axes
 
     @property
@@ -111,7 +111,7 @@ class Points:
         """Move point data to a device and/or cast to a dtype.
 
         Returns:
-            ``self`` (modified in-place).
+            `self` (modified in-place).
         """
         self._data = self._data.to(*args, **kwargs)
         return self
@@ -121,9 +121,9 @@ class Points:
     def to_world(self) -> Tensor:
         """Transform points from voxel to world coordinates.
 
-        Equivalent to ``self.to_axes(orientation)`` where *orientation*
+        Equivalent to `self.to_axes(orientation)` where *orientation*
         is the anatomical orientation of the affine, but returns a raw
-        tensor instead of a new ``Points`` object.
+        tensor instead of a new `Points` object.
 
         Returns:
             $(N, 3)$ tensor in world (mm) coordinates.
@@ -141,7 +141,7 @@ class Points:
             target: Target axis string.
 
         Returns:
-            New ``Points`` in the target axis convention.
+            New `Points` in the target axis convention.
         """
         target = validate_axes(target)
         if target == self._axes:
@@ -168,7 +168,7 @@ class Points:
 
         Args:
             data: New $(N, 3)$ coordinates.
-            affine: New affine. If ``None``, uses ``self.affine``.
+            affine: New affine. If `None`, uses `self.affine`.
         """
         new_affine = (
             self._parse_affine(affine) if affine is not None else self._affine.clone()

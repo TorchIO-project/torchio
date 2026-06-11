@@ -25,14 +25,14 @@ class Queue(IterableDataset):
 
     Loads and preprocesses subjects in background threads, extracts
     random patches via a sampler, and yields them one at a time.
-    Designed for use with ``SubjectsLoader`` or ``DataLoader``.
+    Designed for use with `SubjectsLoader` or `DataLoader`.
 
     Args:
         subjects: Sequence of subjects to sample patches from.
         patch_sampler: A sampler (e.g.,
             [`UniformSampler`][torchio.data.UniformSampler]) used to
             extract patches from loaded subjects. The sampler must
-            accept a subject and ``num_patches`` in its ``__call__``.
+            accept a subject and `num_patches` in its `__call__`.
         max_length: Maximum number of patches held in the buffer.
             Larger values increase diversity but use more RAM.
         patches_per_volume: Maximum patches to extract from each
@@ -45,9 +45,9 @@ class Queue(IterableDataset):
         shuffle_patches: Shuffle the buffer after each refill.
         transform: Optional transform applied to each subject after
             loading and before patch extraction.
-        subject_sampler: A ``torch.utils.data.Sampler`` (e.g.,
-            ``DistributedSampler``) that yields subject indices.
-            When provided, ``shuffle_subjects`` must be ``False``.
+        subject_sampler: A `torch.utils.data.Sampler` (e.g.,
+            `DistributedSampler`) that yields subject indices.
+            When provided, `shuffle_subjects` must be `False`.
 
     Examples:
         >>> queue = tio.Queue(

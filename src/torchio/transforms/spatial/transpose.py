@@ -15,7 +15,7 @@ class Transpose(SpatialTransform):
     The affine matrix is updated to reflect the reordering so that
     world coordinates remain consistent.
 
-    This is the v2 equivalent of v1's ``Transpose``, which reversed
+    This is the v2 equivalent of v1's `Transpose`, which reversed
     the orientation string.  The transform is its own inverse.
 
     Args:

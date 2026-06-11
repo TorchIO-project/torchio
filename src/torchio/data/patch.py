@@ -12,9 +12,9 @@ class PatchLocation:
     """Spatial location of an extracted patch within a volume.
 
     Attributes:
-        index: ``(i, j, k)`` voxel indices of the patch corner
+        index: `(i, j, k)` voxel indices of the patch corner
             (the corner closest to the origin).
-        size: ``(si, sj, sk)`` spatial shape of the patch.
+        size: `(si, sj, sk)` spatial shape of the patch.
         subject_index: Optional identifier for multi-subject batches.
     """
 
@@ -24,7 +24,7 @@ class PatchLocation:
 
     @property
     def index_ini(self) -> TypeThreeInts:
-        """Starting voxel indices ``(i, j, k)``."""
+        """Starting voxel indices `(i, j, k)`."""
         return self.index
 
     @property

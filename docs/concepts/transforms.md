@@ -2,14 +2,14 @@
 
 TorchIO transforms are `torch.nn.Module` subclasses. They accept
 Subjects, Images, Tensors, NumPy arrays, SimpleITK images, NiBabel
-images, MONAI-style dicts, ``ImagesBatch``, or ``SubjectsBatch``,
+images, MONAI-style dicts, `ImagesBatch`, or `SubjectsBatch`,
 and always return the same type.
 
 ## Unified batch architecture
 
-Internally, **all inputs are converted to a ``SubjectsBatch``**
-before the transform runs. A single ``Image`` becomes a batch of
-size 1; a ``SubjectsBatch`` from a ``DataLoader`` passes through
+Internally, **all inputs are converted to a `SubjectsBatch`**
+before the transform runs. A single `Image` becomes a batch of
+size 1; a `SubjectsBatch` from a `DataLoader` passes through
 directly. This means transform authors write **one method** that
 works identically for single samples and batches:
 
@@ -23,12 +23,12 @@ class Flip(SpatialTransform):
         return batch
 ```
 
-The negative dim indexing (``-3``, ``-2``, ``-1`` for spatial axes)
-works for both 5D ``(B, C, I, J, K)`` batch tensors and 5D
-``(1, C, I, J, K)`` single-sample tensors.
+The negative dim indexing (`-3`, `-2`, `-1` for spatial axes)
+works for both 5D `(B, C, I, J, K)` batch tensors and 5D
+`(1, C, I, J, K)` single-sample tensors.
 
-When a ``SubjectsBatch`` is passed (e.g., from ``SubjectsLoader``),
-``make_params`` is called **once** and the same parameters are
+When a `SubjectsBatch` is passed (e.g., from `SubjectsLoader`),
+`make_params` is called **once** and the same parameters are
 applied to all samples, enabling vectorised batch transforms on
 GPU.
 
@@ -48,7 +48,7 @@ boxes in a Subject. Params are saved in history for replay.
 ## Scalar, range, or distribution: one class for both
 
 Transform parameters accept three forms. No separate
-``RandomNoise`` class:
+`RandomNoise` class:
 
 <!-- pytest-codeblocks:skip -->
 ```python
@@ -64,16 +64,16 @@ tio.Noise(std=LogNormal(loc=-2, scale=0.5))
 ```
 
 This is powered by `ParameterRange`, which handles all the parsing
-and sampling. Any ``torch.distributions.Distribution`` can be used
+and sampling. Any `torch.distributions.Distribution` can be used
 for full control over the sampling strategy.
 
 !!! note "No arguments means no augmentation"
     Augmentation transforms whose strength is sampled from a range
-    (e.g. ``Affine``, ``Blur``, ``Gamma``) default to a deterministic
+    (e.g. `Affine`, `Blur`, `Gamma`) default to a deterministic
     **identity** (no-op) when constructed with no arguments, and emit a
-    warning. Pass a range like ``(a, b)`` for random augmentation, or a
+    warning. Pass a range like `(a, b)` for random augmentation, or a
     scalar for a fixed effect. Transforms that draw a random realisation
-    instead of sampling a scalar parameter (e.g. ``Noise``) still apply
+    instead of sampling a scalar parameter (e.g. `Noise`) still apply
     with their default parameters.
 
 ## Input flexibility

@@ -3,11 +3,11 @@
 Axis strings are 3-character uppercase strings describing the ordering and
 orientation of coordinate axes. Two families are supported:
 
-- **Voxel**: permutations of ``"IJK"`` (6 options).
+- **Voxel**: permutations of `"IJK"` (6 options).
 - **Anatomical**: one letter from each pair {R, L}, {A, P}, {S, I}
   in any order (48 options).
 
-The string ``"IJK"`` is always interpreted as voxel (not
+The string `"IJK"` is always interpreted as voxel (not
 Inferior-J-K), because J and K have no anatomical meaning.
 """
 
@@ -96,7 +96,7 @@ def get_axis_mapping(
         tgt: Target axis string.
 
     Returns:
-        A tuple ``(permutation, flips)`` where *permutation* gives the
+        A tuple `(permutation, flips)` where *permutation* gives the
         source column index for each target column and *flips* indicates
         whether each target column should be negated.
 

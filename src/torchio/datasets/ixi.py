@@ -33,9 +33,9 @@ def ixi(
 
     Args:
         root: Root directory for the dataset.
-        download: If ``True``, download the data into ``root``.
+        download: If `True`, download the data into `root`.
         modalities: Modalities to include. Must be a subset of
-            ``('T1', 'T2', 'PD', 'MRA', 'DTI')``.
+            `('T1', 'T2', 'PD', 'MRA', 'DTI')`.
 
     Returns:
         List of subjects, one per scan with all requested modalities.
@@ -69,10 +69,10 @@ def ixi_tiny(
 
     Args:
         root: Root directory for the dataset.
-        download: If ``True``, download the data into ``root``.
+        download: If `True`, download the data into `root`.
 
     Returns:
-        List of subjects with ``image`` and ``label`` keys.
+        List of subjects with `image` and `label` keys.
     """
     root = Path(root)
     if download:

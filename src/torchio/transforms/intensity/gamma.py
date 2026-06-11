@@ -32,8 +32,8 @@ class Gamma(IntensityTransform):
         log_gamma: Range for $\beta$ in $\gamma = e^{\beta}$.
             A scalar $x$ means $\beta = x$ (deterministic).
             A 2-tuple $(a, b)$ means $\beta \sim \mathcal{U}(a, b)$.
-            A ``Choice`` or ``Distribution`` may also be passed.
-            The default ``log_gamma=0`` is a no-op (and warns).
+            A `Choice` or `Distribution` may also be passed.
+            The default `log_gamma=0` is a no-op (and warns).
         **kwargs: See [`Transform`][torchio.Transform].
 
     Examples:

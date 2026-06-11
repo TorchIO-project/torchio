@@ -17,16 +17,16 @@ class PatchAggregator:
     patches (e.g., downsampled feature maps or embeddings).
 
     Args:
-        spatial_shape: Output volume spatial shape ``(I, J, K)``.
+        spatial_shape: Output volume spatial shape `(I, J, K)`.
         overlap_mode: How to handle overlapping regions:
-            ``'crop'`` keeps only non-overlapping centers (fast,
+            `'crop'` keeps only non-overlapping centers (fast,
             best for argmax segmentation);
-            ``'average'`` averages overlapping values (best for
+            `'average'` averages overlapping values (best for
             probabilistic outputs);
-            ``'hann'`` uses Hann-window weighting (smoothest,
+            `'hann'` uses Hann-window weighting (smoothest,
             best for continuous outputs).
         patch_overlap: The overlap used during sampling, needed
-            for ``'crop'`` mode to compute how much to trim.
+            for `'crop'` mode to compute how much to trim.
         output_shape: If the model output is spatially smaller
             than the input patch (e.g., due to strided
             convolutions), specify the output volume shape here.
@@ -81,9 +81,9 @@ class PatchAggregator:
         """Add a batch of model outputs to the aggregation buffer.
 
         Args:
-            batch: 5D tensor ``(B, C, I, J, K)`` or dict of such
+            batch: 5D tensor `(B, C, I, J, K)` or dict of such
                 tensors keyed by name.
-            locations: List of ``PatchLocation`` for each item in
+            locations: List of `PatchLocation` for each item in
                 the batch.
         """
         tensors: dict[str, Tensor] = (
@@ -102,11 +102,11 @@ class PatchAggregator:
         """Get the aggregated output volume.
 
         Args:
-            key: Name of the output to retrieve. If ``None`` and
+            key: Name of the output to retrieve. If `None` and
                 only a single (unnamed) output was added, return it.
 
         Returns:
-            The aggregated tensor with shape ``(C, I, J, K)``.
+            The aggregated tensor with shape `(C, I, J, K)`.
         """
         resolve_key = key if key is not None else "__default__"
         if resolve_key not in self._outputs:

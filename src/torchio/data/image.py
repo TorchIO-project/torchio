@@ -61,14 +61,14 @@ def _resolve_media_path(
     """Resolve an optional output path for media files.
 
     Args:
-        output_path: User-provided path, or ``None``.
-        suffix: File extension (e.g., ``".gif"``, ``".mp4"``).
+        output_path: User-provided path, or `None`.
+        suffix: File extension (e.g., `".gif"`, `".mp4"`).
 
     Returns:
         Resolved [`Path`][pathlib.Path].
 
     Raises:
-        ValueError: If *output_path* is ``None`` outside Jupyter.
+        ValueError: If *output_path* is `None` outside Jupyter.
     """
     if output_path is not None:
         return Path(output_path)
@@ -85,7 +85,7 @@ def _resolve_media_path(
 
 
 def _backend_label(backend: object | None) -> str:
-    """Short label for the backend type, used in ``__repr__``."""
+    """Short label for the backend type, used in `__repr__`."""
     if backend is None:
         return "unknown"
     name = type(backend).__name__
@@ -189,14 +189,14 @@ class Image(Invertible):
             Only used for file-path sources.
         reader_kwargs: Extra keyword arguments forwarded to the reader
             function. For the default reader these are passed to
-            ``nibabel.load()`` or ``SimpleITK.ReadImage()``.
+            `nibabel.load()` or `SimpleITK.ReadImage()`.
         affine: $4 \times 4$ affine matrix or
             [`AffineMatrix`][torchio.AffineMatrix] instance. If given, overrides
             the affine read from the file.
-        channels_last: If ``True``, the tensor is assumed to have
+        channels_last: If `True`, the tensor is assumed to have
             shape $(I, J, K, C)$ and will be permuted to
             $(C, I, J, K)$. Only used for tensor sources.
-        suffix: File suffix hint (e.g., ``".nii.gz"``). Used for
+        suffix: File suffix hint (e.g., `".nii.gz"`). Used for
             file-like and bytes sources.
         points: Named sets of [`Points`][torchio.Points] attached to
             this image.
@@ -204,7 +204,7 @@ class Image(Invertible):
             [`BoundingBoxes`][torchio.BoundingBoxes] attached to this
             image.
         **kwargs: Arbitrary metadata, accessible via attribute or
-            dict-style lookup (e.g., ``protocol="MPRAGE"``).
+            dict-style lookup (e.g., `protocol="MPRAGE"`).
 
     Examples:
         >>> import torchio as tio
@@ -364,7 +364,7 @@ class Image(Invertible):
 
     @staticmethod
     def _is_zarr_store(obj: object) -> bool:
-        """Check if *obj* is a ``zarr.abc.store.Store`` without importing zarr."""
+        """Check if *obj* is a `zarr.abc.store.Store` without importing zarr."""
         try:
             from zarr.abc.store import Store
         except ImportError:  # zarr not installed
@@ -400,13 +400,13 @@ class Image(Invertible):
         """Validate and copy an annotation dict.
 
         Args:
-            annotations: Mapping of names to annotation objects, or ``None``.
-            type_name: Expected class name (``"Points"`` or
-                ``"BoundingBoxes"``) used for validation and error messages.
+            annotations: Mapping of names to annotation objects, or `None`.
+            type_name: Expected class name (`"Points"` or
+                `"BoundingBoxes"`) used for validation and error messages.
 
         Returns:
             A shallow copy of the dict, or an empty dict if *annotations*
-            is ``None``.
+            is `None`.
 
         Raises:
             TypeError: If any value is not an instance of the expected class.
@@ -651,10 +651,10 @@ class Image(Invertible):
     def to(self, *args: Any, **kwargs: Any) -> Self:
         """Move image data and affine to a device and/or cast to a dtype.
 
-        Accepts the same arguments as ``torch.Tensor.to()``.
+        Accepts the same arguments as `torch.Tensor.to()`.
 
         Returns:
-            ``self`` (modified in-place).
+            `self` (modified in-place).
         """
         self._data = self.data.to(*args, **kwargs)
         if self._affine is not None:
@@ -718,7 +718,7 @@ class Image(Invertible):
                 extension.
             **kwargs: Extra keyword arguments forwarded to the
                 writer. For SimpleITK formats these are passed to
-                ``SimpleITK.WriteImage()``.
+                `SimpleITK.WriteImage()`.
         """
         path = Path(path)
         if is_nifti_zarr(path):
@@ -762,7 +762,7 @@ class Image(Invertible):
         """Create the lazy backend from path or zarr store, without loading data.
 
         For NIfTI and NIfTI-Zarr files, creates a lazy backend that supports
-        header-only reads. For zarr stores, calls ``zarr2nii`` to build a
+        header-only reads. For zarr stores, calls `zarr2nii` to build a
         dask-backed nibabel image. For other formats (NRRD, MHA, etc.), no
         lazy backend is available. Callers should fall back to other methods.
         """
@@ -839,7 +839,7 @@ class Image(Invertible):
     ) -> Any:
         """Slice the image or look up metadata by key.
 
-        When *item* is a ``str``, the metadata value with that key is
+        When *item* is a `str`, the metadata value with that key is
         returned. Otherwise, the image is sliced along channel and/or
         spatial dimensions.
 
@@ -926,7 +926,7 @@ class Image(Invertible):
         return self.data[sc, si, sj, sk]
 
     def _repr_path_line(self) -> str:
-        """Build the ``path:`` line for ``__repr__``."""
+        """Build the `path:` line for `__repr__`."""
         if self._remote_zarr_uri is not None:
             status = "loaded" if self.is_loaded else "lazy, NIfTI-Zarr"
             return f"    path:        {self._remote_zarr_uri} ({status})"
@@ -986,7 +986,7 @@ class Image(Invertible):
     def plot(self, **kwargs: Any) -> Any:
         """Plot 3 orthogonal slices of the image.
 
-        Requires the ``[plot]`` extras (``pip install torchio[plot]``).
+        Requires the `[plot]` extras (`pip install torchio[plot]`).
         See [`plot_image`][torchio.visualization.plot_image] for the
         full list of keyword arguments.
         """
@@ -997,7 +997,7 @@ class Image(Invertible):
     def plot_interactive(self, *, height: int = 300) -> Any:
         """Show an interactive NiiVue viewer in Jupyter.
 
-        Requires ``ipyniivue`` (``pip install torchio[niivue]``).
+        Requires `ipyniivue` (`pip install torchio[niivue]`).
 
         The widget supports scrolling through slices, zooming, and
         crosshair navigation.  Left hemisphere is displayed on the
@@ -1007,10 +1007,10 @@ class Image(Invertible):
             height: Height of the viewer in pixels.
 
         Returns:
-            An ``ipyniivue.NiiVue`` widget.
+            An `ipyniivue.NiiVue` widget.
 
         Raises:
-            ImportError: If ``ipyniivue`` is not installed.
+            ImportError: If `ipyniivue` is not installed.
         """
         import tempfile
 
@@ -1048,30 +1048,30 @@ class Image(Invertible):
     ) -> Any:
         """Save an animated GIF sweeping through slices.
 
-        Requires ``Pillow`` (``pip install torchio[plot]``).
+        Requires `Pillow` (`pip install torchio[plot]`).
 
-        When *output_path* is ``None`` and the code is running inside
+        When *output_path* is `None` and the code is running inside
         a Jupyter notebook, the GIF is written to a temporary file and
-        returned as an ``IPython.display.Image`` for inline display.
+        returned as an `IPython.display.Image` for inline display.
         Outside Jupyter, *output_path* is required.
 
         Args:
-            output_path: Path to the output ``.gif`` file.  ``None``
+            output_path: Path to the output `.gif` file.  `None`
                 to auto-create a temporary file (Jupyter only).
             seconds: Duration of the full animation in seconds.
-            direction: Anatomical sweep direction (``"I"``, ``"S"``,
-                ``"A"``, ``"P"``, ``"R"``, or ``"L"``).
+            direction: Anatomical sweep direction (`"I"`, `"S"`,
+                `"A"`, `"P"`, `"R"`, or `"L"`).
             loop: Number of loops (0 = infinite).
-            rescale: Rescale intensities to ``[0, 255]``.
+            rescale: Rescale intensities to `[0, 255]`.
             optimize: Attempt to compress the GIF palette.
             reverse: Reverse the temporal order of frames.
 
         Returns:
-            ``IPython.display.Image`` when running in Jupyter,
-            ``None`` otherwise.
+            `IPython.display.Image` when running in Jupyter,
+            `None` otherwise.
 
         Raises:
-            ValueError: If *output_path* is ``None`` and the code is
+            ValueError: If *output_path* is `None` and the code is
                 not running inside a Jupyter notebook.
         """
         output_path = _resolve_media_path(output_path, suffix=".gif")
@@ -1103,27 +1103,27 @@ class Image(Invertible):
     ) -> Any:
         """Create an MP4 video sweeping through slices.
 
-        Requires ``ffmpeg-python`` (``pip install torchio[video]``).
+        Requires `ffmpeg-python` (`pip install torchio[video]`).
 
-        When *output_path* is ``None`` and the code is running inside
+        When *output_path* is `None` and the code is running inside
         a Jupyter notebook, the video is written to a temporary file
-        and returned as an ``IPython.display.Video`` for inline
+        and returned as an `IPython.display.Video` for inline
         display.  Outside Jupyter, *output_path* is required.
 
         Args:
-            output_path: Path to the output ``.mp4`` file.  ``None``
+            output_path: Path to the output `.mp4` file.  `None`
                 to auto-create a temporary file (Jupyter only).
             seconds: Duration of the full video in seconds.
-            direction: Anatomical sweep direction (``"I"``, ``"S"``,
-                ``"A"``, ``"P"``, ``"R"``, or ``"L"``).
+            direction: Anatomical sweep direction (`"I"`, `"S"`,
+                `"A"`, `"P"`, `"R"`, or `"L"`).
             verbosity: ffmpeg log level.
 
         Returns:
-            ``IPython.display.Video`` when running in Jupyter,
-            ``None`` otherwise.
+            `IPython.display.Video` when running in Jupyter,
+            `None` otherwise.
 
         Raises:
-            ValueError: If *output_path* is ``None`` and the code is
+            ValueError: If *output_path* is `None` and the code is
                 not running inside a Jupyter notebook.
         """
         output_path = _resolve_media_path(output_path, suffix=".mp4")

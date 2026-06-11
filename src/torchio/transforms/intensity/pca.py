@@ -27,14 +27,14 @@ class PCA(IntensityTransform):
 
     Args:
         num_components: Number of principal components to keep.
-        whiten: If ``True``, normalize each component to unit
+        whiten: If `True`, normalize each component to unit
             variance.
-        normalize: If ``True``, divide all components by the
+        normalize: If `True`, divide all components by the
             standard deviation of the first component.
         values_range: Linear mapping range for normalization to
             $[0, 1]$.  The default $(-2.3, 2.3)$ covers
             $\approx 99\%$ of a standard normal distribution.
-        clip: If ``True``, clip output to $[0, 1]$ after
+        clip: If `True`, clip output to $[0, 1]$ after
             normalization.
         **kwargs: See [`Transform`][torchio.Transform].
 
@@ -81,7 +81,7 @@ class PCA(IntensityTransform):
         return batch
 
     def _pca_single(self, tensor: Tensor) -> Tensor:
-        """Apply PCA to a single ``(C, I, J, K)`` tensor.
+        """Apply PCA to a single `(C, I, J, K)` tensor.
 
         Args:
             tensor: Input with *C* channels.
