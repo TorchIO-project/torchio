@@ -11,7 +11,7 @@ from ..transform import IntensityTransform
 class Clamp(IntensityTransform):
     r"""Clamp intensity values into the range $[a, b]$.
 
-    Wraps :func:`torch.clamp`.
+    Wraps [`torch.clamp`][torch.clamp].
 
     Args:
         out_min: Minimum value $a$. ``None`` means no lower bound.

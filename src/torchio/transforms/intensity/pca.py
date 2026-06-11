@@ -22,7 +22,7 @@ class PCA(IntensityTransform):
     This is useful for visualizing high-dimensional feature maps
     (e.g., neural network embeddings) as RGB images.
 
-    The implementation uses :func:`torch.pca_lowrank`, so no
+    The implementation uses [`torch.pca_lowrank`][torch.pca_lowrank], so no
     external dependencies are needed.
 
     Args:

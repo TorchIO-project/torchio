@@ -938,7 +938,7 @@ def make_gif(
     view for the given direction, matching ``make_video`` behavior.
 
     Args:
-        image: A :class:`~torchio.Image` instance.
+        image: A [`Image`][torchio.Image] instance.
         output_path: Path to the output ``.gif`` file.
         seconds: Duration of the full animation in seconds.
         direction: Anatomical sweep direction: one of
@@ -1015,7 +1015,7 @@ def make_video(
     anatomical view for the given direction. Requires ``ffmpeg-python``.
 
     Args:
-        image: A single-channel :class:`~torchio.ScalarImage`.
+        image: A single-channel [`ScalarImage`][torchio.ScalarImage].
         output_path: Path to the output ``.mp4`` file.
         seconds: Duration of the full video in seconds.
         direction: Anatomical sweep direction: one of

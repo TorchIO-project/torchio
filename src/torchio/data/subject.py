@@ -105,7 +105,7 @@ class Subject(Invertible):
         returned (image, points, or bounding boxes).
 
         When *item* is an ``int``, ``slice``, or ``tuple`` of
-        slices/ints, a **new** :class:`Subject` is returned with every
+        slices/ints, a **new** [`Subject`][torchio.Subject] is returned with every
         image sliced identically.  All images must be spatially
         consistent (same ``spatial_shape``).  Only the **spatial**
         dimensions ``(I, J, K)`` are sliced. The channel dimension of
@@ -117,7 +117,7 @@ class Subject(Invertible):
 
         Returns:
             A single data entry (when *item* is ``str``), or a new
-            :class:`Subject` with sliced images.
+            [`Subject`][torchio.Subject] with sliced images.
 
         Examples:
             >>> subject["t1"]                # lookup by name

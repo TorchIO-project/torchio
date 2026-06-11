@@ -75,7 +75,8 @@ def validate_axes(axes: str) -> str:
 def axes_type(axes: str) -> AxesType:
     """Return whether *axes* is a voxel or anatomical axis string.
 
-    The string must already be valid (call :func:`validate_axes` first).
+    The string must already be valid (call
+    [`validate_axes`][torchio.data.axes.validate_axes] first).
     """
     if _is_voxel(axes):
         return AxesType.VOXEL

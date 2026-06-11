@@ -65,7 +65,7 @@ def _resolve_media_path(
         suffix: File extension (e.g., ``".gif"``, ``".mp4"``).
 
     Returns:
-        Resolved :class:`~pathlib.Path`.
+        Resolved [`Path`][pathlib.Path].
 
     Raises:
         ValueError: If *output_path* is ``None`` outside Jupyter.

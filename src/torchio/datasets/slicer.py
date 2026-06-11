@@ -51,7 +51,7 @@ class Slicer(Subject):
 
     Args:
         name: One of the keys in
-            :data:`torchio.datasets.slicer.URLS_DICT`.
+            `torchio.datasets.slicer.URLS_DICT`.
     """
 
     def __init__(self, name: str = "MRHead") -> None:

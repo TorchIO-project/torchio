@@ -21,7 +21,7 @@ class Lambda(Transform):
 
     Args:
         function: Callable that receives and returns a 4D
-            :class:`torch.Tensor`.
+            [`torch.Tensor`][torch.Tensor].
         types_to_apply: Which image types the function applies to.
             ``"scalar"`` for [`ScalarImage`][torchio.ScalarImage] only,
             ``"label"`` for [`LabelMap`][torchio.LabelMap] only,

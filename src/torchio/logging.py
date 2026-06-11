@@ -1,6 +1,7 @@
 """Logging configuration for TorchIO.
 
-Logging is **disabled by default**.  Call :func:`enable_logging` to opt in.
+Logging is **disabled by default**.  Call
+[`enable_logging`][torchio.enable_logging] to opt in.
 
 Example::
 
@@ -25,7 +26,7 @@ def enable_logging(level: str = "INFO", *, rich: bool = True) -> None:
     Args:
         level: Minimum log level (``DEBUG``, ``INFO``, ``WARNING``,
             ``ERROR``).
-        rich: If ``True`` (default), use :class:`rich.logging.RichHandler`
+        rich: If ``True`` (default), use `rich.logging.RichHandler`
             for colourful, markup-enabled output with pretty tracebacks.
             Set to ``False`` for plain stderr output.
     """

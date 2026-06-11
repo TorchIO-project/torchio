@@ -3,10 +3,10 @@
 Combines resampling, affine motion, and elastic deformation into a single
 ``grid_sample`` call.  The public API consists of four classes:
 
-- :class:`Spatial`: the unified transform.
-- :class:`Resample`: resampling-only convenience wrapper.
-- :class:`Affine`: affine-only convenience wrapper.
-- :class:`ElasticDeformation`: elastic-only convenience wrapper.
+- [`Spatial`][torchio.Spatial]: the unified transform.
+- [`Resample`][torchio.Resample]: resampling-only convenience wrapper.
+- [`Affine`][torchio.Affine]: affine-only convenience wrapper.
+- [`ElasticDeformation`][torchio.ElasticDeformation]: elastic-only convenience wrapper.
 
 The module-level helpers handle coordinate math, grid construction,
 serialization for history replay, and parameter parsing/validation.
@@ -427,11 +427,11 @@ class Spatial(SpatialTransform):
 
 
 class _SpatialInverse(SpatialTransform):
-    """Concrete inverse of :class:`Spatial`, used for history replay.
+    """Concrete inverse of [`Spatial`][torchio.Spatial], used for history replay.
 
     Stores the exact inverse affine matrix, the negated elastic field,
     and the original output space so that ``apply_inverse_transform``
-    can restore the geometry of images transformed by :class:`Spatial`.
+    can restore the geometry of images transformed by [`Spatial`][torchio.Spatial].
     """
 
     def __init__(
