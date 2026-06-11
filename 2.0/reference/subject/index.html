@@ -4550,7 +4550,7 @@ metadata. Data entries are classified automatically:</p>
 <a id="__codelineno-0-105" name="__codelineno-0-105"></a><span class="sd">        returned (image, points, or bounding boxes).</span>
 <a id="__codelineno-0-106" name="__codelineno-0-106"></a>
 <a id="__codelineno-0-107" name="__codelineno-0-107"></a><span class="sd">        When *item* is an ``int``, ``slice``, or ``tuple`` of</span>
-<a id="__codelineno-0-108" name="__codelineno-0-108"></a><span class="sd">        slices/ints, a **new** :class:`Subject` is returned with every</span>
+<a id="__codelineno-0-108" name="__codelineno-0-108"></a><span class="sd">        slices/ints, a **new** [`Subject`][torchio.Subject] is returned with every</span>
 <a id="__codelineno-0-109" name="__codelineno-0-109"></a><span class="sd">        image sliced identically.  All images must be spatially</span>
 <a id="__codelineno-0-110" name="__codelineno-0-110"></a><span class="sd">        consistent (same ``spatial_shape``).  Only the **spatial**</span>
 <a id="__codelineno-0-111" name="__codelineno-0-111"></a><span class="sd">        dimensions ``(I, J, K)`` are sliced. The channel dimension of</span>
@@ -4562,7 +4562,7 @@ metadata. Data entries are classified automatically:</p>
 <a id="__codelineno-0-117" name="__codelineno-0-117"></a>
 <a id="__codelineno-0-118" name="__codelineno-0-118"></a><span class="sd">        Returns:</span>
 <a id="__codelineno-0-119" name="__codelineno-0-119"></a><span class="sd">            A single data entry (when *item* is ``str``), or a new</span>
-<a id="__codelineno-0-120" name="__codelineno-0-120"></a><span class="sd">            :class:`Subject` with sliced images.</span>
+<a id="__codelineno-0-120" name="__codelineno-0-120"></a><span class="sd">            [`Subject`][torchio.Subject] with sliced images.</span>
 <a id="__codelineno-0-121" name="__codelineno-0-121"></a>
 <a id="__codelineno-0-122" name="__codelineno-0-122"></a><span class="sd">        Examples:</span>
 <a id="__codelineno-0-123" name="__codelineno-0-123"></a><span class="sd">            &gt;&gt;&gt; subject[&quot;t1&quot;]                # lookup by name</span>

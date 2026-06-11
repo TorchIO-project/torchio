@@ -3963,7 +3963,8 @@
     <div class="doc doc-contents first">
 
         <p>Return whether <em>axes</em> is a voxel or anatomical axis string.</p>
-<p>The string must already be valid (call :func:<code>validate_axes</code> first).</p>
+<p>The string must already be valid (call
+<a class="autorefs autorefs-internal" title="&lt;code class=&quot;highlight language-python&quot;&gt;&lt;span class=&quot;n&quot;&gt;validate_axes&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;axes&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;&lt;/code&gt;" href="./#torchio.data.axes.validate_axes"><code>validate_axes</code></a> first).</p>
 
 
             <details class="mkdocstrings-source">
@@ -3975,14 +3976,16 @@
 <span class="normal"><a href="#__codelineno-0-79">79</a></span>
 <span class="normal"><a href="#__codelineno-0-80">80</a></span>
 <span class="normal"><a href="#__codelineno-0-81">81</a></span>
-<span class="normal"><a href="#__codelineno-0-82">82</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-75" name="__codelineno-0-75"></a><span class="k">def</span><span class="w"> </span><span class="nf">axes_type</span><span class="p">(</span><span class="n">axes</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AxesType</span><span class="p">:</span>
+<span class="normal"><a href="#__codelineno-0-82">82</a></span>
+<span class="normal"><a href="#__codelineno-0-83">83</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-75" name="__codelineno-0-75"></a><span class="k">def</span><span class="w"> </span><span class="nf">axes_type</span><span class="p">(</span><span class="n">axes</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AxesType</span><span class="p">:</span>
 <a id="__codelineno-0-76" name="__codelineno-0-76"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Return whether *axes* is a voxel or anatomical axis string.</span>
 <a id="__codelineno-0-77" name="__codelineno-0-77"></a>
-<a id="__codelineno-0-78" name="__codelineno-0-78"></a><span class="sd">    The string must already be valid (call :func:`validate_axes` first).</span>
-<a id="__codelineno-0-79" name="__codelineno-0-79"></a><span class="sd">    &quot;&quot;&quot;</span>
-<a id="__codelineno-0-80" name="__codelineno-0-80"></a>    <span class="k">if</span> <span class="n">_is_voxel</span><span class="p">(</span><span class="n">axes</span><span class="p">):</span>
-<a id="__codelineno-0-81" name="__codelineno-0-81"></a>        <span class="k">return</span> <span class="n">AxesType</span><span class="o">.</span><span class="n">VOXEL</span>
-<a id="__codelineno-0-82" name="__codelineno-0-82"></a>    <span class="k">return</span> <span class="n">AxesType</span><span class="o">.</span><span class="n">ANATOMICAL</span>
+<a id="__codelineno-0-78" name="__codelineno-0-78"></a><span class="sd">    The string must already be valid (call</span>
+<a id="__codelineno-0-79" name="__codelineno-0-79"></a><span class="sd">    [`validate_axes`][torchio.data.axes.validate_axes] first).</span>
+<a id="__codelineno-0-80" name="__codelineno-0-80"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-0-81" name="__codelineno-0-81"></a>    <span class="k">if</span> <span class="n">_is_voxel</span><span class="p">(</span><span class="n">axes</span><span class="p">):</span>
+<a id="__codelineno-0-82" name="__codelineno-0-82"></a>        <span class="k">return</span> <span class="n">AxesType</span><span class="o">.</span><span class="n">VOXEL</span>
+<a id="__codelineno-0-83" name="__codelineno-0-83"></a>    <span class="k">return</span> <span class="n">AxesType</span><span class="o">.</span><span class="n">ANATOMICAL</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -4119,8 +4122,7 @@
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/torchio/data/axes.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-85"> 85</a></span>
-<span class="normal"><a href="#__codelineno-0-86"> 86</a></span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-86"> 86</a></span>
 <span class="normal"><a href="#__codelineno-0-87"> 87</a></span>
 <span class="normal"><a href="#__codelineno-0-88"> 88</a></span>
 <span class="normal"><a href="#__codelineno-0-89"> 89</a></span>
@@ -4152,40 +4154,41 @@
 <span class="normal"><a href="#__codelineno-0-115">115</a></span>
 <span class="normal"><a href="#__codelineno-0-116">116</a></span>
 <span class="normal"><a href="#__codelineno-0-117">117</a></span>
-<span class="normal"><a href="#__codelineno-0-118">118</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-85" name="__codelineno-0-85"></a><span class="k">def</span><span class="w"> </span><span class="nf">get_axis_mapping</span><span class="p">(</span>
-<a id="__codelineno-0-86" name="__codelineno-0-86"></a>    <span class="n">src</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-<a id="__codelineno-0-87" name="__codelineno-0-87"></a>    <span class="n">tgt</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-<a id="__codelineno-0-88" name="__codelineno-0-88"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">],</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">bool</span><span class="p">,</span> <span class="nb">bool</span><span class="p">,</span> <span class="nb">bool</span><span class="p">]]:</span>
-<a id="__codelineno-0-89" name="__codelineno-0-89"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Compute the column permutation and flips to go from *src* to *tgt*.</span>
-<a id="__codelineno-0-90" name="__codelineno-0-90"></a>
-<a id="__codelineno-0-91" name="__codelineno-0-91"></a><span class="sd">    Both strings must be the same type (both voxel or both anatomical).</span>
-<a id="__codelineno-0-92" name="__codelineno-0-92"></a>
-<a id="__codelineno-0-93" name="__codelineno-0-93"></a><span class="sd">    Args:</span>
-<a id="__codelineno-0-94" name="__codelineno-0-94"></a><span class="sd">        src: Source axis string.</span>
-<a id="__codelineno-0-95" name="__codelineno-0-95"></a><span class="sd">        tgt: Target axis string.</span>
-<a id="__codelineno-0-96" name="__codelineno-0-96"></a>
-<a id="__codelineno-0-97" name="__codelineno-0-97"></a><span class="sd">    Returns:</span>
-<a id="__codelineno-0-98" name="__codelineno-0-98"></a><span class="sd">        A tuple ``(permutation, flips)`` where *permutation* gives the</span>
-<a id="__codelineno-0-99" name="__codelineno-0-99"></a><span class="sd">        source column index for each target column and *flips* indicates</span>
-<a id="__codelineno-0-100" name="__codelineno-0-100"></a><span class="sd">        whether each target column should be negated.</span>
-<a id="__codelineno-0-101" name="__codelineno-0-101"></a>
-<a id="__codelineno-0-102" name="__codelineno-0-102"></a><span class="sd">    Raises:</span>
-<a id="__codelineno-0-103" name="__codelineno-0-103"></a><span class="sd">        ValueError: If the two strings are not the same type.</span>
-<a id="__codelineno-0-104" name="__codelineno-0-104"></a><span class="sd">    &quot;&quot;&quot;</span>
-<a id="__codelineno-0-105" name="__codelineno-0-105"></a>    <span class="n">src_type</span> <span class="o">=</span> <span class="n">axes_type</span><span class="p">(</span><span class="n">src</span><span class="p">)</span>
-<a id="__codelineno-0-106" name="__codelineno-0-106"></a>    <span class="n">tgt_type</span> <span class="o">=</span> <span class="n">axes_type</span><span class="p">(</span><span class="n">tgt</span><span class="p">)</span>
-<a id="__codelineno-0-107" name="__codelineno-0-107"></a>    <span class="k">if</span> <span class="n">src_type</span> <span class="o">!=</span> <span class="n">tgt_type</span><span class="p">:</span>
-<a id="__codelineno-0-108" name="__codelineno-0-108"></a>        <span class="n">msg</span> <span class="o">=</span> <span class="p">(</span>
-<a id="__codelineno-0-109" name="__codelineno-0-109"></a>            <span class="sa">f</span><span class="s2">&quot;Cannot compute axis mapping between different types:&quot;</span>
-<a id="__codelineno-0-110" name="__codelineno-0-110"></a>            <span class="sa">f</span><span class="s2">&quot; </span><span class="si">{</span><span class="n">src</span><span class="si">!r}</span><span class="s2"> (</span><span class="si">{</span><span class="n">src_type</span><span class="o">.</span><span class="n">value</span><span class="si">}</span><span class="s2">) and </span><span class="si">{</span><span class="n">tgt</span><span class="si">!r}</span><span class="s2"> (</span><span class="si">{</span><span class="n">tgt_type</span><span class="o">.</span><span class="n">value</span><span class="si">}</span><span class="s2">).&quot;</span>
-<a id="__codelineno-0-111" name="__codelineno-0-111"></a>            <span class="s2">&quot; Use the affine to convert between voxel and anatomical.&quot;</span>
-<a id="__codelineno-0-112" name="__codelineno-0-112"></a>            <span class="s2">&quot; Both must be the same type.&quot;</span>
-<a id="__codelineno-0-113" name="__codelineno-0-113"></a>        <span class="p">)</span>
-<a id="__codelineno-0-114" name="__codelineno-0-114"></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
-<a id="__codelineno-0-115" name="__codelineno-0-115"></a>
-<a id="__codelineno-0-116" name="__codelineno-0-116"></a>    <span class="k">if</span> <span class="n">src_type</span> <span class="o">==</span> <span class="n">AxesType</span><span class="o">.</span><span class="n">VOXEL</span><span class="p">:</span>
-<a id="__codelineno-0-117" name="__codelineno-0-117"></a>        <span class="k">return</span> <span class="n">_voxel_mapping</span><span class="p">(</span><span class="n">src</span><span class="p">,</span> <span class="n">tgt</span><span class="p">)</span>
-<a id="__codelineno-0-118" name="__codelineno-0-118"></a>    <span class="k">return</span> <span class="n">_anatomical_mapping</span><span class="p">(</span><span class="n">src</span><span class="p">,</span> <span class="n">tgt</span><span class="p">)</span>
+<span class="normal"><a href="#__codelineno-0-118">118</a></span>
+<span class="normal"><a href="#__codelineno-0-119">119</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-86" name="__codelineno-0-86"></a><span class="k">def</span><span class="w"> </span><span class="nf">get_axis_mapping</span><span class="p">(</span>
+<a id="__codelineno-0-87" name="__codelineno-0-87"></a>    <span class="n">src</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+<a id="__codelineno-0-88" name="__codelineno-0-88"></a>    <span class="n">tgt</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+<a id="__codelineno-0-89" name="__codelineno-0-89"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">],</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">bool</span><span class="p">,</span> <span class="nb">bool</span><span class="p">,</span> <span class="nb">bool</span><span class="p">]]:</span>
+<a id="__codelineno-0-90" name="__codelineno-0-90"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Compute the column permutation and flips to go from *src* to *tgt*.</span>
+<a id="__codelineno-0-91" name="__codelineno-0-91"></a>
+<a id="__codelineno-0-92" name="__codelineno-0-92"></a><span class="sd">    Both strings must be the same type (both voxel or both anatomical).</span>
+<a id="__codelineno-0-93" name="__codelineno-0-93"></a>
+<a id="__codelineno-0-94" name="__codelineno-0-94"></a><span class="sd">    Args:</span>
+<a id="__codelineno-0-95" name="__codelineno-0-95"></a><span class="sd">        src: Source axis string.</span>
+<a id="__codelineno-0-96" name="__codelineno-0-96"></a><span class="sd">        tgt: Target axis string.</span>
+<a id="__codelineno-0-97" name="__codelineno-0-97"></a>
+<a id="__codelineno-0-98" name="__codelineno-0-98"></a><span class="sd">    Returns:</span>
+<a id="__codelineno-0-99" name="__codelineno-0-99"></a><span class="sd">        A tuple ``(permutation, flips)`` where *permutation* gives the</span>
+<a id="__codelineno-0-100" name="__codelineno-0-100"></a><span class="sd">        source column index for each target column and *flips* indicates</span>
+<a id="__codelineno-0-101" name="__codelineno-0-101"></a><span class="sd">        whether each target column should be negated.</span>
+<a id="__codelineno-0-102" name="__codelineno-0-102"></a>
+<a id="__codelineno-0-103" name="__codelineno-0-103"></a><span class="sd">    Raises:</span>
+<a id="__codelineno-0-104" name="__codelineno-0-104"></a><span class="sd">        ValueError: If the two strings are not the same type.</span>
+<a id="__codelineno-0-105" name="__codelineno-0-105"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-0-106" name="__codelineno-0-106"></a>    <span class="n">src_type</span> <span class="o">=</span> <span class="n">axes_type</span><span class="p">(</span><span class="n">src</span><span class="p">)</span>
+<a id="__codelineno-0-107" name="__codelineno-0-107"></a>    <span class="n">tgt_type</span> <span class="o">=</span> <span class="n">axes_type</span><span class="p">(</span><span class="n">tgt</span><span class="p">)</span>
+<a id="__codelineno-0-108" name="__codelineno-0-108"></a>    <span class="k">if</span> <span class="n">src_type</span> <span class="o">!=</span> <span class="n">tgt_type</span><span class="p">:</span>
+<a id="__codelineno-0-109" name="__codelineno-0-109"></a>        <span class="n">msg</span> <span class="o">=</span> <span class="p">(</span>
+<a id="__codelineno-0-110" name="__codelineno-0-110"></a>            <span class="sa">f</span><span class="s2">&quot;Cannot compute axis mapping between different types:&quot;</span>
+<a id="__codelineno-0-111" name="__codelineno-0-111"></a>            <span class="sa">f</span><span class="s2">&quot; </span><span class="si">{</span><span class="n">src</span><span class="si">!r}</span><span class="s2"> (</span><span class="si">{</span><span class="n">src_type</span><span class="o">.</span><span class="n">value</span><span class="si">}</span><span class="s2">) and </span><span class="si">{</span><span class="n">tgt</span><span class="si">!r}</span><span class="s2"> (</span><span class="si">{</span><span class="n">tgt_type</span><span class="o">.</span><span class="n">value</span><span class="si">}</span><span class="s2">).&quot;</span>
+<a id="__codelineno-0-112" name="__codelineno-0-112"></a>            <span class="s2">&quot; Use the affine to convert between voxel and anatomical.&quot;</span>
+<a id="__codelineno-0-113" name="__codelineno-0-113"></a>            <span class="s2">&quot; Both must be the same type.&quot;</span>
+<a id="__codelineno-0-114" name="__codelineno-0-114"></a>        <span class="p">)</span>
+<a id="__codelineno-0-115" name="__codelineno-0-115"></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+<a id="__codelineno-0-116" name="__codelineno-0-116"></a>
+<a id="__codelineno-0-117" name="__codelineno-0-117"></a>    <span class="k">if</span> <span class="n">src_type</span> <span class="o">==</span> <span class="n">AxesType</span><span class="o">.</span><span class="n">VOXEL</span><span class="p">:</span>
+<a id="__codelineno-0-118" name="__codelineno-0-118"></a>        <span class="k">return</span> <span class="n">_voxel_mapping</span><span class="p">(</span><span class="n">src</span><span class="p">,</span> <span class="n">tgt</span><span class="p">)</span>
+<a id="__codelineno-0-119" name="__codelineno-0-119"></a>    <span class="k">return</span> <span class="n">_anatomical_mapping</span><span class="p">(</span><span class="n">src</span><span class="p">,</span> <span class="n">tgt</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
