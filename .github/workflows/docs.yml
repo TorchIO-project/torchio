@@ -1,16 +1,29 @@
-# This workflow handles both PR doc previews (via Smokeshow) and production
-# deployment (via GitHub Pages). We use a single "push" trigger instead of
-# splitting into "push" + "pull_request" because:
-#   - "push" ensures secrets (SMOKESHOW_AUTH_KEY) are always available,
-#     even for PRs from forks (pull_request events don't expose secrets).
-#   - A single workflow avoids duplicating the build steps.
-# The tradeoff is that sticky-pull-request-comment can't auto-detect the PR
-# number from a push event, so we look it up explicitly with `gh pr list`.
+# This workflow builds the documentation and either:
+#   - deploys versioned docs to the `gh-pages` branch with mike (on `main` and
+#     `v2`), or
+#   - uploads a Smokeshow preview and comments the URL on the PR (other
+#     branches), using a single "push" trigger so that secrets are available
+#     even for PRs from forks.
+#
+# Versioning uses the Material team's fork of mike, integrated with Zensical
+# (https://zensical.org/docs/setup/versioning/):
+#   - `main` (v1) -> version "<major.minor>" with aliases `stable` + `latest`
+#   - `v2`        -> version "<major.minor>" with alias `dev`
+# `latest` is the default alias, so docs.torchio.org/ redirects to v1 while v2
+# is a pre-release. Flip with `mike set-default` once v2 becomes stable.
+#
+# One-time manual setup for production (cannot be done from CI):
+#   1. Merge this workflow into `main` too, and let `main` deploy first so the
+#      `latest`/`stable`/default redirect exist before the site goes live.
+#   2. Settings > Pages > Source = "Deploy from a branch" -> `gh-pages` / root.
+#   3. Settings > Pages > Custom domain = `docs.torchio.org`. GitHub writes a
+#      CNAME file to `gh-pages`, which mike preserves on later deploys.
 
 name: Documentation
 
 on:
   push:
+    branches: ['**'] # all branches, but not tags (avoids deploying on releases)
 
 permissions:
   contents: write
@@ -25,7 +38,9 @@ env:
   FORCE_COLOR: 1
 
 jobs:
-  build:
+  preview:
+    # Build + Smokeshow preview for branches/PRs that are not deployed versions.
+    if: github.ref != 'refs/heads/main' && github.ref != 'refs/heads/v2'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -48,16 +63,13 @@ jobs:
 
       - name: Save TorchIO cached data
         if: steps.cache-torchio-data-restore.outputs.cache-hit != 'true'
-        id: cache-torchio-data-save
         uses: actions/cache@v5
         with:
           path: ~/.cache/torchio
           key: ${{ steps.cache-torchio-data-restore.outputs.cache-primary-key }}
 
-      # Upload to smokeshow if not on main branch
       - name: Upload docs to smokeshow
         id: smokeshow
-        if: github.ref != 'refs/heads/main'
         env:
           SMOKESHOW_AUTH_KEY: ${{ secrets.SMOKESHOW_AUTH_KEY || env.SMOKESHOW_AUTH_KEY }}
           SMOKESHOW_GITHUB_STATUS_DESCRIPTION: Docs preview
@@ -73,10 +85,10 @@ jobs:
           echo "preview_url=$URL" >> "$GITHUB_OUTPUT"
 
       # sticky-pull-request-comment auto-detects the PR number only on
-      # pull_request events. Since this workflow triggers on push, we need to
-      # look up the PR number ourselves.
+      # pull_request events. Since this workflow triggers on push, we look up the
+      # PR number ourselves.
       - name: Find PR number
-        if: github.ref != 'refs/heads/main' && steps.smokeshow.outputs.preview_url != ''
+        if: steps.smokeshow.outputs.preview_url != ''
         id: find-pr
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -85,7 +97,7 @@ jobs:
           echo "pr_number=$PR_NUMBER" >> "$GITHUB_OUTPUT"
 
       - name: Comment PR with preview URL
-        if: github.ref != 'refs/heads/main' && steps.smokeshow.outputs.preview_url != '' && steps.find-pr.outputs.pr_number != ''
+        if: steps.smokeshow.outputs.preview_url != '' && steps.find-pr.outputs.pr_number != ''
         uses: marocchino/sticky-pull-request-comment@v2
         with:
           header: docs-preview
@@ -99,32 +111,56 @@ jobs:
 
             <sub>Built from ${{ github.sha }}</sub>
 
-      # Upload to GitHub Pages if on main branch
-      - name: Upload artifacts using actions/upload-pages-artifact
-        if: github.ref == 'refs/heads/main'
-        id: deployment
-        uses: actions/upload-pages-artifact@v4
-        with:
-          path: ./site
-
   deploy:
-    if: github.ref == 'refs/heads/main'
-
-    needs: build
-
-    # Grant GITHUB_TOKEN the permissions required to make a Pages deployment
-    permissions:
-      pages: write # to deploy to Pages
-      id-token: write # to verify the deployment originates from an appropriate source
-
+    # Deploy versioned docs to the gh-pages branch with mike (production).
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/v2'
     runs-on: ubuntu-latest
-
-    # Deploy to the github-pages environment
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-
+    # Serialize deploys across branches so concurrent main/v2 runs don't race on
+    # the gh-pages branch.
+    concurrency:
+      group: docs-deploy
+      cancel-in-progress: false
     steps:
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Install mise-en-place
+        uses: jdx/mise-action@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Restore TorchIO cached data
+        id: cache-torchio-data-restore
+        uses: actions/cache/restore@v5
+        with:
+          path: ~/.cache/torchio
+          key: ${{ runner.os }}-torchio-data
+
+      - name: Configure git and fetch gh-pages
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          # Make the existing versioned docs available locally so mike updates
+          # them instead of recreating the branch from scratch.
+          git fetch origin gh-pages --depth=1 || true
+
+      - name: Deploy versioned docs with mike
+        run: |
+          VERSION=$(grep -m1 -E '^version = ' pyproject.toml | sed -E 's/^version = "(.*)"/\1/')
+          MAJOR_MINOR=$(printf '%s' "$VERSION" | sed -E 's/^([0-9]+\.[0-9]+).*/\1/')
+          echo "Deploying docs for $VERSION (mike version id: $MAJOR_MINOR)"
+          if [ "${{ github.ref }}" = "refs/heads/main" ]; then
+            mise run docs:deploy -- --push "$MAJOR_MINOR" stable latest
+            mise run docs:set-default -- --push latest
+          else
+            mise run docs:deploy -- --push "$MAJOR_MINOR" dev
+          fi
+
+      - name: Save TorchIO cached data
+        if: steps.cache-torchio-data-restore.outputs.cache-hit != 'true'
+        uses: actions/cache@v5
+        with:
+          path: ~/.cache/torchio
+          key: ${{ steps.cache-torchio-data-restore.outputs.cache-primary-key }}

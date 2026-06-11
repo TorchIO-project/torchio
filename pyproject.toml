@@ -1,6 +1,6 @@
 [project]
 name = "torchio"
-version = "2.0.0"
+version = "2.0.0a1"
 description = "Medical image preprocessing, augmentation, and patch-based training."
 requires-python = ">=3.10"
 license = "Apache-2.0"
@@ -127,12 +127,33 @@ force-single-line = true
     "A002", # `format` parameter shadows builtin — canonical name for this concept
 ]
 
-[tool.bump-my-version]
-current_version = "2.0.0"
+[tool.bumpversion]
+current_version = "2.0.0a1"
 commit = true
 tag = true
+parse = '''(?x)
+    (?P<major>0|[1-9]\d*)\.
+    (?P<minor>0|[1-9]\d*)\.
+    (?P<patch>0|[1-9]\d*)
+    (?:
+        (?P<pre_l>a|b|rc)
+        (?P<pre_n>0|[1-9]\d*)
+    )?
+'''
+serialize = [
+    "{major}.{minor}.{patch}{pre_l}{pre_n}",
+    "{major}.{minor}.{patch}",
+]
 
-[[tool.bump-my-version.files]]
+[tool.bumpversion.parts.pre_l]
+values = ["a", "b", "rc", "final"]
+optional_value = "final"
+first_value = "final"
+
+[tool.bumpversion.parts.pre_n]
+first_value = "1"
+
+[[tool.bumpversion.files]]
 filename = "pyproject.toml"
 search = 'version = "{current_version}"'
 replace = 'version = "{new_version}"'
@@ -161,6 +182,10 @@ docs = [
     "nbconvert",
     "zensical",
 ]
+docs-deploy = [
+    { include-group = "docs" },
+    "mike",
+]
 quality = ["ruff"]
 types = [
     "ipykernel",
@@ -168,3 +193,9 @@ types = [
     "ty",
     "zarr",
 ]
+
+# Zensical integrates with the Material team's fork of mike for versioned docs.
+# The fork is not published on PyPI, so it is pinned directly from GitHub.
+# See https://zensical.org/docs/setup/versioning/
+[tool.uv.sources]
+mike = { git = "https://github.com/squidfunk/mike.git" }

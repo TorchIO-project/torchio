@@ -1,6 +1,6 @@
 [project]
 site_name = "TorchIO"
-site_url = "https://torchio.org"
+site_url = "https://docs.torchio.org/"
 site_description = "Tools for medical image processing with PyTorch"
 site_author = "Fernando Pérez-García"
 copyright = "Copyright &copy; 2026 Fernando Pérez-García"
@@ -169,6 +169,11 @@ primary = "deep purple"
 accent = "deep purple"
 toggle.icon = "lucide/moon"
 toggle.name = "Switch to system preference"
+
+[project.extra.version]
+provider = "mike"
+default = ["stable", "dev"]
+alias = true
 
 [[project.extra.social]]
 icon = "fontawesome/brands/github"
