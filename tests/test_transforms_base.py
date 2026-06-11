@@ -33,14 +33,14 @@ def _make_subject() -> tio.Subject:
 
 
 class _IdentityTransform(tio.Transform):
-    """Transform that does nothing — for testing the base flow."""
+    """Transform that does nothing (for testing the base flow)."""
 
     def apply_transform(self, batch: Any, params: dict) -> Any:
         return batch
 
 
 class _DoubleIntensity(tio.IntensityTransform):
-    """Doubles intensity of ScalarImages — for testing IntensityTransform."""
+    """Doubles intensity of ScalarImages (for testing IntensityTransform)."""
 
     def apply_transform(self, batch: Any, params: dict) -> Any:
         for _name, img_batch in self._get_images(batch).items():
@@ -49,7 +49,7 @@ class _DoubleIntensity(tio.IntensityTransform):
 
 
 class _FlipSpatial(tio.SpatialTransform):
-    """Flips along axis 0 — for testing SpatialTransform."""
+    """Flips along axis 0 (for testing SpatialTransform)."""
 
     def apply_transform(self, batch: Any, params: dict) -> Any:
         for _name, img_batch in self._get_images(batch).items():
@@ -248,7 +248,7 @@ class TestCompose:
         torch.testing.assert_close(subject.t1.data, original)
 
     def test_copy_false_no_deepcopy(self) -> None:
-        """copy=False skips deepcopy — used inside Compose."""
+        """copy=False skips deepcopy (used inside Compose)."""
         subject = _make_subject()
         composed = tio.Compose([_DoubleIntensity()], copy=False)
         result = composed(subject)
@@ -293,7 +293,7 @@ class TestOneOf:
 
     def test_with_weights(self) -> None:
         subject = _make_subject()
-        # Weight 1.0 on identity, 0.0 on double — should always pick identity
+        # Weight 1.0 on identity, 0.0 on double: should always pick identity
         one_of = tio.OneOf(
             {_IdentityTransform(): 1.0, _DoubleIntensity(): 0.0},
         )

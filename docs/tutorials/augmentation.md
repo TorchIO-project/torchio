@@ -27,7 +27,7 @@ augmented = augmentation(subject)
 
 Every call to `augmentation(subject)` produces a different result.
 Spatial transforms (Flip, Affine) are applied consistently to all
-images in the subject — the T1 and segmentation are transformed
+images in the subject: the T1 and segmentation are transformed
 together.
 
 ## Deterministic vs random
@@ -75,7 +75,7 @@ tio.Noise(std=0.1, p=0.5)
 
 ## Composition strategies
 
-### Compose — apply all in sequence
+### Compose: apply all in sequence
 
 <!-- pytest-codeblocks:skip -->
 ```python
@@ -86,7 +86,7 @@ pipeline = tio.Compose([
 ])
 ```
 
-### OneOf — pick one at random
+### OneOf: pick one at random
 
 <!-- pytest-codeblocks:skip -->
 ```python
@@ -97,7 +97,7 @@ artifact = tio.OneOf({
 })
 ```
 
-### SomeOf — pick N at random
+### SomeOf: pick N at random
 
 <!-- pytest-codeblocks:skip -->
 ```python

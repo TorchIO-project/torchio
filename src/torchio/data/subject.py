@@ -108,7 +108,7 @@ class Subject(Invertible):
         slices/ints, a **new** :class:`Subject` is returned with every
         image sliced identically.  All images must be spatially
         consistent (same ``spatial_shape``).  Only the **spatial**
-        dimensions ``(I, J, K)`` are sliced — the channel dimension of
+        dimensions ``(I, J, K)`` are sliced. The channel dimension of
         each image is preserved.
 
         Args:

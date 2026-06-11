@@ -180,7 +180,7 @@ class Image(Invertible):
     | `sitk.Image` | Eager, converted to tensor |
     | `zarr.abc.store.Store` | Lazy via `zarr2nii` + `NibabelBackend` |
     | `bytes`, `io.BytesIO` | Decoded via temp file |
-    | `None` (default) | Empty image — set data later |
+    | `None` (default) | Empty image, set data later |
 
     Args:
         source: Image data or path. See the table above.
@@ -222,7 +222,7 @@ class Image(Invertible):
         | sitk.Image
         | bytes
         | io.BytesIO
-        # | zarr.abc.store.Store  (optional — accepted at runtime)
+        # | zarr.abc.store.Store  (optional, accepted at runtime)
         | None
     )
 
@@ -764,7 +764,7 @@ class Image(Invertible):
         For NIfTI and NIfTI-Zarr files, creates a lazy backend that supports
         header-only reads. For zarr stores, calls ``zarr2nii`` to build a
         dask-backed nibabel image. For other formats (NRRD, MHA, etc.), no
-        lazy backend is available — callers should fall back to other methods.
+        lazy backend is available. Callers should fall back to other methods.
         """
         if self._backend is not None:
             return
@@ -851,7 +851,7 @@ class Image(Invertible):
         supported.
 
         When the image has not been loaded yet, slicing reads only the
-        requested region through the lazy backend — the full tensor is
+        requested region through the lazy backend. The full tensor is
         never materialized. For uncompressed NIfTI (`.nii`) this uses
         memory-mapping; for NIfTI-Zarr (`.nii.zarr`) chunked reads.
         Even for compressed NIfTI (`.nii.gz`), nibabel's proxy avoids

@@ -90,6 +90,6 @@ class ImagesLoader(DataLoader):
         super().__init__(dataset, collate_fn=collate_images, **kwargs)
 
 
-# Aliases for radiology users — see Subject/Study note in subject.py.
+# Aliases for radiology users (see Subject/Study note in subject.py).
 StudiesLoader = SubjectsLoader
 collate_studies = collate_subjects

@@ -45,7 +45,7 @@ import nibabel as nib
 sitk_image = sitk.ReadImage("t1.nii.gz")
 image = tio.ScalarImage(sitk_image)
 
-# From a NiBabel Nifti1Image (lazy — data not loaded yet)
+# From a NiBabel Nifti1Image (lazy, data not loaded yet)
 nifti = nib.load("t1.nii.gz")
 image = tio.ScalarImage(nifti)
 ```
@@ -69,7 +69,7 @@ image = tio.ScalarImage(buf, suffix=".nii.gz")
 ## Creating from a Zarr store
 
 For large-scale datasets stored as `.nii.zarr`, you can pass a
-`zarr.abc.store.Store` directly. Instantiation is O(1) — the store
+`zarr.abc.store.Store` directly. Instantiation is O(1): the store
 is only accessed when metadata or data is needed:
 
 <!-- pytest-codeblocks:skip -->
@@ -77,7 +77,7 @@ is only accessed when metadata or data is needed:
 import zarr
 
 store = zarr.storage.FsspecStore("s3://bucket/brain.nii.zarr", mode="r")
-image = tio.ScalarImage(store)              # instant — no I/O
+image = tio.ScalarImage(store)              # instant, no I/O
 print(image.shape)                          # triggers header read
 image.data                                  # triggers full load
 

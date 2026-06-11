@@ -12,7 +12,7 @@ This guide covers every breaking change between TorchIO v1 and v2.
 ## Quick checklist
 
 - Replace `Random*` transform names with their base names (`RandomFlip` → `Flip`)
-- Pass explicit ranges for augmentation — renamed transforms are a no-op without arguments (`RandomAffine()` → `Affine(degrees=(-10, 10), scales=(0.9, 1.1))`)
+- Pass explicit ranges for augmentation (renamed transforms are a no-op without arguments): `RandomAffine()` → `Affine(degrees=(-10, 10), scales=(0.9, 1.1))`
 - Replace `path=` with positional arg or `source=` in Image constructors
 - Replace `.affine` (numpy array) with `.affine.data` where a raw array is needed
 - Replace `RescaleIntensity(out_min_max=...)` with `Normalize(out_min=..., out_max=...)`
@@ -41,7 +41,7 @@ Changes:
 
 - First positional argument accepts a path, tensor, numpy array,
   NiBabel image, SimpleITK image, or `bytes`.  The `path` and
-  `tensor` keyword names are gone — use positional or `source=`.
+  `tensor` keyword names are gone: use positional or `source=`.
 - `type` parameter removed.  Use `ScalarImage` or `LabelMap` directly.
 - `affine` accepts `AffineMatrix` objects in addition to arrays.
 - New `channels_last` parameter for tensor sources shaped
@@ -99,7 +99,7 @@ and a `Distribution` or `Choice` gives full control.
 !!! warning "Renaming a `Random*` transform changes its default behavior"
     In v1, `RandomAffine()` (no arguments) applied random augmentation.
     In v2, the renamed `Affine()` (no arguments) is a deterministic
-    identity (no-op) that emits a warning — randomness is opt-in. Pass a
+    identity (no-op) that emits a warning (randomness is opt-in). Pass a
     range like `(a, b)` for random augmentation, or a scalar for a fixed
     effect. Transforms that draw a random realisation rather than
     sampling a scalar parameter (e.g. `Noise`, `BiasField`,
@@ -253,8 +253,8 @@ outer = tio.Compose([inner, tio.Noise(std=0.1)])
 
 ### SubjectsDataset removed
 
-v1 required wrapping subjects in `SubjectsDataset`.  v2 removes this
-class — pass any `Dataset` returning `Subject` instances to
+v1 required wrapping subjects in `SubjectsDataset`.
+v2 removes this class. Pass any `Dataset` returning `Subject` instances to
 `SubjectsLoader`:
 
 <!-- pytest-codeblocks:skip -->
@@ -331,10 +331,10 @@ tio.Noise
 
 New exports in v2:
 
-- `AffineMatrix` — the affine matrix class
-- `Points`, `BoundingBoxes`, `BoundingBoxFormat` — annotation types
-- `SubjectsBatch`, `ImagesBatch` — batch containers
-- `Choice`, `ParameterRange` — parameter sampling utilities
-- `SomeOf` — random subset composition
-- `PatchAggregator` — renamed from `GridAggregator`
-- `apply_inverse_transform` — standalone inverse function
+- `AffineMatrix`: the affine matrix class
+- `Points`, `BoundingBoxes`, `BoundingBoxFormat`: annotation types
+- `SubjectsBatch`, `ImagesBatch`: batch containers
+- `Choice`, `ParameterRange`: parameter sampling utilities
+- `SomeOf`: random subset composition
+- `PatchAggregator`: renamed from `GridAggregator`
+- `apply_inverse_transform`: standalone inverse function

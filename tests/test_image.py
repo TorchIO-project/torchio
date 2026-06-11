@@ -279,7 +279,7 @@ class TestImageRepr:
         image = Image(torch.randn(1, 4, 4, 4))
         image._data = None
         r = repr(image)
-        # No data and no path — falls back to minimal repr
+        # No data and no path: falls back to minimal repr
         assert "Image" in r
 
 

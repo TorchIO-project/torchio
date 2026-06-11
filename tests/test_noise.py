@@ -216,7 +216,7 @@ class TestNoise:
         )
         noise = tio.Noise(mean=Normal(0.0, 0.1), std=0.0)
         result = noise(subject)
-        # Mean was sampled from N(0, 0.1) — should be near 0
+        # Mean was sampled from N(0, 0.1), should be near 0
         sampled_mean = result.applied_transforms[0].params["mean"]
         assert isinstance(sampled_mean, float)
 

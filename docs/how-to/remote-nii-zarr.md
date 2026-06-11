@@ -54,7 +54,7 @@ sequenceDiagram
 
 When you pass a remote `.nii.zarr` URI, TorchIO:
 
-1. **Stores the URI** — no bytes are downloaded yet.
+1. **Stores the URI**: no bytes are downloaded yet.
 2. **On first metadata access** (`.shape`, `.affine`, …), opens a remote
    zarr store via [fsspec](https://filesystem-spec.readthedocs.io/) and
    reads only the header.
@@ -77,10 +77,10 @@ os.environ["AZURE_STORAGE_ACCOUNT_KEY"] = "my-secret-key"  # or use SAS, etc.
 image = tio.ScalarImage("az://mycontainer/dataset/brain.nii.zarr")
 
 # Nothing has been downloaded yet
-print(image.shape)   # e.g. (1, 512, 512, 512) — only metadata fetched
+print(image.shape)   # e.g. (1, 512, 512, 512), only metadata fetched
 print(image.spacing)  # from the NIfTI header stored in the zarr
 
-# Crop a 100×100×100 ROI — only the overlapping chunks are fetched
+# Crop a 100×100×100 ROI, only the overlapping chunks are fetched
 roi = image[:, 200:300, 200:300, 200:300]
 print(roi.shape)      # (1, 100, 100, 100)
 print(roi.data.mean())
@@ -150,7 +150,7 @@ print(cropped.shape)  # (1, 128, 128, 128)
     roi = image[:, 100:200, 100:200, 100:200]
     ```
 
-    No extra packages needed — `fsspec[http]` is included by default.
+    No extra packages needed: `fsspec[http]` is included by default.
 
 ## Comparison with non-Zarr remote files
 

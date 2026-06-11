@@ -24,8 +24,8 @@ class Points:
     and an axis string describing the coordinate system.
 
     The default axis convention is ``"IJK"`` (voxel indices). Points can
-    be converted to any other axis convention — including anatomical
-    systems like ``"RAS"`` or ``"LPI"`` — via
+    be converted to any other axis convention (including anatomical
+    systems like ``"RAS"`` or ``"LPI"``) via
     [`to_axes`][torchio.data.points.Points.to_axes].
 
     Args:

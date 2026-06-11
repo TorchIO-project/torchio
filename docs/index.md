@@ -7,7 +7,7 @@ in deep learning, following the design of PyTorch.
 > *Tools like TorchIO are a symptom of the maturation of medical AI research
 > using deep learning techniques*.
 >
-> — Jack Clark, Policy Director at [OpenAI](https://openai.com/), Co-Founder and
+> Jack Clark, Policy Director at [OpenAI](https://openai.com/), Co-Founder and
 > Head of Policy of Anthropic ([link](https://jack-clark.net/2020/03/17/))
 
 !!! warning "TorchIO v2 is an experimental pre-release"
@@ -25,7 +25,7 @@ Augment a whole batch of subjects on the GPU in a few lines:
 ```python
 import torchio as tio
 
-# Build subjects (lazy — only headers are read until .data is accessed)
+# Build subjects (lazy: only headers are read until .data is accessed)
 dirs = ["sub-01", "sub-02", "sub-03", "sub-04"]
 subjects = [
     tio.Subject(

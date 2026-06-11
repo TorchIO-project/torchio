@@ -3,10 +3,10 @@
 Combines resampling, affine motion, and elastic deformation into a single
 ``grid_sample`` call.  The public API consists of four classes:
 
-- :class:`Spatial` — the unified transform.
-- :class:`Resample` — resampling-only convenience wrapper.
-- :class:`Affine` — affine-only convenience wrapper.
-- :class:`ElasticDeformation` — elastic-only convenience wrapper.
+- :class:`Spatial`: the unified transform.
+- :class:`Resample`: resampling-only convenience wrapper.
+- :class:`Affine`: affine-only convenience wrapper.
+- :class:`ElasticDeformation`: elastic-only convenience wrapper.
 
 The module-level helpers handle coordinate math, grid construction,
 serialization for history replay, and parameter parsing/validation.
@@ -1062,7 +1062,7 @@ def _sample_batch_interpol(
 
     batch_size = data.shape[0]
     # interpol expects: input (B, C, *spatial), grid (B, *spatial, D)
-    # Our grid is (I_out, J_out, K_out, 3) — add batch dim.
+    # Our grid is (I_out, J_out, K_out, 3). Add batch dim.
     grid_b = voxel_grid.unsqueeze(0).expand(batch_size, -1, -1, -1, -1)
 
     sampled = interpol.grid_pull(

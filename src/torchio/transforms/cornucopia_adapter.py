@@ -84,7 +84,7 @@ class CornucopiaAdapter(Transform):
         batch: SubjectsBatch,
         params: dict[str, Any],
     ) -> SubjectsBatch:
-        """Not used — CornucopiaAdapter overrides forward directly."""
+        """Not used: CornucopiaAdapter overrides forward directly."""
         return batch
 
     def add_transform_to_subject_history(self, *args: Any) -> None:

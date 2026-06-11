@@ -232,5 +232,5 @@ class SubjectsBatch(Invertible):
         return f"SubjectsBatch(batch_size={self.batch_size}, images=[{names}])"
 
 
-# Alias for radiology users — see Subject/Study note in subject.py.
+# Alias for radiology users (see Subject/Study note in subject.py).
 StudiesBatch = SubjectsBatch

@@ -2,7 +2,7 @@
 
 TorchIO provides a built-in plotting function that displays three
 orthogonal slices (Sagittal, Coronal, Axial) with correct anatomical
-orientation and proportions. It works with any image orientation —
+orientation and proportions. It works with any image orientation:
 RAS, LPS, or anything else.
 
 !!! note "Optional dependency"
@@ -231,7 +231,7 @@ display object:
 
 <!-- pytest-codeblocks:skip -->
 ```python
-# Just this — the GIF is displayed inline
+# Just this: the GIF is displayed inline
 image.to_gif()
 
 # Same for video

@@ -26,7 +26,7 @@ class MonaiAdapter(Transform):
     ``MapTransform``, e.g., ``NormalizeIntensityd``) and **array
     transforms** (e.g., ``NormalizeIntensity``) are supported.
 
-    Dictionary transforms operate on the full subject dictionary —
+    Dictionary transforms operate on the full subject dictionary:
     only the keys specified in the MONAI transform are modified.
 
     Array transforms are applied to each
@@ -42,7 +42,7 @@ class MonaiAdapter(Transform):
     Examples:
         >>> import torchio as tio
         >>> from monai.transforms import NormalizeIntensity
-        >>> # Array transform — applied to each ScalarImage
+        >>> # Array transform: applied to each ScalarImage
         >>> adapter = tio.MonaiAdapter(NormalizeIntensity())
         >>> result = adapter(subject)
         >>> # Inside a Compose pipeline
@@ -94,7 +94,7 @@ class MonaiAdapter(Transform):
         return unwrap(result)
 
     def apply_transform(self, batch: Any, params: dict[str, Any]) -> Any:
-        # Not used — MonaiAdapter overrides forward directly
+        # Not used: MonaiAdapter overrides forward directly
         return batch
 
     def _get_subject_images(self, subject: Subject) -> dict[str, Image]:
@@ -146,8 +146,8 @@ def _apply_array_transform(
     ):
         warnings.warn(
             "Applying a MONAI Randomizable array transform to multiple"
-            " images. Each image gets different random parameters —"
-            " use the dictionary version (e.g., RandFlipd) to keep"
+            " images. Each image gets different random parameters."
+            " Use the dictionary version (e.g., RandFlipd) to keep"
             " spatial alignment.",
             UserWarning,
             stacklevel=5,

@@ -58,7 +58,7 @@ class BoundingBoxFormat:
         BoundingBoxFormat(axes='RAS', representation='center_size')
     """
 
-    # Predefined convenience formats — set after the class body.
+    # Predefined convenience formats, set after the class body.
     IJKIJK: BoundingBoxFormat
     IJKWHD: BoundingBoxFormat
 
@@ -149,7 +149,7 @@ def _permute_corners(
         if flip:
             c1 = -corner1[:, col].clone()
             c2 = -corner2[:, col].clone()
-            # After negation the min/max may swap — ensure corner1 < corner2.
+            # After negation the min/max may swap, so ensure corner1 < corner2.
             corner1[:, col] = torch.min(c1, c2)
             corner2[:, col] = torch.max(c1, c2)
     return torch.cat([corner1, corner2], dim=-1)
@@ -183,7 +183,7 @@ def _ijk_corners_to_world(
     c2 = data[:, 3:]
     w1 = affine.apply(c1).to(torch.float32)
     w2 = affine.apply(c2).to(torch.float32)
-    # After affine, min/max might swap — normalize.
+    # After affine, min/max might swap, so normalize.
     lo = torch.min(w1, w2)
     hi = torch.max(w1, w2)
     return torch.cat([lo, hi], dim=-1)
@@ -354,11 +354,11 @@ class BoundingBoxes:
         # Step 2: axis conversion (now in corners).
         if src_axes != tgt_axes:
             if src_type == tgt_type:
-                # Same family — permute + flip.
+                # Same family: permute + flip.
                 perm, flips = get_axis_mapping(src_axes, tgt_axes)
                 data = _permute_corners(data, perm, flips)
             else:
-                # Cross-type — go through world coordinates.
+                # Cross-type: go through world coordinates.
                 data = self._cross_type_corners(
                     data,
                     src_axes,

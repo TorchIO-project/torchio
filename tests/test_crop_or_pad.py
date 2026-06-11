@@ -399,7 +399,7 @@ class TestRandomLocation:
         subject = _make_subject((10, 10, 10))
         result_center = tio.CropOrPad(target_shape=20, location="center")(subject)
         result_random = tio.CropOrPad(target_shape=20, location="random")(subject)
-        # Pure padding — both should produce the same result
+        # Pure padding: both should produce the same result
         torch.testing.assert_close(result_center.t1.data, result_random.t1.data)
 
     def test_random_mixed_crop_and_pad(self) -> None:

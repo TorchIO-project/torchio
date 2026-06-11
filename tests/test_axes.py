@@ -69,12 +69,12 @@ class TestValidateAxes:
             validate_axes("RRS")
 
     def test_same_pair_twice(self):
-        """R and L are from the same pair — invalid."""
+        """R and L are from the same pair (invalid)."""
         with pytest.raises(ValueError, match="Invalid"):
             validate_axes("RLS")
 
     def test_mixed_voxel_anatomical(self):
-        """I and J are voxel, R is anatomical — neither system matches."""
+        """I and J are voxel, R is anatomical: neither system matches."""
         with pytest.raises(ValueError, match="Invalid"):
             validate_axes("IJR")
 

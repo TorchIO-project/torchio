@@ -124,7 +124,7 @@ force-single-line = true
     "B018", # https://docs.astral.sh/ruff/rules/useless-expression/
 ]
 "src/torchio/data/bboxes.py" = [
-    "A002", # `format` parameter shadows builtin — canonical name for this concept
+    "A002", # `format` parameter shadows builtin: canonical name for this concept
 ]
 
 [tool.bumpversion]

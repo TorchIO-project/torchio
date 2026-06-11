@@ -2,7 +2,7 @@
 
 Backends provide a uniform interface for accessing image data without
 requiring full materialization into memory. The `Image` class uses backends
-internally — users interact with images via `.data` (materialized tensor)
+internally. Users interact with images via `.data` (materialized tensor)
 and `.dataobj` (lazy backend for advanced use like slicing).
 """
 

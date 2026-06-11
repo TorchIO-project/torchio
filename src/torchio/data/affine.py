@@ -163,7 +163,7 @@ class AffineMatrix:
             ``self`` (modified in-place).
         """
         with contextlib.suppress(TypeError):
-            # MPS doesn't support float64 — keep on CPU
+            # MPS doesn't support float64, so keep on CPU
             self._matrix = self._matrix.to(*args, **kwargs).to(torch.float64)
         return self
 

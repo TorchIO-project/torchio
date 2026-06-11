@@ -118,7 +118,7 @@ def _compute_crop_and_pad(
             random crop start position for axes that need cropping.
 
     Returns:
-        ``(padding_six, cropping_six)`` — either may be ``None`` when no
+        ``(padding_six, cropping_six)``: either may be ``None`` when no
         padding or cropping is needed (or when ``only_crop`` / ``only_pad``
         suppress it).
     """
@@ -260,7 +260,7 @@ def _get_images(
 
 
 def _crop_image_lazy(image: Image, cropping: TypeSixInts) -> Image:
-    """Crop an image lazily — data is only loaded when accessed."""
+    """Crop an image lazily (data is only loaded when accessed)."""
     i0, i1, j0, j1, k0, k1 = cropping
     c, si, sj, sk = image.shape
 
@@ -318,7 +318,7 @@ def _pad_image_lazy(
     padding_mode: str,
     fill: float,
 ) -> Image:
-    """Pad an image lazily — data is only loaded when accessed."""
+    """Pad an image lazily (data is only loaded when accessed)."""
     i0, i1, j0, j1, k0, k1 = padding
     c, si, sj, sk = image.shape
 
@@ -388,7 +388,7 @@ class CropOrPad(SpatialTransform):
     voxels at transform time using the image spacing.
 
     When the input is a ``Subject`` or ``Image``, the transform operates
-    lazily — data is not loaded from disk until it is actually accessed.
+    lazily (data is not loaded from disk until it is actually accessed).
 
     Args:
         target_shape: Desired spatial shape. A single ``int`` broadcasts
