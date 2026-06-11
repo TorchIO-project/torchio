@@ -1,7 +1,7 @@
 # Patch-based training
 
 For training on large 3D volumes that don't fit in GPU memory, TorchIO
-provides a [`Queue`][torchio.data.Queue] that loads subjects
+provides a [`Queue`](../reference/patches.md) that loads subjects
 in background threads, applies transforms, and extracts random patches
 into a buffer.
 

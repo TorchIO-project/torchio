@@ -70,7 +70,7 @@ If you use this library for your research, please cite our paper:
 
 - [MONAI](https://monai.readthedocs.io)
 - [Cornucopia](https://cornucopia.readthedocs.io/)
-- [batchgenerators](https://github.com/MIC-DKFZ/batchgenerators)[[v2](https://github.com/MIC-DKFZ/batchgeneratorsv2)]
+- [batchgenerators](https://github.com/MIC-DKFZ/batchgenerators) ([v2](https://github.com/MIC-DKFZ/batchgeneratorsv2))
 - [BatchAug](https://github.com/halleewong/batchaug)
 - [volumentations](https://github.com/ZFTurbo/volumentations) (low activity)
 - [Rising](https://rising.readthedocs.io) (archived)

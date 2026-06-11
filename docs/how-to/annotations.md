@@ -1,8 +1,8 @@
 # Add annotations to a Subject
 
-Use [`Points`][torchio.Points] and
-[`BoundingBoxes`][torchio.BoundingBoxes] to attach spatial annotations
-to a [`Subject`][torchio.Subject] alongside its images.
+Use [`Points`](../reference/points.md) and
+[`BoundingBoxes`](../reference/bboxes.md) to attach spatial annotations
+to a [`Subject`](../reference/subject.md) alongside its images.
 
 ## Landmarks and fiducials
 
