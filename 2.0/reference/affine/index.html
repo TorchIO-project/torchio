@@ -4302,12 +4302,12 @@ direction, and orientation. Composition uses the <code>@</code> operator.</p>
 <span class="normal"><a href="#__codelineno-0-248">248</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-20" name="__codelineno-0-20"></a><span class="k">class</span><span class="w"> </span><span class="nc">AffineMatrix</span><span class="p">:</span>
 <a id="__codelineno-0-21" name="__codelineno-0-21"></a><span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;$4 \times 4$ affine matrix mapping voxel indices to world coordinates.</span>
 <a id="__codelineno-0-22" name="__codelineno-0-22"></a>
-<a id="__codelineno-0-23" name="__codelineno-0-23"></a><span class="sd">    Stores the matrix as a ``torch.Tensor`` so it can live on the same</span>
+<a id="__codelineno-0-23" name="__codelineno-0-23"></a><span class="sd">    Stores the matrix as a `torch.Tensor` so it can live on the same</span>
 <a id="__codelineno-0-24" name="__codelineno-0-24"></a><span class="sd">    device as the image data. Named properties expose spacing, origin,</span>
-<a id="__codelineno-0-25" name="__codelineno-0-25"></a><span class="sd">    direction, and orientation. Composition uses the ``@`` operator.</span>
+<a id="__codelineno-0-25" name="__codelineno-0-25"></a><span class="sd">    direction, and orientation. Composition uses the `@` operator.</span>
 <a id="__codelineno-0-26" name="__codelineno-0-26"></a>
 <a id="__codelineno-0-27" name="__codelineno-0-27"></a><span class="sd">    Args:</span>
-<a id="__codelineno-0-28" name="__codelineno-0-28"></a><span class="sd">        matrix: $4 \times 4$ array-like, ``torch.Tensor``, or ``None``</span>
+<a id="__codelineno-0-28" name="__codelineno-0-28"></a><span class="sd">        matrix: $4 \times 4$ array-like, `torch.Tensor`, or `None`</span>
 <a id="__codelineno-0-29" name="__codelineno-0-29"></a><span class="sd">            (identity). NumPy arrays are converted to tensors.</span>
 <a id="__codelineno-0-30" name="__codelineno-0-30"></a>
 <a id="__codelineno-0-31" name="__codelineno-0-31"></a><span class="sd">    Examples:</span>
@@ -4442,7 +4442,7 @@ direction, and orientation. Composition uses the <code>@</code> operator.</p>
 <a id="__codelineno-0-160" name="__codelineno-0-160"></a><span class="sd">        that don&#39;t support float64 (e.g., MPS), it remains on CPU.</span>
 <a id="__codelineno-0-161" name="__codelineno-0-161"></a>
 <a id="__codelineno-0-162" name="__codelineno-0-162"></a><span class="sd">        Returns:</span>
-<a id="__codelineno-0-163" name="__codelineno-0-163"></a><span class="sd">            ``self`` (modified in-place).</span>
+<a id="__codelineno-0-163" name="__codelineno-0-163"></a><span class="sd">            `self` (modified in-place).</span>
 <a id="__codelineno-0-164" name="__codelineno-0-164"></a><span class="sd">        &quot;&quot;&quot;</span>
 <a id="__codelineno-0-165" name="__codelineno-0-165"></a>        <span class="k">with</span> <span class="n">contextlib</span><span class="o">.</span><span class="n">suppress</span><span class="p">(</span><span class="ne">TypeError</span><span class="p">):</span>
 <a id="__codelineno-0-166" name="__codelineno-0-166"></a>            <span class="c1"># MPS doesn&#39;t support float64, so keep on CPU</span>
@@ -4903,7 +4903,7 @@ that don't support float64 (e.g., MPS), it remains on CPU.</p>
 <a id="__codelineno-0-160" name="__codelineno-0-160"></a><span class="sd">    that don&#39;t support float64 (e.g., MPS), it remains on CPU.</span>
 <a id="__codelineno-0-161" name="__codelineno-0-161"></a>
 <a id="__codelineno-0-162" name="__codelineno-0-162"></a><span class="sd">    Returns:</span>
-<a id="__codelineno-0-163" name="__codelineno-0-163"></a><span class="sd">        ``self`` (modified in-place).</span>
+<a id="__codelineno-0-163" name="__codelineno-0-163"></a><span class="sd">        `self` (modified in-place).</span>
 <a id="__codelineno-0-164" name="__codelineno-0-164"></a><span class="sd">    &quot;&quot;&quot;</span>
 <a id="__codelineno-0-165" name="__codelineno-0-165"></a>    <span class="k">with</span> <span class="n">contextlib</span><span class="o">.</span><span class="n">suppress</span><span class="p">(</span><span class="ne">TypeError</span><span class="p">):</span>
 <a id="__codelineno-0-166" name="__codelineno-0-166"></a>        <span class="c1"># MPS doesn&#39;t support float64, so keep on CPU</span>

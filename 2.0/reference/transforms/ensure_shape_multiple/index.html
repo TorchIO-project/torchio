@@ -4066,13 +4066,13 @@ keyword arguments.</p>
 <a id="__codelineno-0-69" name="__codelineno-0-69"></a><span class="sd">        target_multiple: Tuple $(n_i, n_j, n_k)$ so that the output</span>
 <a id="__codelineno-0-70" name="__codelineno-0-70"></a><span class="sd">            size along axis $d$ is a multiple of $n_d$. If a single</span>
 <a id="__codelineno-0-71" name="__codelineno-0-71"></a><span class="sd">            value $n$ is provided, then $n_i = n_j = n_k = n$.</span>
-<a id="__codelineno-0-72" name="__codelineno-0-72"></a><span class="sd">        method: Either ``&#39;pad&#39;`` (default) to pad up to the next</span>
-<a id="__codelineno-0-73" name="__codelineno-0-73"></a><span class="sd">            multiple, or ``&#39;crop&#39;`` to crop down to the previous</span>
+<a id="__codelineno-0-72" name="__codelineno-0-72"></a><span class="sd">        method: Either `&#39;pad&#39;` (default) to pad up to the next</span>
+<a id="__codelineno-0-73" name="__codelineno-0-73"></a><span class="sd">            multiple, or `&#39;crop&#39;` to crop down to the previous</span>
 <a id="__codelineno-0-74" name="__codelineno-0-74"></a><span class="sd">            multiple.</span>
-<a id="__codelineno-0-75" name="__codelineno-0-75"></a><span class="sd">        padding_mode: Padding mode forwarded to ``CropOrPad`` when</span>
-<a id="__codelineno-0-76" name="__codelineno-0-76"></a><span class="sd">            ``method=&#39;pad&#39;``. One of ``&#39;constant&#39;``, ``&#39;reflect&#39;``,</span>
-<a id="__codelineno-0-77" name="__codelineno-0-77"></a><span class="sd">            ``&#39;replicate&#39;``, or ``&#39;circular&#39;``.</span>
-<a id="__codelineno-0-78" name="__codelineno-0-78"></a><span class="sd">        fill: Fill value when ``padding_mode=&#39;constant&#39;``.</span>
+<a id="__codelineno-0-75" name="__codelineno-0-75"></a><span class="sd">        padding_mode: Padding mode forwarded to `CropOrPad` when</span>
+<a id="__codelineno-0-76" name="__codelineno-0-76"></a><span class="sd">            `method=&#39;pad&#39;`. One of `&#39;constant&#39;`, `&#39;reflect&#39;`,</span>
+<a id="__codelineno-0-77" name="__codelineno-0-77"></a><span class="sd">            `&#39;replicate&#39;`, or `&#39;circular&#39;`.</span>
+<a id="__codelineno-0-78" name="__codelineno-0-78"></a><span class="sd">        fill: Fill value when `padding_mode=&#39;constant&#39;`.</span>
 <a id="__codelineno-0-79" name="__codelineno-0-79"></a><span class="sd">        **kwargs: See [`Transform`][torchio.Transform] for additional</span>
 <a id="__codelineno-0-80" name="__codelineno-0-80"></a><span class="sd">            keyword arguments.</span>
 <a id="__codelineno-0-81" name="__codelineno-0-81"></a>
@@ -4105,7 +4105,7 @@ keyword arguments.</p>
 <a id="__codelineno-0-108" name="__codelineno-0-108"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
 <a id="__codelineno-0-109" name="__codelineno-0-109"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Apply the transform.</span>
 <a id="__codelineno-0-110" name="__codelineno-0-110"></a>
-<a id="__codelineno-0-111" name="__codelineno-0-111"></a><span class="sd">        For ``Subject`` and ``Image`` inputs, delegates to ``CropOrPad``</span>
+<a id="__codelineno-0-111" name="__codelineno-0-111"></a><span class="sd">        For `Subject` and `Image` inputs, delegates to `CropOrPad`</span>
 <a id="__codelineno-0-112" name="__codelineno-0-112"></a><span class="sd">        for lazy operation without loading data from disk.</span>
 <a id="__codelineno-0-113" name="__codelineno-0-113"></a><span class="sd">        &quot;&quot;&quot;</span>
 <a id="__codelineno-0-114" name="__codelineno-0-114"></a>        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="p">(</span><span class="n">Subject</span><span class="p">,</span> <span class="n">Image</span><span class="p">)):</span>
@@ -4306,7 +4306,7 @@ the given parameters.</p>
 <a id="__codelineno-0-254" name="__codelineno-0-254"></a><span class="sd">        params: The parameters recorded in the forward pass.</span>
 <a id="__codelineno-0-255" name="__codelineno-0-255"></a>
 <a id="__codelineno-0-256" name="__codelineno-0-256"></a><span class="sd">    Returns:</span>
-<a id="__codelineno-0-257" name="__codelineno-0-257"></a><span class="sd">        A new ``Transform`` instance that inverts this one.</span>
+<a id="__codelineno-0-257" name="__codelineno-0-257"></a><span class="sd">        A new `Transform` instance that inverts this one.</span>
 <a id="__codelineno-0-258" name="__codelineno-0-258"></a><span class="sd">    &quot;&quot;&quot;</span>
 <a id="__codelineno-0-259" name="__codelineno-0-259"></a>    <span class="n">msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2"> is not invertible&quot;</span>
 <a id="__codelineno-0-260" name="__codelineno-0-260"></a>    <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
@@ -4386,11 +4386,11 @@ class name and only non-default field values included.</p>
 <span class="normal"><a href="#__codelineno-0-297">297</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-271" name="__codelineno-0-271"></a><span class="k">def</span><span class="w"> </span><span class="nf">to_hydra</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
 <a id="__codelineno-0-272" name="__codelineno-0-272"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Export as a Hydra-compatible config dict.</span>
 <a id="__codelineno-0-273" name="__codelineno-0-273"></a>
-<a id="__codelineno-0-274" name="__codelineno-0-274"></a><span class="sd">    Returns a dict with ``_target_`` set to the fully qualified</span>
+<a id="__codelineno-0-274" name="__codelineno-0-274"></a><span class="sd">    Returns a dict with `_target_` set to the fully qualified</span>
 <a id="__codelineno-0-275" name="__codelineno-0-275"></a><span class="sd">    class name and only non-default field values included.</span>
 <a id="__codelineno-0-276" name="__codelineno-0-276"></a>
 <a id="__codelineno-0-277" name="__codelineno-0-277"></a><span class="sd">    Returns:</span>
-<a id="__codelineno-0-278" name="__codelineno-0-278"></a><span class="sd">        Dict suitable for ``hydra.utils.instantiate()``.</span>
+<a id="__codelineno-0-278" name="__codelineno-0-278"></a><span class="sd">        Dict suitable for `hydra.utils.instantiate()`.</span>
 <a id="__codelineno-0-279" name="__codelineno-0-279"></a><span class="sd">    &quot;&quot;&quot;</span>
 <a id="__codelineno-0-280" name="__codelineno-0-280"></a>    <span class="kn">from</span><span class="w"> </span><span class="nn">.parameter_range</span><span class="w"> </span><span class="kn">import</span> <span class="n">ParameterRange</span>
 <a id="__codelineno-0-281" name="__codelineno-0-281"></a>
@@ -4445,7 +4445,7 @@ for lazy operation without loading data from disk.</p>
 <span class="normal"><a href="#__codelineno-0-116">116</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-108" name="__codelineno-0-108"></a><span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
 <a id="__codelineno-0-109" name="__codelineno-0-109"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Apply the transform.</span>
 <a id="__codelineno-0-110" name="__codelineno-0-110"></a>
-<a id="__codelineno-0-111" name="__codelineno-0-111"></a><span class="sd">    For ``Subject`` and ``Image`` inputs, delegates to ``CropOrPad``</span>
+<a id="__codelineno-0-111" name="__codelineno-0-111"></a><span class="sd">    For `Subject` and `Image` inputs, delegates to `CropOrPad`</span>
 <a id="__codelineno-0-112" name="__codelineno-0-112"></a><span class="sd">    for lazy operation without loading data from disk.</span>
 <a id="__codelineno-0-113" name="__codelineno-0-113"></a><span class="sd">    &quot;&quot;&quot;</span>
 <a id="__codelineno-0-114" name="__codelineno-0-114"></a>    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="p">(</span><span class="n">Subject</span><span class="p">,</span> <span class="n">Image</span><span class="p">)):</span>

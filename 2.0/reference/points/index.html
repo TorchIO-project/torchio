@@ -4282,14 +4282,14 @@ systems like <code>"RAS"</code> or <code>"LPI"</code>) via
 <a id="__codelineno-0-23" name="__codelineno-0-23"></a><span class="sd">    Stores an $(N, 3)$ tensor of coordinates alongside an affine matrix</span>
 <a id="__codelineno-0-24" name="__codelineno-0-24"></a><span class="sd">    and an axis string describing the coordinate system.</span>
 <a id="__codelineno-0-25" name="__codelineno-0-25"></a>
-<a id="__codelineno-0-26" name="__codelineno-0-26"></a><span class="sd">    The default axis convention is ``&quot;IJK&quot;`` (voxel indices). Points can</span>
+<a id="__codelineno-0-26" name="__codelineno-0-26"></a><span class="sd">    The default axis convention is `&quot;IJK&quot;` (voxel indices). Points can</span>
 <a id="__codelineno-0-27" name="__codelineno-0-27"></a><span class="sd">    be converted to any other axis convention (including anatomical</span>
-<a id="__codelineno-0-28" name="__codelineno-0-28"></a><span class="sd">    systems like ``&quot;RAS&quot;`` or ``&quot;LPI&quot;``) via</span>
+<a id="__codelineno-0-28" name="__codelineno-0-28"></a><span class="sd">    systems like `&quot;RAS&quot;` or `&quot;LPI&quot;`) via</span>
 <a id="__codelineno-0-29" name="__codelineno-0-29"></a><span class="sd">    [`to_axes`][torchio.data.points.Points.to_axes].</span>
 <a id="__codelineno-0-30" name="__codelineno-0-30"></a>
 <a id="__codelineno-0-31" name="__codelineno-0-31"></a><span class="sd">    Args:</span>
 <a id="__codelineno-0-32" name="__codelineno-0-32"></a><span class="sd">        data: $(N, 3)$ tensor or array of point coordinates.</span>
-<a id="__codelineno-0-33" name="__codelineno-0-33"></a><span class="sd">        axes: 3-character axis string (default ``&quot;IJK&quot;``).</span>
+<a id="__codelineno-0-33" name="__codelineno-0-33"></a><span class="sd">        axes: 3-character axis string (default `&quot;IJK&quot;`).</span>
 <a id="__codelineno-0-34" name="__codelineno-0-34"></a><span class="sd">        affine: $4 \\times 4$ affine matrix. Identity if not given.</span>
 <a id="__codelineno-0-35" name="__codelineno-0-35"></a><span class="sd">        metadata: Arbitrary metadata dict.</span>
 <a id="__codelineno-0-36" name="__codelineno-0-36"></a>
@@ -4343,7 +4343,7 @@ systems like <code>"RAS"</code> or <code>"LPI"</code>) via
 <a id="__codelineno-0-84" name="__codelineno-0-84"></a>
 <a id="__codelineno-0-85" name="__codelineno-0-85"></a>    <span class="nd">@property</span>
 <a id="__codelineno-0-86" name="__codelineno-0-86"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">axes</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<a id="__codelineno-0-87" name="__codelineno-0-87"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;3-character axis string (e.g., ``&#39;IJK&#39;``, ``&#39;RAS&#39;``).&quot;&quot;&quot;</span>
+<a id="__codelineno-0-87" name="__codelineno-0-87"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;3-character axis string (e.g., `&#39;IJK&#39;`, `&#39;RAS&#39;`).&quot;&quot;&quot;</span>
 <a id="__codelineno-0-88" name="__codelineno-0-88"></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_axes</span>
 <a id="__codelineno-0-89" name="__codelineno-0-89"></a>
 <a id="__codelineno-0-90" name="__codelineno-0-90"></a>    <span class="nd">@property</span>
@@ -4370,7 +4370,7 @@ systems like <code>"RAS"</code> or <code>"LPI"</code>) via
 <a id="__codelineno-0-111" name="__codelineno-0-111"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Move point data to a device and/or cast to a dtype.</span>
 <a id="__codelineno-0-112" name="__codelineno-0-112"></a>
 <a id="__codelineno-0-113" name="__codelineno-0-113"></a><span class="sd">        Returns:</span>
-<a id="__codelineno-0-114" name="__codelineno-0-114"></a><span class="sd">            ``self`` (modified in-place).</span>
+<a id="__codelineno-0-114" name="__codelineno-0-114"></a><span class="sd">            `self` (modified in-place).</span>
 <a id="__codelineno-0-115" name="__codelineno-0-115"></a><span class="sd">        &quot;&quot;&quot;</span>
 <a id="__codelineno-0-116" name="__codelineno-0-116"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 <a id="__codelineno-0-117" name="__codelineno-0-117"></a>        <span class="k">return</span> <span class="bp">self</span>
@@ -4380,9 +4380,9 @@ systems like <code>"RAS"</code> or <code>"LPI"</code>) via
 <a id="__codelineno-0-121" name="__codelineno-0-121"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">to_world</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tensor</span><span class="p">:</span>
 <a id="__codelineno-0-122" name="__codelineno-0-122"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Transform points from voxel to world coordinates.</span>
 <a id="__codelineno-0-123" name="__codelineno-0-123"></a>
-<a id="__codelineno-0-124" name="__codelineno-0-124"></a><span class="sd">        Equivalent to ``self.to_axes(orientation)`` where *orientation*</span>
+<a id="__codelineno-0-124" name="__codelineno-0-124"></a><span class="sd">        Equivalent to `self.to_axes(orientation)` where *orientation*</span>
 <a id="__codelineno-0-125" name="__codelineno-0-125"></a><span class="sd">        is the anatomical orientation of the affine, but returns a raw</span>
-<a id="__codelineno-0-126" name="__codelineno-0-126"></a><span class="sd">        tensor instead of a new ``Points`` object.</span>
+<a id="__codelineno-0-126" name="__codelineno-0-126"></a><span class="sd">        tensor instead of a new `Points` object.</span>
 <a id="__codelineno-0-127" name="__codelineno-0-127"></a>
 <a id="__codelineno-0-128" name="__codelineno-0-128"></a><span class="sd">        Returns:</span>
 <a id="__codelineno-0-129" name="__codelineno-0-129"></a><span class="sd">            $(N, 3)$ tensor in world (mm) coordinates.</span>
@@ -4400,7 +4400,7 @@ systems like <code>"RAS"</code> or <code>"LPI"</code>) via
 <a id="__codelineno-0-141" name="__codelineno-0-141"></a><span class="sd">            target: Target axis string.</span>
 <a id="__codelineno-0-142" name="__codelineno-0-142"></a>
 <a id="__codelineno-0-143" name="__codelineno-0-143"></a><span class="sd">        Returns:</span>
-<a id="__codelineno-0-144" name="__codelineno-0-144"></a><span class="sd">            New ``Points`` in the target axis convention.</span>
+<a id="__codelineno-0-144" name="__codelineno-0-144"></a><span class="sd">            New `Points` in the target axis convention.</span>
 <a id="__codelineno-0-145" name="__codelineno-0-145"></a><span class="sd">        &quot;&quot;&quot;</span>
 <a id="__codelineno-0-146" name="__codelineno-0-146"></a>        <span class="n">target</span> <span class="o">=</span> <span class="n">validate_axes</span><span class="p">(</span><span class="n">target</span><span class="p">)</span>
 <a id="__codelineno-0-147" name="__codelineno-0-147"></a>        <span class="k">if</span> <span class="n">target</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">_axes</span><span class="p">:</span>
@@ -4427,7 +4427,7 @@ systems like <code>"RAS"</code> or <code>"LPI"</code>) via
 <a id="__codelineno-0-168" name="__codelineno-0-168"></a>
 <a id="__codelineno-0-169" name="__codelineno-0-169"></a><span class="sd">        Args:</span>
 <a id="__codelineno-0-170" name="__codelineno-0-170"></a><span class="sd">            data: New $(N, 3)$ coordinates.</span>
-<a id="__codelineno-0-171" name="__codelineno-0-171"></a><span class="sd">            affine: New affine. If ``None``, uses ``self.affine``.</span>
+<a id="__codelineno-0-171" name="__codelineno-0-171"></a><span class="sd">            affine: New affine. If `None`, uses `self.affine`.</span>
 <a id="__codelineno-0-172" name="__codelineno-0-172"></a><span class="sd">        &quot;&quot;&quot;</span>
 <a id="__codelineno-0-173" name="__codelineno-0-173"></a>        <span class="n">new_affine</span> <span class="o">=</span> <span class="p">(</span>
 <a id="__codelineno-0-174" name="__codelineno-0-174"></a>            <span class="bp">self</span><span class="o">.</span><span class="n">_parse_affine</span><span class="p">(</span><span class="n">affine</span><span class="p">)</span> <span class="k">if</span> <span class="n">affine</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">_affine</span><span class="o">.</span><span class="n">clone</span><span class="p">()</span>
@@ -4718,7 +4718,7 @@ systems like <code>"RAS"</code> or <code>"LPI"</code>) via
 <a id="__codelineno-0-111" name="__codelineno-0-111"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Move point data to a device and/or cast to a dtype.</span>
 <a id="__codelineno-0-112" name="__codelineno-0-112"></a>
 <a id="__codelineno-0-113" name="__codelineno-0-113"></a><span class="sd">    Returns:</span>
-<a id="__codelineno-0-114" name="__codelineno-0-114"></a><span class="sd">        ``self`` (modified in-place).</span>
+<a id="__codelineno-0-114" name="__codelineno-0-114"></a><span class="sd">        `self` (modified in-place).</span>
 <a id="__codelineno-0-115" name="__codelineno-0-115"></a><span class="sd">    &quot;&quot;&quot;</span>
 <a id="__codelineno-0-116" name="__codelineno-0-116"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 <a id="__codelineno-0-117" name="__codelineno-0-117"></a>    <span class="k">return</span> <span class="bp">self</span>
@@ -4783,9 +4783,9 @@ tensor instead of a new <code>Points</code> object.</p>
 <span class="normal"><a href="#__codelineno-0-131">131</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-121" name="__codelineno-0-121"></a><span class="k">def</span><span class="w"> </span><span class="nf">to_world</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tensor</span><span class="p">:</span>
 <a id="__codelineno-0-122" name="__codelineno-0-122"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Transform points from voxel to world coordinates.</span>
 <a id="__codelineno-0-123" name="__codelineno-0-123"></a>
-<a id="__codelineno-0-124" name="__codelineno-0-124"></a><span class="sd">    Equivalent to ``self.to_axes(orientation)`` where *orientation*</span>
+<a id="__codelineno-0-124" name="__codelineno-0-124"></a><span class="sd">    Equivalent to `self.to_axes(orientation)` where *orientation*</span>
 <a id="__codelineno-0-125" name="__codelineno-0-125"></a><span class="sd">    is the anatomical orientation of the affine, but returns a raw</span>
-<a id="__codelineno-0-126" name="__codelineno-0-126"></a><span class="sd">    tensor instead of a new ``Points`` object.</span>
+<a id="__codelineno-0-126" name="__codelineno-0-126"></a><span class="sd">    tensor instead of a new `Points` object.</span>
 <a id="__codelineno-0-127" name="__codelineno-0-127"></a>
 <a id="__codelineno-0-128" name="__codelineno-0-128"></a><span class="sd">    Returns:</span>
 <a id="__codelineno-0-129" name="__codelineno-0-129"></a><span class="sd">        $(N, 3)$ tensor in world (mm) coordinates.</span>
@@ -4907,7 +4907,7 @@ anatomical ↔ anatomical) and cross-type conversions
 <a id="__codelineno-0-141" name="__codelineno-0-141"></a><span class="sd">        target: Target axis string.</span>
 <a id="__codelineno-0-142" name="__codelineno-0-142"></a>
 <a id="__codelineno-0-143" name="__codelineno-0-143"></a><span class="sd">    Returns:</span>
-<a id="__codelineno-0-144" name="__codelineno-0-144"></a><span class="sd">        New ``Points`` in the target axis convention.</span>
+<a id="__codelineno-0-144" name="__codelineno-0-144"></a><span class="sd">        New `Points` in the target axis convention.</span>
 <a id="__codelineno-0-145" name="__codelineno-0-145"></a><span class="sd">    &quot;&quot;&quot;</span>
 <a id="__codelineno-0-146" name="__codelineno-0-146"></a>    <span class="n">target</span> <span class="o">=</span> <span class="n">validate_axes</span><span class="p">(</span><span class="n">target</span><span class="p">)</span>
 <a id="__codelineno-0-147" name="__codelineno-0-147"></a>    <span class="k">if</span> <span class="n">target</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">_axes</span><span class="p">:</span>
@@ -5022,7 +5022,7 @@ anatomical ↔ anatomical) and cross-type conversions
 <a id="__codelineno-0-168" name="__codelineno-0-168"></a>
 <a id="__codelineno-0-169" name="__codelineno-0-169"></a><span class="sd">    Args:</span>
 <a id="__codelineno-0-170" name="__codelineno-0-170"></a><span class="sd">        data: New $(N, 3)$ coordinates.</span>
-<a id="__codelineno-0-171" name="__codelineno-0-171"></a><span class="sd">        affine: New affine. If ``None``, uses ``self.affine``.</span>
+<a id="__codelineno-0-171" name="__codelineno-0-171"></a><span class="sd">        affine: New affine. If `None`, uses `self.affine`.</span>
 <a id="__codelineno-0-172" name="__codelineno-0-172"></a><span class="sd">    &quot;&quot;&quot;</span>
 <a id="__codelineno-0-173" name="__codelineno-0-173"></a>    <span class="n">new_affine</span> <span class="o">=</span> <span class="p">(</span>
 <a id="__codelineno-0-174" name="__codelineno-0-174"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_parse_affine</span><span class="p">(</span><span class="n">affine</span><span class="p">)</span> <span class="k">if</span> <span class="n">affine</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">_affine</span><span class="o">.</span><span class="n">clone</span><span class="p">()</span>

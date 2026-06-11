@@ -4056,7 +4056,7 @@ of standard-space landmark values, as returned by
 <a id="__codelineno-0-176" name="__codelineno-0-176"></a><span class="sd">    [`compute_histogram_landmarks`][torchio.transforms.histogram_standardization.compute_histogram_landmarks]</span>
 <a id="__codelineno-0-177" name="__codelineno-0-177"></a><span class="sd">    and are passed directly to this transform.  Each instance targets</span>
 <a id="__codelineno-0-178" name="__codelineno-0-178"></a><span class="sd">    **one modality**; for multi-modal subjects, compose multiple</span>
-<a id="__codelineno-0-179" name="__codelineno-0-179"></a><span class="sd">    instances with the ``include`` parameter:</span>
+<a id="__codelineno-0-179" name="__codelineno-0-179"></a><span class="sd">    instances with the `include` parameter:</span>
 <a id="__codelineno-0-180" name="__codelineno-0-180"></a>
 <a id="__codelineno-0-181" name="__codelineno-0-181"></a><span class="sd">    ```python</span>
 <a id="__codelineno-0-182" name="__codelineno-0-182"></a><span class="sd">    tio.Compose([</span>
@@ -4066,7 +4066,7 @@ of standard-space landmark values, as returned by
 <a id="__codelineno-0-186" name="__codelineno-0-186"></a><span class="sd">    ```</span>
 <a id="__codelineno-0-187" name="__codelineno-0-187"></a>
 <a id="__codelineno-0-188" name="__codelineno-0-188"></a><span class="sd">    Args:</span>
-<a id="__codelineno-0-189" name="__codelineno-0-189"></a><span class="sd">        landmarks: 1-D tensor (or path to a ``.npy`` / ``.pt`` file)</span>
+<a id="__codelineno-0-189" name="__codelineno-0-189"></a><span class="sd">        landmarks: 1-D tensor (or path to a `.npy` / `.pt` file)</span>
 <a id="__codelineno-0-190" name="__codelineno-0-190"></a><span class="sd">            of standard-space landmark values, as returned by</span>
 <a id="__codelineno-0-191" name="__codelineno-0-191"></a><span class="sd">            [`compute_histogram_landmarks`][torchio.transforms.histogram_standardization.compute_histogram_landmarks].</span>
 <a id="__codelineno-0-192" name="__codelineno-0-192"></a><span class="sd">        cutoff: Lower and upper quantile bounds.</span>
@@ -4367,7 +4367,7 @@ the given parameters.</p>
 <a id="__codelineno-0-254" name="__codelineno-0-254"></a><span class="sd">        params: The parameters recorded in the forward pass.</span>
 <a id="__codelineno-0-255" name="__codelineno-0-255"></a>
 <a id="__codelineno-0-256" name="__codelineno-0-256"></a><span class="sd">    Returns:</span>
-<a id="__codelineno-0-257" name="__codelineno-0-257"></a><span class="sd">        A new ``Transform`` instance that inverts this one.</span>
+<a id="__codelineno-0-257" name="__codelineno-0-257"></a><span class="sd">        A new `Transform` instance that inverts this one.</span>
 <a id="__codelineno-0-258" name="__codelineno-0-258"></a><span class="sd">    &quot;&quot;&quot;</span>
 <a id="__codelineno-0-259" name="__codelineno-0-259"></a>    <span class="n">msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2"> is not invertible&quot;</span>
 <a id="__codelineno-0-260" name="__codelineno-0-260"></a>    <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
@@ -4447,11 +4447,11 @@ class name and only non-default field values included.</p>
 <span class="normal"><a href="#__codelineno-0-297">297</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-271" name="__codelineno-0-271"></a><span class="k">def</span><span class="w"> </span><span class="nf">to_hydra</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
 <a id="__codelineno-0-272" name="__codelineno-0-272"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Export as a Hydra-compatible config dict.</span>
 <a id="__codelineno-0-273" name="__codelineno-0-273"></a>
-<a id="__codelineno-0-274" name="__codelineno-0-274"></a><span class="sd">    Returns a dict with ``_target_`` set to the fully qualified</span>
+<a id="__codelineno-0-274" name="__codelineno-0-274"></a><span class="sd">    Returns a dict with `_target_` set to the fully qualified</span>
 <a id="__codelineno-0-275" name="__codelineno-0-275"></a><span class="sd">    class name and only non-default field values included.</span>
 <a id="__codelineno-0-276" name="__codelineno-0-276"></a>
 <a id="__codelineno-0-277" name="__codelineno-0-277"></a><span class="sd">    Returns:</span>
-<a id="__codelineno-0-278" name="__codelineno-0-278"></a><span class="sd">        Dict suitable for ``hydra.utils.instantiate()``.</span>
+<a id="__codelineno-0-278" name="__codelineno-0-278"></a><span class="sd">        Dict suitable for `hydra.utils.instantiate()`.</span>
 <a id="__codelineno-0-279" name="__codelineno-0-279"></a><span class="sd">    &quot;&quot;&quot;</span>
 <a id="__codelineno-0-280" name="__codelineno-0-280"></a>    <span class="kn">from</span><span class="w"> </span><span class="nn">.parameter_range</span><span class="w"> </span><span class="kn">import</span> <span class="n">ParameterRange</span>
 <a id="__codelineno-0-281" name="__codelineno-0-281"></a>
@@ -4784,15 +4784,15 @@ computation.  <code>None</code> uses all voxels.</p>
 <a id="__codelineno-0-64" name="__codelineno-0-64"></a><span class="sd">        images: Training images.  Each element can be a</span>
 <a id="__codelineno-0-65" name="__codelineno-0-65"></a><span class="sd">            [`ScalarImage`][torchio.ScalarImage], a file path, or a</span>
 <a id="__codelineno-0-66" name="__codelineno-0-66"></a><span class="sd">            string path.</span>
-<a id="__codelineno-0-67" name="__codelineno-0-67"></a><span class="sd">        quantiles: Quantile positions in ``[0, 1]`` used as control</span>
+<a id="__codelineno-0-67" name="__codelineno-0-67"></a><span class="sd">        quantiles: Quantile positions in `[0, 1]` used as control</span>
 <a id="__codelineno-0-68" name="__codelineno-0-68"></a><span class="sd">            points.  Must be sorted and include the cutoff endpoints.</span>
-<a id="__codelineno-0-69" name="__codelineno-0-69"></a><span class="sd">            ``None`` uses the default 13-point scheme (v1-compatible).</span>
+<a id="__codelineno-0-69" name="__codelineno-0-69"></a><span class="sd">            `None` uses the default 13-point scheme (v1-compatible).</span>
 <a id="__codelineno-0-70" name="__codelineno-0-70"></a><span class="sd">        cutoff: Lower and upper quantile bounds for the intensity</span>
-<a id="__codelineno-0-71" name="__codelineno-0-71"></a><span class="sd">            range of interest.  Defaults to ``(0.01, 0.99)``.</span>
+<a id="__codelineno-0-71" name="__codelineno-0-71"></a><span class="sd">            range of interest.  Defaults to `(0.01, 0.99)`.</span>
 <a id="__codelineno-0-72" name="__codelineno-0-72"></a><span class="sd">        masking_method: Optional callable that takes a 4-D tensor</span>
-<a id="__codelineno-0-73" name="__codelineno-0-73"></a><span class="sd">            ``(C, I, J, K)`` and returns a boolean mask of the same</span>
-<a id="__codelineno-0-74" name="__codelineno-0-74"></a><span class="sd">            shape.  Only ``True`` voxels are used for percentile</span>
-<a id="__codelineno-0-75" name="__codelineno-0-75"></a><span class="sd">            computation.  ``None`` uses all voxels.</span>
+<a id="__codelineno-0-73" name="__codelineno-0-73"></a><span class="sd">            `(C, I, J, K)` and returns a boolean mask of the same</span>
+<a id="__codelineno-0-74" name="__codelineno-0-74"></a><span class="sd">            shape.  Only `True` voxels are used for percentile</span>
+<a id="__codelineno-0-75" name="__codelineno-0-75"></a><span class="sd">            computation.  `None` uses all voxels.</span>
 <a id="__codelineno-0-76" name="__codelineno-0-76"></a>
 <a id="__codelineno-0-77" name="__codelineno-0-77"></a><span class="sd">    Returns:</span>
 <a id="__codelineno-0-78" name="__codelineno-0-78"></a><span class="sd">        1-D tensor of landmark values, one per quantile.</span>

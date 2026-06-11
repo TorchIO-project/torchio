@@ -3968,13 +3968,13 @@ image orientation is not known.</p>
 <a id="__codelineno-0-73" name="__codelineno-0-73"></a><span class="sd">    Args:</span>
 <a id="__codelineno-0-74" name="__codelineno-0-74"></a><span class="sd">        axes: Index or tuple of indices of the spatial dimensions along</span>
 <a id="__codelineno-0-75" name="__codelineno-0-75"></a><span class="sd">            which the image might be flipped. Integers must be in</span>
-<a id="__codelineno-0-76" name="__codelineno-0-76"></a><span class="sd">            ``{0, 1, 2}``. Anatomical labels may also be used, such as</span>
-<a id="__codelineno-0-77" name="__codelineno-0-77"></a><span class="sd">            ``&#39;Left&#39;``, ``&#39;Right&#39;``, ``&#39;Anterior&#39;``, ``&#39;Posterior&#39;``,</span>
-<a id="__codelineno-0-78" name="__codelineno-0-78"></a><span class="sd">            ``&#39;Inferior&#39;``, ``&#39;Superior&#39;``. Only the first letter of</span>
+<a id="__codelineno-0-76" name="__codelineno-0-76"></a><span class="sd">            `{0, 1, 2}`. Anatomical labels may also be used, such as</span>
+<a id="__codelineno-0-77" name="__codelineno-0-77"></a><span class="sd">            `&#39;Left&#39;`, `&#39;Right&#39;`, `&#39;Anterior&#39;`, `&#39;Posterior&#39;`,</span>
+<a id="__codelineno-0-78" name="__codelineno-0-78"></a><span class="sd">            `&#39;Inferior&#39;`, `&#39;Superior&#39;`. Only the first letter of</span>
 <a id="__codelineno-0-79" name="__codelineno-0-79"></a><span class="sd">            the string is used. Anatomical labels are resolved using</span>
 <a id="__codelineno-0-80" name="__codelineno-0-80"></a><span class="sd">            the image orientation.</span>
 <a id="__codelineno-0-81" name="__codelineno-0-81"></a><span class="sd">        flip_probability: Probability that each axis will be flipped</span>
-<a id="__codelineno-0-82" name="__codelineno-0-82"></a><span class="sd">            (per-axis coin flip). This is independent of the ``p``</span>
+<a id="__codelineno-0-82" name="__codelineno-0-82"></a><span class="sd">            (per-axis coin flip). This is independent of the `p`</span>
 <a id="__codelineno-0-83" name="__codelineno-0-83"></a><span class="sd">            parameter, which gates the entire transform.</span>
 <a id="__codelineno-0-84" name="__codelineno-0-84"></a><span class="sd">        **kwargs: See [`Transform`][torchio.Transform] for additional</span>
 <a id="__codelineno-0-85" name="__codelineno-0-85"></a><span class="sd">            keyword arguments.</span>
@@ -4254,11 +4254,11 @@ class name and only non-default field values included.</p>
 <span class="normal"><a href="#__codelineno-0-297">297</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-271" name="__codelineno-0-271"></a><span class="k">def</span><span class="w"> </span><span class="nf">to_hydra</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
 <a id="__codelineno-0-272" name="__codelineno-0-272"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Export as a Hydra-compatible config dict.</span>
 <a id="__codelineno-0-273" name="__codelineno-0-273"></a>
-<a id="__codelineno-0-274" name="__codelineno-0-274"></a><span class="sd">    Returns a dict with ``_target_`` set to the fully qualified</span>
+<a id="__codelineno-0-274" name="__codelineno-0-274"></a><span class="sd">    Returns a dict with `_target_` set to the fully qualified</span>
 <a id="__codelineno-0-275" name="__codelineno-0-275"></a><span class="sd">    class name and only non-default field values included.</span>
 <a id="__codelineno-0-276" name="__codelineno-0-276"></a>
 <a id="__codelineno-0-277" name="__codelineno-0-277"></a><span class="sd">    Returns:</span>
-<a id="__codelineno-0-278" name="__codelineno-0-278"></a><span class="sd">        Dict suitable for ``hydra.utils.instantiate()``.</span>
+<a id="__codelineno-0-278" name="__codelineno-0-278"></a><span class="sd">        Dict suitable for `hydra.utils.instantiate()`.</span>
 <a id="__codelineno-0-279" name="__codelineno-0-279"></a><span class="sd">    &quot;&quot;&quot;</span>
 <a id="__codelineno-0-280" name="__codelineno-0-280"></a>    <span class="kn">from</span><span class="w"> </span><span class="nn">.parameter_range</span><span class="w"> </span><span class="kn">import</span> <span class="n">ParameterRange</span>
 <a id="__codelineno-0-281" name="__codelineno-0-281"></a>

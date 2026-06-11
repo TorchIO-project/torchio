@@ -4005,19 +4005,19 @@ serializable.</p>
 <a id="__codelineno-0-23" name="__codelineno-0-23"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Wrap a MONAI transform for use in TorchIO pipelines.</span>
 <a id="__codelineno-0-24" name="__codelineno-0-24"></a>
 <a id="__codelineno-0-25" name="__codelineno-0-25"></a><span class="sd">    Both **dictionary transforms** (subclasses of MONAI&#39;s</span>
-<a id="__codelineno-0-26" name="__codelineno-0-26"></a><span class="sd">    ``MapTransform``, e.g., ``NormalizeIntensityd``) and **array</span>
-<a id="__codelineno-0-27" name="__codelineno-0-27"></a><span class="sd">    transforms** (e.g., ``NormalizeIntensity``) are supported.</span>
+<a id="__codelineno-0-26" name="__codelineno-0-26"></a><span class="sd">    `MapTransform`, e.g., `NormalizeIntensityd`) and **array</span>
+<a id="__codelineno-0-27" name="__codelineno-0-27"></a><span class="sd">    transforms** (e.g., `NormalizeIntensity`) are supported.</span>
 <a id="__codelineno-0-28" name="__codelineno-0-28"></a>
 <a id="__codelineno-0-29" name="__codelineno-0-29"></a><span class="sd">    Dictionary transforms operate on the full subject dictionary:</span>
 <a id="__codelineno-0-30" name="__codelineno-0-30"></a><span class="sd">    only the keys specified in the MONAI transform are modified.</span>
 <a id="__codelineno-0-31" name="__codelineno-0-31"></a>
 <a id="__codelineno-0-32" name="__codelineno-0-32"></a><span class="sd">    Array transforms are applied to each</span>
 <a id="__codelineno-0-33" name="__codelineno-0-33"></a><span class="sd">    [`ScalarImage`][torchio.ScalarImage] in the subject individually,</span>
-<a id="__codelineno-0-34" name="__codelineno-0-34"></a><span class="sd">    respecting the ``include`` / ``exclude`` parameters.</span>
+<a id="__codelineno-0-34" name="__codelineno-0-34"></a><span class="sd">    respecting the `include` / `exclude` parameters.</span>
 <a id="__codelineno-0-35" name="__codelineno-0-35"></a>
 <a id="__codelineno-0-36" name="__codelineno-0-36"></a><span class="sd">    Args:</span>
 <a id="__codelineno-0-37" name="__codelineno-0-37"></a><span class="sd">        monai_transform: A MONAI transform or any callable. Requires</span>
-<a id="__codelineno-0-38" name="__codelineno-0-38"></a><span class="sd">            MONAI to be installed: ``pip install torchio[monai]``.</span>
+<a id="__codelineno-0-38" name="__codelineno-0-38"></a><span class="sd">            MONAI to be installed: `pip install torchio[monai]`.</span>
 <a id="__codelineno-0-39" name="__codelineno-0-39"></a><span class="sd">        **kwargs: See [`Transform`][torchio.Transform] for additional</span>
 <a id="__codelineno-0-40" name="__codelineno-0-40"></a><span class="sd">            keyword arguments.</span>
 <a id="__codelineno-0-41" name="__codelineno-0-41"></a>
@@ -4034,7 +4034,7 @@ serializable.</p>
 <a id="__codelineno-0-52" name="__codelineno-0-52"></a><span class="sd">        ... ])</span>
 <a id="__codelineno-0-53" name="__codelineno-0-53"></a>
 <a id="__codelineno-0-54" name="__codelineno-0-54"></a><span class="sd">    Note:</span>
-<a id="__codelineno-0-55" name="__codelineno-0-55"></a><span class="sd">        ``MonaiAdapter`` does **not** record itself in the subject&#39;s</span>
+<a id="__codelineno-0-55" name="__codelineno-0-55"></a><span class="sd">        `MonaiAdapter` does **not** record itself in the subject&#39;s</span>
 <a id="__codelineno-0-56" name="__codelineno-0-56"></a><span class="sd">        transform history, because MONAI transform objects are not</span>
 <a id="__codelineno-0-57" name="__codelineno-0-57"></a><span class="sd">        serializable.</span>
 <a id="__codelineno-0-58" name="__codelineno-0-58"></a><span class="sd">    &quot;&quot;&quot;</span>
@@ -4215,7 +4215,7 @@ serializable.</p>
 <a id="__codelineno-0-210" name="__codelineno-0-210"></a><span class="sd">    Override in subclasses that have random behavior.</span>
 <a id="__codelineno-0-211" name="__codelineno-0-211"></a>
 <a id="__codelineno-0-212" name="__codelineno-0-212"></a><span class="sd">    Args:</span>
-<a id="__codelineno-0-213" name="__codelineno-0-213"></a><span class="sd">        batch: A ``SubjectsBatch``.</span>
+<a id="__codelineno-0-213" name="__codelineno-0-213"></a><span class="sd">        batch: A `SubjectsBatch`.</span>
 <a id="__codelineno-0-214" name="__codelineno-0-214"></a>
 <a id="__codelineno-0-215" name="__codelineno-0-215"></a><span class="sd">    Returns:</span>
 <a id="__codelineno-0-216" name="__codelineno-0-216"></a><span class="sd">        Dict of sampled parameters.</span>
@@ -4325,7 +4325,7 @@ the given parameters.</p>
 <a id="__codelineno-0-254" name="__codelineno-0-254"></a><span class="sd">        params: The parameters recorded in the forward pass.</span>
 <a id="__codelineno-0-255" name="__codelineno-0-255"></a>
 <a id="__codelineno-0-256" name="__codelineno-0-256"></a><span class="sd">    Returns:</span>
-<a id="__codelineno-0-257" name="__codelineno-0-257"></a><span class="sd">        A new ``Transform`` instance that inverts this one.</span>
+<a id="__codelineno-0-257" name="__codelineno-0-257"></a><span class="sd">        A new `Transform` instance that inverts this one.</span>
 <a id="__codelineno-0-258" name="__codelineno-0-258"></a><span class="sd">    &quot;&quot;&quot;</span>
 <a id="__codelineno-0-259" name="__codelineno-0-259"></a>    <span class="n">msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2"> is not invertible&quot;</span>
 <a id="__codelineno-0-260" name="__codelineno-0-260"></a>    <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
@@ -4405,11 +4405,11 @@ class name and only non-default field values included.</p>
 <span class="normal"><a href="#__codelineno-0-297">297</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-271" name="__codelineno-0-271"></a><span class="k">def</span><span class="w"> </span><span class="nf">to_hydra</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
 <a id="__codelineno-0-272" name="__codelineno-0-272"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Export as a Hydra-compatible config dict.</span>
 <a id="__codelineno-0-273" name="__codelineno-0-273"></a>
-<a id="__codelineno-0-274" name="__codelineno-0-274"></a><span class="sd">    Returns a dict with ``_target_`` set to the fully qualified</span>
+<a id="__codelineno-0-274" name="__codelineno-0-274"></a><span class="sd">    Returns a dict with `_target_` set to the fully qualified</span>
 <a id="__codelineno-0-275" name="__codelineno-0-275"></a><span class="sd">    class name and only non-default field values included.</span>
 <a id="__codelineno-0-276" name="__codelineno-0-276"></a>
 <a id="__codelineno-0-277" name="__codelineno-0-277"></a><span class="sd">    Returns:</span>
-<a id="__codelineno-0-278" name="__codelineno-0-278"></a><span class="sd">        Dict suitable for ``hydra.utils.instantiate()``.</span>
+<a id="__codelineno-0-278" name="__codelineno-0-278"></a><span class="sd">        Dict suitable for `hydra.utils.instantiate()`.</span>
 <a id="__codelineno-0-279" name="__codelineno-0-279"></a><span class="sd">    &quot;&quot;&quot;</span>
 <a id="__codelineno-0-280" name="__codelineno-0-280"></a>    <span class="kn">from</span><span class="w"> </span><span class="nn">.parameter_range</span><span class="w"> </span><span class="kn">import</span> <span class="n">ParameterRange</span>
 <a id="__codelineno-0-281" name="__codelineno-0-281"></a>

@@ -3967,8 +3967,8 @@ are no zeros in the input, zero will appear in the output.</p>
 <span class="normal"><a href="#__codelineno-0-74">74</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-14" name="__codelineno-0-14"></a><span class="k">class</span><span class="w"> </span><span class="nc">SequentialLabels</span><span class="p">(</span><span class="n">Transform</span><span class="p">):</span>
 <a id="__codelineno-0-15" name="__codelineno-0-15"></a><span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Renumber labels in label maps to consecutive integers starting from 0.</span>
 <a id="__codelineno-0-16" name="__codelineno-0-16"></a>
-<a id="__codelineno-0-17" name="__codelineno-0-17"></a><span class="sd">    For example, if a label map has values ``{0, 5, 10}``, this</span>
-<a id="__codelineno-0-18" name="__codelineno-0-18"></a><span class="sd">    transform remaps them to ``{0, 1, 2}``.</span>
+<a id="__codelineno-0-17" name="__codelineno-0-17"></a><span class="sd">    For example, if a label map has values `{0, 5, 10}`, this</span>
+<a id="__codelineno-0-18" name="__codelineno-0-18"></a><span class="sd">    transform remaps them to `{0, 1, 2}`.</span>
 <a id="__codelineno-0-19" name="__codelineno-0-19"></a>
 <a id="__codelineno-0-20" name="__codelineno-0-20"></a><span class="sd">    Only [`LabelMap`][torchio.LabelMap] images are affected.</span>
 <a id="__codelineno-0-21" name="__codelineno-0-21"></a>
@@ -4257,11 +4257,11 @@ class name and only non-default field values included.</p>
 <span class="normal"><a href="#__codelineno-0-297">297</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-271" name="__codelineno-0-271"></a><span class="k">def</span><span class="w"> </span><span class="nf">to_hydra</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
 <a id="__codelineno-0-272" name="__codelineno-0-272"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Export as a Hydra-compatible config dict.</span>
 <a id="__codelineno-0-273" name="__codelineno-0-273"></a>
-<a id="__codelineno-0-274" name="__codelineno-0-274"></a><span class="sd">    Returns a dict with ``_target_`` set to the fully qualified</span>
+<a id="__codelineno-0-274" name="__codelineno-0-274"></a><span class="sd">    Returns a dict with `_target_` set to the fully qualified</span>
 <a id="__codelineno-0-275" name="__codelineno-0-275"></a><span class="sd">    class name and only non-default field values included.</span>
 <a id="__codelineno-0-276" name="__codelineno-0-276"></a>
 <a id="__codelineno-0-277" name="__codelineno-0-277"></a><span class="sd">    Returns:</span>
-<a id="__codelineno-0-278" name="__codelineno-0-278"></a><span class="sd">        Dict suitable for ``hydra.utils.instantiate()``.</span>
+<a id="__codelineno-0-278" name="__codelineno-0-278"></a><span class="sd">        Dict suitable for `hydra.utils.instantiate()`.</span>
 <a id="__codelineno-0-279" name="__codelineno-0-279"></a><span class="sd">    &quot;&quot;&quot;</span>
 <a id="__codelineno-0-280" name="__codelineno-0-280"></a>    <span class="kn">from</span><span class="w"> </span><span class="nn">.parameter_range</span><span class="w"> </span><span class="kn">import</span> <span class="n">ParameterRange</span>
 <a id="__codelineno-0-281" name="__codelineno-0-281"></a>

@@ -4127,14 +4127,14 @@ normalization.</p>
 <a id="__codelineno-0-27" name="__codelineno-0-27"></a>
 <a id="__codelineno-0-28" name="__codelineno-0-28"></a><span class="sd">    Args:</span>
 <a id="__codelineno-0-29" name="__codelineno-0-29"></a><span class="sd">        num_components: Number of principal components to keep.</span>
-<a id="__codelineno-0-30" name="__codelineno-0-30"></a><span class="sd">        whiten: If ``True``, normalize each component to unit</span>
+<a id="__codelineno-0-30" name="__codelineno-0-30"></a><span class="sd">        whiten: If `True`, normalize each component to unit</span>
 <a id="__codelineno-0-31" name="__codelineno-0-31"></a><span class="sd">            variance.</span>
-<a id="__codelineno-0-32" name="__codelineno-0-32"></a><span class="sd">        normalize: If ``True``, divide all components by the</span>
+<a id="__codelineno-0-32" name="__codelineno-0-32"></a><span class="sd">        normalize: If `True`, divide all components by the</span>
 <a id="__codelineno-0-33" name="__codelineno-0-33"></a><span class="sd">            standard deviation of the first component.</span>
 <a id="__codelineno-0-34" name="__codelineno-0-34"></a><span class="sd">        values_range: Linear mapping range for normalization to</span>
 <a id="__codelineno-0-35" name="__codelineno-0-35"></a><span class="sd">            $[0, 1]$.  The default $(-2.3, 2.3)$ covers</span>
 <a id="__codelineno-0-36" name="__codelineno-0-36"></a><span class="sd">            $\approx 99\%$ of a standard normal distribution.</span>
-<a id="__codelineno-0-37" name="__codelineno-0-37"></a><span class="sd">        clip: If ``True``, clip output to $[0, 1]$ after</span>
+<a id="__codelineno-0-37" name="__codelineno-0-37"></a><span class="sd">        clip: If `True`, clip output to $[0, 1]$ after</span>
 <a id="__codelineno-0-38" name="__codelineno-0-38"></a><span class="sd">            normalization.</span>
 <a id="__codelineno-0-39" name="__codelineno-0-39"></a><span class="sd">        **kwargs: See [`Transform`][torchio.Transform].</span>
 <a id="__codelineno-0-40" name="__codelineno-0-40"></a>
@@ -4181,7 +4181,7 @@ normalization.</p>
 <a id="__codelineno-0-81" name="__codelineno-0-81"></a>        <span class="k">return</span> <span class="n">batch</span>
 <a id="__codelineno-0-82" name="__codelineno-0-82"></a>
 <a id="__codelineno-0-83" name="__codelineno-0-83"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">_pca_single</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tensor</span><span class="p">:</span> <span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tensor</span><span class="p">:</span>
-<a id="__codelineno-0-84" name="__codelineno-0-84"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Apply PCA to a single ``(C, I, J, K)`` tensor.</span>
+<a id="__codelineno-0-84" name="__codelineno-0-84"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Apply PCA to a single `(C, I, J, K)` tensor.</span>
 <a id="__codelineno-0-85" name="__codelineno-0-85"></a>
 <a id="__codelineno-0-86" name="__codelineno-0-86"></a><span class="sd">        Args:</span>
 <a id="__codelineno-0-87" name="__codelineno-0-87"></a><span class="sd">            tensor: Input with *C* channels.</span>
@@ -4498,7 +4498,7 @@ the given parameters.</p>
 <a id="__codelineno-0-254" name="__codelineno-0-254"></a><span class="sd">        params: The parameters recorded in the forward pass.</span>
 <a id="__codelineno-0-255" name="__codelineno-0-255"></a>
 <a id="__codelineno-0-256" name="__codelineno-0-256"></a><span class="sd">    Returns:</span>
-<a id="__codelineno-0-257" name="__codelineno-0-257"></a><span class="sd">        A new ``Transform`` instance that inverts this one.</span>
+<a id="__codelineno-0-257" name="__codelineno-0-257"></a><span class="sd">        A new `Transform` instance that inverts this one.</span>
 <a id="__codelineno-0-258" name="__codelineno-0-258"></a><span class="sd">    &quot;&quot;&quot;</span>
 <a id="__codelineno-0-259" name="__codelineno-0-259"></a>    <span class="n">msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2"> is not invertible&quot;</span>
 <a id="__codelineno-0-260" name="__codelineno-0-260"></a>    <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
@@ -4578,11 +4578,11 @@ class name and only non-default field values included.</p>
 <span class="normal"><a href="#__codelineno-0-297">297</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-271" name="__codelineno-0-271"></a><span class="k">def</span><span class="w"> </span><span class="nf">to_hydra</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
 <a id="__codelineno-0-272" name="__codelineno-0-272"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Export as a Hydra-compatible config dict.</span>
 <a id="__codelineno-0-273" name="__codelineno-0-273"></a>
-<a id="__codelineno-0-274" name="__codelineno-0-274"></a><span class="sd">    Returns a dict with ``_target_`` set to the fully qualified</span>
+<a id="__codelineno-0-274" name="__codelineno-0-274"></a><span class="sd">    Returns a dict with `_target_` set to the fully qualified</span>
 <a id="__codelineno-0-275" name="__codelineno-0-275"></a><span class="sd">    class name and only non-default field values included.</span>
 <a id="__codelineno-0-276" name="__codelineno-0-276"></a>
 <a id="__codelineno-0-277" name="__codelineno-0-277"></a><span class="sd">    Returns:</span>
-<a id="__codelineno-0-278" name="__codelineno-0-278"></a><span class="sd">        Dict suitable for ``hydra.utils.instantiate()``.</span>
+<a id="__codelineno-0-278" name="__codelineno-0-278"></a><span class="sd">        Dict suitable for `hydra.utils.instantiate()`.</span>
 <a id="__codelineno-0-279" name="__codelineno-0-279"></a><span class="sd">    &quot;&quot;&quot;</span>
 <a id="__codelineno-0-280" name="__codelineno-0-280"></a>    <span class="kn">from</span><span class="w"> </span><span class="nn">.parameter_range</span><span class="w"> </span><span class="kn">import</span> <span class="n">ParameterRange</span>
 <a id="__codelineno-0-281" name="__codelineno-0-281"></a>

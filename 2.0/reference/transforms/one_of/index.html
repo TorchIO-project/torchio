@@ -3928,7 +3928,7 @@ keyword arguments.</p>
 <a id="__codelineno-0-80" name="__codelineno-0-80"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Apply one of the given transforms, chosen at random.</span>
 <a id="__codelineno-0-81" name="__codelineno-0-81"></a>
 <a id="__codelineno-0-82" name="__codelineno-0-82"></a><span class="sd">    Args:</span>
-<a id="__codelineno-0-83" name="__codelineno-0-83"></a><span class="sd">        transforms: Sequence of transforms, or a ``dict`` mapping</span>
+<a id="__codelineno-0-83" name="__codelineno-0-83"></a><span class="sd">        transforms: Sequence of transforms, or a `dict` mapping</span>
 <a id="__codelineno-0-84" name="__codelineno-0-84"></a><span class="sd">            transforms to their relative weights. If a sequence is</span>
 <a id="__codelineno-0-85" name="__codelineno-0-85"></a><span class="sd">            given, all transforms have equal probability.</span>
 <a id="__codelineno-0-86" name="__codelineno-0-86"></a><span class="sd">        **kwargs: See [`Transform`][torchio.Transform] for additional</span>
@@ -4102,7 +4102,7 @@ keyword arguments.</p>
 <a id="__codelineno-0-210" name="__codelineno-0-210"></a><span class="sd">    Override in subclasses that have random behavior.</span>
 <a id="__codelineno-0-211" name="__codelineno-0-211"></a>
 <a id="__codelineno-0-212" name="__codelineno-0-212"></a><span class="sd">    Args:</span>
-<a id="__codelineno-0-213" name="__codelineno-0-213"></a><span class="sd">        batch: A ``SubjectsBatch``.</span>
+<a id="__codelineno-0-213" name="__codelineno-0-213"></a><span class="sd">        batch: A `SubjectsBatch`.</span>
 <a id="__codelineno-0-214" name="__codelineno-0-214"></a>
 <a id="__codelineno-0-215" name="__codelineno-0-215"></a><span class="sd">    Returns:</span>
 <a id="__codelineno-0-216" name="__codelineno-0-216"></a><span class="sd">        Dict of sampled parameters.</span>
@@ -4230,17 +4230,17 @@ whose <code>ImagesBatch</code> entries contain 5D tensors
 <a id="__codelineno-0-224" name="__codelineno-0-224"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SubjectsBatch</span><span class="p">:</span>
 <a id="__codelineno-0-225" name="__codelineno-0-225"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Apply the transform with the given parameters.</span>
 <a id="__codelineno-0-226" name="__codelineno-0-226"></a>
-<a id="__codelineno-0-227" name="__codelineno-0-227"></a><span class="sd">    Must be overridden by subclasses. Receives a ``SubjectsBatch``</span>
-<a id="__codelineno-0-228" name="__codelineno-0-228"></a><span class="sd">    whose ``ImagesBatch`` entries contain 5D tensors</span>
-<a id="__codelineno-0-229" name="__codelineno-0-229"></a><span class="sd">    ``(B, C, I, J, K)``. Use negative indexing (``-3``, ``-2``,</span>
-<a id="__codelineno-0-230" name="__codelineno-0-230"></a><span class="sd">    ``-1``) for spatial dims.</span>
+<a id="__codelineno-0-227" name="__codelineno-0-227"></a><span class="sd">    Must be overridden by subclasses. Receives a `SubjectsBatch`</span>
+<a id="__codelineno-0-228" name="__codelineno-0-228"></a><span class="sd">    whose `ImagesBatch` entries contain 5D tensors</span>
+<a id="__codelineno-0-229" name="__codelineno-0-229"></a><span class="sd">    `(B, C, I, J, K)`. Use negative indexing (`-3`, `-2`,</span>
+<a id="__codelineno-0-230" name="__codelineno-0-230"></a><span class="sd">    `-1`) for spatial dims.</span>
 <a id="__codelineno-0-231" name="__codelineno-0-231"></a>
 <a id="__codelineno-0-232" name="__codelineno-0-232"></a><span class="sd">    Args:</span>
-<a id="__codelineno-0-233" name="__codelineno-0-233"></a><span class="sd">        batch: A ``SubjectsBatch`` to transform.</span>
-<a id="__codelineno-0-234" name="__codelineno-0-234"></a><span class="sd">        params: Parameters from ``make_params``.</span>
+<a id="__codelineno-0-233" name="__codelineno-0-233"></a><span class="sd">        batch: A `SubjectsBatch` to transform.</span>
+<a id="__codelineno-0-234" name="__codelineno-0-234"></a><span class="sd">        params: Parameters from `make_params`.</span>
 <a id="__codelineno-0-235" name="__codelineno-0-235"></a>
 <a id="__codelineno-0-236" name="__codelineno-0-236"></a><span class="sd">    Returns:</span>
-<a id="__codelineno-0-237" name="__codelineno-0-237"></a><span class="sd">        Transformed ``SubjectsBatch``.</span>
+<a id="__codelineno-0-237" name="__codelineno-0-237"></a><span class="sd">        Transformed `SubjectsBatch`.</span>
 <a id="__codelineno-0-238" name="__codelineno-0-238"></a><span class="sd">    &quot;&quot;&quot;</span>
 <a id="__codelineno-0-239" name="__codelineno-0-239"></a>    <span class="k">raise</span> <span class="ne">NotImplementedError</span>
 </code></pre></div></td></tr></table></div>
@@ -4347,7 +4347,7 @@ the given parameters.</p>
 <a id="__codelineno-0-254" name="__codelineno-0-254"></a><span class="sd">        params: The parameters recorded in the forward pass.</span>
 <a id="__codelineno-0-255" name="__codelineno-0-255"></a>
 <a id="__codelineno-0-256" name="__codelineno-0-256"></a><span class="sd">    Returns:</span>
-<a id="__codelineno-0-257" name="__codelineno-0-257"></a><span class="sd">        A new ``Transform`` instance that inverts this one.</span>
+<a id="__codelineno-0-257" name="__codelineno-0-257"></a><span class="sd">        A new `Transform` instance that inverts this one.</span>
 <a id="__codelineno-0-258" name="__codelineno-0-258"></a><span class="sd">    &quot;&quot;&quot;</span>
 <a id="__codelineno-0-259" name="__codelineno-0-259"></a>    <span class="n">msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2"> is not invertible&quot;</span>
 <a id="__codelineno-0-260" name="__codelineno-0-260"></a>    <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>

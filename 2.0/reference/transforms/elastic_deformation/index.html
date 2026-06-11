@@ -4060,7 +4060,7 @@ Default: <code>7.5</code> mm.</p>
 <a id="__codelineno-0-609" name="__codelineno-0-609"></a><span class="sd">        control_points: See [`Spatial`][torchio.Spatial].</span>
 <a id="__codelineno-0-610" name="__codelineno-0-610"></a><span class="sd">        num_control_points: See [`Spatial`][torchio.Spatial].</span>
 <a id="__codelineno-0-611" name="__codelineno-0-611"></a><span class="sd">        max_displacement: See [`Spatial`][torchio.Spatial].</span>
-<a id="__codelineno-0-612" name="__codelineno-0-612"></a><span class="sd">            Default: ``7.5`` mm.</span>
+<a id="__codelineno-0-612" name="__codelineno-0-612"></a><span class="sd">            Default: `7.5` mm.</span>
 <a id="__codelineno-0-613" name="__codelineno-0-613"></a><span class="sd">        locked_borders: See [`Spatial`][torchio.Spatial].</span>
 <a id="__codelineno-0-614" name="__codelineno-0-614"></a><span class="sd">        image_interpolation: See [`Spatial`][torchio.Spatial].</span>
 <a id="__codelineno-0-615" name="__codelineno-0-615"></a><span class="sd">        label_interpolation: See [`Spatial`][torchio.Spatial].</span>
@@ -4385,7 +4385,7 @@ image in the batch.</p>
 <a id="__codelineno-0-283" name="__codelineno-0-283"></a><span class="sd">    image in the batch.</span>
 <a id="__codelineno-0-284" name="__codelineno-0-284"></a>
 <a id="__codelineno-0-285" name="__codelineno-0-285"></a><span class="sd">    Returns:</span>
-<a id="__codelineno-0-286" name="__codelineno-0-286"></a><span class="sd">        Dict of serializable parameters for ``apply_transform`` and</span>
+<a id="__codelineno-0-286" name="__codelineno-0-286"></a><span class="sd">        Dict of serializable parameters for `apply_transform` and</span>
 <a id="__codelineno-0-287" name="__codelineno-0-287"></a><span class="sd">        history replay.</span>
 <a id="__codelineno-0-288" name="__codelineno-0-288"></a><span class="sd">    &quot;&quot;&quot;</span>
 <a id="__codelineno-0-289" name="__codelineno-0-289"></a>    <span class="n">images</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_images</span><span class="p">(</span><span class="n">batch</span><span class="p">)</span>
@@ -4511,7 +4511,7 @@ image in the batch.</p>
 <a id="__codelineno-0-353" name="__codelineno-0-353"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Apply the spatial mapping to every selected image in *batch*.</span>
 <a id="__codelineno-0-354" name="__codelineno-0-354"></a>
 <a id="__codelineno-0-355" name="__codelineno-0-355"></a><span class="sd">    The sampling grid is built once from the parameters produced by</span>
-<a id="__codelineno-0-356" name="__codelineno-0-356"></a><span class="sd">    ``make_params`` and reused for all images and all batch samples.</span>
+<a id="__codelineno-0-356" name="__codelineno-0-356"></a><span class="sd">    `make_params` and reused for all images and all batch samples.</span>
 <a id="__codelineno-0-357" name="__codelineno-0-357"></a><span class="sd">    &quot;&quot;&quot;</span>
 <a id="__codelineno-0-358" name="__codelineno-0-358"></a>    <span class="n">selected_images</span> <span class="o">=</span> <span class="n">params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;selected_images&quot;</span><span class="p">,</span> <span class="p">[])</span>
 <a id="__codelineno-0-359" name="__codelineno-0-359"></a>    <span class="k">if</span> <span class="ow">not</span> <span class="n">selected_images</span><span class="p">:</span>
@@ -4660,14 +4660,14 @@ run in the opposite order.</p>
 <a id="__codelineno-0-390" name="__codelineno-0-390"></a>
 <a id="__codelineno-0-391" name="__codelineno-0-391"></a><span class="sd">    The affine component is inverted exactly.  The elastic component</span>
 <a id="__codelineno-0-392" name="__codelineno-0-392"></a><span class="sd">    is approximated by negating the sampled displacement field.  The</span>
-<a id="__codelineno-0-393" name="__codelineno-0-393"></a><span class="sd">    ``affine_first`` flag is flipped so that the inverse operations</span>
+<a id="__codelineno-0-393" name="__codelineno-0-393"></a><span class="sd">    `affine_first` flag is flipped so that the inverse operations</span>
 <a id="__codelineno-0-394" name="__codelineno-0-394"></a><span class="sd">    run in the opposite order.</span>
 <a id="__codelineno-0-395" name="__codelineno-0-395"></a>
 <a id="__codelineno-0-396" name="__codelineno-0-396"></a><span class="sd">    Args:</span>
-<a id="__codelineno-0-397" name="__codelineno-0-397"></a><span class="sd">        params: The parameter dict produced by ``make_params``.</span>
+<a id="__codelineno-0-397" name="__codelineno-0-397"></a><span class="sd">        params: The parameter dict produced by `make_params`.</span>
 <a id="__codelineno-0-398" name="__codelineno-0-398"></a>
 <a id="__codelineno-0-399" name="__codelineno-0-399"></a><span class="sd">    Returns:</span>
-<a id="__codelineno-0-400" name="__codelineno-0-400"></a><span class="sd">        A ``_SpatialInverse`` that resamples back to the original grid.</span>
+<a id="__codelineno-0-400" name="__codelineno-0-400"></a><span class="sd">        A `_SpatialInverse` that resamples back to the original grid.</span>
 <a id="__codelineno-0-401" name="__codelineno-0-401"></a><span class="sd">    &quot;&quot;&quot;</span>
 <a id="__codelineno-0-402" name="__codelineno-0-402"></a>    <span class="n">affine_matrix</span> <span class="o">=</span> <span class="n">_deserialize_matrix</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;affine_matrix&quot;</span><span class="p">])</span>
 <a id="__codelineno-0-403" name="__codelineno-0-403"></a>    <span class="n">inverse_affine</span> <span class="o">=</span> <span class="kc">None</span>
@@ -4770,11 +4770,11 @@ class name and only non-default field values included.</p>
 <span class="normal"><a href="#__codelineno-0-297">297</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-271" name="__codelineno-0-271"></a><span class="k">def</span><span class="w"> </span><span class="nf">to_hydra</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
 <a id="__codelineno-0-272" name="__codelineno-0-272"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Export as a Hydra-compatible config dict.</span>
 <a id="__codelineno-0-273" name="__codelineno-0-273"></a>
-<a id="__codelineno-0-274" name="__codelineno-0-274"></a><span class="sd">    Returns a dict with ``_target_`` set to the fully qualified</span>
+<a id="__codelineno-0-274" name="__codelineno-0-274"></a><span class="sd">    Returns a dict with `_target_` set to the fully qualified</span>
 <a id="__codelineno-0-275" name="__codelineno-0-275"></a><span class="sd">    class name and only non-default field values included.</span>
 <a id="__codelineno-0-276" name="__codelineno-0-276"></a>
 <a id="__codelineno-0-277" name="__codelineno-0-277"></a><span class="sd">    Returns:</span>
-<a id="__codelineno-0-278" name="__codelineno-0-278"></a><span class="sd">        Dict suitable for ``hydra.utils.instantiate()``.</span>
+<a id="__codelineno-0-278" name="__codelineno-0-278"></a><span class="sd">        Dict suitable for `hydra.utils.instantiate()`.</span>
 <a id="__codelineno-0-279" name="__codelineno-0-279"></a><span class="sd">    &quot;&quot;&quot;</span>
 <a id="__codelineno-0-280" name="__codelineno-0-280"></a>    <span class="kn">from</span><span class="w"> </span><span class="nn">.parameter_range</span><span class="w"> </span><span class="kn">import</span> <span class="n">ParameterRange</span>
 <a id="__codelineno-0-281" name="__codelineno-0-281"></a>

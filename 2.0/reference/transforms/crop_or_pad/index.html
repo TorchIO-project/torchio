@@ -4242,28 +4242,28 @@ keyword arguments.</p>
 <a id="__codelineno-0-387" name="__codelineno-0-387"></a><span class="sd">    or centimetres. When physical units are used, the target is converted to</span>
 <a id="__codelineno-0-388" name="__codelineno-0-388"></a><span class="sd">    voxels at transform time using the image spacing.</span>
 <a id="__codelineno-0-389" name="__codelineno-0-389"></a>
-<a id="__codelineno-0-390" name="__codelineno-0-390"></a><span class="sd">    When the input is a ``Subject`` or ``Image``, the transform operates</span>
+<a id="__codelineno-0-390" name="__codelineno-0-390"></a><span class="sd">    When the input is a `Subject` or `Image`, the transform operates</span>
 <a id="__codelineno-0-391" name="__codelineno-0-391"></a><span class="sd">    lazily (data is not loaded from disk until it is actually accessed).</span>
 <a id="__codelineno-0-392" name="__codelineno-0-392"></a>
 <a id="__codelineno-0-393" name="__codelineno-0-393"></a><span class="sd">    Args:</span>
-<a id="__codelineno-0-394" name="__codelineno-0-394"></a><span class="sd">        target_shape: Desired spatial shape. A single ``int`` broadcasts</span>
-<a id="__codelineno-0-395" name="__codelineno-0-395"></a><span class="sd">            to all three axes. When ``units`` is ``&quot;mm&quot;`` or ``&quot;cm&quot;``,</span>
+<a id="__codelineno-0-394" name="__codelineno-0-394"></a><span class="sd">        target_shape: Desired spatial shape. A single `int` broadcasts</span>
+<a id="__codelineno-0-395" name="__codelineno-0-395"></a><span class="sd">            to all three axes. When `units` is `&quot;mm&quot;` or `&quot;cm&quot;`,</span>
 <a id="__codelineno-0-396" name="__codelineno-0-396"></a><span class="sd">            values may be floats representing the physical extent along</span>
-<a id="__codelineno-0-397" name="__codelineno-0-397"></a><span class="sd">            each axis. Use ``None`` for an axis to leave it unchanged,</span>
-<a id="__codelineno-0-398" name="__codelineno-0-398"></a><span class="sd">            e.g., ``(256, 256, None)``.</span>
-<a id="__codelineno-0-399" name="__codelineno-0-399"></a><span class="sd">        units: Coordinate system for ``target_shape``. One of</span>
-<a id="__codelineno-0-400" name="__codelineno-0-400"></a><span class="sd">            ``&quot;voxels&quot;`` (default), ``&quot;mm&quot;``, or ``&quot;cm&quot;``.</span>
-<a id="__codelineno-0-401" name="__codelineno-0-401"></a><span class="sd">        padding_mode: One of ``&#39;constant&#39;``, ``&#39;reflect&#39;``,</span>
-<a id="__codelineno-0-402" name="__codelineno-0-402"></a><span class="sd">            ``&#39;replicate&#39;``, or ``&#39;circular&#39;``. See</span>
+<a id="__codelineno-0-397" name="__codelineno-0-397"></a><span class="sd">            each axis. Use `None` for an axis to leave it unchanged,</span>
+<a id="__codelineno-0-398" name="__codelineno-0-398"></a><span class="sd">            e.g., `(256, 256, None)`.</span>
+<a id="__codelineno-0-399" name="__codelineno-0-399"></a><span class="sd">        units: Coordinate system for `target_shape`. One of</span>
+<a id="__codelineno-0-400" name="__codelineno-0-400"></a><span class="sd">            `&quot;voxels&quot;` (default), `&quot;mm&quot;`, or `&quot;cm&quot;`.</span>
+<a id="__codelineno-0-401" name="__codelineno-0-401"></a><span class="sd">        padding_mode: One of `&#39;constant&#39;`, `&#39;reflect&#39;`,</span>
+<a id="__codelineno-0-402" name="__codelineno-0-402"></a><span class="sd">            `&#39;replicate&#39;`, or `&#39;circular&#39;`. See</span>
 <a id="__codelineno-0-403" name="__codelineno-0-403"></a><span class="sd">            [`torch.nn.functional.pad`](https://pytorch.org/docs/stable/generated/torch.nn.functional.pad.html).</span>
-<a id="__codelineno-0-404" name="__codelineno-0-404"></a><span class="sd">        fill: Fill value when ``padding_mode=&#39;constant&#39;``.</span>
-<a id="__codelineno-0-405" name="__codelineno-0-405"></a><span class="sd">        only_crop: If ``True``, padding is never applied. Mutually</span>
-<a id="__codelineno-0-406" name="__codelineno-0-406"></a><span class="sd">            exclusive with ``only_pad``.</span>
-<a id="__codelineno-0-407" name="__codelineno-0-407"></a><span class="sd">        only_pad: If ``True``, cropping is never applied. Mutually</span>
-<a id="__codelineno-0-408" name="__codelineno-0-408"></a><span class="sd">            exclusive with ``only_crop``.</span>
+<a id="__codelineno-0-404" name="__codelineno-0-404"></a><span class="sd">        fill: Fill value when `padding_mode=&#39;constant&#39;`.</span>
+<a id="__codelineno-0-405" name="__codelineno-0-405"></a><span class="sd">        only_crop: If `True`, padding is never applied. Mutually</span>
+<a id="__codelineno-0-406" name="__codelineno-0-406"></a><span class="sd">            exclusive with `only_pad`.</span>
+<a id="__codelineno-0-407" name="__codelineno-0-407"></a><span class="sd">        only_pad: If `True`, cropping is never applied. Mutually</span>
+<a id="__codelineno-0-408" name="__codelineno-0-408"></a><span class="sd">            exclusive with `only_crop`.</span>
 <a id="__codelineno-0-409" name="__codelineno-0-409"></a><span class="sd">        location: Where to place the crop window when the image is</span>
-<a id="__codelineno-0-410" name="__codelineno-0-410"></a><span class="sd">            larger than the target. ``&quot;center&quot;`` (default) centres the</span>
-<a id="__codelineno-0-411" name="__codelineno-0-411"></a><span class="sd">            window; ``&quot;random&quot;`` picks a uniformly random position.</span>
+<a id="__codelineno-0-410" name="__codelineno-0-410"></a><span class="sd">            larger than the target. `&quot;center&quot;` (default) centres the</span>
+<a id="__codelineno-0-411" name="__codelineno-0-411"></a><span class="sd">            window; `&quot;random&quot;` picks a uniformly random position.</span>
 <a id="__codelineno-0-412" name="__codelineno-0-412"></a><span class="sd">            Padding is always centred regardless of this parameter.</span>
 <a id="__codelineno-0-413" name="__codelineno-0-413"></a><span class="sd">        **kwargs: See [`Transform`][torchio.Transform] for additional</span>
 <a id="__codelineno-0-414" name="__codelineno-0-414"></a><span class="sd">            keyword arguments.</span>
@@ -4312,9 +4312,9 @@ keyword arguments.</p>
 <a id="__codelineno-0-457" name="__codelineno-0-457"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
 <a id="__codelineno-0-458" name="__codelineno-0-458"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Apply the transform.</span>
 <a id="__codelineno-0-459" name="__codelineno-0-459"></a>
-<a id="__codelineno-0-460" name="__codelineno-0-460"></a><span class="sd">        For ``Subject`` and ``Image`` inputs, operates lazily per-image</span>
+<a id="__codelineno-0-460" name="__codelineno-0-460"></a><span class="sd">        For `Subject` and `Image` inputs, operates lazily per-image</span>
 <a id="__codelineno-0-461" name="__codelineno-0-461"></a><span class="sd">        without loading data from disk. For batched inputs, falls back</span>
-<a id="__codelineno-0-462" name="__codelineno-0-462"></a><span class="sd">        to the standard ``SubjectsBatch`` path.</span>
+<a id="__codelineno-0-462" name="__codelineno-0-462"></a><span class="sd">        to the standard `SubjectsBatch` path.</span>
 <a id="__codelineno-0-463" name="__codelineno-0-463"></a><span class="sd">        &quot;&quot;&quot;</span>
 <a id="__codelineno-0-464" name="__codelineno-0-464"></a>        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="p">(</span><span class="n">Subject</span><span class="p">,</span> <span class="n">Image</span><span class="p">)):</span>
 <a id="__codelineno-0-465" name="__codelineno-0-465"></a>            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_forward_lazy</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
@@ -4606,7 +4606,7 @@ the given parameters.</p>
 <a id="__codelineno-0-254" name="__codelineno-0-254"></a><span class="sd">        params: The parameters recorded in the forward pass.</span>
 <a id="__codelineno-0-255" name="__codelineno-0-255"></a>
 <a id="__codelineno-0-256" name="__codelineno-0-256"></a><span class="sd">    Returns:</span>
-<a id="__codelineno-0-257" name="__codelineno-0-257"></a><span class="sd">        A new ``Transform`` instance that inverts this one.</span>
+<a id="__codelineno-0-257" name="__codelineno-0-257"></a><span class="sd">        A new `Transform` instance that inverts this one.</span>
 <a id="__codelineno-0-258" name="__codelineno-0-258"></a><span class="sd">    &quot;&quot;&quot;</span>
 <a id="__codelineno-0-259" name="__codelineno-0-259"></a>    <span class="n">msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2"> is not invertible&quot;</span>
 <a id="__codelineno-0-260" name="__codelineno-0-260"></a>    <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
@@ -4686,11 +4686,11 @@ class name and only non-default field values included.</p>
 <span class="normal"><a href="#__codelineno-0-297">297</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-271" name="__codelineno-0-271"></a><span class="k">def</span><span class="w"> </span><span class="nf">to_hydra</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
 <a id="__codelineno-0-272" name="__codelineno-0-272"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Export as a Hydra-compatible config dict.</span>
 <a id="__codelineno-0-273" name="__codelineno-0-273"></a>
-<a id="__codelineno-0-274" name="__codelineno-0-274"></a><span class="sd">    Returns a dict with ``_target_`` set to the fully qualified</span>
+<a id="__codelineno-0-274" name="__codelineno-0-274"></a><span class="sd">    Returns a dict with `_target_` set to the fully qualified</span>
 <a id="__codelineno-0-275" name="__codelineno-0-275"></a><span class="sd">    class name and only non-default field values included.</span>
 <a id="__codelineno-0-276" name="__codelineno-0-276"></a>
 <a id="__codelineno-0-277" name="__codelineno-0-277"></a><span class="sd">    Returns:</span>
-<a id="__codelineno-0-278" name="__codelineno-0-278"></a><span class="sd">        Dict suitable for ``hydra.utils.instantiate()``.</span>
+<a id="__codelineno-0-278" name="__codelineno-0-278"></a><span class="sd">        Dict suitable for `hydra.utils.instantiate()`.</span>
 <a id="__codelineno-0-279" name="__codelineno-0-279"></a><span class="sd">    &quot;&quot;&quot;</span>
 <a id="__codelineno-0-280" name="__codelineno-0-280"></a>    <span class="kn">from</span><span class="w"> </span><span class="nn">.parameter_range</span><span class="w"> </span><span class="kn">import</span> <span class="n">ParameterRange</span>
 <a id="__codelineno-0-281" name="__codelineno-0-281"></a>
@@ -4747,9 +4747,9 @@ to the standard <code>SubjectsBatch</code> path.</p>
 <span class="normal"><a href="#__codelineno-0-466">466</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-457" name="__codelineno-0-457"></a><span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
 <a id="__codelineno-0-458" name="__codelineno-0-458"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Apply the transform.</span>
 <a id="__codelineno-0-459" name="__codelineno-0-459"></a>
-<a id="__codelineno-0-460" name="__codelineno-0-460"></a><span class="sd">    For ``Subject`` and ``Image`` inputs, operates lazily per-image</span>
+<a id="__codelineno-0-460" name="__codelineno-0-460"></a><span class="sd">    For `Subject` and `Image` inputs, operates lazily per-image</span>
 <a id="__codelineno-0-461" name="__codelineno-0-461"></a><span class="sd">    without loading data from disk. For batched inputs, falls back</span>
-<a id="__codelineno-0-462" name="__codelineno-0-462"></a><span class="sd">    to the standard ``SubjectsBatch`` path.</span>
+<a id="__codelineno-0-462" name="__codelineno-0-462"></a><span class="sd">    to the standard `SubjectsBatch` path.</span>
 <a id="__codelineno-0-463" name="__codelineno-0-463"></a><span class="sd">    &quot;&quot;&quot;</span>
 <a id="__codelineno-0-464" name="__codelineno-0-464"></a>    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="p">(</span><span class="n">Subject</span><span class="p">,</span> <span class="n">Image</span><span class="p">)):</span>
 <a id="__codelineno-0-465" name="__codelineno-0-465"></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_forward_lazy</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>

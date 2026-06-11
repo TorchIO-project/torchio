@@ -4420,7 +4420,7 @@ is determined by the
 <span class="normal"><a href="#__codelineno-0-476">476</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-207" name="__codelineno-0-207"></a><span class="k">class</span><span class="w"> </span><span class="nc">BoundingBoxes</span><span class="p">:</span>
 <a id="__codelineno-0-208" name="__codelineno-0-208"></a><span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;3D bounding boxes with flexible axis conventions.</span>
 <a id="__codelineno-0-209" name="__codelineno-0-209"></a>
-<a id="__codelineno-0-210" name="__codelineno-0-210"></a><span class="sd">    Inspired by ``torchvision.tv_tensors.BoundingBoxes``, extended to 3D.</span>
+<a id="__codelineno-0-210" name="__codelineno-0-210"></a><span class="sd">    Inspired by `torchvision.tv_tensors.BoundingBoxes`, extended to 3D.</span>
 <a id="__codelineno-0-211" name="__codelineno-0-211"></a><span class="sd">    One instance holds $N$ boxes, each a 6-element vector whose meaning</span>
 <a id="__codelineno-0-212" name="__codelineno-0-212"></a><span class="sd">    is determined by the</span>
 <a id="__codelineno-0-213" name="__codelineno-0-213"></a><span class="sd">    [`format`][torchio.data.bboxes.BoundingBoxFormat].</span>
@@ -4499,7 +4499,7 @@ is determined by the
 <a id="__codelineno-0-286" name="__codelineno-0-286"></a>
 <a id="__codelineno-0-287" name="__codelineno-0-287"></a>    <span class="nd">@property</span>
 <a id="__codelineno-0-288" name="__codelineno-0-288"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">labels</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tensor</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-289" name="__codelineno-0-289"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;$(N,)$ integer labels, or ``None``.&quot;&quot;&quot;</span>
+<a id="__codelineno-0-289" name="__codelineno-0-289"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;$(N,)$ integer labels, or `None`.&quot;&quot;&quot;</span>
 <a id="__codelineno-0-290" name="__codelineno-0-290"></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_labels</span>
 <a id="__codelineno-0-291" name="__codelineno-0-291"></a>
 <a id="__codelineno-0-292" name="__codelineno-0-292"></a>    <span class="nd">@property</span>
@@ -4526,7 +4526,7 @@ is determined by the
 <a id="__codelineno-0-313" name="__codelineno-0-313"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Move bounding box data to a device and/or cast to a dtype.</span>
 <a id="__codelineno-0-314" name="__codelineno-0-314"></a>
 <a id="__codelineno-0-315" name="__codelineno-0-315"></a><span class="sd">        Returns:</span>
-<a id="__codelineno-0-316" name="__codelineno-0-316"></a><span class="sd">            ``self`` (modified in-place).</span>
+<a id="__codelineno-0-316" name="__codelineno-0-316"></a><span class="sd">            `self` (modified in-place).</span>
 <a id="__codelineno-0-317" name="__codelineno-0-317"></a><span class="sd">        &quot;&quot;&quot;</span>
 <a id="__codelineno-0-318" name="__codelineno-0-318"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 <a id="__codelineno-0-319" name="__codelineno-0-319"></a>        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_labels</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
@@ -4546,7 +4546,7 @@ is determined by the
 <a id="__codelineno-0-333" name="__codelineno-0-333"></a><span class="sd">            format: Target format.</span>
 <a id="__codelineno-0-334" name="__codelineno-0-334"></a>
 <a id="__codelineno-0-335" name="__codelineno-0-335"></a><span class="sd">        Returns:</span>
-<a id="__codelineno-0-336" name="__codelineno-0-336"></a><span class="sd">            New ``BoundingBoxes`` in the target format.</span>
+<a id="__codelineno-0-336" name="__codelineno-0-336"></a><span class="sd">            New `BoundingBoxes` in the target format.</span>
 <a id="__codelineno-0-337" name="__codelineno-0-337"></a><span class="sd">        &quot;&quot;&quot;</span>
 <a id="__codelineno-0-338" name="__codelineno-0-338"></a>        <span class="k">if</span> <span class="nb">format</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">_format</span><span class="p">:</span>
 <a id="__codelineno-0-339" name="__codelineno-0-339"></a>            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_clone</span><span class="p">(</span><span class="nb">format</span><span class="o">=</span><span class="nb">format</span><span class="p">)</span>
@@ -4597,8 +4597,8 @@ is determined by the
 <a id="__codelineno-0-384" name="__codelineno-0-384"></a>
 <a id="__codelineno-0-385" name="__codelineno-0-385"></a><span class="sd">        Args:</span>
 <a id="__codelineno-0-386" name="__codelineno-0-386"></a><span class="sd">            data: New $(N, 6)$ coordinates.</span>
-<a id="__codelineno-0-387" name="__codelineno-0-387"></a><span class="sd">            labels: New labels. If ``None``, no labels.</span>
-<a id="__codelineno-0-388" name="__codelineno-0-388"></a><span class="sd">            affine: New affine. If ``None``, uses ``self.affine``.</span>
+<a id="__codelineno-0-387" name="__codelineno-0-387"></a><span class="sd">            labels: New labels. If `None`, no labels.</span>
+<a id="__codelineno-0-388" name="__codelineno-0-388"></a><span class="sd">            affine: New affine. If `None`, uses `self.affine`.</span>
 <a id="__codelineno-0-389" name="__codelineno-0-389"></a><span class="sd">        &quot;&quot;&quot;</span>
 <a id="__codelineno-0-390" name="__codelineno-0-390"></a>        <span class="n">new_affine</span> <span class="o">=</span> <span class="p">(</span>
 <a id="__codelineno-0-391" name="__codelineno-0-391"></a>            <span class="bp">self</span><span class="o">.</span><span class="n">_parse_affine</span><span class="p">(</span><span class="n">affine</span><span class="p">)</span> <span class="k">if</span> <span class="n">affine</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">_affine</span><span class="o">.</span><span class="n">clone</span><span class="p">()</span>
@@ -4909,7 +4909,7 @@ is determined by the
 <a id="__codelineno-0-313" name="__codelineno-0-313"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Move bounding box data to a device and/or cast to a dtype.</span>
 <a id="__codelineno-0-314" name="__codelineno-0-314"></a>
 <a id="__codelineno-0-315" name="__codelineno-0-315"></a><span class="sd">    Returns:</span>
-<a id="__codelineno-0-316" name="__codelineno-0-316"></a><span class="sd">        ``self`` (modified in-place).</span>
+<a id="__codelineno-0-316" name="__codelineno-0-316"></a><span class="sd">        `self` (modified in-place).</span>
 <a id="__codelineno-0-317" name="__codelineno-0-317"></a><span class="sd">    &quot;&quot;&quot;</span>
 <a id="__codelineno-0-318" name="__codelineno-0-318"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 <a id="__codelineno-0-319" name="__codelineno-0-319"></a>    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_labels</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
@@ -5054,7 +5054,7 @@ conversions (using the stored affine).</p>
 <a id="__codelineno-0-333" name="__codelineno-0-333"></a><span class="sd">        format: Target format.</span>
 <a id="__codelineno-0-334" name="__codelineno-0-334"></a>
 <a id="__codelineno-0-335" name="__codelineno-0-335"></a><span class="sd">    Returns:</span>
-<a id="__codelineno-0-336" name="__codelineno-0-336"></a><span class="sd">        New ``BoundingBoxes`` in the target format.</span>
+<a id="__codelineno-0-336" name="__codelineno-0-336"></a><span class="sd">        New `BoundingBoxes` in the target format.</span>
 <a id="__codelineno-0-337" name="__codelineno-0-337"></a><span class="sd">    &quot;&quot;&quot;</span>
 <a id="__codelineno-0-338" name="__codelineno-0-338"></a>    <span class="k">if</span> <span class="nb">format</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">_format</span><span class="p">:</span>
 <a id="__codelineno-0-339" name="__codelineno-0-339"></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_clone</span><span class="p">(</span><span class="nb">format</span><span class="o">=</span><span class="nb">format</span><span class="p">)</span>
@@ -5212,8 +5212,8 @@ conversions (using the stored affine).</p>
 <a id="__codelineno-0-384" name="__codelineno-0-384"></a>
 <a id="__codelineno-0-385" name="__codelineno-0-385"></a><span class="sd">    Args:</span>
 <a id="__codelineno-0-386" name="__codelineno-0-386"></a><span class="sd">        data: New $(N, 6)$ coordinates.</span>
-<a id="__codelineno-0-387" name="__codelineno-0-387"></a><span class="sd">        labels: New labels. If ``None``, no labels.</span>
-<a id="__codelineno-0-388" name="__codelineno-0-388"></a><span class="sd">        affine: New affine. If ``None``, uses ``self.affine``.</span>
+<a id="__codelineno-0-387" name="__codelineno-0-387"></a><span class="sd">        labels: New labels. If `None`, no labels.</span>
+<a id="__codelineno-0-388" name="__codelineno-0-388"></a><span class="sd">        affine: New affine. If `None`, uses `self.affine`.</span>
 <a id="__codelineno-0-389" name="__codelineno-0-389"></a><span class="sd">    &quot;&quot;&quot;</span>
 <a id="__codelineno-0-390" name="__codelineno-0-390"></a>    <span class="n">new_affine</span> <span class="o">=</span> <span class="p">(</span>
 <a id="__codelineno-0-391" name="__codelineno-0-391"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_parse_affine</span><span class="p">(</span><span class="n">affine</span><span class="p">)</span> <span class="k">if</span> <span class="n">affine</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">_affine</span><span class="o">.</span><span class="n">clone</span><span class="p">()</span>
@@ -5400,9 +5400,9 @@ conversions (using the stored affine).</p>
 <a id="__codelineno-0-40" name="__codelineno-0-40"></a><span class="sd">    A format is defined by two components:</span>
 <a id="__codelineno-0-41" name="__codelineno-0-41"></a>
 <a id="__codelineno-0-42" name="__codelineno-0-42"></a><span class="sd">    - **axes**: a 3-character string specifying the coordinate system.</span>
-<a id="__codelineno-0-43" name="__codelineno-0-43"></a><span class="sd">      Voxel axes are permutations of ``&quot;IJK&quot;``.</span>
+<a id="__codelineno-0-43" name="__codelineno-0-43"></a><span class="sd">      Voxel axes are permutations of `&quot;IJK&quot;`.</span>
 <a id="__codelineno-0-44" name="__codelineno-0-44"></a><span class="sd">      Anatomical axes use one letter from each pair</span>
-<a id="__codelineno-0-45" name="__codelineno-0-45"></a><span class="sd">      ``{R, L}``, ``{A, P}``, ``{S, I}`` (e.g., ``&quot;RAS&quot;``, ``&quot;LPI&quot;``).</span>
+<a id="__codelineno-0-45" name="__codelineno-0-45"></a><span class="sd">      `{R, L}`, `{A, P}`, `{S, I}` (e.g., `&quot;RAS&quot;`, `&quot;LPI&quot;`).</span>
 <a id="__codelineno-0-46" name="__codelineno-0-46"></a><span class="sd">    - **representation**: either *corners* (two opposite corners) or</span>
 <a id="__codelineno-0-47" name="__codelineno-0-47"></a><span class="sd">      *center_size* (center point + extent along each axis).</span>
 <a id="__codelineno-0-48" name="__codelineno-0-48"></a>
@@ -5436,7 +5436,7 @@ conversions (using the stored affine).</p>
 <a id="__codelineno-0-76" name="__codelineno-0-76"></a>
 <a id="__codelineno-0-77" name="__codelineno-0-77"></a>    <span class="nd">@property</span>
 <a id="__codelineno-0-78" name="__codelineno-0-78"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">axes</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<a id="__codelineno-0-79" name="__codelineno-0-79"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;3-character axis string (e.g., ``&#39;IJK&#39;``, ``&#39;RAS&#39;``).&quot;&quot;&quot;</span>
+<a id="__codelineno-0-79" name="__codelineno-0-79"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;3-character axis string (e.g., `&#39;IJK&#39;`, `&#39;RAS&#39;`).&quot;&quot;&quot;</span>
 <a id="__codelineno-0-80" name="__codelineno-0-80"></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_axes</span>
 <a id="__codelineno-0-81" name="__codelineno-0-81"></a>
 <a id="__codelineno-0-82" name="__codelineno-0-82"></a>    <span class="nd">@property</span>

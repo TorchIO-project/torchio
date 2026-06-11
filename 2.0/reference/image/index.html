@@ -6317,14 +6317,14 @@ are skipped (with a warning if <code>warn=True</code>).</p>
 <a id="__codelineno-0-29" name="__codelineno-0-29"></a>
 <a id="__codelineno-0-30" name="__codelineno-0-30"></a><span class="sd">    Returns a [`Compose`][torchio.Compose] of the inverse of each</span>
 <a id="__codelineno-0-31" name="__codelineno-0-31"></a><span class="sd">    applied transform, in reverse order. Non-invertible transforms</span>
-<a id="__codelineno-0-32" name="__codelineno-0-32"></a><span class="sd">    are skipped (with a warning if ``warn=True``).</span>
+<a id="__codelineno-0-32" name="__codelineno-0-32"></a><span class="sd">    are skipped (with a warning if `warn=True`).</span>
 <a id="__codelineno-0-33" name="__codelineno-0-33"></a>
 <a id="__codelineno-0-34" name="__codelineno-0-34"></a><span class="sd">    Args:</span>
 <a id="__codelineno-0-35" name="__codelineno-0-35"></a><span class="sd">        warn: Issue a warning for non-invertible transforms.</span>
 <a id="__codelineno-0-36" name="__codelineno-0-36"></a><span class="sd">        ignore_intensity: Skip all intensity transforms.</span>
 <a id="__codelineno-0-37" name="__codelineno-0-37"></a>
 <a id="__codelineno-0-38" name="__codelineno-0-38"></a><span class="sd">    Returns:</span>
-<a id="__codelineno-0-39" name="__codelineno-0-39"></a><span class="sd">        A ``Compose`` transform that undoes the history.</span>
+<a id="__codelineno-0-39" name="__codelineno-0-39"></a><span class="sd">        A `Compose` transform that undoes the history.</span>
 <a id="__codelineno-0-40" name="__codelineno-0-40"></a><span class="sd">    &quot;&quot;&quot;</span>
 <a id="__codelineno-0-41" name="__codelineno-0-41"></a>    <span class="kn">from</span><span class="w"> </span><span class="nn">..transforms.inverse</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_inverse_transform</span>
 <a id="__codelineno-0-42" name="__codelineno-0-42"></a>
@@ -6445,12 +6445,12 @@ can be ignored with <code>ignore_intensity=True</code>.</p>
 <a id="__codelineno-0-50" name="__codelineno-0-50"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Apply the inverse of all applied transforms, in reverse order.</span>
 <a id="__codelineno-0-51" name="__codelineno-0-51"></a>
 <a id="__codelineno-0-52" name="__codelineno-0-52"></a><span class="sd">    Non-invertible transforms are skipped. Intensity transforms</span>
-<a id="__codelineno-0-53" name="__codelineno-0-53"></a><span class="sd">    can be ignored with ``ignore_intensity=True``.</span>
+<a id="__codelineno-0-53" name="__codelineno-0-53"></a><span class="sd">    can be ignored with `ignore_intensity=True`.</span>
 <a id="__codelineno-0-54" name="__codelineno-0-54"></a>
 <a id="__codelineno-0-55" name="__codelineno-0-55"></a><span class="sd">    Args:</span>
 <a id="__codelineno-0-56" name="__codelineno-0-56"></a><span class="sd">        **kwargs: Forwarded to</span>
-<a id="__codelineno-0-57" name="__codelineno-0-57"></a><span class="sd">            ``get_inverse_transform()`` (``warn``,</span>
-<a id="__codelineno-0-58" name="__codelineno-0-58"></a><span class="sd">            ``ignore_intensity``).</span>
+<a id="__codelineno-0-57" name="__codelineno-0-57"></a><span class="sd">            `get_inverse_transform()` (`warn`,</span>
+<a id="__codelineno-0-58" name="__codelineno-0-58"></a><span class="sd">            `ignore_intensity`).</span>
 <a id="__codelineno-0-59" name="__codelineno-0-59"></a>
 <a id="__codelineno-0-60" name="__codelineno-0-60"></a><span class="sd">    Returns:</span>
 <a id="__codelineno-0-61" name="__codelineno-0-61"></a><span class="sd">        Data with transforms undone.</span>
@@ -6666,10 +6666,10 @@ can be ignored with <code>ignore_intensity=True</code>.</p>
 <span class="normal"><a href="#__codelineno-0-662">662</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-651" name="__codelineno-0-651"></a><span class="k">def</span><span class="w"> </span><span class="nf">to</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Self</span><span class="p">:</span>
 <a id="__codelineno-0-652" name="__codelineno-0-652"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Move image data and affine to a device and/or cast to a dtype.</span>
 <a id="__codelineno-0-653" name="__codelineno-0-653"></a>
-<a id="__codelineno-0-654" name="__codelineno-0-654"></a><span class="sd">    Accepts the same arguments as ``torch.Tensor.to()``.</span>
+<a id="__codelineno-0-654" name="__codelineno-0-654"></a><span class="sd">    Accepts the same arguments as `torch.Tensor.to()`.</span>
 <a id="__codelineno-0-655" name="__codelineno-0-655"></a>
 <a id="__codelineno-0-656" name="__codelineno-0-656"></a><span class="sd">    Returns:</span>
-<a id="__codelineno-0-657" name="__codelineno-0-657"></a><span class="sd">        ``self`` (modified in-place).</span>
+<a id="__codelineno-0-657" name="__codelineno-0-657"></a><span class="sd">        `self` (modified in-place).</span>
 <a id="__codelineno-0-658" name="__codelineno-0-658"></a><span class="sd">    &quot;&quot;&quot;</span>
 <a id="__codelineno-0-659" name="__codelineno-0-659"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 <a id="__codelineno-0-660" name="__codelineno-0-660"></a>    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_affine</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
@@ -6985,7 +6985,7 @@ writer. For SimpleITK formats these are passed to
 <a id="__codelineno-0-718" name="__codelineno-0-718"></a><span class="sd">            extension.</span>
 <a id="__codelineno-0-719" name="__codelineno-0-719"></a><span class="sd">        **kwargs: Extra keyword arguments forwarded to the</span>
 <a id="__codelineno-0-720" name="__codelineno-0-720"></a><span class="sd">            writer. For SimpleITK formats these are passed to</span>
-<a id="__codelineno-0-721" name="__codelineno-0-721"></a><span class="sd">            ``SimpleITK.WriteImage()``.</span>
+<a id="__codelineno-0-721" name="__codelineno-0-721"></a><span class="sd">            `SimpleITK.WriteImage()`.</span>
 <a id="__codelineno-0-722" name="__codelineno-0-722"></a><span class="sd">    &quot;&quot;&quot;</span>
 <a id="__codelineno-0-723" name="__codelineno-0-723"></a>    <span class="n">path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
 <a id="__codelineno-0-724" name="__codelineno-0-724"></a>    <span class="k">if</span> <span class="n">is_nifti_zarr</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
@@ -7029,7 +7029,7 @@ full list of keyword arguments.</p>
 <span class="normal"><a href="#__codelineno-0-995">995</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-986" name="__codelineno-0-986"></a><span class="k">def</span><span class="w"> </span><span class="nf">plot</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
 <a id="__codelineno-0-987" name="__codelineno-0-987"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Plot 3 orthogonal slices of the image.</span>
 <a id="__codelineno-0-988" name="__codelineno-0-988"></a>
-<a id="__codelineno-0-989" name="__codelineno-0-989"></a><span class="sd">    Requires the ``[plot]`` extras (``pip install torchio[plot]``).</span>
+<a id="__codelineno-0-989" name="__codelineno-0-989"></a><span class="sd">    Requires the `[plot]` extras (`pip install torchio[plot]`).</span>
 <a id="__codelineno-0-990" name="__codelineno-0-990"></a><span class="sd">    See [`plot_image`][torchio.visualization.plot_image] for the</span>
 <a id="__codelineno-0-991" name="__codelineno-0-991"></a><span class="sd">    full list of keyword arguments.</span>
 <a id="__codelineno-0-992" name="__codelineno-0-992"></a><span class="sd">    &quot;&quot;&quot;</span>
@@ -7181,7 +7181,7 @@ right side of the screen (radiological convention).</p>
 <span class="normal"><a href="#__codelineno-0-1036">1036</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-997" name="__codelineno-0-997"></a><span class="k">def</span><span class="w"> </span><span class="nf">plot_interactive</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">height</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">300</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
 <a id="__codelineno-0-998" name="__codelineno-0-998"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Show an interactive NiiVue viewer in Jupyter.</span>
 <a id="__codelineno-0-999" name="__codelineno-0-999"></a>
-<a id="__codelineno-0-1000" name="__codelineno-0-1000"></a><span class="sd">    Requires ``ipyniivue`` (``pip install torchio[niivue]``).</span>
+<a id="__codelineno-0-1000" name="__codelineno-0-1000"></a><span class="sd">    Requires `ipyniivue` (`pip install torchio[niivue]`).</span>
 <a id="__codelineno-0-1001" name="__codelineno-0-1001"></a>
 <a id="__codelineno-0-1002" name="__codelineno-0-1002"></a><span class="sd">    The widget supports scrolling through slices, zooming, and</span>
 <a id="__codelineno-0-1003" name="__codelineno-0-1003"></a><span class="sd">    crosshair navigation.  Left hemisphere is displayed on the</span>
@@ -7191,10 +7191,10 @@ right side of the screen (radiological convention).</p>
 <a id="__codelineno-0-1007" name="__codelineno-0-1007"></a><span class="sd">        height: Height of the viewer in pixels.</span>
 <a id="__codelineno-0-1008" name="__codelineno-0-1008"></a>
 <a id="__codelineno-0-1009" name="__codelineno-0-1009"></a><span class="sd">    Returns:</span>
-<a id="__codelineno-0-1010" name="__codelineno-0-1010"></a><span class="sd">        An ``ipyniivue.NiiVue`` widget.</span>
+<a id="__codelineno-0-1010" name="__codelineno-0-1010"></a><span class="sd">        An `ipyniivue.NiiVue` widget.</span>
 <a id="__codelineno-0-1011" name="__codelineno-0-1011"></a>
 <a id="__codelineno-0-1012" name="__codelineno-0-1012"></a><span class="sd">    Raises:</span>
-<a id="__codelineno-0-1013" name="__codelineno-0-1013"></a><span class="sd">        ImportError: If ``ipyniivue`` is not installed.</span>
+<a id="__codelineno-0-1013" name="__codelineno-0-1013"></a><span class="sd">        ImportError: If `ipyniivue` is not installed.</span>
 <a id="__codelineno-0-1014" name="__codelineno-0-1014"></a><span class="sd">    &quot;&quot;&quot;</span>
 <a id="__codelineno-0-1015" name="__codelineno-0-1015"></a>    <span class="kn">import</span><span class="w"> </span><span class="nn">tempfile</span>
 <a id="__codelineno-0-1016" name="__codelineno-0-1016"></a>
@@ -7500,30 +7500,30 @@ not running inside a Jupyter notebook.</p>
 <a id="__codelineno-0-1048" name="__codelineno-0-1048"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
 <a id="__codelineno-0-1049" name="__codelineno-0-1049"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Save an animated GIF sweeping through slices.</span>
 <a id="__codelineno-0-1050" name="__codelineno-0-1050"></a>
-<a id="__codelineno-0-1051" name="__codelineno-0-1051"></a><span class="sd">    Requires ``Pillow`` (``pip install torchio[plot]``).</span>
+<a id="__codelineno-0-1051" name="__codelineno-0-1051"></a><span class="sd">    Requires `Pillow` (`pip install torchio[plot]`).</span>
 <a id="__codelineno-0-1052" name="__codelineno-0-1052"></a>
-<a id="__codelineno-0-1053" name="__codelineno-0-1053"></a><span class="sd">    When *output_path* is ``None`` and the code is running inside</span>
+<a id="__codelineno-0-1053" name="__codelineno-0-1053"></a><span class="sd">    When *output_path* is `None` and the code is running inside</span>
 <a id="__codelineno-0-1054" name="__codelineno-0-1054"></a><span class="sd">    a Jupyter notebook, the GIF is written to a temporary file and</span>
-<a id="__codelineno-0-1055" name="__codelineno-0-1055"></a><span class="sd">    returned as an ``IPython.display.Image`` for inline display.</span>
+<a id="__codelineno-0-1055" name="__codelineno-0-1055"></a><span class="sd">    returned as an `IPython.display.Image` for inline display.</span>
 <a id="__codelineno-0-1056" name="__codelineno-0-1056"></a><span class="sd">    Outside Jupyter, *output_path* is required.</span>
 <a id="__codelineno-0-1057" name="__codelineno-0-1057"></a>
 <a id="__codelineno-0-1058" name="__codelineno-0-1058"></a><span class="sd">    Args:</span>
-<a id="__codelineno-0-1059" name="__codelineno-0-1059"></a><span class="sd">        output_path: Path to the output ``.gif`` file.  ``None``</span>
+<a id="__codelineno-0-1059" name="__codelineno-0-1059"></a><span class="sd">        output_path: Path to the output `.gif` file.  `None`</span>
 <a id="__codelineno-0-1060" name="__codelineno-0-1060"></a><span class="sd">            to auto-create a temporary file (Jupyter only).</span>
 <a id="__codelineno-0-1061" name="__codelineno-0-1061"></a><span class="sd">        seconds: Duration of the full animation in seconds.</span>
-<a id="__codelineno-0-1062" name="__codelineno-0-1062"></a><span class="sd">        direction: Anatomical sweep direction (``&quot;I&quot;``, ``&quot;S&quot;``,</span>
-<a id="__codelineno-0-1063" name="__codelineno-0-1063"></a><span class="sd">            ``&quot;A&quot;``, ``&quot;P&quot;``, ``&quot;R&quot;``, or ``&quot;L&quot;``).</span>
+<a id="__codelineno-0-1062" name="__codelineno-0-1062"></a><span class="sd">        direction: Anatomical sweep direction (`&quot;I&quot;`, `&quot;S&quot;`,</span>
+<a id="__codelineno-0-1063" name="__codelineno-0-1063"></a><span class="sd">            `&quot;A&quot;`, `&quot;P&quot;`, `&quot;R&quot;`, or `&quot;L&quot;`).</span>
 <a id="__codelineno-0-1064" name="__codelineno-0-1064"></a><span class="sd">        loop: Number of loops (0 = infinite).</span>
-<a id="__codelineno-0-1065" name="__codelineno-0-1065"></a><span class="sd">        rescale: Rescale intensities to ``[0, 255]``.</span>
+<a id="__codelineno-0-1065" name="__codelineno-0-1065"></a><span class="sd">        rescale: Rescale intensities to `[0, 255]`.</span>
 <a id="__codelineno-0-1066" name="__codelineno-0-1066"></a><span class="sd">        optimize: Attempt to compress the GIF palette.</span>
 <a id="__codelineno-0-1067" name="__codelineno-0-1067"></a><span class="sd">        reverse: Reverse the temporal order of frames.</span>
 <a id="__codelineno-0-1068" name="__codelineno-0-1068"></a>
 <a id="__codelineno-0-1069" name="__codelineno-0-1069"></a><span class="sd">    Returns:</span>
-<a id="__codelineno-0-1070" name="__codelineno-0-1070"></a><span class="sd">        ``IPython.display.Image`` when running in Jupyter,</span>
-<a id="__codelineno-0-1071" name="__codelineno-0-1071"></a><span class="sd">        ``None`` otherwise.</span>
+<a id="__codelineno-0-1070" name="__codelineno-0-1070"></a><span class="sd">        `IPython.display.Image` when running in Jupyter,</span>
+<a id="__codelineno-0-1071" name="__codelineno-0-1071"></a><span class="sd">        `None` otherwise.</span>
 <a id="__codelineno-0-1072" name="__codelineno-0-1072"></a>
 <a id="__codelineno-0-1073" name="__codelineno-0-1073"></a><span class="sd">    Raises:</span>
-<a id="__codelineno-0-1074" name="__codelineno-0-1074"></a><span class="sd">        ValueError: If *output_path* is ``None`` and the code is</span>
+<a id="__codelineno-0-1074" name="__codelineno-0-1074"></a><span class="sd">        ValueError: If *output_path* is `None` and the code is</span>
 <a id="__codelineno-0-1075" name="__codelineno-0-1075"></a><span class="sd">            not running inside a Jupyter notebook.</span>
 <a id="__codelineno-0-1076" name="__codelineno-0-1076"></a><span class="sd">    &quot;&quot;&quot;</span>
 <a id="__codelineno-0-1077" name="__codelineno-0-1077"></a>    <span class="n">output_path</span> <span class="o">=</span> <span class="n">_resolve_media_path</span><span class="p">(</span><span class="n">output_path</span><span class="p">,</span> <span class="n">suffix</span><span class="o">=</span><span class="s2">&quot;.gif&quot;</span><span class="p">)</span>
@@ -7770,27 +7770,27 @@ not running inside a Jupyter notebook.</p>
 <a id="__codelineno-0-1103" name="__codelineno-0-1103"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
 <a id="__codelineno-0-1104" name="__codelineno-0-1104"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Create an MP4 video sweeping through slices.</span>
 <a id="__codelineno-0-1105" name="__codelineno-0-1105"></a>
-<a id="__codelineno-0-1106" name="__codelineno-0-1106"></a><span class="sd">    Requires ``ffmpeg-python`` (``pip install torchio[video]``).</span>
+<a id="__codelineno-0-1106" name="__codelineno-0-1106"></a><span class="sd">    Requires `ffmpeg-python` (`pip install torchio[video]`).</span>
 <a id="__codelineno-0-1107" name="__codelineno-0-1107"></a>
-<a id="__codelineno-0-1108" name="__codelineno-0-1108"></a><span class="sd">    When *output_path* is ``None`` and the code is running inside</span>
+<a id="__codelineno-0-1108" name="__codelineno-0-1108"></a><span class="sd">    When *output_path* is `None` and the code is running inside</span>
 <a id="__codelineno-0-1109" name="__codelineno-0-1109"></a><span class="sd">    a Jupyter notebook, the video is written to a temporary file</span>
-<a id="__codelineno-0-1110" name="__codelineno-0-1110"></a><span class="sd">    and returned as an ``IPython.display.Video`` for inline</span>
+<a id="__codelineno-0-1110" name="__codelineno-0-1110"></a><span class="sd">    and returned as an `IPython.display.Video` for inline</span>
 <a id="__codelineno-0-1111" name="__codelineno-0-1111"></a><span class="sd">    display.  Outside Jupyter, *output_path* is required.</span>
 <a id="__codelineno-0-1112" name="__codelineno-0-1112"></a>
 <a id="__codelineno-0-1113" name="__codelineno-0-1113"></a><span class="sd">    Args:</span>
-<a id="__codelineno-0-1114" name="__codelineno-0-1114"></a><span class="sd">        output_path: Path to the output ``.mp4`` file.  ``None``</span>
+<a id="__codelineno-0-1114" name="__codelineno-0-1114"></a><span class="sd">        output_path: Path to the output `.mp4` file.  `None`</span>
 <a id="__codelineno-0-1115" name="__codelineno-0-1115"></a><span class="sd">            to auto-create a temporary file (Jupyter only).</span>
 <a id="__codelineno-0-1116" name="__codelineno-0-1116"></a><span class="sd">        seconds: Duration of the full video in seconds.</span>
-<a id="__codelineno-0-1117" name="__codelineno-0-1117"></a><span class="sd">        direction: Anatomical sweep direction (``&quot;I&quot;``, ``&quot;S&quot;``,</span>
-<a id="__codelineno-0-1118" name="__codelineno-0-1118"></a><span class="sd">            ``&quot;A&quot;``, ``&quot;P&quot;``, ``&quot;R&quot;``, or ``&quot;L&quot;``).</span>
+<a id="__codelineno-0-1117" name="__codelineno-0-1117"></a><span class="sd">        direction: Anatomical sweep direction (`&quot;I&quot;`, `&quot;S&quot;`,</span>
+<a id="__codelineno-0-1118" name="__codelineno-0-1118"></a><span class="sd">            `&quot;A&quot;`, `&quot;P&quot;`, `&quot;R&quot;`, or `&quot;L&quot;`).</span>
 <a id="__codelineno-0-1119" name="__codelineno-0-1119"></a><span class="sd">        verbosity: ffmpeg log level.</span>
 <a id="__codelineno-0-1120" name="__codelineno-0-1120"></a>
 <a id="__codelineno-0-1121" name="__codelineno-0-1121"></a><span class="sd">    Returns:</span>
-<a id="__codelineno-0-1122" name="__codelineno-0-1122"></a><span class="sd">        ``IPython.display.Video`` when running in Jupyter,</span>
-<a id="__codelineno-0-1123" name="__codelineno-0-1123"></a><span class="sd">        ``None`` otherwise.</span>
+<a id="__codelineno-0-1122" name="__codelineno-0-1122"></a><span class="sd">        `IPython.display.Video` when running in Jupyter,</span>
+<a id="__codelineno-0-1123" name="__codelineno-0-1123"></a><span class="sd">        `None` otherwise.</span>
 <a id="__codelineno-0-1124" name="__codelineno-0-1124"></a>
 <a id="__codelineno-0-1125" name="__codelineno-0-1125"></a><span class="sd">    Raises:</span>
-<a id="__codelineno-0-1126" name="__codelineno-0-1126"></a><span class="sd">        ValueError: If *output_path* is ``None`` and the code is</span>
+<a id="__codelineno-0-1126" name="__codelineno-0-1126"></a><span class="sd">        ValueError: If *output_path* is `None` and the code is</span>
 <a id="__codelineno-0-1127" name="__codelineno-0-1127"></a><span class="sd">            not running inside a Jupyter notebook.</span>
 <a id="__codelineno-0-1128" name="__codelineno-0-1128"></a><span class="sd">    &quot;&quot;&quot;</span>
 <a id="__codelineno-0-1129" name="__codelineno-0-1129"></a>    <span class="n">output_path</span> <span class="o">=</span> <span class="n">_resolve_media_path</span><span class="p">(</span><span class="n">output_path</span><span class="p">,</span> <span class="n">suffix</span><span class="o">=</span><span class="s2">&quot;.mp4&quot;</span><span class="p">)</span>
@@ -8403,14 +8403,14 @@ are skipped (with a warning if <code>warn=True</code>).</p>
 <a id="__codelineno-0-29" name="__codelineno-0-29"></a>
 <a id="__codelineno-0-30" name="__codelineno-0-30"></a><span class="sd">    Returns a [`Compose`][torchio.Compose] of the inverse of each</span>
 <a id="__codelineno-0-31" name="__codelineno-0-31"></a><span class="sd">    applied transform, in reverse order. Non-invertible transforms</span>
-<a id="__codelineno-0-32" name="__codelineno-0-32"></a><span class="sd">    are skipped (with a warning if ``warn=True``).</span>
+<a id="__codelineno-0-32" name="__codelineno-0-32"></a><span class="sd">    are skipped (with a warning if `warn=True`).</span>
 <a id="__codelineno-0-33" name="__codelineno-0-33"></a>
 <a id="__codelineno-0-34" name="__codelineno-0-34"></a><span class="sd">    Args:</span>
 <a id="__codelineno-0-35" name="__codelineno-0-35"></a><span class="sd">        warn: Issue a warning for non-invertible transforms.</span>
 <a id="__codelineno-0-36" name="__codelineno-0-36"></a><span class="sd">        ignore_intensity: Skip all intensity transforms.</span>
 <a id="__codelineno-0-37" name="__codelineno-0-37"></a>
 <a id="__codelineno-0-38" name="__codelineno-0-38"></a><span class="sd">    Returns:</span>
-<a id="__codelineno-0-39" name="__codelineno-0-39"></a><span class="sd">        A ``Compose`` transform that undoes the history.</span>
+<a id="__codelineno-0-39" name="__codelineno-0-39"></a><span class="sd">        A `Compose` transform that undoes the history.</span>
 <a id="__codelineno-0-40" name="__codelineno-0-40"></a><span class="sd">    &quot;&quot;&quot;</span>
 <a id="__codelineno-0-41" name="__codelineno-0-41"></a>    <span class="kn">from</span><span class="w"> </span><span class="nn">..transforms.inverse</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_inverse_transform</span>
 <a id="__codelineno-0-42" name="__codelineno-0-42"></a>
@@ -8531,12 +8531,12 @@ can be ignored with <code>ignore_intensity=True</code>.</p>
 <a id="__codelineno-0-50" name="__codelineno-0-50"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Apply the inverse of all applied transforms, in reverse order.</span>
 <a id="__codelineno-0-51" name="__codelineno-0-51"></a>
 <a id="__codelineno-0-52" name="__codelineno-0-52"></a><span class="sd">    Non-invertible transforms are skipped. Intensity transforms</span>
-<a id="__codelineno-0-53" name="__codelineno-0-53"></a><span class="sd">    can be ignored with ``ignore_intensity=True``.</span>
+<a id="__codelineno-0-53" name="__codelineno-0-53"></a><span class="sd">    can be ignored with `ignore_intensity=True`.</span>
 <a id="__codelineno-0-54" name="__codelineno-0-54"></a>
 <a id="__codelineno-0-55" name="__codelineno-0-55"></a><span class="sd">    Args:</span>
 <a id="__codelineno-0-56" name="__codelineno-0-56"></a><span class="sd">        **kwargs: Forwarded to</span>
-<a id="__codelineno-0-57" name="__codelineno-0-57"></a><span class="sd">            ``get_inverse_transform()`` (``warn``,</span>
-<a id="__codelineno-0-58" name="__codelineno-0-58"></a><span class="sd">            ``ignore_intensity``).</span>
+<a id="__codelineno-0-57" name="__codelineno-0-57"></a><span class="sd">            `get_inverse_transform()` (`warn`,</span>
+<a id="__codelineno-0-58" name="__codelineno-0-58"></a><span class="sd">            `ignore_intensity`).</span>
 <a id="__codelineno-0-59" name="__codelineno-0-59"></a>
 <a id="__codelineno-0-60" name="__codelineno-0-60"></a><span class="sd">    Returns:</span>
 <a id="__codelineno-0-61" name="__codelineno-0-61"></a><span class="sd">        Data with transforms undone.</span>
@@ -8752,10 +8752,10 @@ can be ignored with <code>ignore_intensity=True</code>.</p>
 <span class="normal"><a href="#__codelineno-0-662">662</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-651" name="__codelineno-0-651"></a><span class="k">def</span><span class="w"> </span><span class="nf">to</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Self</span><span class="p">:</span>
 <a id="__codelineno-0-652" name="__codelineno-0-652"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Move image data and affine to a device and/or cast to a dtype.</span>
 <a id="__codelineno-0-653" name="__codelineno-0-653"></a>
-<a id="__codelineno-0-654" name="__codelineno-0-654"></a><span class="sd">    Accepts the same arguments as ``torch.Tensor.to()``.</span>
+<a id="__codelineno-0-654" name="__codelineno-0-654"></a><span class="sd">    Accepts the same arguments as `torch.Tensor.to()`.</span>
 <a id="__codelineno-0-655" name="__codelineno-0-655"></a>
 <a id="__codelineno-0-656" name="__codelineno-0-656"></a><span class="sd">    Returns:</span>
-<a id="__codelineno-0-657" name="__codelineno-0-657"></a><span class="sd">        ``self`` (modified in-place).</span>
+<a id="__codelineno-0-657" name="__codelineno-0-657"></a><span class="sd">        `self` (modified in-place).</span>
 <a id="__codelineno-0-658" name="__codelineno-0-658"></a><span class="sd">    &quot;&quot;&quot;</span>
 <a id="__codelineno-0-659" name="__codelineno-0-659"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 <a id="__codelineno-0-660" name="__codelineno-0-660"></a>    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_affine</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
@@ -9071,7 +9071,7 @@ writer. For SimpleITK formats these are passed to
 <a id="__codelineno-0-718" name="__codelineno-0-718"></a><span class="sd">            extension.</span>
 <a id="__codelineno-0-719" name="__codelineno-0-719"></a><span class="sd">        **kwargs: Extra keyword arguments forwarded to the</span>
 <a id="__codelineno-0-720" name="__codelineno-0-720"></a><span class="sd">            writer. For SimpleITK formats these are passed to</span>
-<a id="__codelineno-0-721" name="__codelineno-0-721"></a><span class="sd">            ``SimpleITK.WriteImage()``.</span>
+<a id="__codelineno-0-721" name="__codelineno-0-721"></a><span class="sd">            `SimpleITK.WriteImage()`.</span>
 <a id="__codelineno-0-722" name="__codelineno-0-722"></a><span class="sd">    &quot;&quot;&quot;</span>
 <a id="__codelineno-0-723" name="__codelineno-0-723"></a>    <span class="n">path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
 <a id="__codelineno-0-724" name="__codelineno-0-724"></a>    <span class="k">if</span> <span class="n">is_nifti_zarr</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
@@ -9115,7 +9115,7 @@ full list of keyword arguments.</p>
 <span class="normal"><a href="#__codelineno-0-995">995</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-986" name="__codelineno-0-986"></a><span class="k">def</span><span class="w"> </span><span class="nf">plot</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
 <a id="__codelineno-0-987" name="__codelineno-0-987"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Plot 3 orthogonal slices of the image.</span>
 <a id="__codelineno-0-988" name="__codelineno-0-988"></a>
-<a id="__codelineno-0-989" name="__codelineno-0-989"></a><span class="sd">    Requires the ``[plot]`` extras (``pip install torchio[plot]``).</span>
+<a id="__codelineno-0-989" name="__codelineno-0-989"></a><span class="sd">    Requires the `[plot]` extras (`pip install torchio[plot]`).</span>
 <a id="__codelineno-0-990" name="__codelineno-0-990"></a><span class="sd">    See [`plot_image`][torchio.visualization.plot_image] for the</span>
 <a id="__codelineno-0-991" name="__codelineno-0-991"></a><span class="sd">    full list of keyword arguments.</span>
 <a id="__codelineno-0-992" name="__codelineno-0-992"></a><span class="sd">    &quot;&quot;&quot;</span>
@@ -9267,7 +9267,7 @@ right side of the screen (radiological convention).</p>
 <span class="normal"><a href="#__codelineno-0-1036">1036</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-997" name="__codelineno-0-997"></a><span class="k">def</span><span class="w"> </span><span class="nf">plot_interactive</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">height</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">300</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
 <a id="__codelineno-0-998" name="__codelineno-0-998"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Show an interactive NiiVue viewer in Jupyter.</span>
 <a id="__codelineno-0-999" name="__codelineno-0-999"></a>
-<a id="__codelineno-0-1000" name="__codelineno-0-1000"></a><span class="sd">    Requires ``ipyniivue`` (``pip install torchio[niivue]``).</span>
+<a id="__codelineno-0-1000" name="__codelineno-0-1000"></a><span class="sd">    Requires `ipyniivue` (`pip install torchio[niivue]`).</span>
 <a id="__codelineno-0-1001" name="__codelineno-0-1001"></a>
 <a id="__codelineno-0-1002" name="__codelineno-0-1002"></a><span class="sd">    The widget supports scrolling through slices, zooming, and</span>
 <a id="__codelineno-0-1003" name="__codelineno-0-1003"></a><span class="sd">    crosshair navigation.  Left hemisphere is displayed on the</span>
@@ -9277,10 +9277,10 @@ right side of the screen (radiological convention).</p>
 <a id="__codelineno-0-1007" name="__codelineno-0-1007"></a><span class="sd">        height: Height of the viewer in pixels.</span>
 <a id="__codelineno-0-1008" name="__codelineno-0-1008"></a>
 <a id="__codelineno-0-1009" name="__codelineno-0-1009"></a><span class="sd">    Returns:</span>
-<a id="__codelineno-0-1010" name="__codelineno-0-1010"></a><span class="sd">        An ``ipyniivue.NiiVue`` widget.</span>
+<a id="__codelineno-0-1010" name="__codelineno-0-1010"></a><span class="sd">        An `ipyniivue.NiiVue` widget.</span>
 <a id="__codelineno-0-1011" name="__codelineno-0-1011"></a>
 <a id="__codelineno-0-1012" name="__codelineno-0-1012"></a><span class="sd">    Raises:</span>
-<a id="__codelineno-0-1013" name="__codelineno-0-1013"></a><span class="sd">        ImportError: If ``ipyniivue`` is not installed.</span>
+<a id="__codelineno-0-1013" name="__codelineno-0-1013"></a><span class="sd">        ImportError: If `ipyniivue` is not installed.</span>
 <a id="__codelineno-0-1014" name="__codelineno-0-1014"></a><span class="sd">    &quot;&quot;&quot;</span>
 <a id="__codelineno-0-1015" name="__codelineno-0-1015"></a>    <span class="kn">import</span><span class="w"> </span><span class="nn">tempfile</span>
 <a id="__codelineno-0-1016" name="__codelineno-0-1016"></a>
@@ -9586,30 +9586,30 @@ not running inside a Jupyter notebook.</p>
 <a id="__codelineno-0-1048" name="__codelineno-0-1048"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
 <a id="__codelineno-0-1049" name="__codelineno-0-1049"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Save an animated GIF sweeping through slices.</span>
 <a id="__codelineno-0-1050" name="__codelineno-0-1050"></a>
-<a id="__codelineno-0-1051" name="__codelineno-0-1051"></a><span class="sd">    Requires ``Pillow`` (``pip install torchio[plot]``).</span>
+<a id="__codelineno-0-1051" name="__codelineno-0-1051"></a><span class="sd">    Requires `Pillow` (`pip install torchio[plot]`).</span>
 <a id="__codelineno-0-1052" name="__codelineno-0-1052"></a>
-<a id="__codelineno-0-1053" name="__codelineno-0-1053"></a><span class="sd">    When *output_path* is ``None`` and the code is running inside</span>
+<a id="__codelineno-0-1053" name="__codelineno-0-1053"></a><span class="sd">    When *output_path* is `None` and the code is running inside</span>
 <a id="__codelineno-0-1054" name="__codelineno-0-1054"></a><span class="sd">    a Jupyter notebook, the GIF is written to a temporary file and</span>
-<a id="__codelineno-0-1055" name="__codelineno-0-1055"></a><span class="sd">    returned as an ``IPython.display.Image`` for inline display.</span>
+<a id="__codelineno-0-1055" name="__codelineno-0-1055"></a><span class="sd">    returned as an `IPython.display.Image` for inline display.</span>
 <a id="__codelineno-0-1056" name="__codelineno-0-1056"></a><span class="sd">    Outside Jupyter, *output_path* is required.</span>
 <a id="__codelineno-0-1057" name="__codelineno-0-1057"></a>
 <a id="__codelineno-0-1058" name="__codelineno-0-1058"></a><span class="sd">    Args:</span>
-<a id="__codelineno-0-1059" name="__codelineno-0-1059"></a><span class="sd">        output_path: Path to the output ``.gif`` file.  ``None``</span>
+<a id="__codelineno-0-1059" name="__codelineno-0-1059"></a><span class="sd">        output_path: Path to the output `.gif` file.  `None`</span>
 <a id="__codelineno-0-1060" name="__codelineno-0-1060"></a><span class="sd">            to auto-create a temporary file (Jupyter only).</span>
 <a id="__codelineno-0-1061" name="__codelineno-0-1061"></a><span class="sd">        seconds: Duration of the full animation in seconds.</span>
-<a id="__codelineno-0-1062" name="__codelineno-0-1062"></a><span class="sd">        direction: Anatomical sweep direction (``&quot;I&quot;``, ``&quot;S&quot;``,</span>
-<a id="__codelineno-0-1063" name="__codelineno-0-1063"></a><span class="sd">            ``&quot;A&quot;``, ``&quot;P&quot;``, ``&quot;R&quot;``, or ``&quot;L&quot;``).</span>
+<a id="__codelineno-0-1062" name="__codelineno-0-1062"></a><span class="sd">        direction: Anatomical sweep direction (`&quot;I&quot;`, `&quot;S&quot;`,</span>
+<a id="__codelineno-0-1063" name="__codelineno-0-1063"></a><span class="sd">            `&quot;A&quot;`, `&quot;P&quot;`, `&quot;R&quot;`, or `&quot;L&quot;`).</span>
 <a id="__codelineno-0-1064" name="__codelineno-0-1064"></a><span class="sd">        loop: Number of loops (0 = infinite).</span>
-<a id="__codelineno-0-1065" name="__codelineno-0-1065"></a><span class="sd">        rescale: Rescale intensities to ``[0, 255]``.</span>
+<a id="__codelineno-0-1065" name="__codelineno-0-1065"></a><span class="sd">        rescale: Rescale intensities to `[0, 255]`.</span>
 <a id="__codelineno-0-1066" name="__codelineno-0-1066"></a><span class="sd">        optimize: Attempt to compress the GIF palette.</span>
 <a id="__codelineno-0-1067" name="__codelineno-0-1067"></a><span class="sd">        reverse: Reverse the temporal order of frames.</span>
 <a id="__codelineno-0-1068" name="__codelineno-0-1068"></a>
 <a id="__codelineno-0-1069" name="__codelineno-0-1069"></a><span class="sd">    Returns:</span>
-<a id="__codelineno-0-1070" name="__codelineno-0-1070"></a><span class="sd">        ``IPython.display.Image`` when running in Jupyter,</span>
-<a id="__codelineno-0-1071" name="__codelineno-0-1071"></a><span class="sd">        ``None`` otherwise.</span>
+<a id="__codelineno-0-1070" name="__codelineno-0-1070"></a><span class="sd">        `IPython.display.Image` when running in Jupyter,</span>
+<a id="__codelineno-0-1071" name="__codelineno-0-1071"></a><span class="sd">        `None` otherwise.</span>
 <a id="__codelineno-0-1072" name="__codelineno-0-1072"></a>
 <a id="__codelineno-0-1073" name="__codelineno-0-1073"></a><span class="sd">    Raises:</span>
-<a id="__codelineno-0-1074" name="__codelineno-0-1074"></a><span class="sd">        ValueError: If *output_path* is ``None`` and the code is</span>
+<a id="__codelineno-0-1074" name="__codelineno-0-1074"></a><span class="sd">        ValueError: If *output_path* is `None` and the code is</span>
 <a id="__codelineno-0-1075" name="__codelineno-0-1075"></a><span class="sd">            not running inside a Jupyter notebook.</span>
 <a id="__codelineno-0-1076" name="__codelineno-0-1076"></a><span class="sd">    &quot;&quot;&quot;</span>
 <a id="__codelineno-0-1077" name="__codelineno-0-1077"></a>    <span class="n">output_path</span> <span class="o">=</span> <span class="n">_resolve_media_path</span><span class="p">(</span><span class="n">output_path</span><span class="p">,</span> <span class="n">suffix</span><span class="o">=</span><span class="s2">&quot;.gif&quot;</span><span class="p">)</span>
@@ -9856,27 +9856,27 @@ not running inside a Jupyter notebook.</p>
 <a id="__codelineno-0-1103" name="__codelineno-0-1103"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
 <a id="__codelineno-0-1104" name="__codelineno-0-1104"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Create an MP4 video sweeping through slices.</span>
 <a id="__codelineno-0-1105" name="__codelineno-0-1105"></a>
-<a id="__codelineno-0-1106" name="__codelineno-0-1106"></a><span class="sd">    Requires ``ffmpeg-python`` (``pip install torchio[video]``).</span>
+<a id="__codelineno-0-1106" name="__codelineno-0-1106"></a><span class="sd">    Requires `ffmpeg-python` (`pip install torchio[video]`).</span>
 <a id="__codelineno-0-1107" name="__codelineno-0-1107"></a>
-<a id="__codelineno-0-1108" name="__codelineno-0-1108"></a><span class="sd">    When *output_path* is ``None`` and the code is running inside</span>
+<a id="__codelineno-0-1108" name="__codelineno-0-1108"></a><span class="sd">    When *output_path* is `None` and the code is running inside</span>
 <a id="__codelineno-0-1109" name="__codelineno-0-1109"></a><span class="sd">    a Jupyter notebook, the video is written to a temporary file</span>
-<a id="__codelineno-0-1110" name="__codelineno-0-1110"></a><span class="sd">    and returned as an ``IPython.display.Video`` for inline</span>
+<a id="__codelineno-0-1110" name="__codelineno-0-1110"></a><span class="sd">    and returned as an `IPython.display.Video` for inline</span>
 <a id="__codelineno-0-1111" name="__codelineno-0-1111"></a><span class="sd">    display.  Outside Jupyter, *output_path* is required.</span>
 <a id="__codelineno-0-1112" name="__codelineno-0-1112"></a>
 <a id="__codelineno-0-1113" name="__codelineno-0-1113"></a><span class="sd">    Args:</span>
-<a id="__codelineno-0-1114" name="__codelineno-0-1114"></a><span class="sd">        output_path: Path to the output ``.mp4`` file.  ``None``</span>
+<a id="__codelineno-0-1114" name="__codelineno-0-1114"></a><span class="sd">        output_path: Path to the output `.mp4` file.  `None`</span>
 <a id="__codelineno-0-1115" name="__codelineno-0-1115"></a><span class="sd">            to auto-create a temporary file (Jupyter only).</span>
 <a id="__codelineno-0-1116" name="__codelineno-0-1116"></a><span class="sd">        seconds: Duration of the full video in seconds.</span>
-<a id="__codelineno-0-1117" name="__codelineno-0-1117"></a><span class="sd">        direction: Anatomical sweep direction (``&quot;I&quot;``, ``&quot;S&quot;``,</span>
-<a id="__codelineno-0-1118" name="__codelineno-0-1118"></a><span class="sd">            ``&quot;A&quot;``, ``&quot;P&quot;``, ``&quot;R&quot;``, or ``&quot;L&quot;``).</span>
+<a id="__codelineno-0-1117" name="__codelineno-0-1117"></a><span class="sd">        direction: Anatomical sweep direction (`&quot;I&quot;`, `&quot;S&quot;`,</span>
+<a id="__codelineno-0-1118" name="__codelineno-0-1118"></a><span class="sd">            `&quot;A&quot;`, `&quot;P&quot;`, `&quot;R&quot;`, or `&quot;L&quot;`).</span>
 <a id="__codelineno-0-1119" name="__codelineno-0-1119"></a><span class="sd">        verbosity: ffmpeg log level.</span>
 <a id="__codelineno-0-1120" name="__codelineno-0-1120"></a>
 <a id="__codelineno-0-1121" name="__codelineno-0-1121"></a><span class="sd">    Returns:</span>
-<a id="__codelineno-0-1122" name="__codelineno-0-1122"></a><span class="sd">        ``IPython.display.Video`` when running in Jupyter,</span>
-<a id="__codelineno-0-1123" name="__codelineno-0-1123"></a><span class="sd">        ``None`` otherwise.</span>
+<a id="__codelineno-0-1122" name="__codelineno-0-1122"></a><span class="sd">        `IPython.display.Video` when running in Jupyter,</span>
+<a id="__codelineno-0-1123" name="__codelineno-0-1123"></a><span class="sd">        `None` otherwise.</span>
 <a id="__codelineno-0-1124" name="__codelineno-0-1124"></a>
 <a id="__codelineno-0-1125" name="__codelineno-0-1125"></a><span class="sd">    Raises:</span>
-<a id="__codelineno-0-1126" name="__codelineno-0-1126"></a><span class="sd">        ValueError: If *output_path* is ``None`` and the code is</span>
+<a id="__codelineno-0-1126" name="__codelineno-0-1126"></a><span class="sd">        ValueError: If *output_path* is `None` and the code is</span>
 <a id="__codelineno-0-1127" name="__codelineno-0-1127"></a><span class="sd">            not running inside a Jupyter notebook.</span>
 <a id="__codelineno-0-1128" name="__codelineno-0-1128"></a><span class="sd">    &quot;&quot;&quot;</span>
 <a id="__codelineno-0-1129" name="__codelineno-0-1129"></a>    <span class="n">output_path</span> <span class="o">=</span> <span class="n">_resolve_media_path</span><span class="p">(</span><span class="n">output_path</span><span class="p">,</span> <span class="n">suffix</span><span class="o">=</span><span class="s2">&quot;.mp4&quot;</span><span class="p">)</span>
@@ -11260,14 +11260,14 @@ dict-style lookup (e.g., <code>protocol="MPRAGE"</code>).</p>
 <a id="__codelineno-0-189" name="__codelineno-0-189"></a><span class="sd">            Only used for file-path sources.</span>
 <a id="__codelineno-0-190" name="__codelineno-0-190"></a><span class="sd">        reader_kwargs: Extra keyword arguments forwarded to the reader</span>
 <a id="__codelineno-0-191" name="__codelineno-0-191"></a><span class="sd">            function. For the default reader these are passed to</span>
-<a id="__codelineno-0-192" name="__codelineno-0-192"></a><span class="sd">            ``nibabel.load()`` or ``SimpleITK.ReadImage()``.</span>
+<a id="__codelineno-0-192" name="__codelineno-0-192"></a><span class="sd">            `nibabel.load()` or `SimpleITK.ReadImage()`.</span>
 <a id="__codelineno-0-193" name="__codelineno-0-193"></a><span class="sd">        affine: $4 \times 4$ affine matrix or</span>
 <a id="__codelineno-0-194" name="__codelineno-0-194"></a><span class="sd">            [`AffineMatrix`][torchio.AffineMatrix] instance. If given, overrides</span>
 <a id="__codelineno-0-195" name="__codelineno-0-195"></a><span class="sd">            the affine read from the file.</span>
-<a id="__codelineno-0-196" name="__codelineno-0-196"></a><span class="sd">        channels_last: If ``True``, the tensor is assumed to have</span>
+<a id="__codelineno-0-196" name="__codelineno-0-196"></a><span class="sd">        channels_last: If `True`, the tensor is assumed to have</span>
 <a id="__codelineno-0-197" name="__codelineno-0-197"></a><span class="sd">            shape $(I, J, K, C)$ and will be permuted to</span>
 <a id="__codelineno-0-198" name="__codelineno-0-198"></a><span class="sd">            $(C, I, J, K)$. Only used for tensor sources.</span>
-<a id="__codelineno-0-199" name="__codelineno-0-199"></a><span class="sd">        suffix: File suffix hint (e.g., ``&quot;.nii.gz&quot;``). Used for</span>
+<a id="__codelineno-0-199" name="__codelineno-0-199"></a><span class="sd">        suffix: File suffix hint (e.g., `&quot;.nii.gz&quot;`). Used for</span>
 <a id="__codelineno-0-200" name="__codelineno-0-200"></a><span class="sd">            file-like and bytes sources.</span>
 <a id="__codelineno-0-201" name="__codelineno-0-201"></a><span class="sd">        points: Named sets of [`Points`][torchio.Points] attached to</span>
 <a id="__codelineno-0-202" name="__codelineno-0-202"></a><span class="sd">            this image.</span>
@@ -11275,7 +11275,7 @@ dict-style lookup (e.g., <code>protocol="MPRAGE"</code>).</p>
 <a id="__codelineno-0-204" name="__codelineno-0-204"></a><span class="sd">            [`BoundingBoxes`][torchio.BoundingBoxes] attached to this</span>
 <a id="__codelineno-0-205" name="__codelineno-0-205"></a><span class="sd">            image.</span>
 <a id="__codelineno-0-206" name="__codelineno-0-206"></a><span class="sd">        **kwargs: Arbitrary metadata, accessible via attribute or</span>
-<a id="__codelineno-0-207" name="__codelineno-0-207"></a><span class="sd">            dict-style lookup (e.g., ``protocol=&quot;MPRAGE&quot;``).</span>
+<a id="__codelineno-0-207" name="__codelineno-0-207"></a><span class="sd">            dict-style lookup (e.g., `protocol=&quot;MPRAGE&quot;`).</span>
 <a id="__codelineno-0-208" name="__codelineno-0-208"></a>
 <a id="__codelineno-0-209" name="__codelineno-0-209"></a><span class="sd">    Examples:</span>
 <a id="__codelineno-0-210" name="__codelineno-0-210"></a><span class="sd">        &gt;&gt;&gt; import torchio as tio</span>
@@ -11435,7 +11435,7 @@ dict-style lookup (e.g., <code>protocol="MPRAGE"</code>).</p>
 <a id="__codelineno-0-364" name="__codelineno-0-364"></a>
 <a id="__codelineno-0-365" name="__codelineno-0-365"></a>    <span class="nd">@staticmethod</span>
 <a id="__codelineno-0-366" name="__codelineno-0-366"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">_is_zarr_store</span><span class="p">(</span><span class="n">obj</span><span class="p">:</span> <span class="nb">object</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-<a id="__codelineno-0-367" name="__codelineno-0-367"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Check if *obj* is a ``zarr.abc.store.Store`` without importing zarr.&quot;&quot;&quot;</span>
+<a id="__codelineno-0-367" name="__codelineno-0-367"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Check if *obj* is a `zarr.abc.store.Store` without importing zarr.&quot;&quot;&quot;</span>
 <a id="__codelineno-0-368" name="__codelineno-0-368"></a>        <span class="k">try</span><span class="p">:</span>
 <a id="__codelineno-0-369" name="__codelineno-0-369"></a>            <span class="kn">from</span><span class="w"> </span><span class="nn">zarr.abc.store</span><span class="w"> </span><span class="kn">import</span> <span class="n">Store</span>
 <a id="__codelineno-0-370" name="__codelineno-0-370"></a>        <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>  <span class="c1"># zarr not installed</span>
@@ -11471,13 +11471,13 @@ dict-style lookup (e.g., <code>protocol="MPRAGE"</code>).</p>
 <a id="__codelineno-0-400" name="__codelineno-0-400"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Validate and copy an annotation dict.</span>
 <a id="__codelineno-0-401" name="__codelineno-0-401"></a>
 <a id="__codelineno-0-402" name="__codelineno-0-402"></a><span class="sd">        Args:</span>
-<a id="__codelineno-0-403" name="__codelineno-0-403"></a><span class="sd">            annotations: Mapping of names to annotation objects, or ``None``.</span>
-<a id="__codelineno-0-404" name="__codelineno-0-404"></a><span class="sd">            type_name: Expected class name (``&quot;Points&quot;`` or</span>
-<a id="__codelineno-0-405" name="__codelineno-0-405"></a><span class="sd">                ``&quot;BoundingBoxes&quot;``) used for validation and error messages.</span>
+<a id="__codelineno-0-403" name="__codelineno-0-403"></a><span class="sd">            annotations: Mapping of names to annotation objects, or `None`.</span>
+<a id="__codelineno-0-404" name="__codelineno-0-404"></a><span class="sd">            type_name: Expected class name (`&quot;Points&quot;` or</span>
+<a id="__codelineno-0-405" name="__codelineno-0-405"></a><span class="sd">                `&quot;BoundingBoxes&quot;`) used for validation and error messages.</span>
 <a id="__codelineno-0-406" name="__codelineno-0-406"></a>
 <a id="__codelineno-0-407" name="__codelineno-0-407"></a><span class="sd">        Returns:</span>
 <a id="__codelineno-0-408" name="__codelineno-0-408"></a><span class="sd">            A shallow copy of the dict, or an empty dict if *annotations*</span>
-<a id="__codelineno-0-409" name="__codelineno-0-409"></a><span class="sd">            is ``None``.</span>
+<a id="__codelineno-0-409" name="__codelineno-0-409"></a><span class="sd">            is `None`.</span>
 <a id="__codelineno-0-410" name="__codelineno-0-410"></a>
 <a id="__codelineno-0-411" name="__codelineno-0-411"></a><span class="sd">        Raises:</span>
 <a id="__codelineno-0-412" name="__codelineno-0-412"></a><span class="sd">            TypeError: If any value is not an instance of the expected class.</span>
@@ -11722,10 +11722,10 @@ dict-style lookup (e.g., <code>protocol="MPRAGE"</code>).</p>
 <a id="__codelineno-0-651" name="__codelineno-0-651"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">to</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Self</span><span class="p">:</span>
 <a id="__codelineno-0-652" name="__codelineno-0-652"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Move image data and affine to a device and/or cast to a dtype.</span>
 <a id="__codelineno-0-653" name="__codelineno-0-653"></a>
-<a id="__codelineno-0-654" name="__codelineno-0-654"></a><span class="sd">        Accepts the same arguments as ``torch.Tensor.to()``.</span>
+<a id="__codelineno-0-654" name="__codelineno-0-654"></a><span class="sd">        Accepts the same arguments as `torch.Tensor.to()`.</span>
 <a id="__codelineno-0-655" name="__codelineno-0-655"></a>
 <a id="__codelineno-0-656" name="__codelineno-0-656"></a><span class="sd">        Returns:</span>
-<a id="__codelineno-0-657" name="__codelineno-0-657"></a><span class="sd">            ``self`` (modified in-place).</span>
+<a id="__codelineno-0-657" name="__codelineno-0-657"></a><span class="sd">            `self` (modified in-place).</span>
 <a id="__codelineno-0-658" name="__codelineno-0-658"></a><span class="sd">        &quot;&quot;&quot;</span>
 <a id="__codelineno-0-659" name="__codelineno-0-659"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 <a id="__codelineno-0-660" name="__codelineno-0-660"></a>        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_affine</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
@@ -11789,7 +11789,7 @@ dict-style lookup (e.g., <code>protocol="MPRAGE"</code>).</p>
 <a id="__codelineno-0-718" name="__codelineno-0-718"></a><span class="sd">                extension.</span>
 <a id="__codelineno-0-719" name="__codelineno-0-719"></a><span class="sd">            **kwargs: Extra keyword arguments forwarded to the</span>
 <a id="__codelineno-0-720" name="__codelineno-0-720"></a><span class="sd">                writer. For SimpleITK formats these are passed to</span>
-<a id="__codelineno-0-721" name="__codelineno-0-721"></a><span class="sd">                ``SimpleITK.WriteImage()``.</span>
+<a id="__codelineno-0-721" name="__codelineno-0-721"></a><span class="sd">                `SimpleITK.WriteImage()`.</span>
 <a id="__codelineno-0-722" name="__codelineno-0-722"></a><span class="sd">        &quot;&quot;&quot;</span>
 <a id="__codelineno-0-723" name="__codelineno-0-723"></a>        <span class="n">path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
 <a id="__codelineno-0-724" name="__codelineno-0-724"></a>        <span class="k">if</span> <span class="n">is_nifti_zarr</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
@@ -11833,7 +11833,7 @@ dict-style lookup (e.g., <code>protocol="MPRAGE"</code>).</p>
 <a id="__codelineno-0-762" name="__codelineno-0-762"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Create the lazy backend from path or zarr store, without loading data.</span>
 <a id="__codelineno-0-763" name="__codelineno-0-763"></a>
 <a id="__codelineno-0-764" name="__codelineno-0-764"></a><span class="sd">        For NIfTI and NIfTI-Zarr files, creates a lazy backend that supports</span>
-<a id="__codelineno-0-765" name="__codelineno-0-765"></a><span class="sd">        header-only reads. For zarr stores, calls ``zarr2nii`` to build a</span>
+<a id="__codelineno-0-765" name="__codelineno-0-765"></a><span class="sd">        header-only reads. For zarr stores, calls `zarr2nii` to build a</span>
 <a id="__codelineno-0-766" name="__codelineno-0-766"></a><span class="sd">        dask-backed nibabel image. For other formats (NRRD, MHA, etc.), no</span>
 <a id="__codelineno-0-767" name="__codelineno-0-767"></a><span class="sd">        lazy backend is available. Callers should fall back to other methods.</span>
 <a id="__codelineno-0-768" name="__codelineno-0-768"></a><span class="sd">        &quot;&quot;&quot;</span>
@@ -11910,7 +11910,7 @@ dict-style lookup (e.g., <code>protocol="MPRAGE"</code>).</p>
 <a id="__codelineno-0-839" name="__codelineno-0-839"></a>    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
 <a id="__codelineno-0-840" name="__codelineno-0-840"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Slice the image or look up metadata by key.</span>
 <a id="__codelineno-0-841" name="__codelineno-0-841"></a>
-<a id="__codelineno-0-842" name="__codelineno-0-842"></a><span class="sd">        When *item* is a ``str``, the metadata value with that key is</span>
+<a id="__codelineno-0-842" name="__codelineno-0-842"></a><span class="sd">        When *item* is a `str`, the metadata value with that key is</span>
 <a id="__codelineno-0-843" name="__codelineno-0-843"></a><span class="sd">        returned. Otherwise, the image is sliced along channel and/or</span>
 <a id="__codelineno-0-844" name="__codelineno-0-844"></a><span class="sd">        spatial dimensions.</span>
 <a id="__codelineno-0-845" name="__codelineno-0-845"></a>
@@ -11997,7 +11997,7 @@ dict-style lookup (e.g., <code>protocol="MPRAGE"</code>).</p>
 <a id="__codelineno-0-926" name="__codelineno-0-926"></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">sc</span><span class="p">,</span> <span class="n">si</span><span class="p">,</span> <span class="n">sj</span><span class="p">,</span> <span class="n">sk</span><span class="p">]</span>
 <a id="__codelineno-0-927" name="__codelineno-0-927"></a>
 <a id="__codelineno-0-928" name="__codelineno-0-928"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">_repr_path_line</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<a id="__codelineno-0-929" name="__codelineno-0-929"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Build the ``path:`` line for ``__repr__``.&quot;&quot;&quot;</span>
+<a id="__codelineno-0-929" name="__codelineno-0-929"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Build the `path:` line for `__repr__`.&quot;&quot;&quot;</span>
 <a id="__codelineno-0-930" name="__codelineno-0-930"></a>        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_remote_zarr_uri</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
 <a id="__codelineno-0-931" name="__codelineno-0-931"></a>            <span class="n">status</span> <span class="o">=</span> <span class="s2">&quot;loaded&quot;</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_loaded</span> <span class="k">else</span> <span class="s2">&quot;lazy, NIfTI-Zarr&quot;</span>
 <a id="__codelineno-0-932" name="__codelineno-0-932"></a>            <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;    path:        </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_remote_zarr_uri</span><span class="si">}</span><span class="s2"> (</span><span class="si">{</span><span class="n">status</span><span class="si">}</span><span class="s2">)&quot;</span>
@@ -12057,7 +12057,7 @@ dict-style lookup (e.g., <code>protocol="MPRAGE"</code>).</p>
 <a id="__codelineno-0-986" name="__codelineno-0-986"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">plot</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
 <a id="__codelineno-0-987" name="__codelineno-0-987"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Plot 3 orthogonal slices of the image.</span>
 <a id="__codelineno-0-988" name="__codelineno-0-988"></a>
-<a id="__codelineno-0-989" name="__codelineno-0-989"></a><span class="sd">        Requires the ``[plot]`` extras (``pip install torchio[plot]``).</span>
+<a id="__codelineno-0-989" name="__codelineno-0-989"></a><span class="sd">        Requires the `[plot]` extras (`pip install torchio[plot]`).</span>
 <a id="__codelineno-0-990" name="__codelineno-0-990"></a><span class="sd">        See [`plot_image`][torchio.visualization.plot_image] for the</span>
 <a id="__codelineno-0-991" name="__codelineno-0-991"></a><span class="sd">        full list of keyword arguments.</span>
 <a id="__codelineno-0-992" name="__codelineno-0-992"></a><span class="sd">        &quot;&quot;&quot;</span>
@@ -12068,7 +12068,7 @@ dict-style lookup (e.g., <code>protocol="MPRAGE"</code>).</p>
 <a id="__codelineno-0-997" name="__codelineno-0-997"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">plot_interactive</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">height</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">300</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
 <a id="__codelineno-0-998" name="__codelineno-0-998"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Show an interactive NiiVue viewer in Jupyter.</span>
 <a id="__codelineno-0-999" name="__codelineno-0-999"></a>
-<a id="__codelineno-0-1000" name="__codelineno-0-1000"></a><span class="sd">        Requires ``ipyniivue`` (``pip install torchio[niivue]``).</span>
+<a id="__codelineno-0-1000" name="__codelineno-0-1000"></a><span class="sd">        Requires `ipyniivue` (`pip install torchio[niivue]`).</span>
 <a id="__codelineno-0-1001" name="__codelineno-0-1001"></a>
 <a id="__codelineno-0-1002" name="__codelineno-0-1002"></a><span class="sd">        The widget supports scrolling through slices, zooming, and</span>
 <a id="__codelineno-0-1003" name="__codelineno-0-1003"></a><span class="sd">        crosshair navigation.  Left hemisphere is displayed on the</span>
@@ -12078,10 +12078,10 @@ dict-style lookup (e.g., <code>protocol="MPRAGE"</code>).</p>
 <a id="__codelineno-0-1007" name="__codelineno-0-1007"></a><span class="sd">            height: Height of the viewer in pixels.</span>
 <a id="__codelineno-0-1008" name="__codelineno-0-1008"></a>
 <a id="__codelineno-0-1009" name="__codelineno-0-1009"></a><span class="sd">        Returns:</span>
-<a id="__codelineno-0-1010" name="__codelineno-0-1010"></a><span class="sd">            An ``ipyniivue.NiiVue`` widget.</span>
+<a id="__codelineno-0-1010" name="__codelineno-0-1010"></a><span class="sd">            An `ipyniivue.NiiVue` widget.</span>
 <a id="__codelineno-0-1011" name="__codelineno-0-1011"></a>
 <a id="__codelineno-0-1012" name="__codelineno-0-1012"></a><span class="sd">        Raises:</span>
-<a id="__codelineno-0-1013" name="__codelineno-0-1013"></a><span class="sd">            ImportError: If ``ipyniivue`` is not installed.</span>
+<a id="__codelineno-0-1013" name="__codelineno-0-1013"></a><span class="sd">            ImportError: If `ipyniivue` is not installed.</span>
 <a id="__codelineno-0-1014" name="__codelineno-0-1014"></a><span class="sd">        &quot;&quot;&quot;</span>
 <a id="__codelineno-0-1015" name="__codelineno-0-1015"></a>        <span class="kn">import</span><span class="w"> </span><span class="nn">tempfile</span>
 <a id="__codelineno-0-1016" name="__codelineno-0-1016"></a>
@@ -12119,30 +12119,30 @@ dict-style lookup (e.g., <code>protocol="MPRAGE"</code>).</p>
 <a id="__codelineno-0-1048" name="__codelineno-0-1048"></a>    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
 <a id="__codelineno-0-1049" name="__codelineno-0-1049"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Save an animated GIF sweeping through slices.</span>
 <a id="__codelineno-0-1050" name="__codelineno-0-1050"></a>
-<a id="__codelineno-0-1051" name="__codelineno-0-1051"></a><span class="sd">        Requires ``Pillow`` (``pip install torchio[plot]``).</span>
+<a id="__codelineno-0-1051" name="__codelineno-0-1051"></a><span class="sd">        Requires `Pillow` (`pip install torchio[plot]`).</span>
 <a id="__codelineno-0-1052" name="__codelineno-0-1052"></a>
-<a id="__codelineno-0-1053" name="__codelineno-0-1053"></a><span class="sd">        When *output_path* is ``None`` and the code is running inside</span>
+<a id="__codelineno-0-1053" name="__codelineno-0-1053"></a><span class="sd">        When *output_path* is `None` and the code is running inside</span>
 <a id="__codelineno-0-1054" name="__codelineno-0-1054"></a><span class="sd">        a Jupyter notebook, the GIF is written to a temporary file and</span>
-<a id="__codelineno-0-1055" name="__codelineno-0-1055"></a><span class="sd">        returned as an ``IPython.display.Image`` for inline display.</span>
+<a id="__codelineno-0-1055" name="__codelineno-0-1055"></a><span class="sd">        returned as an `IPython.display.Image` for inline display.</span>
 <a id="__codelineno-0-1056" name="__codelineno-0-1056"></a><span class="sd">        Outside Jupyter, *output_path* is required.</span>
 <a id="__codelineno-0-1057" name="__codelineno-0-1057"></a>
 <a id="__codelineno-0-1058" name="__codelineno-0-1058"></a><span class="sd">        Args:</span>
-<a id="__codelineno-0-1059" name="__codelineno-0-1059"></a><span class="sd">            output_path: Path to the output ``.gif`` file.  ``None``</span>
+<a id="__codelineno-0-1059" name="__codelineno-0-1059"></a><span class="sd">            output_path: Path to the output `.gif` file.  `None`</span>
 <a id="__codelineno-0-1060" name="__codelineno-0-1060"></a><span class="sd">                to auto-create a temporary file (Jupyter only).</span>
 <a id="__codelineno-0-1061" name="__codelineno-0-1061"></a><span class="sd">            seconds: Duration of the full animation in seconds.</span>
-<a id="__codelineno-0-1062" name="__codelineno-0-1062"></a><span class="sd">            direction: Anatomical sweep direction (``&quot;I&quot;``, ``&quot;S&quot;``,</span>
-<a id="__codelineno-0-1063" name="__codelineno-0-1063"></a><span class="sd">                ``&quot;A&quot;``, ``&quot;P&quot;``, ``&quot;R&quot;``, or ``&quot;L&quot;``).</span>
+<a id="__codelineno-0-1062" name="__codelineno-0-1062"></a><span class="sd">            direction: Anatomical sweep direction (`&quot;I&quot;`, `&quot;S&quot;`,</span>
+<a id="__codelineno-0-1063" name="__codelineno-0-1063"></a><span class="sd">                `&quot;A&quot;`, `&quot;P&quot;`, `&quot;R&quot;`, or `&quot;L&quot;`).</span>
 <a id="__codelineno-0-1064" name="__codelineno-0-1064"></a><span class="sd">            loop: Number of loops (0 = infinite).</span>
-<a id="__codelineno-0-1065" name="__codelineno-0-1065"></a><span class="sd">            rescale: Rescale intensities to ``[0, 255]``.</span>
+<a id="__codelineno-0-1065" name="__codelineno-0-1065"></a><span class="sd">            rescale: Rescale intensities to `[0, 255]`.</span>
 <a id="__codelineno-0-1066" name="__codelineno-0-1066"></a><span class="sd">            optimize: Attempt to compress the GIF palette.</span>
 <a id="__codelineno-0-1067" name="__codelineno-0-1067"></a><span class="sd">            reverse: Reverse the temporal order of frames.</span>
 <a id="__codelineno-0-1068" name="__codelineno-0-1068"></a>
 <a id="__codelineno-0-1069" name="__codelineno-0-1069"></a><span class="sd">        Returns:</span>
-<a id="__codelineno-0-1070" name="__codelineno-0-1070"></a><span class="sd">            ``IPython.display.Image`` when running in Jupyter,</span>
-<a id="__codelineno-0-1071" name="__codelineno-0-1071"></a><span class="sd">            ``None`` otherwise.</span>
+<a id="__codelineno-0-1070" name="__codelineno-0-1070"></a><span class="sd">            `IPython.display.Image` when running in Jupyter,</span>
+<a id="__codelineno-0-1071" name="__codelineno-0-1071"></a><span class="sd">            `None` otherwise.</span>
 <a id="__codelineno-0-1072" name="__codelineno-0-1072"></a>
 <a id="__codelineno-0-1073" name="__codelineno-0-1073"></a><span class="sd">        Raises:</span>
-<a id="__codelineno-0-1074" name="__codelineno-0-1074"></a><span class="sd">            ValueError: If *output_path* is ``None`` and the code is</span>
+<a id="__codelineno-0-1074" name="__codelineno-0-1074"></a><span class="sd">            ValueError: If *output_path* is `None` and the code is</span>
 <a id="__codelineno-0-1075" name="__codelineno-0-1075"></a><span class="sd">                not running inside a Jupyter notebook.</span>
 <a id="__codelineno-0-1076" name="__codelineno-0-1076"></a><span class="sd">        &quot;&quot;&quot;</span>
 <a id="__codelineno-0-1077" name="__codelineno-0-1077"></a>        <span class="n">output_path</span> <span class="o">=</span> <span class="n">_resolve_media_path</span><span class="p">(</span><span class="n">output_path</span><span class="p">,</span> <span class="n">suffix</span><span class="o">=</span><span class="s2">&quot;.gif&quot;</span><span class="p">)</span>
@@ -12174,27 +12174,27 @@ dict-style lookup (e.g., <code>protocol="MPRAGE"</code>).</p>
 <a id="__codelineno-0-1103" name="__codelineno-0-1103"></a>    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
 <a id="__codelineno-0-1104" name="__codelineno-0-1104"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Create an MP4 video sweeping through slices.</span>
 <a id="__codelineno-0-1105" name="__codelineno-0-1105"></a>
-<a id="__codelineno-0-1106" name="__codelineno-0-1106"></a><span class="sd">        Requires ``ffmpeg-python`` (``pip install torchio[video]``).</span>
+<a id="__codelineno-0-1106" name="__codelineno-0-1106"></a><span class="sd">        Requires `ffmpeg-python` (`pip install torchio[video]`).</span>
 <a id="__codelineno-0-1107" name="__codelineno-0-1107"></a>
-<a id="__codelineno-0-1108" name="__codelineno-0-1108"></a><span class="sd">        When *output_path* is ``None`` and the code is running inside</span>
+<a id="__codelineno-0-1108" name="__codelineno-0-1108"></a><span class="sd">        When *output_path* is `None` and the code is running inside</span>
 <a id="__codelineno-0-1109" name="__codelineno-0-1109"></a><span class="sd">        a Jupyter notebook, the video is written to a temporary file</span>
-<a id="__codelineno-0-1110" name="__codelineno-0-1110"></a><span class="sd">        and returned as an ``IPython.display.Video`` for inline</span>
+<a id="__codelineno-0-1110" name="__codelineno-0-1110"></a><span class="sd">        and returned as an `IPython.display.Video` for inline</span>
 <a id="__codelineno-0-1111" name="__codelineno-0-1111"></a><span class="sd">        display.  Outside Jupyter, *output_path* is required.</span>
 <a id="__codelineno-0-1112" name="__codelineno-0-1112"></a>
 <a id="__codelineno-0-1113" name="__codelineno-0-1113"></a><span class="sd">        Args:</span>
-<a id="__codelineno-0-1114" name="__codelineno-0-1114"></a><span class="sd">            output_path: Path to the output ``.mp4`` file.  ``None``</span>
+<a id="__codelineno-0-1114" name="__codelineno-0-1114"></a><span class="sd">            output_path: Path to the output `.mp4` file.  `None`</span>
 <a id="__codelineno-0-1115" name="__codelineno-0-1115"></a><span class="sd">                to auto-create a temporary file (Jupyter only).</span>
 <a id="__codelineno-0-1116" name="__codelineno-0-1116"></a><span class="sd">            seconds: Duration of the full video in seconds.</span>
-<a id="__codelineno-0-1117" name="__codelineno-0-1117"></a><span class="sd">            direction: Anatomical sweep direction (``&quot;I&quot;``, ``&quot;S&quot;``,</span>
-<a id="__codelineno-0-1118" name="__codelineno-0-1118"></a><span class="sd">                ``&quot;A&quot;``, ``&quot;P&quot;``, ``&quot;R&quot;``, or ``&quot;L&quot;``).</span>
+<a id="__codelineno-0-1117" name="__codelineno-0-1117"></a><span class="sd">            direction: Anatomical sweep direction (`&quot;I&quot;`, `&quot;S&quot;`,</span>
+<a id="__codelineno-0-1118" name="__codelineno-0-1118"></a><span class="sd">                `&quot;A&quot;`, `&quot;P&quot;`, `&quot;R&quot;`, or `&quot;L&quot;`).</span>
 <a id="__codelineno-0-1119" name="__codelineno-0-1119"></a><span class="sd">            verbosity: ffmpeg log level.</span>
 <a id="__codelineno-0-1120" name="__codelineno-0-1120"></a>
 <a id="__codelineno-0-1121" name="__codelineno-0-1121"></a><span class="sd">        Returns:</span>
-<a id="__codelineno-0-1122" name="__codelineno-0-1122"></a><span class="sd">            ``IPython.display.Video`` when running in Jupyter,</span>
-<a id="__codelineno-0-1123" name="__codelineno-0-1123"></a><span class="sd">            ``None`` otherwise.</span>
+<a id="__codelineno-0-1122" name="__codelineno-0-1122"></a><span class="sd">            `IPython.display.Video` when running in Jupyter,</span>
+<a id="__codelineno-0-1123" name="__codelineno-0-1123"></a><span class="sd">            `None` otherwise.</span>
 <a id="__codelineno-0-1124" name="__codelineno-0-1124"></a>
 <a id="__codelineno-0-1125" name="__codelineno-0-1125"></a><span class="sd">        Raises:</span>
-<a id="__codelineno-0-1126" name="__codelineno-0-1126"></a><span class="sd">            ValueError: If *output_path* is ``None`` and the code is</span>
+<a id="__codelineno-0-1126" name="__codelineno-0-1126"></a><span class="sd">            ValueError: If *output_path* is `None` and the code is</span>
 <a id="__codelineno-0-1127" name="__codelineno-0-1127"></a><span class="sd">                not running inside a Jupyter notebook.</span>
 <a id="__codelineno-0-1128" name="__codelineno-0-1128"></a><span class="sd">        &quot;&quot;&quot;</span>
 <a id="__codelineno-0-1129" name="__codelineno-0-1129"></a>        <span class="n">output_path</span> <span class="o">=</span> <span class="n">_resolve_media_path</span><span class="p">(</span><span class="n">output_path</span><span class="p">,</span> <span class="n">suffix</span><span class="o">=</span><span class="s2">&quot;.mp4&quot;</span><span class="p">)</span>
@@ -12809,14 +12809,14 @@ are skipped (with a warning if <code>warn=True</code>).</p>
 <a id="__codelineno-0-29" name="__codelineno-0-29"></a>
 <a id="__codelineno-0-30" name="__codelineno-0-30"></a><span class="sd">    Returns a [`Compose`][torchio.Compose] of the inverse of each</span>
 <a id="__codelineno-0-31" name="__codelineno-0-31"></a><span class="sd">    applied transform, in reverse order. Non-invertible transforms</span>
-<a id="__codelineno-0-32" name="__codelineno-0-32"></a><span class="sd">    are skipped (with a warning if ``warn=True``).</span>
+<a id="__codelineno-0-32" name="__codelineno-0-32"></a><span class="sd">    are skipped (with a warning if `warn=True`).</span>
 <a id="__codelineno-0-33" name="__codelineno-0-33"></a>
 <a id="__codelineno-0-34" name="__codelineno-0-34"></a><span class="sd">    Args:</span>
 <a id="__codelineno-0-35" name="__codelineno-0-35"></a><span class="sd">        warn: Issue a warning for non-invertible transforms.</span>
 <a id="__codelineno-0-36" name="__codelineno-0-36"></a><span class="sd">        ignore_intensity: Skip all intensity transforms.</span>
 <a id="__codelineno-0-37" name="__codelineno-0-37"></a>
 <a id="__codelineno-0-38" name="__codelineno-0-38"></a><span class="sd">    Returns:</span>
-<a id="__codelineno-0-39" name="__codelineno-0-39"></a><span class="sd">        A ``Compose`` transform that undoes the history.</span>
+<a id="__codelineno-0-39" name="__codelineno-0-39"></a><span class="sd">        A `Compose` transform that undoes the history.</span>
 <a id="__codelineno-0-40" name="__codelineno-0-40"></a><span class="sd">    &quot;&quot;&quot;</span>
 <a id="__codelineno-0-41" name="__codelineno-0-41"></a>    <span class="kn">from</span><span class="w"> </span><span class="nn">..transforms.inverse</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_inverse_transform</span>
 <a id="__codelineno-0-42" name="__codelineno-0-42"></a>
@@ -12937,12 +12937,12 @@ can be ignored with <code>ignore_intensity=True</code>.</p>
 <a id="__codelineno-0-50" name="__codelineno-0-50"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Apply the inverse of all applied transforms, in reverse order.</span>
 <a id="__codelineno-0-51" name="__codelineno-0-51"></a>
 <a id="__codelineno-0-52" name="__codelineno-0-52"></a><span class="sd">    Non-invertible transforms are skipped. Intensity transforms</span>
-<a id="__codelineno-0-53" name="__codelineno-0-53"></a><span class="sd">    can be ignored with ``ignore_intensity=True``.</span>
+<a id="__codelineno-0-53" name="__codelineno-0-53"></a><span class="sd">    can be ignored with `ignore_intensity=True`.</span>
 <a id="__codelineno-0-54" name="__codelineno-0-54"></a>
 <a id="__codelineno-0-55" name="__codelineno-0-55"></a><span class="sd">    Args:</span>
 <a id="__codelineno-0-56" name="__codelineno-0-56"></a><span class="sd">        **kwargs: Forwarded to</span>
-<a id="__codelineno-0-57" name="__codelineno-0-57"></a><span class="sd">            ``get_inverse_transform()`` (``warn``,</span>
-<a id="__codelineno-0-58" name="__codelineno-0-58"></a><span class="sd">            ``ignore_intensity``).</span>
+<a id="__codelineno-0-57" name="__codelineno-0-57"></a><span class="sd">            `get_inverse_transform()` (`warn`,</span>
+<a id="__codelineno-0-58" name="__codelineno-0-58"></a><span class="sd">            `ignore_intensity`).</span>
 <a id="__codelineno-0-59" name="__codelineno-0-59"></a>
 <a id="__codelineno-0-60" name="__codelineno-0-60"></a><span class="sd">    Returns:</span>
 <a id="__codelineno-0-61" name="__codelineno-0-61"></a><span class="sd">        Data with transforms undone.</span>
@@ -13158,10 +13158,10 @@ can be ignored with <code>ignore_intensity=True</code>.</p>
 <span class="normal"><a href="#__codelineno-0-662">662</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-651" name="__codelineno-0-651"></a><span class="k">def</span><span class="w"> </span><span class="nf">to</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Self</span><span class="p">:</span>
 <a id="__codelineno-0-652" name="__codelineno-0-652"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Move image data and affine to a device and/or cast to a dtype.</span>
 <a id="__codelineno-0-653" name="__codelineno-0-653"></a>
-<a id="__codelineno-0-654" name="__codelineno-0-654"></a><span class="sd">    Accepts the same arguments as ``torch.Tensor.to()``.</span>
+<a id="__codelineno-0-654" name="__codelineno-0-654"></a><span class="sd">    Accepts the same arguments as `torch.Tensor.to()`.</span>
 <a id="__codelineno-0-655" name="__codelineno-0-655"></a>
 <a id="__codelineno-0-656" name="__codelineno-0-656"></a><span class="sd">    Returns:</span>
-<a id="__codelineno-0-657" name="__codelineno-0-657"></a><span class="sd">        ``self`` (modified in-place).</span>
+<a id="__codelineno-0-657" name="__codelineno-0-657"></a><span class="sd">        `self` (modified in-place).</span>
 <a id="__codelineno-0-658" name="__codelineno-0-658"></a><span class="sd">    &quot;&quot;&quot;</span>
 <a id="__codelineno-0-659" name="__codelineno-0-659"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 <a id="__codelineno-0-660" name="__codelineno-0-660"></a>    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_affine</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
@@ -13477,7 +13477,7 @@ writer. For SimpleITK formats these are passed to
 <a id="__codelineno-0-718" name="__codelineno-0-718"></a><span class="sd">            extension.</span>
 <a id="__codelineno-0-719" name="__codelineno-0-719"></a><span class="sd">        **kwargs: Extra keyword arguments forwarded to the</span>
 <a id="__codelineno-0-720" name="__codelineno-0-720"></a><span class="sd">            writer. For SimpleITK formats these are passed to</span>
-<a id="__codelineno-0-721" name="__codelineno-0-721"></a><span class="sd">            ``SimpleITK.WriteImage()``.</span>
+<a id="__codelineno-0-721" name="__codelineno-0-721"></a><span class="sd">            `SimpleITK.WriteImage()`.</span>
 <a id="__codelineno-0-722" name="__codelineno-0-722"></a><span class="sd">    &quot;&quot;&quot;</span>
 <a id="__codelineno-0-723" name="__codelineno-0-723"></a>    <span class="n">path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
 <a id="__codelineno-0-724" name="__codelineno-0-724"></a>    <span class="k">if</span> <span class="n">is_nifti_zarr</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
@@ -13521,7 +13521,7 @@ full list of keyword arguments.</p>
 <span class="normal"><a href="#__codelineno-0-995">995</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-986" name="__codelineno-0-986"></a><span class="k">def</span><span class="w"> </span><span class="nf">plot</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
 <a id="__codelineno-0-987" name="__codelineno-0-987"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Plot 3 orthogonal slices of the image.</span>
 <a id="__codelineno-0-988" name="__codelineno-0-988"></a>
-<a id="__codelineno-0-989" name="__codelineno-0-989"></a><span class="sd">    Requires the ``[plot]`` extras (``pip install torchio[plot]``).</span>
+<a id="__codelineno-0-989" name="__codelineno-0-989"></a><span class="sd">    Requires the `[plot]` extras (`pip install torchio[plot]`).</span>
 <a id="__codelineno-0-990" name="__codelineno-0-990"></a><span class="sd">    See [`plot_image`][torchio.visualization.plot_image] for the</span>
 <a id="__codelineno-0-991" name="__codelineno-0-991"></a><span class="sd">    full list of keyword arguments.</span>
 <a id="__codelineno-0-992" name="__codelineno-0-992"></a><span class="sd">    &quot;&quot;&quot;</span>
@@ -13673,7 +13673,7 @@ right side of the screen (radiological convention).</p>
 <span class="normal"><a href="#__codelineno-0-1036">1036</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-997" name="__codelineno-0-997"></a><span class="k">def</span><span class="w"> </span><span class="nf">plot_interactive</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">height</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">300</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
 <a id="__codelineno-0-998" name="__codelineno-0-998"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Show an interactive NiiVue viewer in Jupyter.</span>
 <a id="__codelineno-0-999" name="__codelineno-0-999"></a>
-<a id="__codelineno-0-1000" name="__codelineno-0-1000"></a><span class="sd">    Requires ``ipyniivue`` (``pip install torchio[niivue]``).</span>
+<a id="__codelineno-0-1000" name="__codelineno-0-1000"></a><span class="sd">    Requires `ipyniivue` (`pip install torchio[niivue]`).</span>
 <a id="__codelineno-0-1001" name="__codelineno-0-1001"></a>
 <a id="__codelineno-0-1002" name="__codelineno-0-1002"></a><span class="sd">    The widget supports scrolling through slices, zooming, and</span>
 <a id="__codelineno-0-1003" name="__codelineno-0-1003"></a><span class="sd">    crosshair navigation.  Left hemisphere is displayed on the</span>
@@ -13683,10 +13683,10 @@ right side of the screen (radiological convention).</p>
 <a id="__codelineno-0-1007" name="__codelineno-0-1007"></a><span class="sd">        height: Height of the viewer in pixels.</span>
 <a id="__codelineno-0-1008" name="__codelineno-0-1008"></a>
 <a id="__codelineno-0-1009" name="__codelineno-0-1009"></a><span class="sd">    Returns:</span>
-<a id="__codelineno-0-1010" name="__codelineno-0-1010"></a><span class="sd">        An ``ipyniivue.NiiVue`` widget.</span>
+<a id="__codelineno-0-1010" name="__codelineno-0-1010"></a><span class="sd">        An `ipyniivue.NiiVue` widget.</span>
 <a id="__codelineno-0-1011" name="__codelineno-0-1011"></a>
 <a id="__codelineno-0-1012" name="__codelineno-0-1012"></a><span class="sd">    Raises:</span>
-<a id="__codelineno-0-1013" name="__codelineno-0-1013"></a><span class="sd">        ImportError: If ``ipyniivue`` is not installed.</span>
+<a id="__codelineno-0-1013" name="__codelineno-0-1013"></a><span class="sd">        ImportError: If `ipyniivue` is not installed.</span>
 <a id="__codelineno-0-1014" name="__codelineno-0-1014"></a><span class="sd">    &quot;&quot;&quot;</span>
 <a id="__codelineno-0-1015" name="__codelineno-0-1015"></a>    <span class="kn">import</span><span class="w"> </span><span class="nn">tempfile</span>
 <a id="__codelineno-0-1016" name="__codelineno-0-1016"></a>
@@ -13992,30 +13992,30 @@ not running inside a Jupyter notebook.</p>
 <a id="__codelineno-0-1048" name="__codelineno-0-1048"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
 <a id="__codelineno-0-1049" name="__codelineno-0-1049"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Save an animated GIF sweeping through slices.</span>
 <a id="__codelineno-0-1050" name="__codelineno-0-1050"></a>
-<a id="__codelineno-0-1051" name="__codelineno-0-1051"></a><span class="sd">    Requires ``Pillow`` (``pip install torchio[plot]``).</span>
+<a id="__codelineno-0-1051" name="__codelineno-0-1051"></a><span class="sd">    Requires `Pillow` (`pip install torchio[plot]`).</span>
 <a id="__codelineno-0-1052" name="__codelineno-0-1052"></a>
-<a id="__codelineno-0-1053" name="__codelineno-0-1053"></a><span class="sd">    When *output_path* is ``None`` and the code is running inside</span>
+<a id="__codelineno-0-1053" name="__codelineno-0-1053"></a><span class="sd">    When *output_path* is `None` and the code is running inside</span>
 <a id="__codelineno-0-1054" name="__codelineno-0-1054"></a><span class="sd">    a Jupyter notebook, the GIF is written to a temporary file and</span>
-<a id="__codelineno-0-1055" name="__codelineno-0-1055"></a><span class="sd">    returned as an ``IPython.display.Image`` for inline display.</span>
+<a id="__codelineno-0-1055" name="__codelineno-0-1055"></a><span class="sd">    returned as an `IPython.display.Image` for inline display.</span>
 <a id="__codelineno-0-1056" name="__codelineno-0-1056"></a><span class="sd">    Outside Jupyter, *output_path* is required.</span>
 <a id="__codelineno-0-1057" name="__codelineno-0-1057"></a>
 <a id="__codelineno-0-1058" name="__codelineno-0-1058"></a><span class="sd">    Args:</span>
-<a id="__codelineno-0-1059" name="__codelineno-0-1059"></a><span class="sd">        output_path: Path to the output ``.gif`` file.  ``None``</span>
+<a id="__codelineno-0-1059" name="__codelineno-0-1059"></a><span class="sd">        output_path: Path to the output `.gif` file.  `None`</span>
 <a id="__codelineno-0-1060" name="__codelineno-0-1060"></a><span class="sd">            to auto-create a temporary file (Jupyter only).</span>
 <a id="__codelineno-0-1061" name="__codelineno-0-1061"></a><span class="sd">        seconds: Duration of the full animation in seconds.</span>
-<a id="__codelineno-0-1062" name="__codelineno-0-1062"></a><span class="sd">        direction: Anatomical sweep direction (``&quot;I&quot;``, ``&quot;S&quot;``,</span>
-<a id="__codelineno-0-1063" name="__codelineno-0-1063"></a><span class="sd">            ``&quot;A&quot;``, ``&quot;P&quot;``, ``&quot;R&quot;``, or ``&quot;L&quot;``).</span>
+<a id="__codelineno-0-1062" name="__codelineno-0-1062"></a><span class="sd">        direction: Anatomical sweep direction (`&quot;I&quot;`, `&quot;S&quot;`,</span>
+<a id="__codelineno-0-1063" name="__codelineno-0-1063"></a><span class="sd">            `&quot;A&quot;`, `&quot;P&quot;`, `&quot;R&quot;`, or `&quot;L&quot;`).</span>
 <a id="__codelineno-0-1064" name="__codelineno-0-1064"></a><span class="sd">        loop: Number of loops (0 = infinite).</span>
-<a id="__codelineno-0-1065" name="__codelineno-0-1065"></a><span class="sd">        rescale: Rescale intensities to ``[0, 255]``.</span>
+<a id="__codelineno-0-1065" name="__codelineno-0-1065"></a><span class="sd">        rescale: Rescale intensities to `[0, 255]`.</span>
 <a id="__codelineno-0-1066" name="__codelineno-0-1066"></a><span class="sd">        optimize: Attempt to compress the GIF palette.</span>
 <a id="__codelineno-0-1067" name="__codelineno-0-1067"></a><span class="sd">        reverse: Reverse the temporal order of frames.</span>
 <a id="__codelineno-0-1068" name="__codelineno-0-1068"></a>
 <a id="__codelineno-0-1069" name="__codelineno-0-1069"></a><span class="sd">    Returns:</span>
-<a id="__codelineno-0-1070" name="__codelineno-0-1070"></a><span class="sd">        ``IPython.display.Image`` when running in Jupyter,</span>
-<a id="__codelineno-0-1071" name="__codelineno-0-1071"></a><span class="sd">        ``None`` otherwise.</span>
+<a id="__codelineno-0-1070" name="__codelineno-0-1070"></a><span class="sd">        `IPython.display.Image` when running in Jupyter,</span>
+<a id="__codelineno-0-1071" name="__codelineno-0-1071"></a><span class="sd">        `None` otherwise.</span>
 <a id="__codelineno-0-1072" name="__codelineno-0-1072"></a>
 <a id="__codelineno-0-1073" name="__codelineno-0-1073"></a><span class="sd">    Raises:</span>
-<a id="__codelineno-0-1074" name="__codelineno-0-1074"></a><span class="sd">        ValueError: If *output_path* is ``None`` and the code is</span>
+<a id="__codelineno-0-1074" name="__codelineno-0-1074"></a><span class="sd">        ValueError: If *output_path* is `None` and the code is</span>
 <a id="__codelineno-0-1075" name="__codelineno-0-1075"></a><span class="sd">            not running inside a Jupyter notebook.</span>
 <a id="__codelineno-0-1076" name="__codelineno-0-1076"></a><span class="sd">    &quot;&quot;&quot;</span>
 <a id="__codelineno-0-1077" name="__codelineno-0-1077"></a>    <span class="n">output_path</span> <span class="o">=</span> <span class="n">_resolve_media_path</span><span class="p">(</span><span class="n">output_path</span><span class="p">,</span> <span class="n">suffix</span><span class="o">=</span><span class="s2">&quot;.gif&quot;</span><span class="p">)</span>
@@ -14262,27 +14262,27 @@ not running inside a Jupyter notebook.</p>
 <a id="__codelineno-0-1103" name="__codelineno-0-1103"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
 <a id="__codelineno-0-1104" name="__codelineno-0-1104"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Create an MP4 video sweeping through slices.</span>
 <a id="__codelineno-0-1105" name="__codelineno-0-1105"></a>
-<a id="__codelineno-0-1106" name="__codelineno-0-1106"></a><span class="sd">    Requires ``ffmpeg-python`` (``pip install torchio[video]``).</span>
+<a id="__codelineno-0-1106" name="__codelineno-0-1106"></a><span class="sd">    Requires `ffmpeg-python` (`pip install torchio[video]`).</span>
 <a id="__codelineno-0-1107" name="__codelineno-0-1107"></a>
-<a id="__codelineno-0-1108" name="__codelineno-0-1108"></a><span class="sd">    When *output_path* is ``None`` and the code is running inside</span>
+<a id="__codelineno-0-1108" name="__codelineno-0-1108"></a><span class="sd">    When *output_path* is `None` and the code is running inside</span>
 <a id="__codelineno-0-1109" name="__codelineno-0-1109"></a><span class="sd">    a Jupyter notebook, the video is written to a temporary file</span>
-<a id="__codelineno-0-1110" name="__codelineno-0-1110"></a><span class="sd">    and returned as an ``IPython.display.Video`` for inline</span>
+<a id="__codelineno-0-1110" name="__codelineno-0-1110"></a><span class="sd">    and returned as an `IPython.display.Video` for inline</span>
 <a id="__codelineno-0-1111" name="__codelineno-0-1111"></a><span class="sd">    display.  Outside Jupyter, *output_path* is required.</span>
 <a id="__codelineno-0-1112" name="__codelineno-0-1112"></a>
 <a id="__codelineno-0-1113" name="__codelineno-0-1113"></a><span class="sd">    Args:</span>
-<a id="__codelineno-0-1114" name="__codelineno-0-1114"></a><span class="sd">        output_path: Path to the output ``.mp4`` file.  ``None``</span>
+<a id="__codelineno-0-1114" name="__codelineno-0-1114"></a><span class="sd">        output_path: Path to the output `.mp4` file.  `None`</span>
 <a id="__codelineno-0-1115" name="__codelineno-0-1115"></a><span class="sd">            to auto-create a temporary file (Jupyter only).</span>
 <a id="__codelineno-0-1116" name="__codelineno-0-1116"></a><span class="sd">        seconds: Duration of the full video in seconds.</span>
-<a id="__codelineno-0-1117" name="__codelineno-0-1117"></a><span class="sd">        direction: Anatomical sweep direction (``&quot;I&quot;``, ``&quot;S&quot;``,</span>
-<a id="__codelineno-0-1118" name="__codelineno-0-1118"></a><span class="sd">            ``&quot;A&quot;``, ``&quot;P&quot;``, ``&quot;R&quot;``, or ``&quot;L&quot;``).</span>
+<a id="__codelineno-0-1117" name="__codelineno-0-1117"></a><span class="sd">        direction: Anatomical sweep direction (`&quot;I&quot;`, `&quot;S&quot;`,</span>
+<a id="__codelineno-0-1118" name="__codelineno-0-1118"></a><span class="sd">            `&quot;A&quot;`, `&quot;P&quot;`, `&quot;R&quot;`, or `&quot;L&quot;`).</span>
 <a id="__codelineno-0-1119" name="__codelineno-0-1119"></a><span class="sd">        verbosity: ffmpeg log level.</span>
 <a id="__codelineno-0-1120" name="__codelineno-0-1120"></a>
 <a id="__codelineno-0-1121" name="__codelineno-0-1121"></a><span class="sd">    Returns:</span>
-<a id="__codelineno-0-1122" name="__codelineno-0-1122"></a><span class="sd">        ``IPython.display.Video`` when running in Jupyter,</span>
-<a id="__codelineno-0-1123" name="__codelineno-0-1123"></a><span class="sd">        ``None`` otherwise.</span>
+<a id="__codelineno-0-1122" name="__codelineno-0-1122"></a><span class="sd">        `IPython.display.Video` when running in Jupyter,</span>
+<a id="__codelineno-0-1123" name="__codelineno-0-1123"></a><span class="sd">        `None` otherwise.</span>
 <a id="__codelineno-0-1124" name="__codelineno-0-1124"></a>
 <a id="__codelineno-0-1125" name="__codelineno-0-1125"></a><span class="sd">    Raises:</span>
-<a id="__codelineno-0-1126" name="__codelineno-0-1126"></a><span class="sd">        ValueError: If *output_path* is ``None`` and the code is</span>
+<a id="__codelineno-0-1126" name="__codelineno-0-1126"></a><span class="sd">        ValueError: If *output_path* is `None` and the code is</span>
 <a id="__codelineno-0-1127" name="__codelineno-0-1127"></a><span class="sd">            not running inside a Jupyter notebook.</span>
 <a id="__codelineno-0-1128" name="__codelineno-0-1128"></a><span class="sd">    &quot;&quot;&quot;</span>
 <a id="__codelineno-0-1129" name="__codelineno-0-1129"></a>    <span class="n">output_path</span> <span class="o">=</span> <span class="n">_resolve_media_path</span><span class="p">(</span><span class="n">output_path</span><span class="p">,</span> <span class="n">suffix</span><span class="o">=</span><span class="s2">&quot;.mp4&quot;</span><span class="p">)</span>

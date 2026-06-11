@@ -8473,14 +8473,14 @@ are skipped (with a warning if <code>warn=True</code>).</p>
 <a id="__codelineno-0-29" name="__codelineno-0-29"></a>
 <a id="__codelineno-0-30" name="__codelineno-0-30"></a><span class="sd">    Returns a [`Compose`][torchio.Compose] of the inverse of each</span>
 <a id="__codelineno-0-31" name="__codelineno-0-31"></a><span class="sd">    applied transform, in reverse order. Non-invertible transforms</span>
-<a id="__codelineno-0-32" name="__codelineno-0-32"></a><span class="sd">    are skipped (with a warning if ``warn=True``).</span>
+<a id="__codelineno-0-32" name="__codelineno-0-32"></a><span class="sd">    are skipped (with a warning if `warn=True`).</span>
 <a id="__codelineno-0-33" name="__codelineno-0-33"></a>
 <a id="__codelineno-0-34" name="__codelineno-0-34"></a><span class="sd">    Args:</span>
 <a id="__codelineno-0-35" name="__codelineno-0-35"></a><span class="sd">        warn: Issue a warning for non-invertible transforms.</span>
 <a id="__codelineno-0-36" name="__codelineno-0-36"></a><span class="sd">        ignore_intensity: Skip all intensity transforms.</span>
 <a id="__codelineno-0-37" name="__codelineno-0-37"></a>
 <a id="__codelineno-0-38" name="__codelineno-0-38"></a><span class="sd">    Returns:</span>
-<a id="__codelineno-0-39" name="__codelineno-0-39"></a><span class="sd">        A ``Compose`` transform that undoes the history.</span>
+<a id="__codelineno-0-39" name="__codelineno-0-39"></a><span class="sd">        A `Compose` transform that undoes the history.</span>
 <a id="__codelineno-0-40" name="__codelineno-0-40"></a><span class="sd">    &quot;&quot;&quot;</span>
 <a id="__codelineno-0-41" name="__codelineno-0-41"></a>    <span class="kn">from</span><span class="w"> </span><span class="nn">..transforms.inverse</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_inverse_transform</span>
 <a id="__codelineno-0-42" name="__codelineno-0-42"></a>
@@ -8601,12 +8601,12 @@ can be ignored with <code>ignore_intensity=True</code>.</p>
 <a id="__codelineno-0-50" name="__codelineno-0-50"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Apply the inverse of all applied transforms, in reverse order.</span>
 <a id="__codelineno-0-51" name="__codelineno-0-51"></a>
 <a id="__codelineno-0-52" name="__codelineno-0-52"></a><span class="sd">    Non-invertible transforms are skipped. Intensity transforms</span>
-<a id="__codelineno-0-53" name="__codelineno-0-53"></a><span class="sd">    can be ignored with ``ignore_intensity=True``.</span>
+<a id="__codelineno-0-53" name="__codelineno-0-53"></a><span class="sd">    can be ignored with `ignore_intensity=True`.</span>
 <a id="__codelineno-0-54" name="__codelineno-0-54"></a>
 <a id="__codelineno-0-55" name="__codelineno-0-55"></a><span class="sd">    Args:</span>
 <a id="__codelineno-0-56" name="__codelineno-0-56"></a><span class="sd">        **kwargs: Forwarded to</span>
-<a id="__codelineno-0-57" name="__codelineno-0-57"></a><span class="sd">            ``get_inverse_transform()`` (``warn``,</span>
-<a id="__codelineno-0-58" name="__codelineno-0-58"></a><span class="sd">            ``ignore_intensity``).</span>
+<a id="__codelineno-0-57" name="__codelineno-0-57"></a><span class="sd">            `get_inverse_transform()` (`warn`,</span>
+<a id="__codelineno-0-58" name="__codelineno-0-58"></a><span class="sd">            `ignore_intensity`).</span>
 <a id="__codelineno-0-59" name="__codelineno-0-59"></a>
 <a id="__codelineno-0-60" name="__codelineno-0-60"></a><span class="sd">    Returns:</span>
 <a id="__codelineno-0-61" name="__codelineno-0-61"></a><span class="sd">        Data with transforms undone.</span>
@@ -8713,8 +8713,8 @@ tuple.</p>
 <span class="normal"><a href="#__codelineno-0-230">230</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-215" name="__codelineno-0-215"></a><span class="k">def</span><span class="w"> </span><span class="nf">all_points</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span> <span class="o">|</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span> <span class="n">Points</span><span class="p">]:</span>
 <a id="__codelineno-0-216" name="__codelineno-0-216"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Collect points from both subject-level and image-level.</span>
 <a id="__codelineno-0-217" name="__codelineno-0-217"></a>
-<a id="__codelineno-0-218" name="__codelineno-0-218"></a><span class="sd">    Subject-level points are keyed by their name (``str``).</span>
-<a id="__codelineno-0-219" name="__codelineno-0-219"></a><span class="sd">    Image-level points are keyed by a ``(image_name, points_name)``</span>
+<a id="__codelineno-0-218" name="__codelineno-0-218"></a><span class="sd">    Subject-level points are keyed by their name (`str`).</span>
+<a id="__codelineno-0-219" name="__codelineno-0-219"></a><span class="sd">    Image-level points are keyed by a `(image_name, points_name)`</span>
 <a id="__codelineno-0-220" name="__codelineno-0-220"></a><span class="sd">    tuple.</span>
 <a id="__codelineno-0-221" name="__codelineno-0-221"></a>
 <a id="__codelineno-0-222" name="__codelineno-0-222"></a><span class="sd">    Returns:</span>
@@ -8796,8 +8796,8 @@ tuple.</p>
 <a id="__codelineno-0-234" name="__codelineno-0-234"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span> <span class="o">|</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span> <span class="n">BoundingBoxes</span><span class="p">]:</span>
 <a id="__codelineno-0-235" name="__codelineno-0-235"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Collect bounding boxes from both subject-level and image-level.</span>
 <a id="__codelineno-0-236" name="__codelineno-0-236"></a>
-<a id="__codelineno-0-237" name="__codelineno-0-237"></a><span class="sd">    Subject-level boxes are keyed by their name (``str``).</span>
-<a id="__codelineno-0-238" name="__codelineno-0-238"></a><span class="sd">    Image-level boxes are keyed by a ``(image_name, boxes_name)``</span>
+<a id="__codelineno-0-237" name="__codelineno-0-237"></a><span class="sd">    Subject-level boxes are keyed by their name (`str`).</span>
+<a id="__codelineno-0-238" name="__codelineno-0-238"></a><span class="sd">    Image-level boxes are keyed by a `(image_name, boxes_name)`</span>
 <a id="__codelineno-0-239" name="__codelineno-0-239"></a><span class="sd">    tuple.</span>
 <a id="__codelineno-0-240" name="__codelineno-0-240"></a>
 <a id="__codelineno-0-241" name="__codelineno-0-241"></a><span class="sd">    Returns:</span>
@@ -8901,10 +8901,10 @@ tuple.</p>
 <span class="normal"><a href="#__codelineno-0-270">270</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-256" name="__codelineno-0-256"></a><span class="k">def</span><span class="w"> </span><span class="nf">to</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Self</span><span class="p">:</span>
 <a id="__codelineno-0-257" name="__codelineno-0-257"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Move all data to a device and/or cast to a dtype.</span>
 <a id="__codelineno-0-258" name="__codelineno-0-258"></a>
-<a id="__codelineno-0-259" name="__codelineno-0-259"></a><span class="sd">    Calls ``.to()`` on every Image, Points, and BoundingBoxes.</span>
+<a id="__codelineno-0-259" name="__codelineno-0-259"></a><span class="sd">    Calls `.to()` on every Image, Points, and BoundingBoxes.</span>
 <a id="__codelineno-0-260" name="__codelineno-0-260"></a>
 <a id="__codelineno-0-261" name="__codelineno-0-261"></a><span class="sd">    Returns:</span>
-<a id="__codelineno-0-262" name="__codelineno-0-262"></a><span class="sd">        ``self`` (modified in-place).</span>
+<a id="__codelineno-0-262" name="__codelineno-0-262"></a><span class="sd">        `self` (modified in-place).</span>
 <a id="__codelineno-0-263" name="__codelineno-0-263"></a><span class="sd">    &quot;&quot;&quot;</span>
 <a id="__codelineno-0-264" name="__codelineno-0-264"></a>    <span class="k">for</span> <span class="n">image</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_images</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
 <a id="__codelineno-0-265" name="__codelineno-0-265"></a>        <span class="n">image</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
@@ -8950,7 +8950,7 @@ full list of keyword arguments.</p>
 <span class="normal"><a href="#__codelineno-0-361">361</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-352" name="__codelineno-0-352"></a><span class="k">def</span><span class="w"> </span><span class="nf">plot</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
 <a id="__codelineno-0-353" name="__codelineno-0-353"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Plot all images as a grid of orthogonal slices.</span>
 <a id="__codelineno-0-354" name="__codelineno-0-354"></a>
-<a id="__codelineno-0-355" name="__codelineno-0-355"></a><span class="sd">    Requires the ``[plot]`` extras (``pip install torchio[plot]``).</span>
+<a id="__codelineno-0-355" name="__codelineno-0-355"></a><span class="sd">    Requires the `[plot]` extras (`pip install torchio[plot]`).</span>
 <a id="__codelineno-0-356" name="__codelineno-0-356"></a><span class="sd">    See [`plot_subject`][torchio.visualization.plot_subject] for the</span>
 <a id="__codelineno-0-357" name="__codelineno-0-357"></a><span class="sd">    full list of keyword arguments.</span>
 <a id="__codelineno-0-358" name="__codelineno-0-358"></a><span class="sd">    &quot;&quot;&quot;</span>
@@ -9111,10 +9111,10 @@ it might take longer than expected.</p>
 <a id="__codelineno-0-35" name="__codelineno-0-35"></a><span class="sd">    versions.</span>
 <a id="__codelineno-0-36" name="__codelineno-0-36"></a>
 <a id="__codelineno-0-37" name="__codelineno-0-37"></a><span class="sd">    Args:</span>
-<a id="__codelineno-0-38" name="__codelineno-0-38"></a><span class="sd">        version: Template year. It can be ``1998`` or ``2008``.</span>
+<a id="__codelineno-0-38" name="__codelineno-0-38"></a><span class="sd">        version: Template year. It can be `1998` or `2008`.</span>
 <a id="__codelineno-0-39" name="__codelineno-0-39"></a>
 <a id="__codelineno-0-40" name="__codelineno-0-40"></a><span class="sd">    Warning:</span>
-<a id="__codelineno-0-41" name="__codelineno-0-41"></a><span class="sd">        The resolution of the ``2008`` version is quite high. The</span>
+<a id="__codelineno-0-41" name="__codelineno-0-41"></a><span class="sd">        The resolution of the `2008` version is quite high. The</span>
 <a id="__codelineno-0-42" name="__codelineno-0-42"></a><span class="sd">        subject instance will contain four images of size</span>
 <a id="__codelineno-0-43" name="__codelineno-0-43"></a><span class="sd">        362 x 434 x 362, therefore applying a transform to</span>
 <a id="__codelineno-0-44" name="__codelineno-0-44"></a><span class="sd">        it might take longer than expected.</span>
@@ -9500,14 +9500,14 @@ are skipped (with a warning if <code>warn=True</code>).</p>
 <a id="__codelineno-0-29" name="__codelineno-0-29"></a>
 <a id="__codelineno-0-30" name="__codelineno-0-30"></a><span class="sd">    Returns a [`Compose`][torchio.Compose] of the inverse of each</span>
 <a id="__codelineno-0-31" name="__codelineno-0-31"></a><span class="sd">    applied transform, in reverse order. Non-invertible transforms</span>
-<a id="__codelineno-0-32" name="__codelineno-0-32"></a><span class="sd">    are skipped (with a warning if ``warn=True``).</span>
+<a id="__codelineno-0-32" name="__codelineno-0-32"></a><span class="sd">    are skipped (with a warning if `warn=True`).</span>
 <a id="__codelineno-0-33" name="__codelineno-0-33"></a>
 <a id="__codelineno-0-34" name="__codelineno-0-34"></a><span class="sd">    Args:</span>
 <a id="__codelineno-0-35" name="__codelineno-0-35"></a><span class="sd">        warn: Issue a warning for non-invertible transforms.</span>
 <a id="__codelineno-0-36" name="__codelineno-0-36"></a><span class="sd">        ignore_intensity: Skip all intensity transforms.</span>
 <a id="__codelineno-0-37" name="__codelineno-0-37"></a>
 <a id="__codelineno-0-38" name="__codelineno-0-38"></a><span class="sd">    Returns:</span>
-<a id="__codelineno-0-39" name="__codelineno-0-39"></a><span class="sd">        A ``Compose`` transform that undoes the history.</span>
+<a id="__codelineno-0-39" name="__codelineno-0-39"></a><span class="sd">        A `Compose` transform that undoes the history.</span>
 <a id="__codelineno-0-40" name="__codelineno-0-40"></a><span class="sd">    &quot;&quot;&quot;</span>
 <a id="__codelineno-0-41" name="__codelineno-0-41"></a>    <span class="kn">from</span><span class="w"> </span><span class="nn">..transforms.inverse</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_inverse_transform</span>
 <a id="__codelineno-0-42" name="__codelineno-0-42"></a>
@@ -9628,12 +9628,12 @@ can be ignored with <code>ignore_intensity=True</code>.</p>
 <a id="__codelineno-0-50" name="__codelineno-0-50"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Apply the inverse of all applied transforms, in reverse order.</span>
 <a id="__codelineno-0-51" name="__codelineno-0-51"></a>
 <a id="__codelineno-0-52" name="__codelineno-0-52"></a><span class="sd">    Non-invertible transforms are skipped. Intensity transforms</span>
-<a id="__codelineno-0-53" name="__codelineno-0-53"></a><span class="sd">    can be ignored with ``ignore_intensity=True``.</span>
+<a id="__codelineno-0-53" name="__codelineno-0-53"></a><span class="sd">    can be ignored with `ignore_intensity=True`.</span>
 <a id="__codelineno-0-54" name="__codelineno-0-54"></a>
 <a id="__codelineno-0-55" name="__codelineno-0-55"></a><span class="sd">    Args:</span>
 <a id="__codelineno-0-56" name="__codelineno-0-56"></a><span class="sd">        **kwargs: Forwarded to</span>
-<a id="__codelineno-0-57" name="__codelineno-0-57"></a><span class="sd">            ``get_inverse_transform()`` (``warn``,</span>
-<a id="__codelineno-0-58" name="__codelineno-0-58"></a><span class="sd">            ``ignore_intensity``).</span>
+<a id="__codelineno-0-57" name="__codelineno-0-57"></a><span class="sd">            `get_inverse_transform()` (`warn`,</span>
+<a id="__codelineno-0-58" name="__codelineno-0-58"></a><span class="sd">            `ignore_intensity`).</span>
 <a id="__codelineno-0-59" name="__codelineno-0-59"></a>
 <a id="__codelineno-0-60" name="__codelineno-0-60"></a><span class="sd">    Returns:</span>
 <a id="__codelineno-0-61" name="__codelineno-0-61"></a><span class="sd">        Data with transforms undone.</span>
@@ -9740,8 +9740,8 @@ tuple.</p>
 <span class="normal"><a href="#__codelineno-0-230">230</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-215" name="__codelineno-0-215"></a><span class="k">def</span><span class="w"> </span><span class="nf">all_points</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span> <span class="o">|</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span> <span class="n">Points</span><span class="p">]:</span>
 <a id="__codelineno-0-216" name="__codelineno-0-216"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Collect points from both subject-level and image-level.</span>
 <a id="__codelineno-0-217" name="__codelineno-0-217"></a>
-<a id="__codelineno-0-218" name="__codelineno-0-218"></a><span class="sd">    Subject-level points are keyed by their name (``str``).</span>
-<a id="__codelineno-0-219" name="__codelineno-0-219"></a><span class="sd">    Image-level points are keyed by a ``(image_name, points_name)``</span>
+<a id="__codelineno-0-218" name="__codelineno-0-218"></a><span class="sd">    Subject-level points are keyed by their name (`str`).</span>
+<a id="__codelineno-0-219" name="__codelineno-0-219"></a><span class="sd">    Image-level points are keyed by a `(image_name, points_name)`</span>
 <a id="__codelineno-0-220" name="__codelineno-0-220"></a><span class="sd">    tuple.</span>
 <a id="__codelineno-0-221" name="__codelineno-0-221"></a>
 <a id="__codelineno-0-222" name="__codelineno-0-222"></a><span class="sd">    Returns:</span>
@@ -9823,8 +9823,8 @@ tuple.</p>
 <a id="__codelineno-0-234" name="__codelineno-0-234"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span> <span class="o">|</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span> <span class="n">BoundingBoxes</span><span class="p">]:</span>
 <a id="__codelineno-0-235" name="__codelineno-0-235"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Collect bounding boxes from both subject-level and image-level.</span>
 <a id="__codelineno-0-236" name="__codelineno-0-236"></a>
-<a id="__codelineno-0-237" name="__codelineno-0-237"></a><span class="sd">    Subject-level boxes are keyed by their name (``str``).</span>
-<a id="__codelineno-0-238" name="__codelineno-0-238"></a><span class="sd">    Image-level boxes are keyed by a ``(image_name, boxes_name)``</span>
+<a id="__codelineno-0-237" name="__codelineno-0-237"></a><span class="sd">    Subject-level boxes are keyed by their name (`str`).</span>
+<a id="__codelineno-0-238" name="__codelineno-0-238"></a><span class="sd">    Image-level boxes are keyed by a `(image_name, boxes_name)`</span>
 <a id="__codelineno-0-239" name="__codelineno-0-239"></a><span class="sd">    tuple.</span>
 <a id="__codelineno-0-240" name="__codelineno-0-240"></a>
 <a id="__codelineno-0-241" name="__codelineno-0-241"></a><span class="sd">    Returns:</span>
@@ -9928,10 +9928,10 @@ tuple.</p>
 <span class="normal"><a href="#__codelineno-0-270">270</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-256" name="__codelineno-0-256"></a><span class="k">def</span><span class="w"> </span><span class="nf">to</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Self</span><span class="p">:</span>
 <a id="__codelineno-0-257" name="__codelineno-0-257"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Move all data to a device and/or cast to a dtype.</span>
 <a id="__codelineno-0-258" name="__codelineno-0-258"></a>
-<a id="__codelineno-0-259" name="__codelineno-0-259"></a><span class="sd">    Calls ``.to()`` on every Image, Points, and BoundingBoxes.</span>
+<a id="__codelineno-0-259" name="__codelineno-0-259"></a><span class="sd">    Calls `.to()` on every Image, Points, and BoundingBoxes.</span>
 <a id="__codelineno-0-260" name="__codelineno-0-260"></a>
 <a id="__codelineno-0-261" name="__codelineno-0-261"></a><span class="sd">    Returns:</span>
-<a id="__codelineno-0-262" name="__codelineno-0-262"></a><span class="sd">        ``self`` (modified in-place).</span>
+<a id="__codelineno-0-262" name="__codelineno-0-262"></a><span class="sd">        `self` (modified in-place).</span>
 <a id="__codelineno-0-263" name="__codelineno-0-263"></a><span class="sd">    &quot;&quot;&quot;</span>
 <a id="__codelineno-0-264" name="__codelineno-0-264"></a>    <span class="k">for</span> <span class="n">image</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_images</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
 <a id="__codelineno-0-265" name="__codelineno-0-265"></a>        <span class="n">image</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
@@ -9977,7 +9977,7 @@ full list of keyword arguments.</p>
 <span class="normal"><a href="#__codelineno-0-361">361</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-352" name="__codelineno-0-352"></a><span class="k">def</span><span class="w"> </span><span class="nf">plot</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
 <a id="__codelineno-0-353" name="__codelineno-0-353"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Plot all images as a grid of orthogonal slices.</span>
 <a id="__codelineno-0-354" name="__codelineno-0-354"></a>
-<a id="__codelineno-0-355" name="__codelineno-0-355"></a><span class="sd">    Requires the ``[plot]`` extras (``pip install torchio[plot]``).</span>
+<a id="__codelineno-0-355" name="__codelineno-0-355"></a><span class="sd">    Requires the `[plot]` extras (`pip install torchio[plot]`).</span>
 <a id="__codelineno-0-356" name="__codelineno-0-356"></a><span class="sd">    See [`plot_subject`][torchio.visualization.plot_subject] for the</span>
 <a id="__codelineno-0-357" name="__codelineno-0-357"></a><span class="sd">    full list of keyword arguments.</span>
 <a id="__codelineno-0-358" name="__codelineno-0-358"></a><span class="sd">    &quot;&quot;&quot;</span>
@@ -10133,7 +10133,7 @@ into independent images.</p>
 <a id="__codelineno-0-22" name="__codelineno-0-22"></a><span class="sd">    `website &lt;http://www.bic.mni.mcgill.ca/ServicesAtlases/ICBM152NLin2009&gt;`_.</span>
 <a id="__codelineno-0-23" name="__codelineno-0-23"></a>
 <a id="__codelineno-0-24" name="__codelineno-0-24"></a><span class="sd">    Args:</span>
-<a id="__codelineno-0-25" name="__codelineno-0-25"></a><span class="sd">        load_4d_tissues: If ``True``, the tissue probability maps will be</span>
+<a id="__codelineno-0-25" name="__codelineno-0-25"></a><span class="sd">        load_4d_tissues: If `True`, the tissue probability maps will be</span>
 <a id="__codelineno-0-26" name="__codelineno-0-26"></a><span class="sd">            loaded together into a 4D image. Otherwise, they will be loaded</span>
 <a id="__codelineno-0-27" name="__codelineno-0-27"></a><span class="sd">            into independent images.</span>
 <a id="__codelineno-0-28" name="__codelineno-0-28"></a><span class="sd">    &quot;&quot;&quot;</span>
@@ -10530,14 +10530,14 @@ are skipped (with a warning if <code>warn=True</code>).</p>
 <a id="__codelineno-0-29" name="__codelineno-0-29"></a>
 <a id="__codelineno-0-30" name="__codelineno-0-30"></a><span class="sd">    Returns a [`Compose`][torchio.Compose] of the inverse of each</span>
 <a id="__codelineno-0-31" name="__codelineno-0-31"></a><span class="sd">    applied transform, in reverse order. Non-invertible transforms</span>
-<a id="__codelineno-0-32" name="__codelineno-0-32"></a><span class="sd">    are skipped (with a warning if ``warn=True``).</span>
+<a id="__codelineno-0-32" name="__codelineno-0-32"></a><span class="sd">    are skipped (with a warning if `warn=True`).</span>
 <a id="__codelineno-0-33" name="__codelineno-0-33"></a>
 <a id="__codelineno-0-34" name="__codelineno-0-34"></a><span class="sd">    Args:</span>
 <a id="__codelineno-0-35" name="__codelineno-0-35"></a><span class="sd">        warn: Issue a warning for non-invertible transforms.</span>
 <a id="__codelineno-0-36" name="__codelineno-0-36"></a><span class="sd">        ignore_intensity: Skip all intensity transforms.</span>
 <a id="__codelineno-0-37" name="__codelineno-0-37"></a>
 <a id="__codelineno-0-38" name="__codelineno-0-38"></a><span class="sd">    Returns:</span>
-<a id="__codelineno-0-39" name="__codelineno-0-39"></a><span class="sd">        A ``Compose`` transform that undoes the history.</span>
+<a id="__codelineno-0-39" name="__codelineno-0-39"></a><span class="sd">        A `Compose` transform that undoes the history.</span>
 <a id="__codelineno-0-40" name="__codelineno-0-40"></a><span class="sd">    &quot;&quot;&quot;</span>
 <a id="__codelineno-0-41" name="__codelineno-0-41"></a>    <span class="kn">from</span><span class="w"> </span><span class="nn">..transforms.inverse</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_inverse_transform</span>
 <a id="__codelineno-0-42" name="__codelineno-0-42"></a>
@@ -10658,12 +10658,12 @@ can be ignored with <code>ignore_intensity=True</code>.</p>
 <a id="__codelineno-0-50" name="__codelineno-0-50"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Apply the inverse of all applied transforms, in reverse order.</span>
 <a id="__codelineno-0-51" name="__codelineno-0-51"></a>
 <a id="__codelineno-0-52" name="__codelineno-0-52"></a><span class="sd">    Non-invertible transforms are skipped. Intensity transforms</span>
-<a id="__codelineno-0-53" name="__codelineno-0-53"></a><span class="sd">    can be ignored with ``ignore_intensity=True``.</span>
+<a id="__codelineno-0-53" name="__codelineno-0-53"></a><span class="sd">    can be ignored with `ignore_intensity=True`.</span>
 <a id="__codelineno-0-54" name="__codelineno-0-54"></a>
 <a id="__codelineno-0-55" name="__codelineno-0-55"></a><span class="sd">    Args:</span>
 <a id="__codelineno-0-56" name="__codelineno-0-56"></a><span class="sd">        **kwargs: Forwarded to</span>
-<a id="__codelineno-0-57" name="__codelineno-0-57"></a><span class="sd">            ``get_inverse_transform()`` (``warn``,</span>
-<a id="__codelineno-0-58" name="__codelineno-0-58"></a><span class="sd">            ``ignore_intensity``).</span>
+<a id="__codelineno-0-57" name="__codelineno-0-57"></a><span class="sd">            `get_inverse_transform()` (`warn`,</span>
+<a id="__codelineno-0-58" name="__codelineno-0-58"></a><span class="sd">            `ignore_intensity`).</span>
 <a id="__codelineno-0-59" name="__codelineno-0-59"></a>
 <a id="__codelineno-0-60" name="__codelineno-0-60"></a><span class="sd">    Returns:</span>
 <a id="__codelineno-0-61" name="__codelineno-0-61"></a><span class="sd">        Data with transforms undone.</span>
@@ -10770,8 +10770,8 @@ tuple.</p>
 <span class="normal"><a href="#__codelineno-0-230">230</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-215" name="__codelineno-0-215"></a><span class="k">def</span><span class="w"> </span><span class="nf">all_points</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span> <span class="o">|</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span> <span class="n">Points</span><span class="p">]:</span>
 <a id="__codelineno-0-216" name="__codelineno-0-216"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Collect points from both subject-level and image-level.</span>
 <a id="__codelineno-0-217" name="__codelineno-0-217"></a>
-<a id="__codelineno-0-218" name="__codelineno-0-218"></a><span class="sd">    Subject-level points are keyed by their name (``str``).</span>
-<a id="__codelineno-0-219" name="__codelineno-0-219"></a><span class="sd">    Image-level points are keyed by a ``(image_name, points_name)``</span>
+<a id="__codelineno-0-218" name="__codelineno-0-218"></a><span class="sd">    Subject-level points are keyed by their name (`str`).</span>
+<a id="__codelineno-0-219" name="__codelineno-0-219"></a><span class="sd">    Image-level points are keyed by a `(image_name, points_name)`</span>
 <a id="__codelineno-0-220" name="__codelineno-0-220"></a><span class="sd">    tuple.</span>
 <a id="__codelineno-0-221" name="__codelineno-0-221"></a>
 <a id="__codelineno-0-222" name="__codelineno-0-222"></a><span class="sd">    Returns:</span>
@@ -10853,8 +10853,8 @@ tuple.</p>
 <a id="__codelineno-0-234" name="__codelineno-0-234"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span> <span class="o">|</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span> <span class="n">BoundingBoxes</span><span class="p">]:</span>
 <a id="__codelineno-0-235" name="__codelineno-0-235"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Collect bounding boxes from both subject-level and image-level.</span>
 <a id="__codelineno-0-236" name="__codelineno-0-236"></a>
-<a id="__codelineno-0-237" name="__codelineno-0-237"></a><span class="sd">    Subject-level boxes are keyed by their name (``str``).</span>
-<a id="__codelineno-0-238" name="__codelineno-0-238"></a><span class="sd">    Image-level boxes are keyed by a ``(image_name, boxes_name)``</span>
+<a id="__codelineno-0-237" name="__codelineno-0-237"></a><span class="sd">    Subject-level boxes are keyed by their name (`str`).</span>
+<a id="__codelineno-0-238" name="__codelineno-0-238"></a><span class="sd">    Image-level boxes are keyed by a `(image_name, boxes_name)`</span>
 <a id="__codelineno-0-239" name="__codelineno-0-239"></a><span class="sd">    tuple.</span>
 <a id="__codelineno-0-240" name="__codelineno-0-240"></a>
 <a id="__codelineno-0-241" name="__codelineno-0-241"></a><span class="sd">    Returns:</span>
@@ -10958,10 +10958,10 @@ tuple.</p>
 <span class="normal"><a href="#__codelineno-0-270">270</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-256" name="__codelineno-0-256"></a><span class="k">def</span><span class="w"> </span><span class="nf">to</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Self</span><span class="p">:</span>
 <a id="__codelineno-0-257" name="__codelineno-0-257"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Move all data to a device and/or cast to a dtype.</span>
 <a id="__codelineno-0-258" name="__codelineno-0-258"></a>
-<a id="__codelineno-0-259" name="__codelineno-0-259"></a><span class="sd">    Calls ``.to()`` on every Image, Points, and BoundingBoxes.</span>
+<a id="__codelineno-0-259" name="__codelineno-0-259"></a><span class="sd">    Calls `.to()` on every Image, Points, and BoundingBoxes.</span>
 <a id="__codelineno-0-260" name="__codelineno-0-260"></a>
 <a id="__codelineno-0-261" name="__codelineno-0-261"></a><span class="sd">    Returns:</span>
-<a id="__codelineno-0-262" name="__codelineno-0-262"></a><span class="sd">        ``self`` (modified in-place).</span>
+<a id="__codelineno-0-262" name="__codelineno-0-262"></a><span class="sd">        `self` (modified in-place).</span>
 <a id="__codelineno-0-263" name="__codelineno-0-263"></a><span class="sd">    &quot;&quot;&quot;</span>
 <a id="__codelineno-0-264" name="__codelineno-0-264"></a>    <span class="k">for</span> <span class="n">image</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_images</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
 <a id="__codelineno-0-265" name="__codelineno-0-265"></a>        <span class="n">image</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
@@ -11007,7 +11007,7 @@ full list of keyword arguments.</p>
 <span class="normal"><a href="#__codelineno-0-361">361</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-352" name="__codelineno-0-352"></a><span class="k">def</span><span class="w"> </span><span class="nf">plot</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
 <a id="__codelineno-0-353" name="__codelineno-0-353"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Plot all images as a grid of orthogonal slices.</span>
 <a id="__codelineno-0-354" name="__codelineno-0-354"></a>
-<a id="__codelineno-0-355" name="__codelineno-0-355"></a><span class="sd">    Requires the ``[plot]`` extras (``pip install torchio[plot]``).</span>
+<a id="__codelineno-0-355" name="__codelineno-0-355"></a><span class="sd">    Requires the `[plot]` extras (`pip install torchio[plot]`).</span>
 <a id="__codelineno-0-356" name="__codelineno-0-356"></a><span class="sd">    See [`plot_subject`][torchio.visualization.plot_subject] for the</span>
 <a id="__codelineno-0-357" name="__codelineno-0-357"></a><span class="sd">    full list of keyword arguments.</span>
 <a id="__codelineno-0-358" name="__codelineno-0-358"></a><span class="sd">    &quot;&quot;&quot;</span>
@@ -11168,10 +11168,10 @@ used. Otherwise, the asymmetric (natural) templates will be used.</p>
 <a id="__codelineno-0-34" name="__codelineno-0-34"></a><span class="sd">    for more information.</span>
 <a id="__codelineno-0-35" name="__codelineno-0-35"></a>
 <a id="__codelineno-0-36" name="__codelineno-0-36"></a><span class="sd">    Args:</span>
-<a id="__codelineno-0-37" name="__codelineno-0-37"></a><span class="sd">        years: Tuple of 2 ages. Possible values are: ``(4.5, 18.5)``,</span>
-<a id="__codelineno-0-38" name="__codelineno-0-38"></a><span class="sd">            ``(4.5, 8.5)``, ``(7, 11)``, ``(7.5, 13.5)``,</span>
-<a id="__codelineno-0-39" name="__codelineno-0-39"></a><span class="sd">            ``(10, 14)`` and ``(13, 18.5)``.</span>
-<a id="__codelineno-0-40" name="__codelineno-0-40"></a><span class="sd">        symmetric: If ``True``, the left-right symmetric templates will be</span>
+<a id="__codelineno-0-37" name="__codelineno-0-37"></a><span class="sd">        years: Tuple of 2 ages. Possible values are: `(4.5, 18.5)`,</span>
+<a id="__codelineno-0-38" name="__codelineno-0-38"></a><span class="sd">            `(4.5, 8.5)`, `(7, 11)`, `(7.5, 13.5)`,</span>
+<a id="__codelineno-0-39" name="__codelineno-0-39"></a><span class="sd">            `(10, 14)` and `(13, 18.5)`.</span>
+<a id="__codelineno-0-40" name="__codelineno-0-40"></a><span class="sd">        symmetric: If `True`, the left-right symmetric templates will be</span>
 <a id="__codelineno-0-41" name="__codelineno-0-41"></a><span class="sd">            used. Otherwise, the asymmetric (natural) templates will be used.</span>
 <a id="__codelineno-0-42" name="__codelineno-0-42"></a><span class="sd">    &quot;&quot;&quot;</span>
 <a id="__codelineno-0-43" name="__codelineno-0-43"></a>
@@ -11550,14 +11550,14 @@ are skipped (with a warning if <code>warn=True</code>).</p>
 <a id="__codelineno-0-29" name="__codelineno-0-29"></a>
 <a id="__codelineno-0-30" name="__codelineno-0-30"></a><span class="sd">    Returns a [`Compose`][torchio.Compose] of the inverse of each</span>
 <a id="__codelineno-0-31" name="__codelineno-0-31"></a><span class="sd">    applied transform, in reverse order. Non-invertible transforms</span>
-<a id="__codelineno-0-32" name="__codelineno-0-32"></a><span class="sd">    are skipped (with a warning if ``warn=True``).</span>
+<a id="__codelineno-0-32" name="__codelineno-0-32"></a><span class="sd">    are skipped (with a warning if `warn=True`).</span>
 <a id="__codelineno-0-33" name="__codelineno-0-33"></a>
 <a id="__codelineno-0-34" name="__codelineno-0-34"></a><span class="sd">    Args:</span>
 <a id="__codelineno-0-35" name="__codelineno-0-35"></a><span class="sd">        warn: Issue a warning for non-invertible transforms.</span>
 <a id="__codelineno-0-36" name="__codelineno-0-36"></a><span class="sd">        ignore_intensity: Skip all intensity transforms.</span>
 <a id="__codelineno-0-37" name="__codelineno-0-37"></a>
 <a id="__codelineno-0-38" name="__codelineno-0-38"></a><span class="sd">    Returns:</span>
-<a id="__codelineno-0-39" name="__codelineno-0-39"></a><span class="sd">        A ``Compose`` transform that undoes the history.</span>
+<a id="__codelineno-0-39" name="__codelineno-0-39"></a><span class="sd">        A `Compose` transform that undoes the history.</span>
 <a id="__codelineno-0-40" name="__codelineno-0-40"></a><span class="sd">    &quot;&quot;&quot;</span>
 <a id="__codelineno-0-41" name="__codelineno-0-41"></a>    <span class="kn">from</span><span class="w"> </span><span class="nn">..transforms.inverse</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_inverse_transform</span>
 <a id="__codelineno-0-42" name="__codelineno-0-42"></a>
@@ -11678,12 +11678,12 @@ can be ignored with <code>ignore_intensity=True</code>.</p>
 <a id="__codelineno-0-50" name="__codelineno-0-50"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Apply the inverse of all applied transforms, in reverse order.</span>
 <a id="__codelineno-0-51" name="__codelineno-0-51"></a>
 <a id="__codelineno-0-52" name="__codelineno-0-52"></a><span class="sd">    Non-invertible transforms are skipped. Intensity transforms</span>
-<a id="__codelineno-0-53" name="__codelineno-0-53"></a><span class="sd">    can be ignored with ``ignore_intensity=True``.</span>
+<a id="__codelineno-0-53" name="__codelineno-0-53"></a><span class="sd">    can be ignored with `ignore_intensity=True`.</span>
 <a id="__codelineno-0-54" name="__codelineno-0-54"></a>
 <a id="__codelineno-0-55" name="__codelineno-0-55"></a><span class="sd">    Args:</span>
 <a id="__codelineno-0-56" name="__codelineno-0-56"></a><span class="sd">        **kwargs: Forwarded to</span>
-<a id="__codelineno-0-57" name="__codelineno-0-57"></a><span class="sd">            ``get_inverse_transform()`` (``warn``,</span>
-<a id="__codelineno-0-58" name="__codelineno-0-58"></a><span class="sd">            ``ignore_intensity``).</span>
+<a id="__codelineno-0-57" name="__codelineno-0-57"></a><span class="sd">            `get_inverse_transform()` (`warn`,</span>
+<a id="__codelineno-0-58" name="__codelineno-0-58"></a><span class="sd">            `ignore_intensity`).</span>
 <a id="__codelineno-0-59" name="__codelineno-0-59"></a>
 <a id="__codelineno-0-60" name="__codelineno-0-60"></a><span class="sd">    Returns:</span>
 <a id="__codelineno-0-61" name="__codelineno-0-61"></a><span class="sd">        Data with transforms undone.</span>
@@ -11790,8 +11790,8 @@ tuple.</p>
 <span class="normal"><a href="#__codelineno-0-230">230</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-215" name="__codelineno-0-215"></a><span class="k">def</span><span class="w"> </span><span class="nf">all_points</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span> <span class="o">|</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span> <span class="n">Points</span><span class="p">]:</span>
 <a id="__codelineno-0-216" name="__codelineno-0-216"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Collect points from both subject-level and image-level.</span>
 <a id="__codelineno-0-217" name="__codelineno-0-217"></a>
-<a id="__codelineno-0-218" name="__codelineno-0-218"></a><span class="sd">    Subject-level points are keyed by their name (``str``).</span>
-<a id="__codelineno-0-219" name="__codelineno-0-219"></a><span class="sd">    Image-level points are keyed by a ``(image_name, points_name)``</span>
+<a id="__codelineno-0-218" name="__codelineno-0-218"></a><span class="sd">    Subject-level points are keyed by their name (`str`).</span>
+<a id="__codelineno-0-219" name="__codelineno-0-219"></a><span class="sd">    Image-level points are keyed by a `(image_name, points_name)`</span>
 <a id="__codelineno-0-220" name="__codelineno-0-220"></a><span class="sd">    tuple.</span>
 <a id="__codelineno-0-221" name="__codelineno-0-221"></a>
 <a id="__codelineno-0-222" name="__codelineno-0-222"></a><span class="sd">    Returns:</span>
@@ -11873,8 +11873,8 @@ tuple.</p>
 <a id="__codelineno-0-234" name="__codelineno-0-234"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span> <span class="o">|</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span> <span class="n">BoundingBoxes</span><span class="p">]:</span>
 <a id="__codelineno-0-235" name="__codelineno-0-235"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Collect bounding boxes from both subject-level and image-level.</span>
 <a id="__codelineno-0-236" name="__codelineno-0-236"></a>
-<a id="__codelineno-0-237" name="__codelineno-0-237"></a><span class="sd">    Subject-level boxes are keyed by their name (``str``).</span>
-<a id="__codelineno-0-238" name="__codelineno-0-238"></a><span class="sd">    Image-level boxes are keyed by a ``(image_name, boxes_name)``</span>
+<a id="__codelineno-0-237" name="__codelineno-0-237"></a><span class="sd">    Subject-level boxes are keyed by their name (`str`).</span>
+<a id="__codelineno-0-238" name="__codelineno-0-238"></a><span class="sd">    Image-level boxes are keyed by a `(image_name, boxes_name)`</span>
 <a id="__codelineno-0-239" name="__codelineno-0-239"></a><span class="sd">    tuple.</span>
 <a id="__codelineno-0-240" name="__codelineno-0-240"></a>
 <a id="__codelineno-0-241" name="__codelineno-0-241"></a><span class="sd">    Returns:</span>
@@ -11978,10 +11978,10 @@ tuple.</p>
 <span class="normal"><a href="#__codelineno-0-270">270</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-256" name="__codelineno-0-256"></a><span class="k">def</span><span class="w"> </span><span class="nf">to</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Self</span><span class="p">:</span>
 <a id="__codelineno-0-257" name="__codelineno-0-257"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Move all data to a device and/or cast to a dtype.</span>
 <a id="__codelineno-0-258" name="__codelineno-0-258"></a>
-<a id="__codelineno-0-259" name="__codelineno-0-259"></a><span class="sd">    Calls ``.to()`` on every Image, Points, and BoundingBoxes.</span>
+<a id="__codelineno-0-259" name="__codelineno-0-259"></a><span class="sd">    Calls `.to()` on every Image, Points, and BoundingBoxes.</span>
 <a id="__codelineno-0-260" name="__codelineno-0-260"></a>
 <a id="__codelineno-0-261" name="__codelineno-0-261"></a><span class="sd">    Returns:</span>
-<a id="__codelineno-0-262" name="__codelineno-0-262"></a><span class="sd">        ``self`` (modified in-place).</span>
+<a id="__codelineno-0-262" name="__codelineno-0-262"></a><span class="sd">        `self` (modified in-place).</span>
 <a id="__codelineno-0-263" name="__codelineno-0-263"></a><span class="sd">    &quot;&quot;&quot;</span>
 <a id="__codelineno-0-264" name="__codelineno-0-264"></a>    <span class="k">for</span> <span class="n">image</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_images</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
 <a id="__codelineno-0-265" name="__codelineno-0-265"></a>        <span class="n">image</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
@@ -12027,7 +12027,7 @@ full list of keyword arguments.</p>
 <span class="normal"><a href="#__codelineno-0-361">361</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-352" name="__codelineno-0-352"></a><span class="k">def</span><span class="w"> </span><span class="nf">plot</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
 <a id="__codelineno-0-353" name="__codelineno-0-353"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Plot all images as a grid of orthogonal slices.</span>
 <a id="__codelineno-0-354" name="__codelineno-0-354"></a>
-<a id="__codelineno-0-355" name="__codelineno-0-355"></a><span class="sd">    Requires the ``[plot]`` extras (``pip install torchio[plot]``).</span>
+<a id="__codelineno-0-355" name="__codelineno-0-355"></a><span class="sd">    Requires the `[plot]` extras (`pip install torchio[plot]`).</span>
 <a id="__codelineno-0-356" name="__codelineno-0-356"></a><span class="sd">    See [`plot_subject`][torchio.visualization.plot_subject] for the</span>
 <a id="__codelineno-0-357" name="__codelineno-0-357"></a><span class="sd">    full list of keyword arguments.</span>
 <a id="__codelineno-0-358" name="__codelineno-0-358"></a><span class="sd">    &quot;&quot;&quot;</span>
@@ -12467,14 +12467,14 @@ are skipped (with a warning if <code>warn=True</code>).</p>
 <a id="__codelineno-0-29" name="__codelineno-0-29"></a>
 <a id="__codelineno-0-30" name="__codelineno-0-30"></a><span class="sd">    Returns a [`Compose`][torchio.Compose] of the inverse of each</span>
 <a id="__codelineno-0-31" name="__codelineno-0-31"></a><span class="sd">    applied transform, in reverse order. Non-invertible transforms</span>
-<a id="__codelineno-0-32" name="__codelineno-0-32"></a><span class="sd">    are skipped (with a warning if ``warn=True``).</span>
+<a id="__codelineno-0-32" name="__codelineno-0-32"></a><span class="sd">    are skipped (with a warning if `warn=True`).</span>
 <a id="__codelineno-0-33" name="__codelineno-0-33"></a>
 <a id="__codelineno-0-34" name="__codelineno-0-34"></a><span class="sd">    Args:</span>
 <a id="__codelineno-0-35" name="__codelineno-0-35"></a><span class="sd">        warn: Issue a warning for non-invertible transforms.</span>
 <a id="__codelineno-0-36" name="__codelineno-0-36"></a><span class="sd">        ignore_intensity: Skip all intensity transforms.</span>
 <a id="__codelineno-0-37" name="__codelineno-0-37"></a>
 <a id="__codelineno-0-38" name="__codelineno-0-38"></a><span class="sd">    Returns:</span>
-<a id="__codelineno-0-39" name="__codelineno-0-39"></a><span class="sd">        A ``Compose`` transform that undoes the history.</span>
+<a id="__codelineno-0-39" name="__codelineno-0-39"></a><span class="sd">        A `Compose` transform that undoes the history.</span>
 <a id="__codelineno-0-40" name="__codelineno-0-40"></a><span class="sd">    &quot;&quot;&quot;</span>
 <a id="__codelineno-0-41" name="__codelineno-0-41"></a>    <span class="kn">from</span><span class="w"> </span><span class="nn">..transforms.inverse</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_inverse_transform</span>
 <a id="__codelineno-0-42" name="__codelineno-0-42"></a>
@@ -12595,12 +12595,12 @@ can be ignored with <code>ignore_intensity=True</code>.</p>
 <a id="__codelineno-0-50" name="__codelineno-0-50"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Apply the inverse of all applied transforms, in reverse order.</span>
 <a id="__codelineno-0-51" name="__codelineno-0-51"></a>
 <a id="__codelineno-0-52" name="__codelineno-0-52"></a><span class="sd">    Non-invertible transforms are skipped. Intensity transforms</span>
-<a id="__codelineno-0-53" name="__codelineno-0-53"></a><span class="sd">    can be ignored with ``ignore_intensity=True``.</span>
+<a id="__codelineno-0-53" name="__codelineno-0-53"></a><span class="sd">    can be ignored with `ignore_intensity=True`.</span>
 <a id="__codelineno-0-54" name="__codelineno-0-54"></a>
 <a id="__codelineno-0-55" name="__codelineno-0-55"></a><span class="sd">    Args:</span>
 <a id="__codelineno-0-56" name="__codelineno-0-56"></a><span class="sd">        **kwargs: Forwarded to</span>
-<a id="__codelineno-0-57" name="__codelineno-0-57"></a><span class="sd">            ``get_inverse_transform()`` (``warn``,</span>
-<a id="__codelineno-0-58" name="__codelineno-0-58"></a><span class="sd">            ``ignore_intensity``).</span>
+<a id="__codelineno-0-57" name="__codelineno-0-57"></a><span class="sd">            `get_inverse_transform()` (`warn`,</span>
+<a id="__codelineno-0-58" name="__codelineno-0-58"></a><span class="sd">            `ignore_intensity`).</span>
 <a id="__codelineno-0-59" name="__codelineno-0-59"></a>
 <a id="__codelineno-0-60" name="__codelineno-0-60"></a><span class="sd">    Returns:</span>
 <a id="__codelineno-0-61" name="__codelineno-0-61"></a><span class="sd">        Data with transforms undone.</span>
@@ -12707,8 +12707,8 @@ tuple.</p>
 <span class="normal"><a href="#__codelineno-0-230">230</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-215" name="__codelineno-0-215"></a><span class="k">def</span><span class="w"> </span><span class="nf">all_points</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span> <span class="o">|</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span> <span class="n">Points</span><span class="p">]:</span>
 <a id="__codelineno-0-216" name="__codelineno-0-216"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Collect points from both subject-level and image-level.</span>
 <a id="__codelineno-0-217" name="__codelineno-0-217"></a>
-<a id="__codelineno-0-218" name="__codelineno-0-218"></a><span class="sd">    Subject-level points are keyed by their name (``str``).</span>
-<a id="__codelineno-0-219" name="__codelineno-0-219"></a><span class="sd">    Image-level points are keyed by a ``(image_name, points_name)``</span>
+<a id="__codelineno-0-218" name="__codelineno-0-218"></a><span class="sd">    Subject-level points are keyed by their name (`str`).</span>
+<a id="__codelineno-0-219" name="__codelineno-0-219"></a><span class="sd">    Image-level points are keyed by a `(image_name, points_name)`</span>
 <a id="__codelineno-0-220" name="__codelineno-0-220"></a><span class="sd">    tuple.</span>
 <a id="__codelineno-0-221" name="__codelineno-0-221"></a>
 <a id="__codelineno-0-222" name="__codelineno-0-222"></a><span class="sd">    Returns:</span>
@@ -12790,8 +12790,8 @@ tuple.</p>
 <a id="__codelineno-0-234" name="__codelineno-0-234"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span> <span class="o">|</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span> <span class="n">BoundingBoxes</span><span class="p">]:</span>
 <a id="__codelineno-0-235" name="__codelineno-0-235"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Collect bounding boxes from both subject-level and image-level.</span>
 <a id="__codelineno-0-236" name="__codelineno-0-236"></a>
-<a id="__codelineno-0-237" name="__codelineno-0-237"></a><span class="sd">    Subject-level boxes are keyed by their name (``str``).</span>
-<a id="__codelineno-0-238" name="__codelineno-0-238"></a><span class="sd">    Image-level boxes are keyed by a ``(image_name, boxes_name)``</span>
+<a id="__codelineno-0-237" name="__codelineno-0-237"></a><span class="sd">    Subject-level boxes are keyed by their name (`str`).</span>
+<a id="__codelineno-0-238" name="__codelineno-0-238"></a><span class="sd">    Image-level boxes are keyed by a `(image_name, boxes_name)`</span>
 <a id="__codelineno-0-239" name="__codelineno-0-239"></a><span class="sd">    tuple.</span>
 <a id="__codelineno-0-240" name="__codelineno-0-240"></a>
 <a id="__codelineno-0-241" name="__codelineno-0-241"></a><span class="sd">    Returns:</span>
@@ -12895,10 +12895,10 @@ tuple.</p>
 <span class="normal"><a href="#__codelineno-0-270">270</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-256" name="__codelineno-0-256"></a><span class="k">def</span><span class="w"> </span><span class="nf">to</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Self</span><span class="p">:</span>
 <a id="__codelineno-0-257" name="__codelineno-0-257"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Move all data to a device and/or cast to a dtype.</span>
 <a id="__codelineno-0-258" name="__codelineno-0-258"></a>
-<a id="__codelineno-0-259" name="__codelineno-0-259"></a><span class="sd">    Calls ``.to()`` on every Image, Points, and BoundingBoxes.</span>
+<a id="__codelineno-0-259" name="__codelineno-0-259"></a><span class="sd">    Calls `.to()` on every Image, Points, and BoundingBoxes.</span>
 <a id="__codelineno-0-260" name="__codelineno-0-260"></a>
 <a id="__codelineno-0-261" name="__codelineno-0-261"></a><span class="sd">    Returns:</span>
-<a id="__codelineno-0-262" name="__codelineno-0-262"></a><span class="sd">        ``self`` (modified in-place).</span>
+<a id="__codelineno-0-262" name="__codelineno-0-262"></a><span class="sd">        `self` (modified in-place).</span>
 <a id="__codelineno-0-263" name="__codelineno-0-263"></a><span class="sd">    &quot;&quot;&quot;</span>
 <a id="__codelineno-0-264" name="__codelineno-0-264"></a>    <span class="k">for</span> <span class="n">image</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_images</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
 <a id="__codelineno-0-265" name="__codelineno-0-265"></a>        <span class="n">image</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
@@ -12944,7 +12944,7 @@ full list of keyword arguments.</p>
 <span class="normal"><a href="#__codelineno-0-361">361</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-352" name="__codelineno-0-352"></a><span class="k">def</span><span class="w"> </span><span class="nf">plot</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
 <a id="__codelineno-0-353" name="__codelineno-0-353"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Plot all images as a grid of orthogonal slices.</span>
 <a id="__codelineno-0-354" name="__codelineno-0-354"></a>
-<a id="__codelineno-0-355" name="__codelineno-0-355"></a><span class="sd">    Requires the ``[plot]`` extras (``pip install torchio[plot]``).</span>
+<a id="__codelineno-0-355" name="__codelineno-0-355"></a><span class="sd">    Requires the `[plot]` extras (`pip install torchio[plot]`).</span>
 <a id="__codelineno-0-356" name="__codelineno-0-356"></a><span class="sd">    See [`plot_subject`][torchio.visualization.plot_subject] for the</span>
 <a id="__codelineno-0-357" name="__codelineno-0-357"></a><span class="sd">    full list of keyword arguments.</span>
 <a id="__codelineno-0-358" name="__codelineno-0-358"></a><span class="sd">    &quot;&quot;&quot;</span>
@@ -13154,9 +13154,9 @@ license. If you use it, please acknowledge the source.</p>
 <a id="__codelineno-0-33" name="__codelineno-0-33"></a>
 <a id="__codelineno-0-34" name="__codelineno-0-34"></a><span class="sd">    Args:</span>
 <a id="__codelineno-0-35" name="__codelineno-0-35"></a><span class="sd">        root: Root directory for the dataset.</span>
-<a id="__codelineno-0-36" name="__codelineno-0-36"></a><span class="sd">        download: If ``True``, download the data into ``root``.</span>
+<a id="__codelineno-0-36" name="__codelineno-0-36"></a><span class="sd">        download: If `True`, download the data into `root`.</span>
 <a id="__codelineno-0-37" name="__codelineno-0-37"></a><span class="sd">        modalities: Modalities to include. Must be a subset of</span>
-<a id="__codelineno-0-38" name="__codelineno-0-38"></a><span class="sd">            ``(&#39;T1&#39;, &#39;T2&#39;, &#39;PD&#39;, &#39;MRA&#39;, &#39;DTI&#39;)``.</span>
+<a id="__codelineno-0-38" name="__codelineno-0-38"></a><span class="sd">            `(&#39;T1&#39;, &#39;T2&#39;, &#39;PD&#39;, &#39;MRA&#39;, &#39;DTI&#39;)`.</span>
 <a id="__codelineno-0-39" name="__codelineno-0-39"></a>
 <a id="__codelineno-0-40" name="__codelineno-0-40"></a><span class="sd">    Returns:</span>
 <a id="__codelineno-0-41" name="__codelineno-0-41"></a><span class="sd">        List of subjects, one per scan with all requested modalities.</span>
@@ -13305,10 +13305,10 @@ medical image MNIST for quick experiments.</p>
 <a id="__codelineno-0-69" name="__codelineno-0-69"></a>
 <a id="__codelineno-0-70" name="__codelineno-0-70"></a><span class="sd">    Args:</span>
 <a id="__codelineno-0-71" name="__codelineno-0-71"></a><span class="sd">        root: Root directory for the dataset.</span>
-<a id="__codelineno-0-72" name="__codelineno-0-72"></a><span class="sd">        download: If ``True``, download the data into ``root``.</span>
+<a id="__codelineno-0-72" name="__codelineno-0-72"></a><span class="sd">        download: If `True`, download the data into `root`.</span>
 <a id="__codelineno-0-73" name="__codelineno-0-73"></a>
 <a id="__codelineno-0-74" name="__codelineno-0-74"></a><span class="sd">    Returns:</span>
-<a id="__codelineno-0-75" name="__codelineno-0-75"></a><span class="sd">        List of subjects with ``image`` and ``label`` keys.</span>
+<a id="__codelineno-0-75" name="__codelineno-0-75"></a><span class="sd">        List of subjects with `image` and `label` keys.</span>
 <a id="__codelineno-0-76" name="__codelineno-0-76"></a><span class="sd">    &quot;&quot;&quot;</span>
 <a id="__codelineno-0-77" name="__codelineno-0-77"></a>    <span class="n">root</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">root</span><span class="p">)</span>
 <a id="__codelineno-0-78" name="__codelineno-0-78"></a>    <span class="k">if</span> <span class="n">download</span><span class="p">:</span>
@@ -13454,10 +13454,10 @@ medical image MNIST for quick experiments.</p>
 <a id="__codelineno-0-69" name="__codelineno-0-69"></a>
 <a id="__codelineno-0-70" name="__codelineno-0-70"></a><span class="sd">    Args:</span>
 <a id="__codelineno-0-71" name="__codelineno-0-71"></a><span class="sd">        root: Root directory for the dataset.</span>
-<a id="__codelineno-0-72" name="__codelineno-0-72"></a><span class="sd">        download: If ``True``, download the data into ``root``.</span>
+<a id="__codelineno-0-72" name="__codelineno-0-72"></a><span class="sd">        download: If `True`, download the data into `root`.</span>
 <a id="__codelineno-0-73" name="__codelineno-0-73"></a>
 <a id="__codelineno-0-74" name="__codelineno-0-74"></a><span class="sd">    Returns:</span>
-<a id="__codelineno-0-75" name="__codelineno-0-75"></a><span class="sd">        List of subjects with ``image`` and ``label`` keys.</span>
+<a id="__codelineno-0-75" name="__codelineno-0-75"></a><span class="sd">        List of subjects with `image` and `label` keys.</span>
 <a id="__codelineno-0-76" name="__codelineno-0-76"></a><span class="sd">    &quot;&quot;&quot;</span>
 <a id="__codelineno-0-77" name="__codelineno-0-77"></a>    <span class="n">root</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">root</span><span class="p">)</span>
 <a id="__codelineno-0-78" name="__codelineno-0-78"></a>    <span class="k">if</span> <span class="n">download</span><span class="p">:</span>
@@ -13852,14 +13852,14 @@ are skipped (with a warning if <code>warn=True</code>).</p>
 <a id="__codelineno-0-29" name="__codelineno-0-29"></a>
 <a id="__codelineno-0-30" name="__codelineno-0-30"></a><span class="sd">    Returns a [`Compose`][torchio.Compose] of the inverse of each</span>
 <a id="__codelineno-0-31" name="__codelineno-0-31"></a><span class="sd">    applied transform, in reverse order. Non-invertible transforms</span>
-<a id="__codelineno-0-32" name="__codelineno-0-32"></a><span class="sd">    are skipped (with a warning if ``warn=True``).</span>
+<a id="__codelineno-0-32" name="__codelineno-0-32"></a><span class="sd">    are skipped (with a warning if `warn=True`).</span>
 <a id="__codelineno-0-33" name="__codelineno-0-33"></a>
 <a id="__codelineno-0-34" name="__codelineno-0-34"></a><span class="sd">    Args:</span>
 <a id="__codelineno-0-35" name="__codelineno-0-35"></a><span class="sd">        warn: Issue a warning for non-invertible transforms.</span>
 <a id="__codelineno-0-36" name="__codelineno-0-36"></a><span class="sd">        ignore_intensity: Skip all intensity transforms.</span>
 <a id="__codelineno-0-37" name="__codelineno-0-37"></a>
 <a id="__codelineno-0-38" name="__codelineno-0-38"></a><span class="sd">    Returns:</span>
-<a id="__codelineno-0-39" name="__codelineno-0-39"></a><span class="sd">        A ``Compose`` transform that undoes the history.</span>
+<a id="__codelineno-0-39" name="__codelineno-0-39"></a><span class="sd">        A `Compose` transform that undoes the history.</span>
 <a id="__codelineno-0-40" name="__codelineno-0-40"></a><span class="sd">    &quot;&quot;&quot;</span>
 <a id="__codelineno-0-41" name="__codelineno-0-41"></a>    <span class="kn">from</span><span class="w"> </span><span class="nn">..transforms.inverse</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_inverse_transform</span>
 <a id="__codelineno-0-42" name="__codelineno-0-42"></a>
@@ -13980,12 +13980,12 @@ can be ignored with <code>ignore_intensity=True</code>.</p>
 <a id="__codelineno-0-50" name="__codelineno-0-50"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Apply the inverse of all applied transforms, in reverse order.</span>
 <a id="__codelineno-0-51" name="__codelineno-0-51"></a>
 <a id="__codelineno-0-52" name="__codelineno-0-52"></a><span class="sd">    Non-invertible transforms are skipped. Intensity transforms</span>
-<a id="__codelineno-0-53" name="__codelineno-0-53"></a><span class="sd">    can be ignored with ``ignore_intensity=True``.</span>
+<a id="__codelineno-0-53" name="__codelineno-0-53"></a><span class="sd">    can be ignored with `ignore_intensity=True`.</span>
 <a id="__codelineno-0-54" name="__codelineno-0-54"></a>
 <a id="__codelineno-0-55" name="__codelineno-0-55"></a><span class="sd">    Args:</span>
 <a id="__codelineno-0-56" name="__codelineno-0-56"></a><span class="sd">        **kwargs: Forwarded to</span>
-<a id="__codelineno-0-57" name="__codelineno-0-57"></a><span class="sd">            ``get_inverse_transform()`` (``warn``,</span>
-<a id="__codelineno-0-58" name="__codelineno-0-58"></a><span class="sd">            ``ignore_intensity``).</span>
+<a id="__codelineno-0-57" name="__codelineno-0-57"></a><span class="sd">            `get_inverse_transform()` (`warn`,</span>
+<a id="__codelineno-0-58" name="__codelineno-0-58"></a><span class="sd">            `ignore_intensity`).</span>
 <a id="__codelineno-0-59" name="__codelineno-0-59"></a>
 <a id="__codelineno-0-60" name="__codelineno-0-60"></a><span class="sd">    Returns:</span>
 <a id="__codelineno-0-61" name="__codelineno-0-61"></a><span class="sd">        Data with transforms undone.</span>
@@ -14092,8 +14092,8 @@ tuple.</p>
 <span class="normal"><a href="#__codelineno-0-230">230</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-215" name="__codelineno-0-215"></a><span class="k">def</span><span class="w"> </span><span class="nf">all_points</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span> <span class="o">|</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span> <span class="n">Points</span><span class="p">]:</span>
 <a id="__codelineno-0-216" name="__codelineno-0-216"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Collect points from both subject-level and image-level.</span>
 <a id="__codelineno-0-217" name="__codelineno-0-217"></a>
-<a id="__codelineno-0-218" name="__codelineno-0-218"></a><span class="sd">    Subject-level points are keyed by their name (``str``).</span>
-<a id="__codelineno-0-219" name="__codelineno-0-219"></a><span class="sd">    Image-level points are keyed by a ``(image_name, points_name)``</span>
+<a id="__codelineno-0-218" name="__codelineno-0-218"></a><span class="sd">    Subject-level points are keyed by their name (`str`).</span>
+<a id="__codelineno-0-219" name="__codelineno-0-219"></a><span class="sd">    Image-level points are keyed by a `(image_name, points_name)`</span>
 <a id="__codelineno-0-220" name="__codelineno-0-220"></a><span class="sd">    tuple.</span>
 <a id="__codelineno-0-221" name="__codelineno-0-221"></a>
 <a id="__codelineno-0-222" name="__codelineno-0-222"></a><span class="sd">    Returns:</span>
@@ -14175,8 +14175,8 @@ tuple.</p>
 <a id="__codelineno-0-234" name="__codelineno-0-234"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span> <span class="o">|</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span> <span class="n">BoundingBoxes</span><span class="p">]:</span>
 <a id="__codelineno-0-235" name="__codelineno-0-235"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Collect bounding boxes from both subject-level and image-level.</span>
 <a id="__codelineno-0-236" name="__codelineno-0-236"></a>
-<a id="__codelineno-0-237" name="__codelineno-0-237"></a><span class="sd">    Subject-level boxes are keyed by their name (``str``).</span>
-<a id="__codelineno-0-238" name="__codelineno-0-238"></a><span class="sd">    Image-level boxes are keyed by a ``(image_name, boxes_name)``</span>
+<a id="__codelineno-0-237" name="__codelineno-0-237"></a><span class="sd">    Subject-level boxes are keyed by their name (`str`).</span>
+<a id="__codelineno-0-238" name="__codelineno-0-238"></a><span class="sd">    Image-level boxes are keyed by a `(image_name, boxes_name)`</span>
 <a id="__codelineno-0-239" name="__codelineno-0-239"></a><span class="sd">    tuple.</span>
 <a id="__codelineno-0-240" name="__codelineno-0-240"></a>
 <a id="__codelineno-0-241" name="__codelineno-0-241"></a><span class="sd">    Returns:</span>
@@ -14280,10 +14280,10 @@ tuple.</p>
 <span class="normal"><a href="#__codelineno-0-270">270</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-256" name="__codelineno-0-256"></a><span class="k">def</span><span class="w"> </span><span class="nf">to</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Self</span><span class="p">:</span>
 <a id="__codelineno-0-257" name="__codelineno-0-257"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Move all data to a device and/or cast to a dtype.</span>
 <a id="__codelineno-0-258" name="__codelineno-0-258"></a>
-<a id="__codelineno-0-259" name="__codelineno-0-259"></a><span class="sd">    Calls ``.to()`` on every Image, Points, and BoundingBoxes.</span>
+<a id="__codelineno-0-259" name="__codelineno-0-259"></a><span class="sd">    Calls `.to()` on every Image, Points, and BoundingBoxes.</span>
 <a id="__codelineno-0-260" name="__codelineno-0-260"></a>
 <a id="__codelineno-0-261" name="__codelineno-0-261"></a><span class="sd">    Returns:</span>
-<a id="__codelineno-0-262" name="__codelineno-0-262"></a><span class="sd">        ``self`` (modified in-place).</span>
+<a id="__codelineno-0-262" name="__codelineno-0-262"></a><span class="sd">        `self` (modified in-place).</span>
 <a id="__codelineno-0-263" name="__codelineno-0-263"></a><span class="sd">    &quot;&quot;&quot;</span>
 <a id="__codelineno-0-264" name="__codelineno-0-264"></a>    <span class="k">for</span> <span class="n">image</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_images</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
 <a id="__codelineno-0-265" name="__codelineno-0-265"></a>        <span class="n">image</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
@@ -14329,7 +14329,7 @@ full list of keyword arguments.</p>
 <span class="normal"><a href="#__codelineno-0-361">361</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-352" name="__codelineno-0-352"></a><span class="k">def</span><span class="w"> </span><span class="nf">plot</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
 <a id="__codelineno-0-353" name="__codelineno-0-353"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Plot all images as a grid of orthogonal slices.</span>
 <a id="__codelineno-0-354" name="__codelineno-0-354"></a>
-<a id="__codelineno-0-355" name="__codelineno-0-355"></a><span class="sd">    Requires the ``[plot]`` extras (``pip install torchio[plot]``).</span>
+<a id="__codelineno-0-355" name="__codelineno-0-355"></a><span class="sd">    Requires the `[plot]` extras (`pip install torchio[plot]`).</span>
 <a id="__codelineno-0-356" name="__codelineno-0-356"></a><span class="sd">    See [`plot_subject`][torchio.visualization.plot_subject] for the</span>
 <a id="__codelineno-0-357" name="__codelineno-0-357"></a><span class="sd">    full list of keyword arguments.</span>
 <a id="__codelineno-0-358" name="__codelineno-0-358"></a><span class="sd">    &quot;&quot;&quot;</span>
@@ -14719,14 +14719,14 @@ are skipped (with a warning if <code>warn=True</code>).</p>
 <a id="__codelineno-0-29" name="__codelineno-0-29"></a>
 <a id="__codelineno-0-30" name="__codelineno-0-30"></a><span class="sd">    Returns a [`Compose`][torchio.Compose] of the inverse of each</span>
 <a id="__codelineno-0-31" name="__codelineno-0-31"></a><span class="sd">    applied transform, in reverse order. Non-invertible transforms</span>
-<a id="__codelineno-0-32" name="__codelineno-0-32"></a><span class="sd">    are skipped (with a warning if ``warn=True``).</span>
+<a id="__codelineno-0-32" name="__codelineno-0-32"></a><span class="sd">    are skipped (with a warning if `warn=True`).</span>
 <a id="__codelineno-0-33" name="__codelineno-0-33"></a>
 <a id="__codelineno-0-34" name="__codelineno-0-34"></a><span class="sd">    Args:</span>
 <a id="__codelineno-0-35" name="__codelineno-0-35"></a><span class="sd">        warn: Issue a warning for non-invertible transforms.</span>
 <a id="__codelineno-0-36" name="__codelineno-0-36"></a><span class="sd">        ignore_intensity: Skip all intensity transforms.</span>
 <a id="__codelineno-0-37" name="__codelineno-0-37"></a>
 <a id="__codelineno-0-38" name="__codelineno-0-38"></a><span class="sd">    Returns:</span>
-<a id="__codelineno-0-39" name="__codelineno-0-39"></a><span class="sd">        A ``Compose`` transform that undoes the history.</span>
+<a id="__codelineno-0-39" name="__codelineno-0-39"></a><span class="sd">        A `Compose` transform that undoes the history.</span>
 <a id="__codelineno-0-40" name="__codelineno-0-40"></a><span class="sd">    &quot;&quot;&quot;</span>
 <a id="__codelineno-0-41" name="__codelineno-0-41"></a>    <span class="kn">from</span><span class="w"> </span><span class="nn">..transforms.inverse</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_inverse_transform</span>
 <a id="__codelineno-0-42" name="__codelineno-0-42"></a>
@@ -14847,12 +14847,12 @@ can be ignored with <code>ignore_intensity=True</code>.</p>
 <a id="__codelineno-0-50" name="__codelineno-0-50"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Apply the inverse of all applied transforms, in reverse order.</span>
 <a id="__codelineno-0-51" name="__codelineno-0-51"></a>
 <a id="__codelineno-0-52" name="__codelineno-0-52"></a><span class="sd">    Non-invertible transforms are skipped. Intensity transforms</span>
-<a id="__codelineno-0-53" name="__codelineno-0-53"></a><span class="sd">    can be ignored with ``ignore_intensity=True``.</span>
+<a id="__codelineno-0-53" name="__codelineno-0-53"></a><span class="sd">    can be ignored with `ignore_intensity=True`.</span>
 <a id="__codelineno-0-54" name="__codelineno-0-54"></a>
 <a id="__codelineno-0-55" name="__codelineno-0-55"></a><span class="sd">    Args:</span>
 <a id="__codelineno-0-56" name="__codelineno-0-56"></a><span class="sd">        **kwargs: Forwarded to</span>
-<a id="__codelineno-0-57" name="__codelineno-0-57"></a><span class="sd">            ``get_inverse_transform()`` (``warn``,</span>
-<a id="__codelineno-0-58" name="__codelineno-0-58"></a><span class="sd">            ``ignore_intensity``).</span>
+<a id="__codelineno-0-57" name="__codelineno-0-57"></a><span class="sd">            `get_inverse_transform()` (`warn`,</span>
+<a id="__codelineno-0-58" name="__codelineno-0-58"></a><span class="sd">            `ignore_intensity`).</span>
 <a id="__codelineno-0-59" name="__codelineno-0-59"></a>
 <a id="__codelineno-0-60" name="__codelineno-0-60"></a><span class="sd">    Returns:</span>
 <a id="__codelineno-0-61" name="__codelineno-0-61"></a><span class="sd">        Data with transforms undone.</span>
@@ -14959,8 +14959,8 @@ tuple.</p>
 <span class="normal"><a href="#__codelineno-0-230">230</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-215" name="__codelineno-0-215"></a><span class="k">def</span><span class="w"> </span><span class="nf">all_points</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span> <span class="o">|</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span> <span class="n">Points</span><span class="p">]:</span>
 <a id="__codelineno-0-216" name="__codelineno-0-216"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Collect points from both subject-level and image-level.</span>
 <a id="__codelineno-0-217" name="__codelineno-0-217"></a>
-<a id="__codelineno-0-218" name="__codelineno-0-218"></a><span class="sd">    Subject-level points are keyed by their name (``str``).</span>
-<a id="__codelineno-0-219" name="__codelineno-0-219"></a><span class="sd">    Image-level points are keyed by a ``(image_name, points_name)``</span>
+<a id="__codelineno-0-218" name="__codelineno-0-218"></a><span class="sd">    Subject-level points are keyed by their name (`str`).</span>
+<a id="__codelineno-0-219" name="__codelineno-0-219"></a><span class="sd">    Image-level points are keyed by a `(image_name, points_name)`</span>
 <a id="__codelineno-0-220" name="__codelineno-0-220"></a><span class="sd">    tuple.</span>
 <a id="__codelineno-0-221" name="__codelineno-0-221"></a>
 <a id="__codelineno-0-222" name="__codelineno-0-222"></a><span class="sd">    Returns:</span>
@@ -15042,8 +15042,8 @@ tuple.</p>
 <a id="__codelineno-0-234" name="__codelineno-0-234"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span> <span class="o">|</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span> <span class="n">BoundingBoxes</span><span class="p">]:</span>
 <a id="__codelineno-0-235" name="__codelineno-0-235"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Collect bounding boxes from both subject-level and image-level.</span>
 <a id="__codelineno-0-236" name="__codelineno-0-236"></a>
-<a id="__codelineno-0-237" name="__codelineno-0-237"></a><span class="sd">    Subject-level boxes are keyed by their name (``str``).</span>
-<a id="__codelineno-0-238" name="__codelineno-0-238"></a><span class="sd">    Image-level boxes are keyed by a ``(image_name, boxes_name)``</span>
+<a id="__codelineno-0-237" name="__codelineno-0-237"></a><span class="sd">    Subject-level boxes are keyed by their name (`str`).</span>
+<a id="__codelineno-0-238" name="__codelineno-0-238"></a><span class="sd">    Image-level boxes are keyed by a `(image_name, boxes_name)`</span>
 <a id="__codelineno-0-239" name="__codelineno-0-239"></a><span class="sd">    tuple.</span>
 <a id="__codelineno-0-240" name="__codelineno-0-240"></a>
 <a id="__codelineno-0-241" name="__codelineno-0-241"></a><span class="sd">    Returns:</span>
@@ -15147,10 +15147,10 @@ tuple.</p>
 <span class="normal"><a href="#__codelineno-0-270">270</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-256" name="__codelineno-0-256"></a><span class="k">def</span><span class="w"> </span><span class="nf">to</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Self</span><span class="p">:</span>
 <a id="__codelineno-0-257" name="__codelineno-0-257"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Move all data to a device and/or cast to a dtype.</span>
 <a id="__codelineno-0-258" name="__codelineno-0-258"></a>
-<a id="__codelineno-0-259" name="__codelineno-0-259"></a><span class="sd">    Calls ``.to()`` on every Image, Points, and BoundingBoxes.</span>
+<a id="__codelineno-0-259" name="__codelineno-0-259"></a><span class="sd">    Calls `.to()` on every Image, Points, and BoundingBoxes.</span>
 <a id="__codelineno-0-260" name="__codelineno-0-260"></a>
 <a id="__codelineno-0-261" name="__codelineno-0-261"></a><span class="sd">    Returns:</span>
-<a id="__codelineno-0-262" name="__codelineno-0-262"></a><span class="sd">        ``self`` (modified in-place).</span>
+<a id="__codelineno-0-262" name="__codelineno-0-262"></a><span class="sd">        `self` (modified in-place).</span>
 <a id="__codelineno-0-263" name="__codelineno-0-263"></a><span class="sd">    &quot;&quot;&quot;</span>
 <a id="__codelineno-0-264" name="__codelineno-0-264"></a>    <span class="k">for</span> <span class="n">image</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_images</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
 <a id="__codelineno-0-265" name="__codelineno-0-265"></a>        <span class="n">image</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
@@ -15196,7 +15196,7 @@ full list of keyword arguments.</p>
 <span class="normal"><a href="#__codelineno-0-361">361</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-352" name="__codelineno-0-352"></a><span class="k">def</span><span class="w"> </span><span class="nf">plot</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
 <a id="__codelineno-0-353" name="__codelineno-0-353"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Plot all images as a grid of orthogonal slices.</span>
 <a id="__codelineno-0-354" name="__codelineno-0-354"></a>
-<a id="__codelineno-0-355" name="__codelineno-0-355"></a><span class="sd">    Requires the ``[plot]`` extras (``pip install torchio[plot]``).</span>
+<a id="__codelineno-0-355" name="__codelineno-0-355"></a><span class="sd">    Requires the `[plot]` extras (`pip install torchio[plot]`).</span>
 <a id="__codelineno-0-356" name="__codelineno-0-356"></a><span class="sd">    See [`plot_subject`][torchio.visualization.plot_subject] for the</span>
 <a id="__codelineno-0-357" name="__codelineno-0-357"></a><span class="sd">    full list of keyword arguments.</span>
 <a id="__codelineno-0-358" name="__codelineno-0-358"></a><span class="sd">    &quot;&quot;&quot;</span>
@@ -15594,14 +15594,14 @@ are skipped (with a warning if <code>warn=True</code>).</p>
 <a id="__codelineno-0-29" name="__codelineno-0-29"></a>
 <a id="__codelineno-0-30" name="__codelineno-0-30"></a><span class="sd">    Returns a [`Compose`][torchio.Compose] of the inverse of each</span>
 <a id="__codelineno-0-31" name="__codelineno-0-31"></a><span class="sd">    applied transform, in reverse order. Non-invertible transforms</span>
-<a id="__codelineno-0-32" name="__codelineno-0-32"></a><span class="sd">    are skipped (with a warning if ``warn=True``).</span>
+<a id="__codelineno-0-32" name="__codelineno-0-32"></a><span class="sd">    are skipped (with a warning if `warn=True`).</span>
 <a id="__codelineno-0-33" name="__codelineno-0-33"></a>
 <a id="__codelineno-0-34" name="__codelineno-0-34"></a><span class="sd">    Args:</span>
 <a id="__codelineno-0-35" name="__codelineno-0-35"></a><span class="sd">        warn: Issue a warning for non-invertible transforms.</span>
 <a id="__codelineno-0-36" name="__codelineno-0-36"></a><span class="sd">        ignore_intensity: Skip all intensity transforms.</span>
 <a id="__codelineno-0-37" name="__codelineno-0-37"></a>
 <a id="__codelineno-0-38" name="__codelineno-0-38"></a><span class="sd">    Returns:</span>
-<a id="__codelineno-0-39" name="__codelineno-0-39"></a><span class="sd">        A ``Compose`` transform that undoes the history.</span>
+<a id="__codelineno-0-39" name="__codelineno-0-39"></a><span class="sd">        A `Compose` transform that undoes the history.</span>
 <a id="__codelineno-0-40" name="__codelineno-0-40"></a><span class="sd">    &quot;&quot;&quot;</span>
 <a id="__codelineno-0-41" name="__codelineno-0-41"></a>    <span class="kn">from</span><span class="w"> </span><span class="nn">..transforms.inverse</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_inverse_transform</span>
 <a id="__codelineno-0-42" name="__codelineno-0-42"></a>
@@ -15722,12 +15722,12 @@ can be ignored with <code>ignore_intensity=True</code>.</p>
 <a id="__codelineno-0-50" name="__codelineno-0-50"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Apply the inverse of all applied transforms, in reverse order.</span>
 <a id="__codelineno-0-51" name="__codelineno-0-51"></a>
 <a id="__codelineno-0-52" name="__codelineno-0-52"></a><span class="sd">    Non-invertible transforms are skipped. Intensity transforms</span>
-<a id="__codelineno-0-53" name="__codelineno-0-53"></a><span class="sd">    can be ignored with ``ignore_intensity=True``.</span>
+<a id="__codelineno-0-53" name="__codelineno-0-53"></a><span class="sd">    can be ignored with `ignore_intensity=True`.</span>
 <a id="__codelineno-0-54" name="__codelineno-0-54"></a>
 <a id="__codelineno-0-55" name="__codelineno-0-55"></a><span class="sd">    Args:</span>
 <a id="__codelineno-0-56" name="__codelineno-0-56"></a><span class="sd">        **kwargs: Forwarded to</span>
-<a id="__codelineno-0-57" name="__codelineno-0-57"></a><span class="sd">            ``get_inverse_transform()`` (``warn``,</span>
-<a id="__codelineno-0-58" name="__codelineno-0-58"></a><span class="sd">            ``ignore_intensity``).</span>
+<a id="__codelineno-0-57" name="__codelineno-0-57"></a><span class="sd">            `get_inverse_transform()` (`warn`,</span>
+<a id="__codelineno-0-58" name="__codelineno-0-58"></a><span class="sd">            `ignore_intensity`).</span>
 <a id="__codelineno-0-59" name="__codelineno-0-59"></a>
 <a id="__codelineno-0-60" name="__codelineno-0-60"></a><span class="sd">    Returns:</span>
 <a id="__codelineno-0-61" name="__codelineno-0-61"></a><span class="sd">        Data with transforms undone.</span>
@@ -15834,8 +15834,8 @@ tuple.</p>
 <span class="normal"><a href="#__codelineno-0-230">230</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-215" name="__codelineno-0-215"></a><span class="k">def</span><span class="w"> </span><span class="nf">all_points</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span> <span class="o">|</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span> <span class="n">Points</span><span class="p">]:</span>
 <a id="__codelineno-0-216" name="__codelineno-0-216"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Collect points from both subject-level and image-level.</span>
 <a id="__codelineno-0-217" name="__codelineno-0-217"></a>
-<a id="__codelineno-0-218" name="__codelineno-0-218"></a><span class="sd">    Subject-level points are keyed by their name (``str``).</span>
-<a id="__codelineno-0-219" name="__codelineno-0-219"></a><span class="sd">    Image-level points are keyed by a ``(image_name, points_name)``</span>
+<a id="__codelineno-0-218" name="__codelineno-0-218"></a><span class="sd">    Subject-level points are keyed by their name (`str`).</span>
+<a id="__codelineno-0-219" name="__codelineno-0-219"></a><span class="sd">    Image-level points are keyed by a `(image_name, points_name)`</span>
 <a id="__codelineno-0-220" name="__codelineno-0-220"></a><span class="sd">    tuple.</span>
 <a id="__codelineno-0-221" name="__codelineno-0-221"></a>
 <a id="__codelineno-0-222" name="__codelineno-0-222"></a><span class="sd">    Returns:</span>
@@ -15917,8 +15917,8 @@ tuple.</p>
 <a id="__codelineno-0-234" name="__codelineno-0-234"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span> <span class="o">|</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span> <span class="n">BoundingBoxes</span><span class="p">]:</span>
 <a id="__codelineno-0-235" name="__codelineno-0-235"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Collect bounding boxes from both subject-level and image-level.</span>
 <a id="__codelineno-0-236" name="__codelineno-0-236"></a>
-<a id="__codelineno-0-237" name="__codelineno-0-237"></a><span class="sd">    Subject-level boxes are keyed by their name (``str``).</span>
-<a id="__codelineno-0-238" name="__codelineno-0-238"></a><span class="sd">    Image-level boxes are keyed by a ``(image_name, boxes_name)``</span>
+<a id="__codelineno-0-237" name="__codelineno-0-237"></a><span class="sd">    Subject-level boxes are keyed by their name (`str`).</span>
+<a id="__codelineno-0-238" name="__codelineno-0-238"></a><span class="sd">    Image-level boxes are keyed by a `(image_name, boxes_name)`</span>
 <a id="__codelineno-0-239" name="__codelineno-0-239"></a><span class="sd">    tuple.</span>
 <a id="__codelineno-0-240" name="__codelineno-0-240"></a>
 <a id="__codelineno-0-241" name="__codelineno-0-241"></a><span class="sd">    Returns:</span>
@@ -16022,10 +16022,10 @@ tuple.</p>
 <span class="normal"><a href="#__codelineno-0-270">270</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-256" name="__codelineno-0-256"></a><span class="k">def</span><span class="w"> </span><span class="nf">to</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Self</span><span class="p">:</span>
 <a id="__codelineno-0-257" name="__codelineno-0-257"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Move all data to a device and/or cast to a dtype.</span>
 <a id="__codelineno-0-258" name="__codelineno-0-258"></a>
-<a id="__codelineno-0-259" name="__codelineno-0-259"></a><span class="sd">    Calls ``.to()`` on every Image, Points, and BoundingBoxes.</span>
+<a id="__codelineno-0-259" name="__codelineno-0-259"></a><span class="sd">    Calls `.to()` on every Image, Points, and BoundingBoxes.</span>
 <a id="__codelineno-0-260" name="__codelineno-0-260"></a>
 <a id="__codelineno-0-261" name="__codelineno-0-261"></a><span class="sd">    Returns:</span>
-<a id="__codelineno-0-262" name="__codelineno-0-262"></a><span class="sd">        ``self`` (modified in-place).</span>
+<a id="__codelineno-0-262" name="__codelineno-0-262"></a><span class="sd">        `self` (modified in-place).</span>
 <a id="__codelineno-0-263" name="__codelineno-0-263"></a><span class="sd">    &quot;&quot;&quot;</span>
 <a id="__codelineno-0-264" name="__codelineno-0-264"></a>    <span class="k">for</span> <span class="n">image</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_images</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
 <a id="__codelineno-0-265" name="__codelineno-0-265"></a>        <span class="n">image</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
@@ -16071,7 +16071,7 @@ full list of keyword arguments.</p>
 <span class="normal"><a href="#__codelineno-0-361">361</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-352" name="__codelineno-0-352"></a><span class="k">def</span><span class="w"> </span><span class="nf">plot</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
 <a id="__codelineno-0-353" name="__codelineno-0-353"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Plot all images as a grid of orthogonal slices.</span>
 <a id="__codelineno-0-354" name="__codelineno-0-354"></a>
-<a id="__codelineno-0-355" name="__codelineno-0-355"></a><span class="sd">    Requires the ``[plot]`` extras (``pip install torchio[plot]``).</span>
+<a id="__codelineno-0-355" name="__codelineno-0-355"></a><span class="sd">    Requires the `[plot]` extras (`pip install torchio[plot]`).</span>
 <a id="__codelineno-0-356" name="__codelineno-0-356"></a><span class="sd">    See [`plot_subject`][torchio.visualization.plot_subject] for the</span>
 <a id="__codelineno-0-357" name="__codelineno-0-357"></a><span class="sd">    full list of keyword arguments.</span>
 <a id="__codelineno-0-358" name="__codelineno-0-358"></a><span class="sd">    &quot;&quot;&quot;</span>
@@ -16526,14 +16526,14 @@ are skipped (with a warning if <code>warn=True</code>).</p>
 <a id="__codelineno-0-29" name="__codelineno-0-29"></a>
 <a id="__codelineno-0-30" name="__codelineno-0-30"></a><span class="sd">    Returns a [`Compose`][torchio.Compose] of the inverse of each</span>
 <a id="__codelineno-0-31" name="__codelineno-0-31"></a><span class="sd">    applied transform, in reverse order. Non-invertible transforms</span>
-<a id="__codelineno-0-32" name="__codelineno-0-32"></a><span class="sd">    are skipped (with a warning if ``warn=True``).</span>
+<a id="__codelineno-0-32" name="__codelineno-0-32"></a><span class="sd">    are skipped (with a warning if `warn=True`).</span>
 <a id="__codelineno-0-33" name="__codelineno-0-33"></a>
 <a id="__codelineno-0-34" name="__codelineno-0-34"></a><span class="sd">    Args:</span>
 <a id="__codelineno-0-35" name="__codelineno-0-35"></a><span class="sd">        warn: Issue a warning for non-invertible transforms.</span>
 <a id="__codelineno-0-36" name="__codelineno-0-36"></a><span class="sd">        ignore_intensity: Skip all intensity transforms.</span>
 <a id="__codelineno-0-37" name="__codelineno-0-37"></a>
 <a id="__codelineno-0-38" name="__codelineno-0-38"></a><span class="sd">    Returns:</span>
-<a id="__codelineno-0-39" name="__codelineno-0-39"></a><span class="sd">        A ``Compose`` transform that undoes the history.</span>
+<a id="__codelineno-0-39" name="__codelineno-0-39"></a><span class="sd">        A `Compose` transform that undoes the history.</span>
 <a id="__codelineno-0-40" name="__codelineno-0-40"></a><span class="sd">    &quot;&quot;&quot;</span>
 <a id="__codelineno-0-41" name="__codelineno-0-41"></a>    <span class="kn">from</span><span class="w"> </span><span class="nn">..transforms.inverse</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_inverse_transform</span>
 <a id="__codelineno-0-42" name="__codelineno-0-42"></a>
@@ -16654,12 +16654,12 @@ can be ignored with <code>ignore_intensity=True</code>.</p>
 <a id="__codelineno-0-50" name="__codelineno-0-50"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Apply the inverse of all applied transforms, in reverse order.</span>
 <a id="__codelineno-0-51" name="__codelineno-0-51"></a>
 <a id="__codelineno-0-52" name="__codelineno-0-52"></a><span class="sd">    Non-invertible transforms are skipped. Intensity transforms</span>
-<a id="__codelineno-0-53" name="__codelineno-0-53"></a><span class="sd">    can be ignored with ``ignore_intensity=True``.</span>
+<a id="__codelineno-0-53" name="__codelineno-0-53"></a><span class="sd">    can be ignored with `ignore_intensity=True`.</span>
 <a id="__codelineno-0-54" name="__codelineno-0-54"></a>
 <a id="__codelineno-0-55" name="__codelineno-0-55"></a><span class="sd">    Args:</span>
 <a id="__codelineno-0-56" name="__codelineno-0-56"></a><span class="sd">        **kwargs: Forwarded to</span>
-<a id="__codelineno-0-57" name="__codelineno-0-57"></a><span class="sd">            ``get_inverse_transform()`` (``warn``,</span>
-<a id="__codelineno-0-58" name="__codelineno-0-58"></a><span class="sd">            ``ignore_intensity``).</span>
+<a id="__codelineno-0-57" name="__codelineno-0-57"></a><span class="sd">            `get_inverse_transform()` (`warn`,</span>
+<a id="__codelineno-0-58" name="__codelineno-0-58"></a><span class="sd">            `ignore_intensity`).</span>
 <a id="__codelineno-0-59" name="__codelineno-0-59"></a>
 <a id="__codelineno-0-60" name="__codelineno-0-60"></a><span class="sd">    Returns:</span>
 <a id="__codelineno-0-61" name="__codelineno-0-61"></a><span class="sd">        Data with transforms undone.</span>
@@ -16766,8 +16766,8 @@ tuple.</p>
 <span class="normal"><a href="#__codelineno-0-230">230</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-215" name="__codelineno-0-215"></a><span class="k">def</span><span class="w"> </span><span class="nf">all_points</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span> <span class="o">|</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span> <span class="n">Points</span><span class="p">]:</span>
 <a id="__codelineno-0-216" name="__codelineno-0-216"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Collect points from both subject-level and image-level.</span>
 <a id="__codelineno-0-217" name="__codelineno-0-217"></a>
-<a id="__codelineno-0-218" name="__codelineno-0-218"></a><span class="sd">    Subject-level points are keyed by their name (``str``).</span>
-<a id="__codelineno-0-219" name="__codelineno-0-219"></a><span class="sd">    Image-level points are keyed by a ``(image_name, points_name)``</span>
+<a id="__codelineno-0-218" name="__codelineno-0-218"></a><span class="sd">    Subject-level points are keyed by their name (`str`).</span>
+<a id="__codelineno-0-219" name="__codelineno-0-219"></a><span class="sd">    Image-level points are keyed by a `(image_name, points_name)`</span>
 <a id="__codelineno-0-220" name="__codelineno-0-220"></a><span class="sd">    tuple.</span>
 <a id="__codelineno-0-221" name="__codelineno-0-221"></a>
 <a id="__codelineno-0-222" name="__codelineno-0-222"></a><span class="sd">    Returns:</span>
@@ -16849,8 +16849,8 @@ tuple.</p>
 <a id="__codelineno-0-234" name="__codelineno-0-234"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span> <span class="o">|</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span> <span class="n">BoundingBoxes</span><span class="p">]:</span>
 <a id="__codelineno-0-235" name="__codelineno-0-235"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Collect bounding boxes from both subject-level and image-level.</span>
 <a id="__codelineno-0-236" name="__codelineno-0-236"></a>
-<a id="__codelineno-0-237" name="__codelineno-0-237"></a><span class="sd">    Subject-level boxes are keyed by their name (``str``).</span>
-<a id="__codelineno-0-238" name="__codelineno-0-238"></a><span class="sd">    Image-level boxes are keyed by a ``(image_name, boxes_name)``</span>
+<a id="__codelineno-0-237" name="__codelineno-0-237"></a><span class="sd">    Subject-level boxes are keyed by their name (`str`).</span>
+<a id="__codelineno-0-238" name="__codelineno-0-238"></a><span class="sd">    Image-level boxes are keyed by a `(image_name, boxes_name)`</span>
 <a id="__codelineno-0-239" name="__codelineno-0-239"></a><span class="sd">    tuple.</span>
 <a id="__codelineno-0-240" name="__codelineno-0-240"></a>
 <a id="__codelineno-0-241" name="__codelineno-0-241"></a><span class="sd">    Returns:</span>
@@ -16954,10 +16954,10 @@ tuple.</p>
 <span class="normal"><a href="#__codelineno-0-270">270</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-256" name="__codelineno-0-256"></a><span class="k">def</span><span class="w"> </span><span class="nf">to</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Self</span><span class="p">:</span>
 <a id="__codelineno-0-257" name="__codelineno-0-257"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Move all data to a device and/or cast to a dtype.</span>
 <a id="__codelineno-0-258" name="__codelineno-0-258"></a>
-<a id="__codelineno-0-259" name="__codelineno-0-259"></a><span class="sd">    Calls ``.to()`` on every Image, Points, and BoundingBoxes.</span>
+<a id="__codelineno-0-259" name="__codelineno-0-259"></a><span class="sd">    Calls `.to()` on every Image, Points, and BoundingBoxes.</span>
 <a id="__codelineno-0-260" name="__codelineno-0-260"></a>
 <a id="__codelineno-0-261" name="__codelineno-0-261"></a><span class="sd">    Returns:</span>
-<a id="__codelineno-0-262" name="__codelineno-0-262"></a><span class="sd">        ``self`` (modified in-place).</span>
+<a id="__codelineno-0-262" name="__codelineno-0-262"></a><span class="sd">        `self` (modified in-place).</span>
 <a id="__codelineno-0-263" name="__codelineno-0-263"></a><span class="sd">    &quot;&quot;&quot;</span>
 <a id="__codelineno-0-264" name="__codelineno-0-264"></a>    <span class="k">for</span> <span class="n">image</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_images</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
 <a id="__codelineno-0-265" name="__codelineno-0-265"></a>        <span class="n">image</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
@@ -17003,7 +17003,7 @@ full list of keyword arguments.</p>
 <span class="normal"><a href="#__codelineno-0-361">361</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-352" name="__codelineno-0-352"></a><span class="k">def</span><span class="w"> </span><span class="nf">plot</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
 <a id="__codelineno-0-353" name="__codelineno-0-353"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Plot all images as a grid of orthogonal slices.</span>
 <a id="__codelineno-0-354" name="__codelineno-0-354"></a>
-<a id="__codelineno-0-355" name="__codelineno-0-355"></a><span class="sd">    Requires the ``[plot]`` extras (``pip install torchio[plot]``).</span>
+<a id="__codelineno-0-355" name="__codelineno-0-355"></a><span class="sd">    Requires the `[plot]` extras (`pip install torchio[plot]`).</span>
 <a id="__codelineno-0-356" name="__codelineno-0-356"></a><span class="sd">    See [`plot_subject`][torchio.visualization.plot_subject] for the</span>
 <a id="__codelineno-0-357" name="__codelineno-0-357"></a><span class="sd">    full list of keyword arguments.</span>
 <a id="__codelineno-0-358" name="__codelineno-0-358"></a><span class="sd">    &quot;&quot;&quot;</span>
@@ -17313,7 +17313,7 @@ full list of keyword arguments.</p>
 <a id="__codelineno-0-20" name="__codelineno-0-20"></a><span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;3T :math:`T_1`-weighted brain MRI and corresponding parcellation.</span>
 <a id="__codelineno-0-21" name="__codelineno-0-21"></a>
 <a id="__codelineno-0-22" name="__codelineno-0-22"></a><span class="sd">    Args:</span>
-<a id="__codelineno-0-23" name="__codelineno-0-23"></a><span class="sd">        load_all: If ``True``, three more images will be loaded: a</span>
+<a id="__codelineno-0-23" name="__codelineno-0-23"></a><span class="sd">        load_all: If `True`, three more images will be loaded: a</span>
 <a id="__codelineno-0-24" name="__codelineno-0-24"></a><span class="sd">            :math:`T_2`-weighted MRI, a diffusion MRI and a functional MRI.</span>
 <a id="__codelineno-0-25" name="__codelineno-0-25"></a><span class="sd">    &quot;&quot;&quot;</span>
 <a id="__codelineno-0-26" name="__codelineno-0-26"></a>
@@ -17850,14 +17850,14 @@ are skipped (with a warning if <code>warn=True</code>).</p>
 <a id="__codelineno-0-29" name="__codelineno-0-29"></a>
 <a id="__codelineno-0-30" name="__codelineno-0-30"></a><span class="sd">    Returns a [`Compose`][torchio.Compose] of the inverse of each</span>
 <a id="__codelineno-0-31" name="__codelineno-0-31"></a><span class="sd">    applied transform, in reverse order. Non-invertible transforms</span>
-<a id="__codelineno-0-32" name="__codelineno-0-32"></a><span class="sd">    are skipped (with a warning if ``warn=True``).</span>
+<a id="__codelineno-0-32" name="__codelineno-0-32"></a><span class="sd">    are skipped (with a warning if `warn=True`).</span>
 <a id="__codelineno-0-33" name="__codelineno-0-33"></a>
 <a id="__codelineno-0-34" name="__codelineno-0-34"></a><span class="sd">    Args:</span>
 <a id="__codelineno-0-35" name="__codelineno-0-35"></a><span class="sd">        warn: Issue a warning for non-invertible transforms.</span>
 <a id="__codelineno-0-36" name="__codelineno-0-36"></a><span class="sd">        ignore_intensity: Skip all intensity transforms.</span>
 <a id="__codelineno-0-37" name="__codelineno-0-37"></a>
 <a id="__codelineno-0-38" name="__codelineno-0-38"></a><span class="sd">    Returns:</span>
-<a id="__codelineno-0-39" name="__codelineno-0-39"></a><span class="sd">        A ``Compose`` transform that undoes the history.</span>
+<a id="__codelineno-0-39" name="__codelineno-0-39"></a><span class="sd">        A `Compose` transform that undoes the history.</span>
 <a id="__codelineno-0-40" name="__codelineno-0-40"></a><span class="sd">    &quot;&quot;&quot;</span>
 <a id="__codelineno-0-41" name="__codelineno-0-41"></a>    <span class="kn">from</span><span class="w"> </span><span class="nn">..transforms.inverse</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_inverse_transform</span>
 <a id="__codelineno-0-42" name="__codelineno-0-42"></a>
@@ -17978,12 +17978,12 @@ can be ignored with <code>ignore_intensity=True</code>.</p>
 <a id="__codelineno-0-50" name="__codelineno-0-50"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Apply the inverse of all applied transforms, in reverse order.</span>
 <a id="__codelineno-0-51" name="__codelineno-0-51"></a>
 <a id="__codelineno-0-52" name="__codelineno-0-52"></a><span class="sd">    Non-invertible transforms are skipped. Intensity transforms</span>
-<a id="__codelineno-0-53" name="__codelineno-0-53"></a><span class="sd">    can be ignored with ``ignore_intensity=True``.</span>
+<a id="__codelineno-0-53" name="__codelineno-0-53"></a><span class="sd">    can be ignored with `ignore_intensity=True`.</span>
 <a id="__codelineno-0-54" name="__codelineno-0-54"></a>
 <a id="__codelineno-0-55" name="__codelineno-0-55"></a><span class="sd">    Args:</span>
 <a id="__codelineno-0-56" name="__codelineno-0-56"></a><span class="sd">        **kwargs: Forwarded to</span>
-<a id="__codelineno-0-57" name="__codelineno-0-57"></a><span class="sd">            ``get_inverse_transform()`` (``warn``,</span>
-<a id="__codelineno-0-58" name="__codelineno-0-58"></a><span class="sd">            ``ignore_intensity``).</span>
+<a id="__codelineno-0-57" name="__codelineno-0-57"></a><span class="sd">            `get_inverse_transform()` (`warn`,</span>
+<a id="__codelineno-0-58" name="__codelineno-0-58"></a><span class="sd">            `ignore_intensity`).</span>
 <a id="__codelineno-0-59" name="__codelineno-0-59"></a>
 <a id="__codelineno-0-60" name="__codelineno-0-60"></a><span class="sd">    Returns:</span>
 <a id="__codelineno-0-61" name="__codelineno-0-61"></a><span class="sd">        Data with transforms undone.</span>
@@ -18090,8 +18090,8 @@ tuple.</p>
 <span class="normal"><a href="#__codelineno-0-230">230</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-215" name="__codelineno-0-215"></a><span class="k">def</span><span class="w"> </span><span class="nf">all_points</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span> <span class="o">|</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span> <span class="n">Points</span><span class="p">]:</span>
 <a id="__codelineno-0-216" name="__codelineno-0-216"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Collect points from both subject-level and image-level.</span>
 <a id="__codelineno-0-217" name="__codelineno-0-217"></a>
-<a id="__codelineno-0-218" name="__codelineno-0-218"></a><span class="sd">    Subject-level points are keyed by their name (``str``).</span>
-<a id="__codelineno-0-219" name="__codelineno-0-219"></a><span class="sd">    Image-level points are keyed by a ``(image_name, points_name)``</span>
+<a id="__codelineno-0-218" name="__codelineno-0-218"></a><span class="sd">    Subject-level points are keyed by their name (`str`).</span>
+<a id="__codelineno-0-219" name="__codelineno-0-219"></a><span class="sd">    Image-level points are keyed by a `(image_name, points_name)`</span>
 <a id="__codelineno-0-220" name="__codelineno-0-220"></a><span class="sd">    tuple.</span>
 <a id="__codelineno-0-221" name="__codelineno-0-221"></a>
 <a id="__codelineno-0-222" name="__codelineno-0-222"></a><span class="sd">    Returns:</span>
@@ -18173,8 +18173,8 @@ tuple.</p>
 <a id="__codelineno-0-234" name="__codelineno-0-234"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span> <span class="o">|</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span> <span class="n">BoundingBoxes</span><span class="p">]:</span>
 <a id="__codelineno-0-235" name="__codelineno-0-235"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Collect bounding boxes from both subject-level and image-level.</span>
 <a id="__codelineno-0-236" name="__codelineno-0-236"></a>
-<a id="__codelineno-0-237" name="__codelineno-0-237"></a><span class="sd">    Subject-level boxes are keyed by their name (``str``).</span>
-<a id="__codelineno-0-238" name="__codelineno-0-238"></a><span class="sd">    Image-level boxes are keyed by a ``(image_name, boxes_name)``</span>
+<a id="__codelineno-0-237" name="__codelineno-0-237"></a><span class="sd">    Subject-level boxes are keyed by their name (`str`).</span>
+<a id="__codelineno-0-238" name="__codelineno-0-238"></a><span class="sd">    Image-level boxes are keyed by a `(image_name, boxes_name)`</span>
 <a id="__codelineno-0-239" name="__codelineno-0-239"></a><span class="sd">    tuple.</span>
 <a id="__codelineno-0-240" name="__codelineno-0-240"></a>
 <a id="__codelineno-0-241" name="__codelineno-0-241"></a><span class="sd">    Returns:</span>
@@ -18278,10 +18278,10 @@ tuple.</p>
 <span class="normal"><a href="#__codelineno-0-270">270</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-256" name="__codelineno-0-256"></a><span class="k">def</span><span class="w"> </span><span class="nf">to</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Self</span><span class="p">:</span>
 <a id="__codelineno-0-257" name="__codelineno-0-257"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Move all data to a device and/or cast to a dtype.</span>
 <a id="__codelineno-0-258" name="__codelineno-0-258"></a>
-<a id="__codelineno-0-259" name="__codelineno-0-259"></a><span class="sd">    Calls ``.to()`` on every Image, Points, and BoundingBoxes.</span>
+<a id="__codelineno-0-259" name="__codelineno-0-259"></a><span class="sd">    Calls `.to()` on every Image, Points, and BoundingBoxes.</span>
 <a id="__codelineno-0-260" name="__codelineno-0-260"></a>
 <a id="__codelineno-0-261" name="__codelineno-0-261"></a><span class="sd">    Returns:</span>
-<a id="__codelineno-0-262" name="__codelineno-0-262"></a><span class="sd">        ``self`` (modified in-place).</span>
+<a id="__codelineno-0-262" name="__codelineno-0-262"></a><span class="sd">        `self` (modified in-place).</span>
 <a id="__codelineno-0-263" name="__codelineno-0-263"></a><span class="sd">    &quot;&quot;&quot;</span>
 <a id="__codelineno-0-264" name="__codelineno-0-264"></a>    <span class="k">for</span> <span class="n">image</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_images</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
 <a id="__codelineno-0-265" name="__codelineno-0-265"></a>        <span class="n">image</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
@@ -18393,7 +18393,7 @@ returns a list of subjects for the requested split.</p>
 <a id="__codelineno-0-63" name="__codelineno-0-63"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;3D organ segmentation dataset.</span>
 <a id="__codelineno-0-64" name="__codelineno-0-64"></a>
 <a id="__codelineno-0-65" name="__codelineno-0-65"></a><span class="sd">    Args:</span>
-<a id="__codelineno-0-66" name="__codelineno-0-66"></a><span class="sd">        split: ``&#39;train&#39;``, ``&#39;val&#39;``, or ``&#39;test&#39;``.</span>
+<a id="__codelineno-0-66" name="__codelineno-0-66"></a><span class="sd">        split: `&#39;train&#39;`, `&#39;val&#39;`, or `&#39;test&#39;`.</span>
 <a id="__codelineno-0-67" name="__codelineno-0-67"></a><span class="sd">    &quot;&quot;&quot;</span>
 <a id="__codelineno-0-68" name="__codelineno-0-68"></a>    <span class="k">return</span> <span class="n">_load_medmnist</span><span class="p">(</span><span class="s2">&quot;organmnist3d&quot;</span><span class="p">,</span> <span class="n">split</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
@@ -18459,7 +18459,7 @@ returns a list of subjects for the requested split.</p>
 <a id="__codelineno-0-72" name="__codelineno-0-72"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;3D lung nodule dataset.</span>
 <a id="__codelineno-0-73" name="__codelineno-0-73"></a>
 <a id="__codelineno-0-74" name="__codelineno-0-74"></a><span class="sd">    Args:</span>
-<a id="__codelineno-0-75" name="__codelineno-0-75"></a><span class="sd">        split: ``&#39;train&#39;``, ``&#39;val&#39;``, or ``&#39;test&#39;``.</span>
+<a id="__codelineno-0-75" name="__codelineno-0-75"></a><span class="sd">        split: `&#39;train&#39;`, `&#39;val&#39;`, or `&#39;test&#39;`.</span>
 <a id="__codelineno-0-76" name="__codelineno-0-76"></a><span class="sd">    &quot;&quot;&quot;</span>
 <a id="__codelineno-0-77" name="__codelineno-0-77"></a>    <span class="k">return</span> <span class="n">_load_medmnist</span><span class="p">(</span><span class="s2">&quot;nodulemnist3d&quot;</span><span class="p">,</span> <span class="n">split</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
@@ -18525,7 +18525,7 @@ returns a list of subjects for the requested split.</p>
 <a id="__codelineno-0-81" name="__codelineno-0-81"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;3D adrenal gland dataset.</span>
 <a id="__codelineno-0-82" name="__codelineno-0-82"></a>
 <a id="__codelineno-0-83" name="__codelineno-0-83"></a><span class="sd">    Args:</span>
-<a id="__codelineno-0-84" name="__codelineno-0-84"></a><span class="sd">        split: ``&#39;train&#39;``, ``&#39;val&#39;``, or ``&#39;test&#39;``.</span>
+<a id="__codelineno-0-84" name="__codelineno-0-84"></a><span class="sd">        split: `&#39;train&#39;`, `&#39;val&#39;`, or `&#39;test&#39;`.</span>
 <a id="__codelineno-0-85" name="__codelineno-0-85"></a><span class="sd">    &quot;&quot;&quot;</span>
 <a id="__codelineno-0-86" name="__codelineno-0-86"></a>    <span class="k">return</span> <span class="n">_load_medmnist</span><span class="p">(</span><span class="s2">&quot;adrenalmnist3d&quot;</span><span class="p">,</span> <span class="n">split</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
@@ -18591,7 +18591,7 @@ returns a list of subjects for the requested split.</p>
 <a id="__codelineno-0-90" name="__codelineno-0-90"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;3D bone fracture dataset.</span>
 <a id="__codelineno-0-91" name="__codelineno-0-91"></a>
 <a id="__codelineno-0-92" name="__codelineno-0-92"></a><span class="sd">    Args:</span>
-<a id="__codelineno-0-93" name="__codelineno-0-93"></a><span class="sd">        split: ``&#39;train&#39;``, ``&#39;val&#39;``, or ``&#39;test&#39;``.</span>
+<a id="__codelineno-0-93" name="__codelineno-0-93"></a><span class="sd">        split: `&#39;train&#39;`, `&#39;val&#39;`, or `&#39;test&#39;`.</span>
 <a id="__codelineno-0-94" name="__codelineno-0-94"></a><span class="sd">    &quot;&quot;&quot;</span>
 <a id="__codelineno-0-95" name="__codelineno-0-95"></a>    <span class="k">return</span> <span class="n">_load_medmnist</span><span class="p">(</span><span class="s2">&quot;fracturemnist3d&quot;</span><span class="p">,</span> <span class="n">split</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
@@ -18657,7 +18657,7 @@ returns a list of subjects for the requested split.</p>
 <a id="__codelineno-0-99" name="__codelineno-0-99"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;3D vessel dataset.</span>
 <a id="__codelineno-0-100" name="__codelineno-0-100"></a>
 <a id="__codelineno-0-101" name="__codelineno-0-101"></a><span class="sd">    Args:</span>
-<a id="__codelineno-0-102" name="__codelineno-0-102"></a><span class="sd">        split: ``&#39;train&#39;``, ``&#39;val&#39;``, or ``&#39;test&#39;``.</span>
+<a id="__codelineno-0-102" name="__codelineno-0-102"></a><span class="sd">        split: `&#39;train&#39;`, `&#39;val&#39;`, or `&#39;test&#39;`.</span>
 <a id="__codelineno-0-103" name="__codelineno-0-103"></a><span class="sd">    &quot;&quot;&quot;</span>
 <a id="__codelineno-0-104" name="__codelineno-0-104"></a>    <span class="k">return</span> <span class="n">_load_medmnist</span><span class="p">(</span><span class="s2">&quot;vesselmnist3d&quot;</span><span class="p">,</span> <span class="n">split</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
@@ -18723,7 +18723,7 @@ returns a list of subjects for the requested split.</p>
 <a id="__codelineno-0-108" name="__codelineno-0-108"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;3D synapse dataset.</span>
 <a id="__codelineno-0-109" name="__codelineno-0-109"></a>
 <a id="__codelineno-0-110" name="__codelineno-0-110"></a><span class="sd">    Args:</span>
-<a id="__codelineno-0-111" name="__codelineno-0-111"></a><span class="sd">        split: ``&#39;train&#39;``, ``&#39;val&#39;``, or ``&#39;test&#39;``.</span>
+<a id="__codelineno-0-111" name="__codelineno-0-111"></a><span class="sd">        split: `&#39;train&#39;`, `&#39;val&#39;`, or `&#39;test&#39;`.</span>
 <a id="__codelineno-0-112" name="__codelineno-0-112"></a><span class="sd">    &quot;&quot;&quot;</span>
 <a id="__codelineno-0-113" name="__codelineno-0-113"></a>    <span class="k">return</span> <span class="n">_load_medmnist</span><span class="p">(</span><span class="s2">&quot;synapsemnist3d&quot;</span><span class="p">,</span> <span class="n">split</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>

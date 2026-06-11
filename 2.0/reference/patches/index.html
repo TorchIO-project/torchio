@@ -4307,8 +4307,8 @@ A single <code>int</code> is broadcast to all axes.</p>
 <span class="normal"><a href="#__codelineno-0-164">164</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-66" name="__codelineno-0-66"></a><span class="k">class</span><span class="w"> </span><span class="nc">GridSampler</span><span class="p">(</span><span class="n">PatchSampler</span><span class="p">,</span> <span class="n">Dataset</span><span class="p">):</span>
 <a id="__codelineno-0-67" name="__codelineno-0-67"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Extract patches on a regular grid for dense inference.</span>
 <a id="__codelineno-0-68" name="__codelineno-0-68"></a>
-<a id="__codelineno-0-69" name="__codelineno-0-69"></a><span class="sd">    A map-style ``Dataset`` with known length and random access.</span>
-<a id="__codelineno-0-70" name="__codelineno-0-70"></a><span class="sd">    Pass directly to a ``DataLoader`` for batched inference.</span>
+<a id="__codelineno-0-69" name="__codelineno-0-69"></a><span class="sd">    A map-style `Dataset` with known length and random access.</span>
+<a id="__codelineno-0-70" name="__codelineno-0-70"></a><span class="sd">    Pass directly to a `DataLoader` for batched inference.</span>
 <a id="__codelineno-0-71" name="__codelineno-0-71"></a><span class="sd">    Typically used with</span>
 <a id="__codelineno-0-72" name="__codelineno-0-72"></a><span class="sd">    [`PatchAggregator`][torchio.data.PatchAggregator].</span>
 <a id="__codelineno-0-73" name="__codelineno-0-73"></a>
@@ -4316,10 +4316,10 @@ A single <code>int</code> is broadcast to all axes.</p>
 <a id="__codelineno-0-75" name="__codelineno-0-75"></a><span class="sd">        subject: Subject to extract patches from.</span>
 <a id="__codelineno-0-76" name="__codelineno-0-76"></a><span class="sd">        patch_size: Spatial size of each patch.</span>
 <a id="__codelineno-0-77" name="__codelineno-0-77"></a><span class="sd">        patch_overlap: Overlap between adjacent patches. Must be even.</span>
-<a id="__codelineno-0-78" name="__codelineno-0-78"></a><span class="sd">            A single ``int`` is broadcast to all axes.</span>
-<a id="__codelineno-0-79" name="__codelineno-0-79"></a><span class="sd">        padding_mode: If not ``None``, pad the volume by</span>
-<a id="__codelineno-0-80" name="__codelineno-0-80"></a><span class="sd">            ``overlap // 2`` on each side before sampling.</span>
-<a id="__codelineno-0-81" name="__codelineno-0-81"></a><span class="sd">        fill: Fill value when ``padding_mode=&#39;constant&#39;``.</span>
+<a id="__codelineno-0-78" name="__codelineno-0-78"></a><span class="sd">            A single `int` is broadcast to all axes.</span>
+<a id="__codelineno-0-79" name="__codelineno-0-79"></a><span class="sd">        padding_mode: If not `None`, pad the volume by</span>
+<a id="__codelineno-0-80" name="__codelineno-0-80"></a><span class="sd">            `overlap // 2` on each side before sampling.</span>
+<a id="__codelineno-0-81" name="__codelineno-0-81"></a><span class="sd">        fill: Fill value when `padding_mode=&#39;constant&#39;`.</span>
 <a id="__codelineno-0-82" name="__codelineno-0-82"></a>
 <a id="__codelineno-0-83" name="__codelineno-0-83"></a><span class="sd">    Examples:</span>
 <a id="__codelineno-0-84" name="__codelineno-0-84"></a><span class="sd">        &gt;&gt;&gt; sampler = tio.GridSampler(subject, patch_size=64, patch_overlap=8)</span>
@@ -4582,13 +4582,13 @@ yields indefinitely.</p>
 <span class="normal"><a href="#__codelineno-0-219">219</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-167" name="__codelineno-0-167"></a><span class="k">class</span><span class="w"> </span><span class="nc">UniformSampler</span><span class="p">(</span><span class="n">PatchSampler</span><span class="p">,</span> <span class="n">IterableDataset</span><span class="p">):</span>
 <a id="__codelineno-0-168" name="__codelineno-0-168"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Random patches with uniform spatial probability.</span>
 <a id="__codelineno-0-169" name="__codelineno-0-169"></a>
-<a id="__codelineno-0-170" name="__codelineno-0-170"></a><span class="sd">    An ``IterableDataset`` for training. Also callable for use with</span>
+<a id="__codelineno-0-170" name="__codelineno-0-170"></a><span class="sd">    An `IterableDataset` for training. Also callable for use with</span>
 <a id="__codelineno-0-171" name="__codelineno-0-171"></a><span class="sd">    [`Queue`][torchio.data.Queue].</span>
 <a id="__codelineno-0-172" name="__codelineno-0-172"></a>
 <a id="__codelineno-0-173" name="__codelineno-0-173"></a><span class="sd">    Args:</span>
 <a id="__codelineno-0-174" name="__codelineno-0-174"></a><span class="sd">        subject: Subject to sample patches from (for Dataset use).</span>
 <a id="__codelineno-0-175" name="__codelineno-0-175"></a><span class="sd">        patch_size: Spatial size of each patch.</span>
-<a id="__codelineno-0-176" name="__codelineno-0-176"></a><span class="sd">        num_patches: Number of patches per epoch. If ``None``,</span>
+<a id="__codelineno-0-176" name="__codelineno-0-176"></a><span class="sd">        num_patches: Number of patches per epoch. If `None`,</span>
 <a id="__codelineno-0-177" name="__codelineno-0-177"></a><span class="sd">            yields indefinitely.</span>
 <a id="__codelineno-0-178" name="__codelineno-0-178"></a>
 <a id="__codelineno-0-179" name="__codelineno-0-179"></a><span class="sd">    Examples:</span>
@@ -4828,14 +4828,14 @@ yields indefinitely.</p>
 <span class="normal"><a href="#__codelineno-0-281">281</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-222" name="__codelineno-0-222"></a><span class="k">class</span><span class="w"> </span><span class="nc">WeightedSampler</span><span class="p">(</span><span class="n">PatchSampler</span><span class="p">,</span> <span class="n">IterableDataset</span><span class="p">):</span>
 <a id="__codelineno-0-223" name="__codelineno-0-223"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Random patches weighted by a probability map.</span>
 <a id="__codelineno-0-224" name="__codelineno-0-224"></a>
-<a id="__codelineno-0-225" name="__codelineno-0-225"></a><span class="sd">    An ``IterableDataset`` for training with spatial priors.</span>
+<a id="__codelineno-0-225" name="__codelineno-0-225"></a><span class="sd">    An `IterableDataset` for training with spatial priors.</span>
 <a id="__codelineno-0-226" name="__codelineno-0-226"></a>
 <a id="__codelineno-0-227" name="__codelineno-0-227"></a><span class="sd">    Args:</span>
 <a id="__codelineno-0-228" name="__codelineno-0-228"></a><span class="sd">        subject: Subject to sample patches from.</span>
 <a id="__codelineno-0-229" name="__codelineno-0-229"></a><span class="sd">        patch_size: Spatial size of each patch.</span>
 <a id="__codelineno-0-230" name="__codelineno-0-230"></a><span class="sd">        probability_map: Name of the image in the subject to use</span>
 <a id="__codelineno-0-231" name="__codelineno-0-231"></a><span class="sd">            as sampling weights.</span>
-<a id="__codelineno-0-232" name="__codelineno-0-232"></a><span class="sd">        num_patches: Number of patches per epoch. If ``None``,</span>
+<a id="__codelineno-0-232" name="__codelineno-0-232"></a><span class="sd">        num_patches: Number of patches per epoch. If `None`,</span>
 <a id="__codelineno-0-233" name="__codelineno-0-233"></a><span class="sd">            yields indefinitely.</span>
 <a id="__codelineno-0-234" name="__codelineno-0-234"></a><span class="sd">    &quot;&quot;&quot;</span>
 <a id="__codelineno-0-235" name="__codelineno-0-235"></a>
@@ -5084,14 +5084,14 @@ weight.</p>
 <span class="normal"><a href="#__codelineno-0-330">330</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-284" name="__codelineno-0-284"></a><span class="k">class</span><span class="w"> </span><span class="nc">LabelSampler</span><span class="p">(</span><span class="n">WeightedSampler</span><span class="p">):</span>
 <a id="__codelineno-0-285" name="__codelineno-0-285"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Random patches centered on labeled voxels.</span>
 <a id="__codelineno-0-286" name="__codelineno-0-286"></a>
-<a id="__codelineno-0-287" name="__codelineno-0-287"></a><span class="sd">    An ``IterableDataset`` for training with class imbalance.</span>
+<a id="__codelineno-0-287" name="__codelineno-0-287"></a><span class="sd">    An `IterableDataset` for training with class imbalance.</span>
 <a id="__codelineno-0-288" name="__codelineno-0-288"></a>
 <a id="__codelineno-0-289" name="__codelineno-0-289"></a><span class="sd">    Args:</span>
 <a id="__codelineno-0-290" name="__codelineno-0-290"></a><span class="sd">        subject: Subject to sample patches from.</span>
 <a id="__codelineno-0-291" name="__codelineno-0-291"></a><span class="sd">        patch_size: Spatial size of each patch.</span>
 <a id="__codelineno-0-292" name="__codelineno-0-292"></a><span class="sd">        label_name: Name of the label image in the subject.</span>
 <a id="__codelineno-0-293" name="__codelineno-0-293"></a><span class="sd">        label_probabilities: Dict mapping label values to sampling</span>
-<a id="__codelineno-0-294" name="__codelineno-0-294"></a><span class="sd">            weights. If ``None``, all non-zero labels have equal</span>
+<a id="__codelineno-0-294" name="__codelineno-0-294"></a><span class="sd">            weights. If `None`, all non-zero labels have equal</span>
 <a id="__codelineno-0-295" name="__codelineno-0-295"></a><span class="sd">            weight.</span>
 <a id="__codelineno-0-296" name="__codelineno-0-296"></a><span class="sd">        num_patches: Number of patches per epoch.</span>
 <a id="__codelineno-0-297" name="__codelineno-0-297"></a><span class="sd">    &quot;&quot;&quot;</span>
@@ -5505,16 +5505,16 @@ Patch locations will be scaled accordingly.</p>
 <a id="__codelineno-0-17" name="__codelineno-0-17"></a><span class="sd">    patches (e.g., downsampled feature maps or embeddings).</span>
 <a id="__codelineno-0-18" name="__codelineno-0-18"></a>
 <a id="__codelineno-0-19" name="__codelineno-0-19"></a><span class="sd">    Args:</span>
-<a id="__codelineno-0-20" name="__codelineno-0-20"></a><span class="sd">        spatial_shape: Output volume spatial shape ``(I, J, K)``.</span>
+<a id="__codelineno-0-20" name="__codelineno-0-20"></a><span class="sd">        spatial_shape: Output volume spatial shape `(I, J, K)`.</span>
 <a id="__codelineno-0-21" name="__codelineno-0-21"></a><span class="sd">        overlap_mode: How to handle overlapping regions:</span>
-<a id="__codelineno-0-22" name="__codelineno-0-22"></a><span class="sd">            ``&#39;crop&#39;`` keeps only non-overlapping centers (fast,</span>
+<a id="__codelineno-0-22" name="__codelineno-0-22"></a><span class="sd">            `&#39;crop&#39;` keeps only non-overlapping centers (fast,</span>
 <a id="__codelineno-0-23" name="__codelineno-0-23"></a><span class="sd">            best for argmax segmentation);</span>
-<a id="__codelineno-0-24" name="__codelineno-0-24"></a><span class="sd">            ``&#39;average&#39;`` averages overlapping values (best for</span>
+<a id="__codelineno-0-24" name="__codelineno-0-24"></a><span class="sd">            `&#39;average&#39;` averages overlapping values (best for</span>
 <a id="__codelineno-0-25" name="__codelineno-0-25"></a><span class="sd">            probabilistic outputs);</span>
-<a id="__codelineno-0-26" name="__codelineno-0-26"></a><span class="sd">            ``&#39;hann&#39;`` uses Hann-window weighting (smoothest,</span>
+<a id="__codelineno-0-26" name="__codelineno-0-26"></a><span class="sd">            `&#39;hann&#39;` uses Hann-window weighting (smoothest,</span>
 <a id="__codelineno-0-27" name="__codelineno-0-27"></a><span class="sd">            best for continuous outputs).</span>
 <a id="__codelineno-0-28" name="__codelineno-0-28"></a><span class="sd">        patch_overlap: The overlap used during sampling, needed</span>
-<a id="__codelineno-0-29" name="__codelineno-0-29"></a><span class="sd">            for ``&#39;crop&#39;`` mode to compute how much to trim.</span>
+<a id="__codelineno-0-29" name="__codelineno-0-29"></a><span class="sd">            for `&#39;crop&#39;` mode to compute how much to trim.</span>
 <a id="__codelineno-0-30" name="__codelineno-0-30"></a><span class="sd">        output_shape: If the model output is spatially smaller</span>
 <a id="__codelineno-0-31" name="__codelineno-0-31"></a><span class="sd">            than the input patch (e.g., due to strided</span>
 <a id="__codelineno-0-32" name="__codelineno-0-32"></a><span class="sd">            convolutions), specify the output volume shape here.</span>
@@ -5569,9 +5569,9 @@ Patch locations will be scaled accordingly.</p>
 <a id="__codelineno-0-81" name="__codelineno-0-81"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Add a batch of model outputs to the aggregation buffer.</span>
 <a id="__codelineno-0-82" name="__codelineno-0-82"></a>
 <a id="__codelineno-0-83" name="__codelineno-0-83"></a><span class="sd">        Args:</span>
-<a id="__codelineno-0-84" name="__codelineno-0-84"></a><span class="sd">            batch: 5D tensor ``(B, C, I, J, K)`` or dict of such</span>
+<a id="__codelineno-0-84" name="__codelineno-0-84"></a><span class="sd">            batch: 5D tensor `(B, C, I, J, K)` or dict of such</span>
 <a id="__codelineno-0-85" name="__codelineno-0-85"></a><span class="sd">                tensors keyed by name.</span>
-<a id="__codelineno-0-86" name="__codelineno-0-86"></a><span class="sd">            locations: List of ``PatchLocation`` for each item in</span>
+<a id="__codelineno-0-86" name="__codelineno-0-86"></a><span class="sd">            locations: List of `PatchLocation` for each item in</span>
 <a id="__codelineno-0-87" name="__codelineno-0-87"></a><span class="sd">                the batch.</span>
 <a id="__codelineno-0-88" name="__codelineno-0-88"></a><span class="sd">        &quot;&quot;&quot;</span>
 <a id="__codelineno-0-89" name="__codelineno-0-89"></a>        <span class="n">tensors</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Tensor</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
@@ -5590,11 +5590,11 @@ Patch locations will be scaled accordingly.</p>
 <a id="__codelineno-0-102" name="__codelineno-0-102"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the aggregated output volume.</span>
 <a id="__codelineno-0-103" name="__codelineno-0-103"></a>
 <a id="__codelineno-0-104" name="__codelineno-0-104"></a><span class="sd">        Args:</span>
-<a id="__codelineno-0-105" name="__codelineno-0-105"></a><span class="sd">            key: Name of the output to retrieve. If ``None`` and</span>
+<a id="__codelineno-0-105" name="__codelineno-0-105"></a><span class="sd">            key: Name of the output to retrieve. If `None` and</span>
 <a id="__codelineno-0-106" name="__codelineno-0-106"></a><span class="sd">                only a single (unnamed) output was added, return it.</span>
 <a id="__codelineno-0-107" name="__codelineno-0-107"></a>
 <a id="__codelineno-0-108" name="__codelineno-0-108"></a><span class="sd">        Returns:</span>
-<a id="__codelineno-0-109" name="__codelineno-0-109"></a><span class="sd">            The aggregated tensor with shape ``(C, I, J, K)``.</span>
+<a id="__codelineno-0-109" name="__codelineno-0-109"></a><span class="sd">            The aggregated tensor with shape `(C, I, J, K)`.</span>
 <a id="__codelineno-0-110" name="__codelineno-0-110"></a><span class="sd">        &quot;&quot;&quot;</span>
 <a id="__codelineno-0-111" name="__codelineno-0-111"></a>        <span class="n">resolve_key</span> <span class="o">=</span> <span class="n">key</span> <span class="k">if</span> <span class="n">key</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="s2">&quot;__default__&quot;</span>
 <a id="__codelineno-0-112" name="__codelineno-0-112"></a>        <span class="k">if</span> <span class="n">resolve_key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_outputs</span><span class="p">:</span>
@@ -5830,9 +5830,9 @@ the batch.</p>
 <a id="__codelineno-0-81" name="__codelineno-0-81"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Add a batch of model outputs to the aggregation buffer.</span>
 <a id="__codelineno-0-82" name="__codelineno-0-82"></a>
 <a id="__codelineno-0-83" name="__codelineno-0-83"></a><span class="sd">    Args:</span>
-<a id="__codelineno-0-84" name="__codelineno-0-84"></a><span class="sd">        batch: 5D tensor ``(B, C, I, J, K)`` or dict of such</span>
+<a id="__codelineno-0-84" name="__codelineno-0-84"></a><span class="sd">        batch: 5D tensor `(B, C, I, J, K)` or dict of such</span>
 <a id="__codelineno-0-85" name="__codelineno-0-85"></a><span class="sd">            tensors keyed by name.</span>
-<a id="__codelineno-0-86" name="__codelineno-0-86"></a><span class="sd">        locations: List of ``PatchLocation`` for each item in</span>
+<a id="__codelineno-0-86" name="__codelineno-0-86"></a><span class="sd">        locations: List of `PatchLocation` for each item in</span>
 <a id="__codelineno-0-87" name="__codelineno-0-87"></a><span class="sd">            the batch.</span>
 <a id="__codelineno-0-88" name="__codelineno-0-88"></a><span class="sd">    &quot;&quot;&quot;</span>
 <a id="__codelineno-0-89" name="__codelineno-0-89"></a>    <span class="n">tensors</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Tensor</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
@@ -5950,11 +5950,11 @@ only a single (unnamed) output was added, return it.</p>
 <a id="__codelineno-0-102" name="__codelineno-0-102"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the aggregated output volume.</span>
 <a id="__codelineno-0-103" name="__codelineno-0-103"></a>
 <a id="__codelineno-0-104" name="__codelineno-0-104"></a><span class="sd">    Args:</span>
-<a id="__codelineno-0-105" name="__codelineno-0-105"></a><span class="sd">        key: Name of the output to retrieve. If ``None`` and</span>
+<a id="__codelineno-0-105" name="__codelineno-0-105"></a><span class="sd">        key: Name of the output to retrieve. If `None` and</span>
 <a id="__codelineno-0-106" name="__codelineno-0-106"></a><span class="sd">            only a single (unnamed) output was added, return it.</span>
 <a id="__codelineno-0-107" name="__codelineno-0-107"></a>
 <a id="__codelineno-0-108" name="__codelineno-0-108"></a><span class="sd">    Returns:</span>
-<a id="__codelineno-0-109" name="__codelineno-0-109"></a><span class="sd">        The aggregated tensor with shape ``(C, I, J, K)``.</span>
+<a id="__codelineno-0-109" name="__codelineno-0-109"></a><span class="sd">        The aggregated tensor with shape `(C, I, J, K)`.</span>
 <a id="__codelineno-0-110" name="__codelineno-0-110"></a><span class="sd">    &quot;&quot;&quot;</span>
 <a id="__codelineno-0-111" name="__codelineno-0-111"></a>    <span class="n">resolve_key</span> <span class="o">=</span> <span class="n">key</span> <span class="k">if</span> <span class="n">key</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="s2">&quot;__default__&quot;</span>
 <a id="__codelineno-0-112" name="__codelineno-0-112"></a>    <span class="k">if</span> <span class="n">resolve_key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_outputs</span><span class="p">:</span>
@@ -6389,14 +6389,14 @@ When provided, <code>shuffle_subjects</code> must be <code>False</code>.</p>
 <a id="__codelineno-0-25" name="__codelineno-0-25"></a>
 <a id="__codelineno-0-26" name="__codelineno-0-26"></a><span class="sd">    Loads and preprocesses subjects in background threads, extracts</span>
 <a id="__codelineno-0-27" name="__codelineno-0-27"></a><span class="sd">    random patches via a sampler, and yields them one at a time.</span>
-<a id="__codelineno-0-28" name="__codelineno-0-28"></a><span class="sd">    Designed for use with ``SubjectsLoader`` or ``DataLoader``.</span>
+<a id="__codelineno-0-28" name="__codelineno-0-28"></a><span class="sd">    Designed for use with `SubjectsLoader` or `DataLoader`.</span>
 <a id="__codelineno-0-29" name="__codelineno-0-29"></a>
 <a id="__codelineno-0-30" name="__codelineno-0-30"></a><span class="sd">    Args:</span>
 <a id="__codelineno-0-31" name="__codelineno-0-31"></a><span class="sd">        subjects: Sequence of subjects to sample patches from.</span>
 <a id="__codelineno-0-32" name="__codelineno-0-32"></a><span class="sd">        patch_sampler: A sampler (e.g.,</span>
 <a id="__codelineno-0-33" name="__codelineno-0-33"></a><span class="sd">            [`UniformSampler`][torchio.data.UniformSampler]) used to</span>
 <a id="__codelineno-0-34" name="__codelineno-0-34"></a><span class="sd">            extract patches from loaded subjects. The sampler must</span>
-<a id="__codelineno-0-35" name="__codelineno-0-35"></a><span class="sd">            accept a subject and ``num_patches`` in its ``__call__``.</span>
+<a id="__codelineno-0-35" name="__codelineno-0-35"></a><span class="sd">            accept a subject and `num_patches` in its `__call__`.</span>
 <a id="__codelineno-0-36" name="__codelineno-0-36"></a><span class="sd">        max_length: Maximum number of patches held in the buffer.</span>
 <a id="__codelineno-0-37" name="__codelineno-0-37"></a><span class="sd">            Larger values increase diversity but use more RAM.</span>
 <a id="__codelineno-0-38" name="__codelineno-0-38"></a><span class="sd">        patches_per_volume: Maximum patches to extract from each</span>
@@ -6409,9 +6409,9 @@ When provided, <code>shuffle_subjects</code> must be <code>False</code>.</p>
 <a id="__codelineno-0-45" name="__codelineno-0-45"></a><span class="sd">        shuffle_patches: Shuffle the buffer after each refill.</span>
 <a id="__codelineno-0-46" name="__codelineno-0-46"></a><span class="sd">        transform: Optional transform applied to each subject after</span>
 <a id="__codelineno-0-47" name="__codelineno-0-47"></a><span class="sd">            loading and before patch extraction.</span>
-<a id="__codelineno-0-48" name="__codelineno-0-48"></a><span class="sd">        subject_sampler: A ``torch.utils.data.Sampler`` (e.g.,</span>
-<a id="__codelineno-0-49" name="__codelineno-0-49"></a><span class="sd">            ``DistributedSampler``) that yields subject indices.</span>
-<a id="__codelineno-0-50" name="__codelineno-0-50"></a><span class="sd">            When provided, ``shuffle_subjects`` must be ``False``.</span>
+<a id="__codelineno-0-48" name="__codelineno-0-48"></a><span class="sd">        subject_sampler: A `torch.utils.data.Sampler` (e.g.,</span>
+<a id="__codelineno-0-49" name="__codelineno-0-49"></a><span class="sd">            `DistributedSampler`) that yields subject indices.</span>
+<a id="__codelineno-0-50" name="__codelineno-0-50"></a><span class="sd">            When provided, `shuffle_subjects` must be `False`.</span>
 <a id="__codelineno-0-51" name="__codelineno-0-51"></a>
 <a id="__codelineno-0-52" name="__codelineno-0-52"></a><span class="sd">    Examples:</span>
 <a id="__codelineno-0-53" name="__codelineno-0-53"></a><span class="sd">        &gt;&gt;&gt; queue = tio.Queue(</span>
@@ -6818,9 +6818,9 @@ When provided, <code>shuffle_subjects</code> must be <code>False</code>.</p>
 <a id="__codelineno-0-12" name="__codelineno-0-12"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Spatial location of an extracted patch within a volume.</span>
 <a id="__codelineno-0-13" name="__codelineno-0-13"></a>
 <a id="__codelineno-0-14" name="__codelineno-0-14"></a><span class="sd">    Attributes:</span>
-<a id="__codelineno-0-15" name="__codelineno-0-15"></a><span class="sd">        index: ``(i, j, k)`` voxel indices of the patch corner</span>
+<a id="__codelineno-0-15" name="__codelineno-0-15"></a><span class="sd">        index: `(i, j, k)` voxel indices of the patch corner</span>
 <a id="__codelineno-0-16" name="__codelineno-0-16"></a><span class="sd">            (the corner closest to the origin).</span>
-<a id="__codelineno-0-17" name="__codelineno-0-17"></a><span class="sd">        size: ``(si, sj, sk)`` spatial shape of the patch.</span>
+<a id="__codelineno-0-17" name="__codelineno-0-17"></a><span class="sd">        size: `(si, sj, sk)` spatial shape of the patch.</span>
 <a id="__codelineno-0-18" name="__codelineno-0-18"></a><span class="sd">        subject_index: Optional identifier for multi-subject batches.</span>
 <a id="__codelineno-0-19" name="__codelineno-0-19"></a><span class="sd">    &quot;&quot;&quot;</span>
 <a id="__codelineno-0-20" name="__codelineno-0-20"></a>
@@ -6830,7 +6830,7 @@ When provided, <code>shuffle_subjects</code> must be <code>False</code>.</p>
 <a id="__codelineno-0-24" name="__codelineno-0-24"></a>
 <a id="__codelineno-0-25" name="__codelineno-0-25"></a>    <span class="nd">@property</span>
 <a id="__codelineno-0-26" name="__codelineno-0-26"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">index_ini</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TypeThreeInts</span><span class="p">:</span>
-<a id="__codelineno-0-27" name="__codelineno-0-27"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Starting voxel indices ``(i, j, k)``.&quot;&quot;&quot;</span>
+<a id="__codelineno-0-27" name="__codelineno-0-27"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Starting voxel indices `(i, j, k)`.&quot;&quot;&quot;</span>
 <a id="__codelineno-0-28" name="__codelineno-0-28"></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">index</span>
 <a id="__codelineno-0-29" name="__codelineno-0-29"></a>
 <a id="__codelineno-0-30" name="__codelineno-0-30"></a>    <span class="nd">@property</span>

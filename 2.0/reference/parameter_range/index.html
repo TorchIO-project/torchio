@@ -3977,15 +3977,15 @@
 <a id="__codelineno-0-102" name="__codelineno-0-102"></a><span class="sd">    Args:</span>
 <a id="__codelineno-0-103" name="__codelineno-0-103"></a><span class="sd">        value: Parameter specification. Accepted forms:</span>
 <a id="__codelineno-0-104" name="__codelineno-0-104"></a>
-<a id="__codelineno-0-105" name="__codelineno-0-105"></a><span class="sd">            - ``float``: deterministic value broadcast to 3 axes.</span>
-<a id="__codelineno-0-106" name="__codelineno-0-106"></a><span class="sd">            - ``(lo, hi)``: uniform range for all axes.</span>
-<a id="__codelineno-0-107" name="__codelineno-0-107"></a><span class="sd">            - ``(a, b, c)``: deterministic per-axis (when all plain</span>
+<a id="__codelineno-0-105" name="__codelineno-0-105"></a><span class="sd">            - `float`: deterministic value broadcast to 3 axes.</span>
+<a id="__codelineno-0-106" name="__codelineno-0-106"></a><span class="sd">            - `(lo, hi)`: uniform range for all axes.</span>
+<a id="__codelineno-0-107" name="__codelineno-0-107"></a><span class="sd">            - `(a, b, c)`: deterministic per-axis (when all plain</span>
 <a id="__codelineno-0-108" name="__codelineno-0-108"></a><span class="sd">              numbers).</span>
-<a id="__codelineno-0-109" name="__codelineno-0-109"></a><span class="sd">            - ``(lo0, hi0, lo1, hi1, lo2, hi2)``: per-axis ranges.</span>
-<a id="__codelineno-0-110" name="__codelineno-0-110"></a><span class="sd">            - ``Choice``: discrete random, same for all axes.</span>
-<a id="__codelineno-0-111" name="__codelineno-0-111"></a><span class="sd">            - ``Distribution``: sample from any distribution.</span>
+<a id="__codelineno-0-109" name="__codelineno-0-109"></a><span class="sd">            - `(lo0, hi0, lo1, hi1, lo2, hi2)`: per-axis ranges.</span>
+<a id="__codelineno-0-110" name="__codelineno-0-110"></a><span class="sd">            - `Choice`: discrete random, same for all axes.</span>
+<a id="__codelineno-0-111" name="__codelineno-0-111"></a><span class="sd">            - `Distribution`: sample from any distribution.</span>
 <a id="__codelineno-0-112" name="__codelineno-0-112"></a><span class="sd">            - 3-tuple of mixed specs, e.g.,</span>
-<a id="__codelineno-0-113" name="__codelineno-0-113"></a><span class="sd">              ``(0, Choice([-90, 0, 90]), (-10, 10))``.</span>
+<a id="__codelineno-0-113" name="__codelineno-0-113"></a><span class="sd">              `(0, Choice([-90, 0, 90]), (-10, 10))`.</span>
 <a id="__codelineno-0-114" name="__codelineno-0-114"></a><span class="sd">    &quot;&quot;&quot;</span>
 <a id="__codelineno-0-115" name="__codelineno-0-115"></a>
 <a id="__codelineno-0-116" name="__codelineno-0-116"></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
@@ -4015,15 +4015,15 @@
 <a id="__codelineno-0-140" name="__codelineno-0-140"></a>        <span class="k">return</span> <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">))</span> <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_axes</span><span class="p">)</span>
 <a id="__codelineno-0-141" name="__codelineno-0-141"></a>
 <a id="__codelineno-0-142" name="__codelineno-0-142"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">is_constant</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-<a id="__codelineno-0-143" name="__codelineno-0-143"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Whether every axis deterministically equals ``value``.</span>
+<a id="__codelineno-0-143" name="__codelineno-0-143"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Whether every axis deterministically equals `value`.</span>
 <a id="__codelineno-0-144" name="__codelineno-0-144"></a>
 <a id="__codelineno-0-145" name="__codelineno-0-145"></a><span class="sd">        Args:</span>
 <a id="__codelineno-0-146" name="__codelineno-0-146"></a><span class="sd">            value: The value to compare against on every axis.</span>
 <a id="__codelineno-0-147" name="__codelineno-0-147"></a>
 <a id="__codelineno-0-148" name="__codelineno-0-148"></a><span class="sd">        Returns:</span>
-<a id="__codelineno-0-149" name="__codelineno-0-149"></a><span class="sd">            ``True`` if each axis is a fixed number, or a degenerate</span>
-<a id="__codelineno-0-150" name="__codelineno-0-150"></a><span class="sd">            ``(v, v)`` range, equal to ``value``. ``Choice`` and</span>
-<a id="__codelineno-0-151" name="__codelineno-0-151"></a><span class="sd">            ``Distribution`` axes are never constant.</span>
+<a id="__codelineno-0-149" name="__codelineno-0-149"></a><span class="sd">            `True` if each axis is a fixed number, or a degenerate</span>
+<a id="__codelineno-0-150" name="__codelineno-0-150"></a><span class="sd">            `(v, v)` range, equal to `value`. `Choice` and</span>
+<a id="__codelineno-0-151" name="__codelineno-0-151"></a><span class="sd">            `Distribution` axes are never constant.</span>
 <a id="__codelineno-0-152" name="__codelineno-0-152"></a><span class="sd">        &quot;&quot;&quot;</span>
 <a id="__codelineno-0-153" name="__codelineno-0-153"></a>        <span class="k">for</span> <span class="n">axis</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_axes</span><span class="p">:</span>
 <a id="__codelineno-0-154" name="__codelineno-0-154"></a>            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">axis</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">)):</span>
@@ -4245,15 +4245,15 @@
 <span class="normal"><a href="#__codelineno-0-161">161</a></span>
 <span class="normal"><a href="#__codelineno-0-162">162</a></span>
 <span class="normal"><a href="#__codelineno-0-163">163</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-142" name="__codelineno-0-142"></a><span class="k">def</span><span class="w"> </span><span class="nf">is_constant</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-<a id="__codelineno-0-143" name="__codelineno-0-143"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Whether every axis deterministically equals ``value``.</span>
+<a id="__codelineno-0-143" name="__codelineno-0-143"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Whether every axis deterministically equals `value`.</span>
 <a id="__codelineno-0-144" name="__codelineno-0-144"></a>
 <a id="__codelineno-0-145" name="__codelineno-0-145"></a><span class="sd">    Args:</span>
 <a id="__codelineno-0-146" name="__codelineno-0-146"></a><span class="sd">        value: The value to compare against on every axis.</span>
 <a id="__codelineno-0-147" name="__codelineno-0-147"></a>
 <a id="__codelineno-0-148" name="__codelineno-0-148"></a><span class="sd">    Returns:</span>
-<a id="__codelineno-0-149" name="__codelineno-0-149"></a><span class="sd">        ``True`` if each axis is a fixed number, or a degenerate</span>
-<a id="__codelineno-0-150" name="__codelineno-0-150"></a><span class="sd">        ``(v, v)`` range, equal to ``value``. ``Choice`` and</span>
-<a id="__codelineno-0-151" name="__codelineno-0-151"></a><span class="sd">        ``Distribution`` axes are never constant.</span>
+<a id="__codelineno-0-149" name="__codelineno-0-149"></a><span class="sd">        `True` if each axis is a fixed number, or a degenerate</span>
+<a id="__codelineno-0-150" name="__codelineno-0-150"></a><span class="sd">        `(v, v)` range, equal to `value`. `Choice` and</span>
+<a id="__codelineno-0-151" name="__codelineno-0-151"></a><span class="sd">        `Distribution` axes are never constant.</span>
 <a id="__codelineno-0-152" name="__codelineno-0-152"></a><span class="sd">    &quot;&quot;&quot;</span>
 <a id="__codelineno-0-153" name="__codelineno-0-153"></a>    <span class="k">for</span> <span class="n">axis</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_axes</span><span class="p">:</span>
 <a id="__codelineno-0-154" name="__codelineno-0-154"></a>        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">axis</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">)):</span>
