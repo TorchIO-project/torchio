@@ -3723,7 +3723,7 @@ microscopy) where you only need a small region of interest.</p>
     ZarrBackend--&gt;&gt;TorchIO: Tensor (1, 100, 100, 100)</code></pre>
 <p>When you pass a remote <code>.nii.zarr</code> URI, TorchIO:</p>
 <ol>
-<li><strong>Stores the URI</strong> — no bytes are downloaded yet.</li>
+<li><strong>Stores the URI</strong>: no bytes are downloaded yet.</li>
 <li><strong>On first metadata access</strong> (<code>.shape</code>, <code>.affine</code>, …), opens a remote
    zarr store via <a href="https://filesystem-spec.readthedocs.io/">fsspec</a> and
    reads only the header.</li>
@@ -3744,10 +3744,10 @@ microscopy) where you only need a small region of interest.</p>
 <a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="n">image</span> <span class="o">=</span> <span class="n">tio</span><span class="o">.</span><span class="n">ScalarImage</span><span class="p">(</span><span class="s2">&quot;az://mycontainer/dataset/brain.nii.zarr&quot;</span><span class="p">)</span>
 <a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a>
 <a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a><span class="c1"># Nothing has been downloaded yet</span>
-<a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a><span class="nb">print</span><span class="p">(</span><span class="n">image</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>   <span class="c1"># e.g. (1, 512, 512, 512) — only metadata fetched</span>
+<a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a><span class="nb">print</span><span class="p">(</span><span class="n">image</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>   <span class="c1"># e.g. (1, 512, 512, 512), only metadata fetched</span>
 <a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a><span class="nb">print</span><span class="p">(</span><span class="n">image</span><span class="o">.</span><span class="n">spacing</span><span class="p">)</span>  <span class="c1"># from the NIfTI header stored in the zarr</span>
 <a id="__codelineno-3-15" name="__codelineno-3-15" href="#__codelineno-3-15"></a>
-<a id="__codelineno-3-16" name="__codelineno-3-16" href="#__codelineno-3-16"></a><span class="c1"># Crop a 100×100×100 ROI — only the overlapping chunks are fetched</span>
+<a id="__codelineno-3-16" name="__codelineno-3-16" href="#__codelineno-3-16"></a><span class="c1"># Crop a 100×100×100 ROI, only the overlapping chunks are fetched</span>
 <a id="__codelineno-3-17" name="__codelineno-3-17" href="#__codelineno-3-17"></a><span class="n">roi</span> <span class="o">=</span> <span class="n">image</span><span class="p">[:,</span> <span class="mi">200</span><span class="p">:</span><span class="mi">300</span><span class="p">,</span> <span class="mi">200</span><span class="p">:</span><span class="mi">300</span><span class="p">,</span> <span class="mi">200</span><span class="p">:</span><span class="mi">300</span><span class="p">]</span>
 <a id="__codelineno-3-18" name="__codelineno-3-18" href="#__codelineno-3-18"></a><span class="nb">print</span><span class="p">(</span><span class="n">roi</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>      <span class="c1"># (1, 100, 100, 100)</span>
 <a id="__codelineno-3-19" name="__codelineno-3-19" href="#__codelineno-3-19"></a><span class="nb">print</span><span class="p">(</span><span class="n">roi</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">mean</span><span class="p">())</span>
@@ -3824,7 +3824,7 @@ Credentials or <code>GOOGLE_APPLICATION_CREDENTIALS</code>.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="n">image</span> <span class="o">=</span> <span class="n">tio</span><span class="o">.</span><span class="n">ScalarImage</span><span class="p">(</span><span class="s2">&quot;https://example.com/data/brain.nii.zarr&quot;</span><span class="p">)</span>
 <a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="n">roi</span> <span class="o">=</span> <span class="n">image</span><span class="p">[:,</span> <span class="mi">100</span><span class="p">:</span><span class="mi">200</span><span class="p">,</span> <span class="mi">100</span><span class="p">:</span><span class="mi">200</span><span class="p">,</span> <span class="mi">100</span><span class="p">:</span><span class="mi">200</span><span class="p">]</span>
 </code></pre></div></p>
-<p>No extra packages needed — <code>fsspec[http]</code> is included by default.</p>
+<p>No extra packages needed: <code>fsspec[http]</code> is included by default.</p>
 </div>
 </div>
 </div>

@@ -4445,7 +4445,7 @@ direction, and orientation. Composition uses the <code>@</code> operator.</p>
 <a id="__codelineno-0-163" name="__codelineno-0-163"></a><span class="sd">            ``self`` (modified in-place).</span>
 <a id="__codelineno-0-164" name="__codelineno-0-164"></a><span class="sd">        &quot;&quot;&quot;</span>
 <a id="__codelineno-0-165" name="__codelineno-0-165"></a>        <span class="k">with</span> <span class="n">contextlib</span><span class="o">.</span><span class="n">suppress</span><span class="p">(</span><span class="ne">TypeError</span><span class="p">):</span>
-<a id="__codelineno-0-166" name="__codelineno-0-166"></a>            <span class="c1"># MPS doesn&#39;t support float64 — keep on CPU</span>
+<a id="__codelineno-0-166" name="__codelineno-0-166"></a>            <span class="c1"># MPS doesn&#39;t support float64, so keep on CPU</span>
 <a id="__codelineno-0-167" name="__codelineno-0-167"></a>            <span class="bp">self</span><span class="o">.</span><span class="n">_matrix</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_matrix</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
 <a id="__codelineno-0-168" name="__codelineno-0-168"></a>        <span class="k">return</span> <span class="bp">self</span>
 <a id="__codelineno-0-169" name="__codelineno-0-169"></a>
@@ -4906,7 +4906,7 @@ that don't support float64 (e.g., MPS), it remains on CPU.</p>
 <a id="__codelineno-0-163" name="__codelineno-0-163"></a><span class="sd">        ``self`` (modified in-place).</span>
 <a id="__codelineno-0-164" name="__codelineno-0-164"></a><span class="sd">    &quot;&quot;&quot;</span>
 <a id="__codelineno-0-165" name="__codelineno-0-165"></a>    <span class="k">with</span> <span class="n">contextlib</span><span class="o">.</span><span class="n">suppress</span><span class="p">(</span><span class="ne">TypeError</span><span class="p">):</span>
-<a id="__codelineno-0-166" name="__codelineno-0-166"></a>        <span class="c1"># MPS doesn&#39;t support float64 — keep on CPU</span>
+<a id="__codelineno-0-166" name="__codelineno-0-166"></a>        <span class="c1"># MPS doesn&#39;t support float64, so keep on CPU</span>
 <a id="__codelineno-0-167" name="__codelineno-0-167"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_matrix</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_matrix</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
 <a id="__codelineno-0-168" name="__codelineno-0-168"></a>    <span class="k">return</span> <span class="bp">self</span>
 </code></pre></div></td></tr></table></div>

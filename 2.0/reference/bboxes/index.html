@@ -4567,11 +4567,11 @@ is determined by the
 <a id="__codelineno-0-354" name="__codelineno-0-354"></a>        <span class="c1"># Step 2: axis conversion (now in corners).</span>
 <a id="__codelineno-0-355" name="__codelineno-0-355"></a>        <span class="k">if</span> <span class="n">src_axes</span> <span class="o">!=</span> <span class="n">tgt_axes</span><span class="p">:</span>
 <a id="__codelineno-0-356" name="__codelineno-0-356"></a>            <span class="k">if</span> <span class="n">src_type</span> <span class="o">==</span> <span class="n">tgt_type</span><span class="p">:</span>
-<a id="__codelineno-0-357" name="__codelineno-0-357"></a>                <span class="c1"># Same family — permute + flip.</span>
+<a id="__codelineno-0-357" name="__codelineno-0-357"></a>                <span class="c1"># Same family: permute + flip.</span>
 <a id="__codelineno-0-358" name="__codelineno-0-358"></a>                <span class="n">perm</span><span class="p">,</span> <span class="n">flips</span> <span class="o">=</span> <span class="n">get_axis_mapping</span><span class="p">(</span><span class="n">src_axes</span><span class="p">,</span> <span class="n">tgt_axes</span><span class="p">)</span>
 <a id="__codelineno-0-359" name="__codelineno-0-359"></a>                <span class="n">data</span> <span class="o">=</span> <span class="n">_permute_corners</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">perm</span><span class="p">,</span> <span class="n">flips</span><span class="p">)</span>
 <a id="__codelineno-0-360" name="__codelineno-0-360"></a>            <span class="k">else</span><span class="p">:</span>
-<a id="__codelineno-0-361" name="__codelineno-0-361"></a>                <span class="c1"># Cross-type — go through world coordinates.</span>
+<a id="__codelineno-0-361" name="__codelineno-0-361"></a>                <span class="c1"># Cross-type: go through world coordinates.</span>
 <a id="__codelineno-0-362" name="__codelineno-0-362"></a>                <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cross_type_corners</span><span class="p">(</span>
 <a id="__codelineno-0-363" name="__codelineno-0-363"></a>                    <span class="n">data</span><span class="p">,</span>
 <a id="__codelineno-0-364" name="__codelineno-0-364"></a>                    <span class="n">src_axes</span><span class="p">,</span>
@@ -5075,11 +5075,11 @@ conversions (using the stored affine).</p>
 <a id="__codelineno-0-354" name="__codelineno-0-354"></a>    <span class="c1"># Step 2: axis conversion (now in corners).</span>
 <a id="__codelineno-0-355" name="__codelineno-0-355"></a>    <span class="k">if</span> <span class="n">src_axes</span> <span class="o">!=</span> <span class="n">tgt_axes</span><span class="p">:</span>
 <a id="__codelineno-0-356" name="__codelineno-0-356"></a>        <span class="k">if</span> <span class="n">src_type</span> <span class="o">==</span> <span class="n">tgt_type</span><span class="p">:</span>
-<a id="__codelineno-0-357" name="__codelineno-0-357"></a>            <span class="c1"># Same family — permute + flip.</span>
+<a id="__codelineno-0-357" name="__codelineno-0-357"></a>            <span class="c1"># Same family: permute + flip.</span>
 <a id="__codelineno-0-358" name="__codelineno-0-358"></a>            <span class="n">perm</span><span class="p">,</span> <span class="n">flips</span> <span class="o">=</span> <span class="n">get_axis_mapping</span><span class="p">(</span><span class="n">src_axes</span><span class="p">,</span> <span class="n">tgt_axes</span><span class="p">)</span>
 <a id="__codelineno-0-359" name="__codelineno-0-359"></a>            <span class="n">data</span> <span class="o">=</span> <span class="n">_permute_corners</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">perm</span><span class="p">,</span> <span class="n">flips</span><span class="p">)</span>
 <a id="__codelineno-0-360" name="__codelineno-0-360"></a>        <span class="k">else</span><span class="p">:</span>
-<a id="__codelineno-0-361" name="__codelineno-0-361"></a>            <span class="c1"># Cross-type — go through world coordinates.</span>
+<a id="__codelineno-0-361" name="__codelineno-0-361"></a>            <span class="c1"># Cross-type: go through world coordinates.</span>
 <a id="__codelineno-0-362" name="__codelineno-0-362"></a>            <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cross_type_corners</span><span class="p">(</span>
 <a id="__codelineno-0-363" name="__codelineno-0-363"></a>                <span class="n">data</span><span class="p">,</span>
 <a id="__codelineno-0-364" name="__codelineno-0-364"></a>                <span class="n">src_axes</span><span class="p">,</span>
@@ -5418,7 +5418,7 @@ conversions (using the stored affine).</p>
 <a id="__codelineno-0-58" name="__codelineno-0-58"></a><span class="sd">        BoundingBoxFormat(axes=&#39;RAS&#39;, representation=&#39;center_size&#39;)</span>
 <a id="__codelineno-0-59" name="__codelineno-0-59"></a><span class="sd">    &quot;&quot;&quot;</span>
 <a id="__codelineno-0-60" name="__codelineno-0-60"></a>
-<a id="__codelineno-0-61" name="__codelineno-0-61"></a>    <span class="c1"># Predefined convenience formats — set after the class body.</span>
+<a id="__codelineno-0-61" name="__codelineno-0-61"></a>    <span class="c1"># Predefined convenience formats, set after the class body.</span>
 <a id="__codelineno-0-62" name="__codelineno-0-62"></a>    <span class="n">IJKIJK</span><span class="p">:</span> <span class="n">BoundingBoxFormat</span>
 <a id="__codelineno-0-63" name="__codelineno-0-63"></a>    <span class="n">IJKWHD</span><span class="p">:</span> <span class="n">BoundingBoxFormat</span>
 <a id="__codelineno-0-64" name="__codelineno-0-64"></a>

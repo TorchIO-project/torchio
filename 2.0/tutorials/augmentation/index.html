@@ -878,7 +878,7 @@
   <a href="#compose-apply-all-in-sequence" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        Compose — apply all in sequence
+        Compose: apply all in sequence
       </span>
     </span>
   </a>
@@ -889,7 +889,7 @@
   <a href="#oneof-pick-one-at-random" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        OneOf — pick one at random
+        OneOf: pick one at random
       </span>
     </span>
   </a>
@@ -900,7 +900,7 @@
   <a href="#someof-pick-n-at-random" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        SomeOf — pick N at random
+        SomeOf: pick N at random
       </span>
     </span>
   </a>
@@ -3729,7 +3729,7 @@
   <a href="#compose-apply-all-in-sequence" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        Compose — apply all in sequence
+        Compose: apply all in sequence
       </span>
     </span>
   </a>
@@ -3740,7 +3740,7 @@
   <a href="#oneof-pick-one-at-random" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        OneOf — pick one at random
+        OneOf: pick one at random
       </span>
     </span>
   </a>
@@ -3751,7 +3751,7 @@
   <a href="#someof-pick-n-at-random" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        SomeOf — pick N at random
+        SomeOf: pick N at random
       </span>
     </span>
   </a>
@@ -3890,7 +3890,7 @@ and artifact transforms, compose them into pipelines, and use
 </code></pre></div>
 <p>Every call to <code>augmentation(subject)</code> produces a different result.
 Spatial transforms (Flip, Affine) are applied consistently to all
-images in the subject — the T1 and segmentation are transformed
+images in the subject: the T1 and segmentation are transformed
 together.</p>
 <h2 id="deterministic-vs-random">Deterministic vs random</h2>
 <p>The same class handles both cases.  A scalar gives a fixed value;
@@ -3922,7 +3922,7 @@ a tuple gives a uniform range:</p>
 <a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="n">tio</span><span class="o">.</span><span class="n">Noise</span><span class="p">(</span><span class="n">std</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">p</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
 </code></pre></div>
 <h2 id="composition-strategies">Composition strategies</h2>
-<h3 id="compose-apply-all-in-sequence">Compose — apply all in sequence</h3>
+<h3 id="compose-apply-all-in-sequence">Compose: apply all in sequence</h3>
 <!-- pytest-codeblocks:skip -->
 <div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="n">pipeline</span> <span class="o">=</span> <span class="n">tio</span><span class="o">.</span><span class="n">Compose</span><span class="p">([</span>
 <a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>    <span class="n">tio</span><span class="o">.</span><span class="n">Affine</span><span class="p">(</span><span class="n">degrees</span><span class="o">=</span><span class="mi">10</span><span class="p">),</span>
@@ -3930,7 +3930,7 @@ a tuple gives a uniform range:</p>
 <a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>    <span class="n">tio</span><span class="o">.</span><span class="n">Gamma</span><span class="p">(</span><span class="n">log_gamma</span><span class="o">=</span><span class="mf">0.3</span><span class="p">),</span>
 <a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="p">])</span>
 </code></pre></div>
-<h3 id="oneof-pick-one-at-random">OneOf — pick one at random</h3>
+<h3 id="oneof-pick-one-at-random">OneOf: pick one at random</h3>
 <!-- pytest-codeblocks:skip -->
 <div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="n">artifact</span> <span class="o">=</span> <span class="n">tio</span><span class="o">.</span><span class="n">OneOf</span><span class="p">({</span>
 <a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>    <span class="n">tio</span><span class="o">.</span><span class="n">Ghosting</span><span class="p">(</span><span class="n">intensity</span><span class="o">=</span><span class="mf">0.5</span><span class="p">):</span> <span class="mf">0.4</span><span class="p">,</span>
@@ -3938,7 +3938,7 @@ a tuple gives a uniform range:</p>
 <a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>    <span class="n">tio</span><span class="o">.</span><span class="n">Motion</span><span class="p">(</span><span class="n">degrees</span><span class="o">=</span><span class="mi">5</span><span class="p">):</span> <span class="mf">0.3</span><span class="p">,</span>
 <a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="p">})</span>
 </code></pre></div>
-<h3 id="someof-pick-n-at-random">SomeOf — pick N at random</h3>
+<h3 id="someof-pick-n-at-random">SomeOf: pick N at random</h3>
 <!-- pytest-codeblocks:skip -->
 <div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="n">augment</span> <span class="o">=</span> <span class="n">tio</span><span class="o">.</span><span class="n">SomeOf</span><span class="p">(</span>
 <a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>    <span class="p">[</span>

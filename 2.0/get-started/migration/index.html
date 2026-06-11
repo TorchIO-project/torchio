@@ -4078,7 +4078,7 @@ GitHub to report bugs or request features.</p>
 <h2 id="quick-checklist">Quick checklist</h2>
 <ul>
 <li>Replace <code>Random*</code> transform names with their base names (<code>RandomFlip</code> → <code>Flip</code>)</li>
-<li>Pass explicit ranges for augmentation — renamed transforms are a no-op without arguments (<code>RandomAffine()</code> → <code>Affine(degrees=(-10, 10), scales=(0.9, 1.1))</code>)</li>
+<li>Pass explicit ranges for augmentation (renamed transforms are a no-op without arguments): <code>RandomAffine()</code> → <code>Affine(degrees=(-10, 10), scales=(0.9, 1.1))</code></li>
 <li>Replace <code>path=</code> with positional arg or <code>source=</code> in Image constructors</li>
 <li>Replace <code>.affine</code> (numpy array) with <code>.affine.data</code> where a raw array is needed</li>
 <li>Replace <code>RescaleIntensity(out_min_max=...)</code> with <code>Normalize(out_min=..., out_max=...)</code></li>
@@ -4100,7 +4100,7 @@ GitHub to report bugs or request features.</p>
 <ul>
 <li>First positional argument accepts a path, tensor, numpy array,
   NiBabel image, SimpleITK image, or <code>bytes</code>.  The <code>path</code> and
-  <code>tensor</code> keyword names are gone — use positional or <code>source=</code>.</li>
+  <code>tensor</code> keyword names are gone: use positional or <code>source=</code>.</li>
 <li><code>type</code> parameter removed.  Use <code>ScalarImage</code> or <code>LabelMap</code> directly.</li>
 <li><code>affine</code> accepts <code>AffineMatrix</code> objects in addition to arrays.</li>
 <li>New <code>channels_last</code> parameter for tensor sources shaped
@@ -4141,7 +4141,7 @@ and a <code>Distribution</code> or <code>Choice</code> gives full control.</p>
 <p class="admonition-title">Renaming a <code>Random*</code> transform changes its default behavior</p>
 <p>In v1, <code>RandomAffine()</code> (no arguments) applied random augmentation.
 In v2, the renamed <code>Affine()</code> (no arguments) is a deterministic
-identity (no-op) that emits a warning — randomness is opt-in. Pass a
+identity (no-op) that emits a warning (randomness is opt-in). Pass a
 range like <code>(a, b)</code> for random augmentation, or a scalar for a fixed
 effect. Transforms that draw a random realisation rather than
 sampling a scalar parameter (e.g. <code>Noise</code>, <code>BiasField</code>,
@@ -4308,8 +4308,8 @@ operate in-place.  Disable with <code>copy=False</code> for nested pipelines:</p
 </code></pre></div>
 <h2 id="data-loading">Data loading</h2>
 <h3 id="subjectsdataset-removed">SubjectsDataset removed</h3>
-<p>v1 required wrapping subjects in <code>SubjectsDataset</code>.  v2 removes this
-class — pass any <code>Dataset</code> returning <code>Subject</code> instances to
+<p>v1 required wrapping subjects in <code>SubjectsDataset</code>.
+v2 removes this class. Pass any <code>Dataset</code> returning <code>Subject</code> instances to
 <code>SubjectsLoader</code>:</p>
 <!-- pytest-codeblocks:skip -->
 <div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="c1"># v1</span>
@@ -4369,13 +4369,13 @@ class — pass any <code>Dataset</code> returning <code>Subject</code> instances
 </code></pre></div>
 <p>New exports in v2:</p>
 <ul>
-<li><code>AffineMatrix</code> — the affine matrix class</li>
-<li><code>Points</code>, <code>BoundingBoxes</code>, <code>BoundingBoxFormat</code> — annotation types</li>
-<li><code>SubjectsBatch</code>, <code>ImagesBatch</code> — batch containers</li>
-<li><code>Choice</code>, <code>ParameterRange</code> — parameter sampling utilities</li>
-<li><code>SomeOf</code> — random subset composition</li>
-<li><code>PatchAggregator</code> — renamed from <code>GridAggregator</code></li>
-<li><code>apply_inverse_transform</code> — standalone inverse function</li>
+<li><code>AffineMatrix</code>: the affine matrix class</li>
+<li><code>Points</code>, <code>BoundingBoxes</code>, <code>BoundingBoxFormat</code>: annotation types</li>
+<li><code>SubjectsBatch</code>, <code>ImagesBatch</code>: batch containers</li>
+<li><code>Choice</code>, <code>ParameterRange</code>: parameter sampling utilities</li>
+<li><code>SomeOf</code>: random subset composition</li>
+<li><code>PatchAggregator</code>: renamed from <code>GridAggregator</code></li>
+<li><code>apply_inverse_transform</code>: standalone inverse function</li>
 </ul>
 
 

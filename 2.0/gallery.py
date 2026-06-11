@@ -186,7 +186,7 @@ def _execute_example(
                 continue
 
             code = block["content"]
-            # Remove plt.show() calls — we capture figures ourselves
+            # Remove plt.show() calls (we capture figures ourselves)
             code_exec = re.sub(
                 r"^\s*plt\.show\(\)\s*$",
                 "",

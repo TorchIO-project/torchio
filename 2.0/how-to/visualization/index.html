@@ -4047,7 +4047,7 @@
 <h1 id="visualizing-images">Visualizing images</h1>
 <p>TorchIO provides a built-in plotting function that displays three
 orthogonal slices (Sagittal, Coronal, Axial) with correct anatomical
-orientation and proportions. It works with any image orientation —
+orientation and proportions. It works with any image orientation:
 RAS, LPS, or anything else.</p>
 <div class="admonition note">
 <p class="admonition-title">Optional dependency</p>
@@ -4232,7 +4232,7 @@ appear in the correct anatomical view.</p>
 a path automatically creates a temporary file and returns an IPython
 display object:</p>
 <!-- pytest-codeblocks:skip -->
-<div class="highlight"><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a><span class="c1"># Just this — the GIF is displayed inline</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a><span class="c1"># Just this: the GIF is displayed inline</span>
 <a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a><span class="n">image</span><span class="o">.</span><span class="n">to_gif</span><span class="p">()</span>
 <a id="__codelineno-17-3" name="__codelineno-17-3" href="#__codelineno-17-3"></a>
 <a id="__codelineno-17-4" name="__codelineno-17-4" href="#__codelineno-17-4"></a><span class="c1"># Same for video</span>

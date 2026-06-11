@@ -9973,7 +9973,7 @@ automatically:</p>
 </tr>
 <tr>
 <td><code>None</code> (default)</td>
-<td>Empty image — set data later</td>
+<td>Empty image, set data later</td>
 </tr>
 </tbody>
 </table>
@@ -11251,7 +11251,7 @@ dict-style lookup (e.g., <code>protocol="MPRAGE"</code>).</p>
 <a id="__codelineno-0-180" name="__codelineno-0-180"></a><span class="sd">    | `sitk.Image` | Eager, converted to tensor |</span>
 <a id="__codelineno-0-181" name="__codelineno-0-181"></a><span class="sd">    | `zarr.abc.store.Store` | Lazy via `zarr2nii` + `NibabelBackend` |</span>
 <a id="__codelineno-0-182" name="__codelineno-0-182"></a><span class="sd">    | `bytes`, `io.BytesIO` | Decoded via temp file |</span>
-<a id="__codelineno-0-183" name="__codelineno-0-183"></a><span class="sd">    | `None` (default) | Empty image — set data later |</span>
+<a id="__codelineno-0-183" name="__codelineno-0-183"></a><span class="sd">    | `None` (default) | Empty image, set data later |</span>
 <a id="__codelineno-0-184" name="__codelineno-0-184"></a>
 <a id="__codelineno-0-185" name="__codelineno-0-185"></a><span class="sd">    Args:</span>
 <a id="__codelineno-0-186" name="__codelineno-0-186"></a><span class="sd">        source: Image data or path. See the table above.</span>
@@ -11293,7 +11293,7 @@ dict-style lookup (e.g., <code>protocol="MPRAGE"</code>).</p>
 <a id="__codelineno-0-222" name="__codelineno-0-222"></a>        <span class="o">|</span> <span class="n">sitk</span><span class="o">.</span><span class="n">Image</span>
 <a id="__codelineno-0-223" name="__codelineno-0-223"></a>        <span class="o">|</span> <span class="nb">bytes</span>
 <a id="__codelineno-0-224" name="__codelineno-0-224"></a>        <span class="o">|</span> <span class="n">io</span><span class="o">.</span><span class="n">BytesIO</span>
-<a id="__codelineno-0-225" name="__codelineno-0-225"></a>        <span class="c1"># | zarr.abc.store.Store  (optional — accepted at runtime)</span>
+<a id="__codelineno-0-225" name="__codelineno-0-225"></a>        <span class="c1"># | zarr.abc.store.Store  (optional, accepted at runtime)</span>
 <a id="__codelineno-0-226" name="__codelineno-0-226"></a>        <span class="o">|</span> <span class="kc">None</span>
 <a id="__codelineno-0-227" name="__codelineno-0-227"></a>    <span class="p">)</span>
 <a id="__codelineno-0-228" name="__codelineno-0-228"></a>
@@ -11835,7 +11835,7 @@ dict-style lookup (e.g., <code>protocol="MPRAGE"</code>).</p>
 <a id="__codelineno-0-764" name="__codelineno-0-764"></a><span class="sd">        For NIfTI and NIfTI-Zarr files, creates a lazy backend that supports</span>
 <a id="__codelineno-0-765" name="__codelineno-0-765"></a><span class="sd">        header-only reads. For zarr stores, calls ``zarr2nii`` to build a</span>
 <a id="__codelineno-0-766" name="__codelineno-0-766"></a><span class="sd">        dask-backed nibabel image. For other formats (NRRD, MHA, etc.), no</span>
-<a id="__codelineno-0-767" name="__codelineno-0-767"></a><span class="sd">        lazy backend is available — callers should fall back to other methods.</span>
+<a id="__codelineno-0-767" name="__codelineno-0-767"></a><span class="sd">        lazy backend is available. Callers should fall back to other methods.</span>
 <a id="__codelineno-0-768" name="__codelineno-0-768"></a><span class="sd">        &quot;&quot;&quot;</span>
 <a id="__codelineno-0-769" name="__codelineno-0-769"></a>        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_backend</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
 <a id="__codelineno-0-770" name="__codelineno-0-770"></a>            <span class="k">return</span>
@@ -11922,7 +11922,7 @@ dict-style lookup (e.g., <code>protocol="MPRAGE"</code>).</p>
 <a id="__codelineno-0-851" name="__codelineno-0-851"></a><span class="sd">        supported.</span>
 <a id="__codelineno-0-852" name="__codelineno-0-852"></a>
 <a id="__codelineno-0-853" name="__codelineno-0-853"></a><span class="sd">        When the image has not been loaded yet, slicing reads only the</span>
-<a id="__codelineno-0-854" name="__codelineno-0-854"></a><span class="sd">        requested region through the lazy backend — the full tensor is</span>
+<a id="__codelineno-0-854" name="__codelineno-0-854"></a><span class="sd">        requested region through the lazy backend. The full tensor is</span>
 <a id="__codelineno-0-855" name="__codelineno-0-855"></a><span class="sd">        never materialized. For uncompressed NIfTI (`.nii`) this uses</span>
 <a id="__codelineno-0-856" name="__codelineno-0-856"></a><span class="sd">        memory-mapping; for NIfTI-Zarr (`.nii.zarr`) chunked reads.</span>
 <a id="__codelineno-0-857" name="__codelineno-0-857"></a><span class="sd">        Even for compressed NIfTI (`.nii.gz`), nibabel&#39;s proxy avoids</span>
