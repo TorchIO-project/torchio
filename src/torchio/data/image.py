@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import copy
 import io
-import types
 from collections.abc import Callable
 from pathlib import Path
 from typing import Any
@@ -25,15 +24,17 @@ from ..types import TypeImageData
 from ..types import TypeSpatialShape
 from ..types import TypeTensorShape
 from .affine import AffineMatrix
+from .backends import BackendRequest
 from .backends import ImageDataBackend
+from .backends import LazyReader
 from .backends import NibabelBackend
 from .backends import TensorBackend
-from .backends import ZarrBackend
+from .backends import normalize_index
+from .backends import resolve_backend
 from .bboxes import BoundingBoxes
 from .invertible import Invertible
 from .io import ImageSource
 from .io import default_reader
-from .io import is_nifti
 from .io import is_nifti_zarr
 from .io import is_remote_nifti_zarr
 from .io import resolve_source
@@ -96,65 +97,8 @@ def _backend_label(backend: object | None) -> str:
             return "NIfTI-Zarr"
         case n if "Tensor" in n:
             return "Tensor"
-        case n if "Numpy" in n:
-            return "NumPy"
         case _:
             return name
-
-
-def _expand_ellipsis(
-    items: tuple[int | slice | types.EllipsisType, ...],
-    *,
-    ndim: int,
-) -> tuple[int | slice, ...]:
-    """Replace a single `Ellipsis` with enough `slice(None)` to fill *ndim*."""
-    n_ellipsis = sum(1 for s in items if s is Ellipsis)
-    if n_ellipsis == 0:
-        result: tuple[int | slice, ...] = tuple(s for s in items if s is not Ellipsis)
-        return result
-    if n_ellipsis > 1:
-        msg = "Only one ellipsis is allowed"
-        raise IndexError(msg)
-    idx = items.index(Ellipsis)
-    n_explicit = len(items) - 1
-    n_fill = max(ndim - n_explicit, 0)
-    expanded = items[:idx] + (slice(None),) * n_fill + items[idx + 1 :]
-    result = tuple(s for s in expanded if s is not Ellipsis)
-    return result
-
-
-def _parse_item(
-    item: int | slice | tuple[int | slice, ...],
-) -> list[slice]:
-    """Normalise an indexing item to a list of slices."""
-    match item:
-        case int() | slice():
-            items: tuple[int | slice | types.EllipsisType, ...] = (item,)
-        case tuple():
-            items = item
-        case _ if item is Ellipsis:
-            items = (item,)
-        case _:
-            msg = f"Index type {type(item).__name__} not understood"
-            raise TypeError(msg)
-
-    items = _expand_ellipsis(items, ndim=4)
-
-    if len(items) > 4:
-        msg = f"Too many indices: expected at most 4 (C, I, J, K), got {len(items)}"
-        raise IndexError(msg)
-
-    parsed: list[slice] = []
-    for s in items:
-        match s:
-            case int():
-                parsed.append(slice(s, s + 1))
-            case slice():
-                parsed.append(s)
-            case _:
-                msg = f"Index type {type(s).__name__} not understood"
-                raise TypeError(msg)
-    return parsed
 
 
 class Image(Invertible):
@@ -310,7 +254,8 @@ class Image(Invertible):
         self._backend = TensorBackend(self._data, affine=parsed_affine.data)
 
     def _init_from_nifti(self, nifti_image: nib.Nifti1Image) -> None:
-        self._backend = NibabelBackend(nifti_image)
+        affine_override = self._affine.data if self._affine is not None else None
+        self._backend = NibabelBackend(nifti_image, affine=affine_override)
 
     def _init_from_sitk(
         self,
@@ -464,7 +409,7 @@ class Image(Invertible):
             elif (
                 self._remote_zarr_uri is not None
                 or self._zarr_store is not None
-                or (self._path is not None and self._reader is default_reader)
+                or (self._path is not None and self._reader_supports_lazy())
             ):
                 self._ensure_backend()
                 if self._backend is not None:
@@ -507,10 +452,10 @@ class Image(Invertible):
             s = self._backend.shape
             return (int(s[0]), int(s[1]), int(s[2]), int(s[3]))
         if self._path is not None:
-            if self._reader is not default_reader:
+            if not self._reader_supports_lazy():
                 self.load()
                 return self.shape
-            # Try to create a lazy backend (NIfTI, Zarr)
+            # Try to create a lazy backend (NIfTI, Zarr, or custom reader)
             self._ensure_backend()
             if self._backend is not None:
                 s = self._backend.shape
@@ -602,19 +547,26 @@ class Image(Invertible):
             self._affine = AffineMatrix(affine_array)
         self._apply_channels_last()
 
+    def _reader_supports_lazy(self) -> bool:
+        """Whether the configured reader can provide a lazy backend.
+
+        The default reader supports lazy NIfTI/NIfTI-Zarr access, and a custom
+        reader does too if it implements
+        [`LazyReader`][torchio.data.backends.LazyReader]. Simple `(tensor,
+        affine)` readers do not and trigger a full load.
+        """
+        return self._reader is default_reader or isinstance(self._reader, LazyReader)
+
     def _try_load_via_backend(self) -> bool:
         """Try to load data from an existing or newly-created backend."""
         if self._load_from_backend():
             return True
-        if (
+        has_source = (
             self._remote_zarr_uri is not None
             or self._zarr_store is not None
-            or (
-                self._path is not None
-                and self._reader is default_reader
-                and (is_nifti_zarr(self._path) or is_nifti(self._path))
-            )
-        ):
+            or self._path is not None
+        )
+        if has_source and self._reader_supports_lazy():
             self._ensure_backend()
             return self._load_from_backend()
         return False
@@ -638,10 +590,51 @@ class Image(Invertible):
     def set_data(self, tensor: TypeImageData | np.ndarray) -> None:
         """Replace the image data with a new tensor.
 
+        The lazy backend is refreshed so that `dataobj`, `dtype`, and
+        `shape` stay coherent with the new tensor. The affine is preserved when
+        one is set or can be read from the source header; for an image created
+        without any source (e.g. `ScalarImage()` then `set_data`) it defaults to
+        the identity affine.
+
         Args:
             tensor: 4D tensor with shape (C, I, J, K).
         """
         self._data = self._parse_tensor(tensor)
+        self._refresh_backend_from_data()
+
+    def _refresh_backend_from_data(self) -> None:
+        """Rebuild the backend from the in-memory tensor.
+
+        Once the data is held in memory it becomes the single source of
+        truth, so the backend is replaced with a `TensorBackend` wrapping it.
+        The affine is preserved: it is taken from the existing affine if set,
+        otherwise resolved (header-only) from a lazy source, and finally
+        defaults to identity for source-less images (e.g. created empty then
+        filled with `set_data`). This never triggers a full data load.
+        """
+        assert self._data is not None
+        if self._affine is None:
+            self._affine = self._infer_affine_without_loading()
+        self._backend = TensorBackend(self._data, affine=self._affine.data)
+
+    def _infer_affine_without_loading(self) -> AffineMatrix:
+        """Best-effort affine that never materializes the full tensor.
+
+        Uses an existing or header-only lazy backend when available, and falls
+        back to the identity affine when no affine source exists.
+        """
+        has_source = (
+            self._backend is not None
+            or self._path is not None
+            or self._remote_zarr_uri is not None
+            or self._zarr_store is not None
+        )
+        if has_source:
+            if self._backend is None:
+                self._ensure_backend()
+            if self._backend is not None:
+                return AffineMatrix(self._backend.affine)
+        return AffineMatrix()
 
     @property
     def device(self) -> torch.device:
@@ -659,6 +652,7 @@ class Image(Invertible):
         self._data = self.data.to(*args, **kwargs)
         if self._affine is not None:
             self._affine.to(*args, **kwargs)
+        self._refresh_backend_from_data()
         return self
 
     def numpy(self) -> np.ndarray:
@@ -761,33 +755,35 @@ class Image(Invertible):
     def _ensure_backend(self) -> None:
         """Create the lazy backend from path or zarr store, without loading data.
 
-        For NIfTI and NIfTI-Zarr files, creates a lazy backend that supports
-        header-only reads. For zarr stores, calls `zarr2nii` to build a
-        dask-backed nibabel image. For other formats (NRRD, MHA, etc.), no
-        lazy backend is available. Callers should fall back to other methods.
+        Backend selection is delegated to
+        [`resolve_backend`][torchio.data.backends.resolve_backend], which
+        consults the backend registry. For NIfTI and NIfTI-Zarr sources this
+        yields a header-only lazy backend; for other formats (NRRD, MHA, etc.)
+        no lazy backend is available and `_backend` is left unset so callers
+        fall back to a full read.
         """
         if self._backend is not None:
             return
-        if self._remote_zarr_uri is not None:
-            self._backend = ZarrBackend(
-                self._remote_zarr_uri,
-                **self._reader_kwargs,
-            )
+        affine_override = self._affine.data if self._affine is not None else None
+        request = BackendRequest(
+            path=self._path,
+            remote_zarr_uri=self._remote_zarr_uri,
+            zarr_store=self._zarr_store,
+            affine=affine_override,
+            reader_kwargs=self._reader_kwargs,
+            reader=self._reader,
+        )
+        backend = resolve_backend(request)
+        if backend is not None:
+            self._backend = backend
             return
-        if self._zarr_store is not None:
-            niizarr = get_niizarr()
-            nii = niizarr.zarr2nii(self._zarr_store, **self._reader_kwargs)
-            self._backend = NibabelBackend(nii)
-            return
-        if self._path is None:
+        if (
+            self._path is None
+            and self._remote_zarr_uri is None
+            and self._zarr_store is None
+        ):
             msg = "Cannot create backend: no path or store set"
             raise RuntimeError(msg)
-        if is_nifti_zarr(self._path):
-            self._backend = ZarrBackend(self._path, **self._reader_kwargs)
-        elif is_nifti(self._path):
-            nii = nib.load(self._path, **self._reader_kwargs)
-            assert isinstance(nii, nib.spatialimages.SpatialImage)
-            self._backend = NibabelBackend(nii)
 
     @staticmethod
     def _read_shape_sitk(path: Path) -> TypeTensorShape:
@@ -883,14 +879,9 @@ class Image(Invertible):
             msg = f"{type(self).__name__} has no metadata key {item!r}"
             raise KeyError(msg)
 
-        parsed = _parse_item(item)
+        sc, si, sj, sk = normalize_index(item)
 
         full_shape = self.shape
-        # Pad with full slices for unspecified dimensions
-        while len(parsed) < 4:
-            parsed.append(slice(None))
-        sc, si, sj, sk = parsed
-
         cropped_data = self._slice_data(sc, si, sj, sk)
 
         # Update affine origin: shift by the spatial start offset
@@ -919,10 +910,7 @@ class Image(Invertible):
             return self._data[sc, si, sj, sk]
         self._ensure_backend()
         if self._backend is not None:
-            array = self._backend[sc, si, sj, sk]
-            from .io import _numpy_to_tensor
-
-            return _numpy_to_tensor(np.asarray(array).copy())
+            return self._backend[sc, si, sj, sk]
         return self.data[sc, si, sj, sk]
 
     def _repr_path_line(self) -> str:

@@ -14,6 +14,7 @@ from torch import Tensor
 
 from ...data.affine import AffineMatrix
 from ...data.backends import ImageDataBackend
+from ...data.backends import normalize_index
 from ...data.batch import SubjectsBatch
 from ...data.image import Image
 from ...data.subject import Subject
@@ -160,17 +161,19 @@ def _compute_crop_and_pad(
 class _CroppedBackend:
     """Backend wrapper that defers spatial cropping until data is accessed."""
 
-    __slots__ = ("_shape", "_source", "_spatial_slices")
+    __slots__ = ("_affine", "_shape", "_source", "_spatial_slices")
 
     def __init__(
         self,
         source: ImageDataBackend,
         spatial_slices: tuple[slice, slice, slice],
         cropped_shape: tuple[int, int, int, int],
+        affine: TypeAffineMatrix,
     ) -> None:
         self._source = source
         self._spatial_slices = spatial_slices
         self._shape = cropped_shape
+        self._affine = affine
 
     @property
     def shape(self) -> TypeTensorShape:
@@ -178,7 +181,9 @@ class _CroppedBackend:
 
     @property
     def affine(self) -> TypeAffineMatrix:
-        return self._source.affine
+        # The cropped affine (shifted origin), so it stays consistent with the
+        # owning image's affine rather than the uncropped source affine.
+        return self._affine
 
     @property
     def dtype(self) -> np.dtype:
@@ -186,32 +191,30 @@ class _CroppedBackend:
 
     def to_tensor(self) -> Tensor:
         slices = (slice(None), *self._spatial_slices)
-        array = self._source[slices]
-        return torch.tensor(array, dtype=torch.float32)
+        return self._source[slices].to(dtype=torch.float32, copy=True)
 
-    def __getitem__(self, slices: SliceIndex) -> np.ndarray:
-        tensor = self.to_tensor()
-        if not isinstance(slices, tuple):
-            slices = (slices,)
-        return tensor[slices].numpy()
+    def __getitem__(self, slices: SliceIndex) -> Tensor:
+        return self.to_tensor()[normalize_index(slices)]
 
 
 class _PaddedBackend:
     """Backend wrapper that defers spatial padding until data is accessed."""
 
-    __slots__ = ("_fill", "_padding", "_padding_mode", "_shape", "_source")
+    __slots__ = ("_affine", "_fill", "_padding", "_padding_mode", "_shape", "_source")
 
     def __init__(
         self,
         source: ImageDataBackend,
         padding: TypeSixInts,
         padded_shape: tuple[int, int, int, int],
+        affine: TypeAffineMatrix,
         padding_mode: str = "constant",
         fill: float = 0,
     ) -> None:
         self._source = source
         self._padding = padding
         self._shape = padded_shape
+        self._affine = affine
         self._padding_mode = padding_mode
         self._fill = fill
 
@@ -221,7 +224,9 @@ class _PaddedBackend:
 
     @property
     def affine(self) -> TypeAffineMatrix:
-        return self._source.affine
+        # The padded affine (shifted origin), so it stays consistent with the
+        # owning image's affine rather than the unpadded source affine.
+        return self._affine
 
     @property
     def dtype(self) -> np.dtype:
@@ -238,11 +243,8 @@ class _PaddedBackend:
             value=self._fill,
         )
 
-    def __getitem__(self, slices: SliceIndex) -> np.ndarray:
-        tensor = self.to_tensor()
-        if not isinstance(slices, tuple):
-            slices = (slices,)
-        return tensor[slices].numpy()
+    def __getitem__(self, slices: SliceIndex) -> Tensor:
+        return self.to_tensor()[normalize_index(slices)]
 
 
 def _get_images(
@@ -304,6 +306,7 @@ def _crop_image_lazy(image: Image, cropping: TypeSixInts) -> Image:
             image._backend,
             (i_slice, j_slice, k_slice),
             cropped_shape,
+            affine=new_affine.data,
         )
         return new
 
@@ -359,6 +362,7 @@ def _pad_image_lazy(
             image._backend,
             padding,
             padded_shape,
+            affine=new_affine.data,
             padding_mode=padding_mode,
             fill=fill,
         )

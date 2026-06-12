@@ -2,6 +2,10 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
+import nibabel as nib
+import numpy as np
 import pytest
 import torch
 
@@ -547,3 +551,43 @@ class TestLazyBackends:
         result = tio.CropOrPad(target_shape=10)(subject)
         # Access dtype through the lazy backend.
         assert result.t1.shape == (1, 10, 10, 10)
+
+
+class TestLazyCropPadAffine:
+    """Lazy crop/pad must keep image.affine and image.dataobj.affine consistent.
+
+    For unloaded path-based images, CropOrPad installs `_CroppedBackend` /
+    `_PaddedBackend`; their reported affine must match the cropped/padded
+    image's affine (shifted origin), not the original source affine.
+    """
+
+    def _path_subject(
+        self,
+        tmp_path: Path,
+        shape: tuple[int, int, int] = (10, 12, 14),
+    ) -> tio.Subject:
+        affine = np.diag([2.0, 3.0, 4.0, 1.0])
+        path = tmp_path / "t1.nii.gz"
+        nib.save(nib.Nifti1Image(np.zeros(shape, "float32"), affine), path)
+        return tio.Subject(t1=tio.ScalarImage(path))
+
+    def test_lazy_crop_affine_consistent(self, tmp_path: Path) -> None:
+        subject = self._path_subject(tmp_path)
+        out = tio.CropOrPad(target_shape=(6, 8, 10))(subject)["t1"]
+        assert not out.is_loaded  # still lazy
+        np.testing.assert_allclose(out.affine.numpy(), np.asarray(out.dataobj.affine))
+
+    def test_lazy_pad_affine_consistent(self, tmp_path: Path) -> None:
+        subject = self._path_subject(tmp_path)
+        out = tio.CropOrPad(target_shape=(16, 18, 20))(subject)["t1"]
+        assert not out.is_loaded  # still lazy
+        np.testing.assert_allclose(out.affine.numpy(), np.asarray(out.dataobj.affine))
+
+    def test_lazy_crop_origin_shifted(self, tmp_path: Path) -> None:
+        subject = self._path_subject(tmp_path)
+        out = tio.CropOrPad(target_shape=(6, 8, 10))(subject)["t1"]
+        # 2-voxel crop start on each axis * spacing (2, 3, 4) -> origin (4, 6, 8)
+        np.testing.assert_allclose(out.affine.numpy()[:3, 3], [4.0, 6.0, 8.0])
+        np.testing.assert_allclose(
+            np.asarray(out.dataobj.affine)[:3, 3], [4.0, 6.0, 8.0]
+        )

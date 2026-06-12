@@ -70,7 +70,11 @@ monai = ["monai"]
 s3 = ["s3fs"]
 azure = ["adlfs"]
 gcs = ["gcsfs"]
-zarr = ["nifti-zarr"]
+# nifti-zarr (1.0.0rc6) calls isinstance(x, zarr.storage.StoreLike), but in
+# zarr >=3.2 StoreLike is a PEP 695 type alias (not isinstance-able), which
+# raises TypeError. zarr 3.2 also requires Python >=3.12, so this only bites on
+# 3.12+. Cap zarr until nifti-zarr supports zarr >=3.2. See copilot_log.md.
+zarr = ["nifti-zarr", "zarr<3.2"]
 
 
 [build-system]
@@ -172,6 +176,7 @@ test = [
     "matplotlib",
     "monai",
     "nifti-zarr",
+    "zarr<3.2",  # see [project.optional-dependencies].zarr for why zarr is capped
     "pytest",
     "pytest-codeblocks>=0.17.0",
     "pytest-cov",
@@ -191,7 +196,7 @@ types = [
     "ipykernel",
     "matplotlib",
     "ty",
-    "zarr",
+    "zarr<3.2",  # see [project.optional-dependencies].zarr for why zarr is capped
 ]
 
 # Zensical integrates with the Material team's fork of mike for versioned docs.

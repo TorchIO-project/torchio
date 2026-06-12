@@ -118,7 +118,7 @@ class TestRemoteZarrBackend:
 
             mock_init.side_effect = side_effect
             image._ensure_backend()
-            mock_init.assert_called_once_with(uri)
+            mock_init.assert_called_once_with(uri, affine=None)
 
     def test_reader_kwargs_forwarded_to_backend(self) -> None:
         """store_opt and other kwargs should reach ZarrBackend."""
@@ -140,7 +140,7 @@ class TestRemoteZarrBackend:
 
             mock_init.side_effect = side_effect
             image._ensure_backend()
-            mock_init.assert_called_once_with(uri, **kwargs)
+            mock_init.assert_called_once_with(uri, affine=None, **kwargs)
 
     def test_shape_via_remote_backend(self) -> None:
         """image.shape should work through the remote ZarrBackend."""

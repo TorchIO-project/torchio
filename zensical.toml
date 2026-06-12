@@ -52,6 +52,7 @@ nav = [
       "reference/bboxes.md",
       "reference/affine.md",
       "reference/axes.md",
+      "reference/backends.md",
     ] },
     { "Data loading" = [
       "reference/loader.md",

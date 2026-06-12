@@ -6,9 +6,9 @@ volumes efficiently using TorchIO's lazy loading and backend system.
 
 ## The problem
 
-Loading a 724 x 868 x 724 float32 volume takes ~45 seconds and
-allocates 1.8 GB of RAM. If you only need a small region, that is
-wasteful.
+Loading a 724 x 868 x 724 float32 volume allocates ~1.8 GB of RAM (and
+can take many seconds to read and decompress). If you only need a small
+region, that is wasteful.
 
 ## Lazy slicing
 
@@ -30,7 +30,9 @@ print(patch.data.mean())
 print(image.is_loaded)  # False
 ```
 
-On a 724 x 868 x 724 volume, this takes ~0.1 seconds instead of ~45.
+For uncompressed `.nii` (memory-mapped) and `.nii.zarr` (chunked), this can be
+orders of magnitude faster than a full load. For `.nii.gz` the gain is more
+modest, because gzip must be decompressed from the start (see below).
 
 ## File format comparison
 
@@ -39,7 +41,7 @@ Not all formats are equally efficient for partial reads:
 | Format | Extension | Partial I/O | Notes |
 |--------|-----------|------------|-------|
 | Uncompressed NIfTI | `.nii` | Memory-mapped | Best for local random access |
-| Compressed NIfTI | `.nii.gz` | Buffered by nibabel | Fast for small regions, but gzip has no true random access |
+| Compressed NIfTI | `.nii.gz` | Buffered by nibabel | Modest speedup for small regions; gzip has no true random access |
 | NIfTI-Zarr | `.nii.zarr` | Chunked reads | Best for very large volumes and remote storage |
 
 ## NIfTI-Zarr
@@ -81,11 +83,13 @@ patch = image[:, 50:60, 50:60, 50:60]
 ## The backend system
 
 TorchIO uses a pluggable backend system to support different storage
-formats:
+formats. The choice is not hard-coded in `Image`: a resolver consults a
+registry of backends, so new formats can be added without modifying `Image`
+(see [Lazy loading and backends](../concepts/lazy-loading.md)).
 
 ```mermaid
 flowchart TD
-    I["Image(path)"] --> check{File type?}
+    I["Image(path)"] --> check{Resolver}
     check -->|".nii"| NB[NibabelBackend<br/>memory-mapped]
     check -->|".nii.gz"| NB
     check -->|".nii.zarr"| ZB[ZarrBackend<br/>chunked reads]
@@ -99,7 +103,8 @@ flowchart TD
 ```
 
 - **`image.data`**: materializes the full tensor (triggers load if needed)
-- **`image.dataobj`**: returns the lazy backend for advanced slicing
+- **`image.dataobj`**: returns the lazy backend for advanced slicing;
+  `image.dataobj[slices]` returns a 4D `(C, I, J, K)` `torch.Tensor`
 - **`image[slices]`**: uses the backend automatically, returns a new image
 
 ## Tips
