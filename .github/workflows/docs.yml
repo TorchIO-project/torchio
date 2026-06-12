@@ -1,20 +1,23 @@
 # This workflow builds the documentation and either:
-#   - deploys versioned docs to the `gh-pages` branch with mike (on `main` and
-#     `v2`), or
+#   - deploys versioned docs to the `gh-pages` branch with mike (on `v1` and
+#     `main`), or
 #   - uploads a Smokeshow preview and comments the URL on the PR (other
 #     branches), using a single "push" trigger so that secrets are available
 #     even for PRs from forks.
 #
 # Versioning uses the Material team's fork of mike, integrated with Zensical
 # (https://zensical.org/docs/setup/versioning/):
-#   - `main` (v1) -> version "<major.minor>" with aliases `stable` + `latest`
-#   - `v2`        -> version "<major.minor>" with alias `dev`
+#   - `v1`   -> version "<major.minor>" with aliases `stable` + `latest`
+#   - `main` (v2) -> version "<major.minor>" with alias `dev`
 # `latest` is the default alias, so docs.torchio.org/ redirects to v1 while v2
 # is a pre-release. Flip with `mike set-default` once v2 becomes stable.
 #
+# Both `v1` and `main` carry this workflow because Actions runs the version that
+# lives on the branch that was pushed.
+#
 # One-time manual setup for production (cannot be done from CI):
-#   1. Merge this workflow into `main` too, and let `main` deploy first so the
-#      `latest`/`stable`/default redirect exist before the site goes live.
+#   1. Let `v1` deploy first so the `latest`/`stable`/default redirect exist
+#      before the site goes live.
 #   2. Settings > Pages > Source = "Deploy from a branch" -> `gh-pages` / root.
 #   3. Settings > Pages > Custom domain = `docs.torchio.org`. GitHub writes a
 #      CNAME file to `gh-pages`, which mike preserves on later deploys.
@@ -40,7 +43,7 @@ env:
 jobs:
   preview:
     # Build + Smokeshow preview for branches/PRs that are not deployed versions.
-    if: github.ref != 'refs/heads/main' && github.ref != 'refs/heads/v2'
+    if: github.ref != 'refs/heads/main' && github.ref != 'refs/heads/v1'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -113,9 +116,9 @@ jobs:
 
   deploy:
     # Deploy versioned docs to the gh-pages branch with mike (production).
-    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/v2'
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/v1'
     runs-on: ubuntu-latest
-    # Serialize deploys across branches so concurrent main/v2 runs don't race on
+    # Serialize deploys across branches so concurrent main/v1 runs don't race on
     # the gh-pages branch.
     concurrency:
       group: docs-deploy
@@ -151,7 +154,7 @@ jobs:
           VERSION=$(grep -m1 -E '^version = ' pyproject.toml | sed -E 's/^version = "(.*)"/\1/')
           MAJOR_MINOR=$(printf '%s' "$VERSION" | sed -E 's/^([0-9]+\.[0-9]+).*/\1/')
           echo "Deploying docs for $VERSION (mike version id: $MAJOR_MINOR)"
-          if [ "${{ github.ref }}" = "refs/heads/main" ]; then
+          if [ "${{ github.ref }}" = "refs/heads/v1" ]; then
             mise run docs:deploy -- --push "$MAJOR_MINOR" stable latest
             mise run docs:set-default -- --push latest
           else
