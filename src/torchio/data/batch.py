@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import dataclasses
 from typing import Any
 
 import torch
@@ -12,6 +13,9 @@ from .affine import AffineMatrix
 from .image import Image
 from .image import ScalarImage
 from .invertible import Invertible
+
+#: Reserved param keys used for per-instance history bookkeeping.
+_BATCH_META_KEYS = ("_batch_size", "_batched_keys", "_keep")
 
 
 class ImagesBatch(Invertible):
@@ -208,7 +212,13 @@ class SubjectsBatch(Invertible):
         raise AttributeError(msg)
 
     def unbatch(self) -> list[Any]:
-        """Split the batch back into individual Subjects."""
+        """Split the batch back into individual Subjects.
+
+        Per-instance transform history is sliced so that each subject
+        receives only its own sampled parameters; transforms that were
+        gated out for an element (per-element probability) are omitted
+        from that subject's history.
+        """
         from .subject import Subject
 
         n = self.batch_size
@@ -220,7 +230,7 @@ class SubjectsBatch(Invertible):
             for key, values in self._metadata.items():
                 kwargs[key] = values[i]
             sub = Subject(**kwargs)
-            sub.applied_transforms = list(self.applied_transforms)
+            sub.applied_transforms = _slice_history(self.applied_transforms, i)
             subjects.append(sub)
         return subjects
 
@@ -234,3 +244,60 @@ class SubjectsBatch(Invertible):
 
 # Alias for radiology users (see Subject/Study note in subject.py).
 StudiesBatch = SubjectsBatch
+
+
+def _slice_params(
+    params: dict[str, Any],
+    index: int,
+    batched_keys: list[str],
+) -> dict[str, Any]:
+    """Slice a per-instance params dict down to a single element.
+
+    Args:
+        params: The batch-level parameter dict.
+        index: The batch element to extract.
+        batched_keys: Names of the params that hold one value per
+            element.
+
+    Returns:
+        A new params dict with per-element values resolved and the
+        internal bookkeeping keys removed.
+    """
+    sliced: dict[str, Any] = {}
+    for key, value in params.items():
+        if key in _BATCH_META_KEYS:
+            continue
+        if key in batched_keys and isinstance(value, list):
+            sliced[key] = value[index]
+        else:
+            sliced[key] = value
+    return sliced
+
+
+def _slice_history(history: list[Any], index: int) -> list[Any]:
+    """Build the per-subject transform history for batch element *index*.
+
+    Batch-shared traces are copied unchanged. Per-instance traces are
+    sliced to the element's own parameters, and traces whose per-element
+    keep mask excludes this element are dropped.
+
+    Args:
+        history: The batch-level list of `AppliedTransform` records.
+        index: The batch element whose history to build.
+
+    Returns:
+        The list of `AppliedTransform` records for the element.
+    """
+    sliced: list[Any] = []
+    for trace in history:
+        params = getattr(trace, "params", None)
+        if not isinstance(params, dict) or "_batched_keys" not in params:
+            sliced.append(trace)
+            continue
+        keep = params.get("_keep")
+        if keep is not None and not keep[index]:
+            continue
+        batched_keys = params["_batched_keys"]
+        new_params = _slice_params(params, index, batched_keys)
+        sliced.append(dataclasses.replace(trace, params=new_params))
+    return sliced

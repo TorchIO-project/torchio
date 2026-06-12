@@ -371,6 +371,111 @@ class TestAffine:
         assert transformed.t1.spatial_shape == subject.t1.spatial_shape
 
 
+class TestSpatialPerInstance:
+    def _identical_batch(
+        self,
+        batch_size: int = 4,
+        shape: tuple[int, int, int] = (12, 12, 12),
+    ) -> tio.SubjectsBatch:
+        data = torch.arange(
+            shape[0] * shape[1] * shape[2],
+            dtype=torch.float32,
+        ).reshape(1, *shape)
+        subjects = [
+            tio.Subject(t1=tio.ScalarImage(data.clone())) for _ in range(batch_size)
+        ]
+        return tio.SubjectsBatch.from_subjects(subjects)
+
+    def test_per_instance_rotations_differ(self) -> None:
+        torch.manual_seed(0)
+        batch = self._identical_batch()
+        transform = AffineTransform(degrees=(20.0, 80.0), default_pad_value=0.0)
+        result = transform(batch)
+        params = result.applied_transforms[-1].params
+        assert "_batched_keys" in params
+        assert len(params["affine_matrix"]) == batch.batch_size
+        data = result.t1.data
+        assert not torch.allclose(data[0], data[1])
+        assert not torch.allclose(data[1], data[2])
+
+    def test_per_instance_false_is_shared(self) -> None:
+        torch.manual_seed(0)
+        batch = self._identical_batch()
+        transform = AffineTransform(
+            degrees=(20.0, 80.0),
+            default_pad_value=0.0,
+            per_instance=False,
+        )
+        result = transform(batch)
+        data = result.t1.data
+        torch.testing.assert_close(data[0], data[1])
+        torch.testing.assert_close(data[1], data[2])
+
+    def test_single_subject_keeps_scalar_params(self) -> None:
+        subject = _make_subject()
+        result = AffineTransform(degrees=(20.0, 80.0), default_pad_value=0.0)(subject)
+        params = result.applied_transforms[-1].params
+        assert "_batched_keys" not in params
+
+    def test_per_instance_inverse_restores_geometry(self) -> None:
+        torch.manual_seed(0)
+        batch = self._identical_batch()
+        transform = AffineTransform(
+            scales=(0.9, 1.1),
+            degrees=(20.0, 80.0),
+            translation=(-2.0, 2.0),
+            default_pad_value=0.0,
+        )
+        result = transform(batch)
+        restored = result.apply_inverse_transform()
+        assert restored.t1.data.shape == batch.t1.data.shape
+        for affine in restored.t1.affines:
+            np.testing.assert_allclose(
+                affine.numpy(),
+                batch.t1.affines[0].numpy(),
+                atol=1e-5,
+            )
+
+    def test_per_instance_p_gates_some_elements(self) -> None:
+        torch.manual_seed(0)
+        batch = self._identical_batch(batch_size=64)
+        original = batch.t1.data.clone()
+        transform = AffineTransform(degrees=(40.0, 80.0), default_pad_value=0.0, p=0.5)
+        result = transform(batch)
+        changed = [
+            not torch.allclose(result.t1.data[i], original[i])
+            for i in range(batch.batch_size)
+        ]
+        assert any(changed)
+        assert not all(changed)
+
+    def test_per_instance_p_masked_elements_unchanged(self) -> None:
+        torch.manual_seed(0)
+        batch = self._identical_batch(batch_size=32)
+        original = batch.t1.data.clone()
+        transform = AffineTransform(degrees=(40.0, 80.0), default_pad_value=0.0, p=0.5)
+        result = transform(batch)
+        for i, subject in enumerate(result.unbatch()):
+            changed = not torch.allclose(subject.t1.data, original[i])
+            has_history = len(subject.applied_transforms) == 1
+            assert changed == has_history
+
+    def test_per_instance_elastic_differs_across_batch(self) -> None:
+        torch.manual_seed(0)
+        batch = self._identical_batch()
+        transform = tio.ElasticDeformation(
+            num_control_points=5,
+            max_displacement=(1.0, 3.0),
+        )
+        result = transform(batch)
+        params = result.applied_transforms[-1].params
+        assert "_batched_keys" in params
+        assert len(params["control_points"]) == batch.batch_size
+        data = result.t1.data
+        assert not torch.allclose(data[0], data[1])
+        assert not torch.allclose(data[1], data[2])
+
+
 class TestElasticDeformation:
     def test_accepts_tensor_control_points(self) -> None:
         subject = _make_subject()

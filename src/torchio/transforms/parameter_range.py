@@ -16,6 +16,7 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from typing import cast
+from typing import overload
 
 import torch
 from torch.distributions import Distribution
@@ -60,6 +61,18 @@ class Choice:
         idx = torch.multinomial(self._probs, 1).item()
         return float(self._values[int(idx)])
 
+    def sample_batched(self, n: int) -> torch.Tensor:
+        """Pick ``n`` values at random, with replacement.
+
+        Args:
+            n: Number of independent draws.
+
+        Returns:
+            A 1D tensor of shape ``(n,)``.
+        """
+        idx = torch.multinomial(self._probs, n, replacement=True)
+        return self._values[idx]
+
     def __repr__(self) -> str:
         vals = [f"{v:.1f}" if v == int(v) else f"{v}" for v in self._values.tolist()]
         parts = f"[{', '.join(vals)}]"
@@ -91,6 +104,37 @@ def _sample_axis(
     if lo == hi:
         return float(lo)
     return torch.empty(1).uniform_(float(lo), float(hi), generator=generator).item()
+
+
+def _sample_axis_batched(
+    spec: AxisSpec,
+    n: int,
+    *,
+    generator: torch.Generator | None = None,
+) -> torch.Tensor:
+    """Sample ``n`` independent floats from an axis specification.
+
+    Args:
+        spec: The axis specification (float, ``(lo, hi)`` range,
+            `Choice`, or `Distribution`).
+        n: Number of independent samples to draw.
+        generator: Optional generator for the uniform-range path.
+            Note that `Choice` and `Distribution` ignore it (see
+            [`_ParameterRange.sample`][]).
+
+    Returns:
+        A 1D tensor of shape ``(n,)``.
+    """
+    if isinstance(spec, (int, float)):
+        return torch.full((n,), float(spec))
+    if isinstance(spec, Choice):
+        return spec.sample_batched(n)
+    if isinstance(spec, Distribution):
+        return spec.sample((n,)).reshape(n).to(torch.float32)
+    lo, hi = spec
+    if lo == hi:
+        return torch.full((n,), float(lo))
+    return torch.empty(n).uniform_(float(lo), float(hi), generator=generator)
 
 
 # ── _ParameterRange ───────────────────────────────────────────────────
@@ -184,33 +228,84 @@ class _ParameterRange:
             return self._axes[0]
         return None
 
+    @overload
     def sample(
         self,
+        n: None = ...,
+        *,
+        generator: torch.Generator | None = ...,
+    ) -> tuple[float, float, float]: ...
+    @overload
+    def sample(
+        self,
+        n: int,
+        *,
+        generator: torch.Generator | None = ...,
+    ) -> torch.Tensor: ...
+    def sample(
+        self,
+        n: int | None = None,
         *,
         generator: torch.Generator | None = None,
-    ) -> tuple[float, float, float]:
-        """Sample a 3-tuple of values.
+    ) -> tuple[float, float, float] | torch.Tensor:
+        """Sample a 3-tuple of values, or a batch of them.
+
+        Args:
+            n: If `None` (default), draw a single 3-tuple (legacy
+                behavior). If an integer, draw ``n`` independent
+                3-tuples and return a tensor of shape ``(n, 3)``.
+            generator: Optional generator for the uniform-range path.
 
         Returns:
-            Tuple of three floats.
+            A tuple of three floats when ``n is None``, otherwise a
+            tensor of shape ``(n, 3)``.
         """
-        return (
-            _sample_axis(self._axes[0], generator=generator),
-            _sample_axis(self._axes[1], generator=generator),
-            _sample_axis(self._axes[2], generator=generator),
-        )
+        if n is None:
+            return (
+                _sample_axis(self._axes[0], generator=generator),
+                _sample_axis(self._axes[1], generator=generator),
+                _sample_axis(self._axes[2], generator=generator),
+            )
+        columns = [
+            _sample_axis_batched(axis, n, generator=generator) for axis in self._axes
+        ]
+        return torch.stack(columns, dim=-1)
 
+    @overload
     def sample_1d(
         self,
+        n: None = ...,
+        *,
+        generator: torch.Generator | None = ...,
+    ) -> float: ...
+    @overload
+    def sample_1d(
+        self,
+        n: int,
+        *,
+        generator: torch.Generator | None = ...,
+    ) -> torch.Tensor: ...
+    def sample_1d(
+        self,
+        n: int | None = None,
         *,
         generator: torch.Generator | None = None,
-    ) -> float:
-        """Sample a single float (from the first axis spec).
+    ) -> float | torch.Tensor:
+        """Sample a single float (from the first axis spec), or a batch.
+
+        Args:
+            n: If `None` (default), draw a single float (legacy
+                behavior). If an integer, draw ``n`` independent values
+                and return a tensor of shape ``(n,)``.
+            generator: Optional generator for the uniform-range path.
 
         Returns:
-            A single float.
+            A single float when ``n is None``, otherwise a tensor of
+            shape ``(n,)``.
         """
-        return _sample_axis(self._axes[0], generator=generator)
+        if n is None:
+            return _sample_axis(self._axes[0], generator=generator)
+        return _sample_axis_batched(self._axes[0], n, generator=generator)
 
     def __repr__(self) -> str:
         v = self._original
