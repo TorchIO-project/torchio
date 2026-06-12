@@ -725,10 +725,32 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#when-tensors-are-materialized" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        When tensors are materialized
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#the-dataobj-property" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
         The <code>dataobj</code> property
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#extending-the-backend-system" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Extending the backend system
       </span>
     </span>
   </a>
@@ -1531,6 +1553,33 @@
     
   
   Axes
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/backends/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Backends
 
     
   </span>
@@ -3620,10 +3669,32 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#when-tensors-are-materialized" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        When tensors are materialized
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#the-dataobj-property" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
         The <code>dataobj</code> property
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#extending-the-backend-system" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Extending the backend system
       </span>
     </span>
   </a>
@@ -3683,6 +3754,11 @@
 path, a NiBabel image, or a zarr Store reads nothing from disk. This
 article explains when data actually enters memory and how the backend
 system works.</p>
+<p>The backends are a lazy <strong>I/O</strong> layer, not a lazy <em>computation</em> framework.
+They speed up metadata reads (shape, affine, dtype) and region slicing, but
+they do not defer arithmetic or transforms. Once you access <code>.data</code>, apply a
+transform, or build a batch, the full tensor is materialized in memory (see
+<a href="#when-tensors-are-materialized">When tensors are materialized</a>).</p>
 <h2 id="when-is-data-loaded">When is data loaded?</h2>
 <pre class="mermaid"><code>stateDiagram-v2
     [*] --&gt; Lazy: Image(path) / Image(nifti) / Image(store)
@@ -3741,8 +3817,33 @@ system works.</p>
 </tbody>
 </table>
 <h2 id="backends">Backends</h2>
-<p>A backend provides lazy access to image data without loading it all
-into memory. TorchIO selects the backend based on the file extension:</p>
+<p>A <strong>backend</strong> is a lazy <em>I/O adapter</em>: an object that gives <code>Image</code> uniform
+access to one image's data, wherever it lives, without loading the whole
+volume. Intuitively, a backend is "a thing that can answer five questions",
+which is exactly its contract:</p>
+<ul>
+<li><code>shape</code> -&gt; always <code>(C, I, J, K)</code></li>
+<li><code>affine</code> -&gt; the 4x4 voxel-to-world matrix</li>
+<li><code>dtype</code> -&gt; the on-disk (or in-memory) data type</li>
+<li><code>backend[region]</code> -&gt; read <em>just</em> that region, as a 4D tensor</li>
+<li><code>to_tensor()</code> -&gt; materialize the whole volume</li>
+</ul>
+<p>The first three are cheap header reads; the last two are where pixel data is
+actually read. Each backend normalizes its storage-specific layout (e.g. a
+NIfTI's <code>(I, J, K)</code> or <code>(I, J, K, C)</code>) into TorchIO's <code>(C, I, J, K)</code>.</p>
+<p>Because "backend" is an overloaded word, it helps to say what this is <strong>not</strong>:</p>
+<ul>
+<li><strong>Not a compute backend</strong>: it has nothing to do with <code>torch</code> devices or
+  kernels.</li>
+<li><strong>Not the storage format itself</strong>: it is the <em>adapter</em> to a format. Formats
+  are mapped to backends by a resolver (below).</li>
+<li><strong>Not a lazy computation framework</strong>: it defers <em>reads</em>, not arithmetic.
+  Transforms, batching, and queues still materialize tensors (see
+  <a href="#when-tensors-are-materialized">When tensors are materialized</a>).</li>
+</ul>
+<p>TorchIO does not hard-code the choice in <code>Image</code>: it passes a description of the
+source (a <code>BackendRequest</code>) to a small <strong>resolver</strong>, which consults a registry
+of backends in order and returns the first match:</p>
 <table>
 <thead>
 <tr>
@@ -3755,7 +3856,7 @@ into memory. TorchIO selects the backend based on the file extension:</p>
 <tr>
 <td><code>NibabelBackend</code></td>
 <td><code>.nii</code>, <code>.nii.gz</code>, <code>nib.Nifti1Image</code></td>
-<td>Wraps nibabel's <code>ArrayProxy</code>. Uncompressed files are memory-mapped; compressed files are decompressed on demand. Also used for NiBabel images passed directly to the constructor.</td>
+<td>Wraps nibabel's <code>ArrayProxy</code>. Uncompressed files are memory-mapped; compressed files are read through nibabel's proxy. Also used for NiBabel images passed directly to the constructor.</td>
 </tr>
 <tr>
 <td><code>ZarrBackend</code></td>
@@ -3770,43 +3871,165 @@ into memory. TorchIO selects the backend based on the file extension:</p>
 <tr>
 <td><code>TensorBackend</code></td>
 <td>In-memory</td>
-<td>Used for images created from tensors or NumPy arrays. Wraps a PyTorch tensor directly (no numpy round-trip).</td>
+<td>Used for images created from tensors or NumPy arrays. Wraps a PyTorch tensor directly (no numpy round-trip), preserving its device and dtype.</td>
 </tr>
 </tbody>
 </table>
 <p>For other formats (NRRD, MHA, etc.), there is no lazy backend. Shape
-can still be read from the header via SimpleITK without loading data,
-but slicing triggers a full load.</p>
+and dtype can still be read from the header via SimpleITK without loading
+data, but slicing triggers a full load. You can teach TorchIO about new
+formats without modifying <code>Image</code>; see
+<a href="#extending-the-backend-system">Extending the backend system</a>.</p>
 <h2 id="practical-impact">Practical impact</h2>
-<p>Consider a 724 x 868 x 724 float32 MRI (~1.8 GB):</p>
+<p>Slicing a lazy image instead of loading it whole avoids allocating and copying
+the full tensor. For formats that support random access, it also avoids
+reading most of the file. Consider reading a small patch from a large volume:</p>
 <!-- pytest-codeblocks:skip -->
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">image</span> <span class="o">=</span> <span class="n">tio</span><span class="o">.</span><span class="n">ScalarImage</span><span class="p">(</span><span class="s2">&quot;huge_volume.nii.gz&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="c1"># Full load: ~45 seconds</span>
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="n">mean_full</span> <span class="o">=</span> <span class="n">image</span><span class="o">.</span><span class="n">data</span><span class="p">[:,</span> <span class="mi">100</span><span class="p">:</span><span class="mi">110</span><span class="p">,</span> <span class="mi">100</span><span class="p">:</span><span class="mi">110</span><span class="p">,</span> <span class="mi">100</span><span class="p">:</span><span class="mi">110</span><span class="p">]</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>
-<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="c1"># Lazy slice: ~0.1 seconds</span>
-<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="n">image2</span> <span class="o">=</span> <span class="n">tio</span><span class="o">.</span><span class="n">ScalarImage</span><span class="p">(</span><span class="s2">&quot;huge_volume.nii.gz&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="n">mean_lazy</span> <span class="o">=</span> <span class="n">image2</span><span class="p">[:,</span> <span class="mi">100</span><span class="p">:</span><span class="mi">110</span><span class="p">,</span> <span class="mi">100</span><span class="p">:</span><span class="mi">110</span><span class="p">,</span> <span class="mi">100</span><span class="p">:</span><span class="mi">110</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1"># Full load: reads and allocates the whole volume, then slices</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="n">mean_full</span> <span class="o">=</span> <span class="n">tio</span><span class="o">.</span><span class="n">ScalarImage</span><span class="p">(</span><span class="s2">&quot;huge_volume.nii&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">data</span><span class="p">[:,</span> <span class="mi">100</span><span class="p">:</span><span class="mi">110</span><span class="p">,</span> <span class="mi">100</span><span class="p">:</span><span class="mi">110</span><span class="p">,</span> <span class="mi">100</span><span class="p">:</span><span class="mi">110</span><span class="p">]</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="c1"># Lazy slice: reads only the requested region</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="n">mean_lazy</span> <span class="o">=</span> <span class="n">tio</span><span class="o">.</span><span class="n">ScalarImage</span><span class="p">(</span><span class="s2">&quot;huge_volume.nii&quot;</span><span class="p">)[:,</span> <span class="mi">100</span><span class="p">:</span><span class="mi">110</span><span class="p">,</span> <span class="mi">100</span><span class="p">:</span><span class="mi">110</span><span class="p">,</span> <span class="mi">100</span><span class="p">:</span><span class="mi">110</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
 </code></pre></div>
-<p>The difference is ~450x because the lazy path:</p>
-<ol>
-<li>Asks nibabel to decompress only the needed region</li>
-<li>Allocates only a small float32 tensor (10 x 10 x 10)</li>
-</ol>
-<p>The full-load path decompresses the entire file, allocates 1.8 GB,
-copies it to a float32 tensor, and <em>then</em> slices.</p>
+<p>How much you gain depends strongly on the format:</p>
+<ul>
+<li><strong><code>.nii</code> (uncompressed)</strong> is memory-mapped, so the lazy path reads essentially
+  only the requested bytes. This is true random access and is by far the
+  fastest, often two orders of magnitude quicker for a small patch.</li>
+<li><strong><code>.nii.zarr</code> (chunked)</strong> reads only the chunks overlapping the patch, so it
+  also scales well, especially for remote storage.</li>
+<li><strong><code>.nii.gz</code> (compressed)</strong> is the subtle case: gzip is a <em>stream</em> format, not
+  a random-access one. To reach the requested region, nibabel must decompress
+  the stream from the beginning, so the lazy path still does most of the
+  decompression work. The speedup over a full load is real but modest: it
+  comes mainly from skipping the full float32 allocation and copy, not from
+  avoiding decompression.</li>
+</ul>
+<p>At a glance:</p>
+<table>
+<thead>
+<tr>
+<th>Format</th>
+<th>Partial I/O</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>.nii</code></td>
+<td>memory-mapped</td>
+<td>true random access, by far the fastest</td>
+</tr>
+<tr>
+<td><code>.nii.zarr</code></td>
+<td>chunked</td>
+<td>reads only overlapping chunks; great for remote storage</td>
+</tr>
+<tr>
+<td><code>.nii.gz</code></td>
+<td>streamed</td>
+<td>gzip is <em>not</em> random access; modest speedup</td>
+</tr>
+</tbody>
+</table>
+<h2 id="when-tensors-are-materialized">When tensors are materialized</h2>
+<p>Laziness applies to <em>I/O</em>, not to computation. The full tensor is read into
+memory the first time you do any of the following:</p>
+<ul>
+<li>access <code>.data</code> or call <code>.load()</code> (the result is then cached);</li>
+<li>apply a transform: transforms operate on materialized tensors;</li>
+<li>build a batch or collate subjects in a <code>DataLoader</code>;</li>
+<li>iterate a <code>Queue</code> or sampler, which materializes each sampled patch (a
+  sampler may still use lazy slicing to read only that patch from disk);</li>
+<li>save the image, or call <code>.numpy()</code>.</li>
+</ul>
+<p>In other words, lazy reads and slicing speed up <em>getting at a region of the
+data</em>; they do not turn transforms or batching into deferred operations.</p>
 <h2 id="the-dataobj-property">The <code>dataobj</code> property</h2>
 <p>For advanced use, <code>image.dataobj</code> gives direct access to the backend:</p>
 <!-- pytest-codeblocks:skip -->
 <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="n">backend</span> <span class="o">=</span> <span class="n">image</span><span class="o">.</span><span class="n">dataobj</span>  <span class="c1"># NibabelBackend, ZarrBackend, or TensorBackend</span>
 <a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="n">backend</span><span class="o">.</span><span class="n">shape</span>             <span class="c1"># (C, I, J, K)</span>
 <a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="n">backend</span><span class="o">.</span><span class="n">affine</span>            <span class="c1"># 4x4 float64 tensor</span>
-<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="n">chunk</span> <span class="o">=</span> <span class="n">backend</span><span class="p">[:,</span> <span class="mi">50</span><span class="p">:</span><span class="mi">60</span><span class="p">,</span> <span class="mi">50</span><span class="p">:</span><span class="mi">60</span><span class="p">,</span> <span class="mi">50</span><span class="p">:</span><span class="mi">60</span><span class="p">]</span>  <span class="c1"># numpy array</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="n">patch</span> <span class="o">=</span> <span class="n">backend</span><span class="p">[:,</span> <span class="mi">50</span><span class="p">:</span><span class="mi">60</span><span class="p">,</span> <span class="mi">50</span><span class="p">:</span><span class="mi">60</span><span class="p">,</span> <span class="mi">50</span><span class="p">:</span><span class="mi">60</span><span class="p">]</span>  <span class="c1"># torch.Tensor, shape (C, 10, 10, 10)</span>
 </code></pre></div>
+<p>Backend slicing follows the same rules as <code>image[...]</code>: the result is always a
+4D <code>(C, I, J, K)</code> <code>torch.Tensor</code>, and integer indices keep their axis (so
+<code>backend[0]</code> has shape <code>(1, I, J, K)</code> rather than dropping the channel
+dimension). For <code>TensorBackend</code>, the slice preserves the tensor's device and
+dtype.</p>
 <p>This is useful when you need fine-grained control over what gets read,
 or when you want to avoid even the overhead of creating a new <code>Image</code>
 object.</p>
+<h2 id="extending-the-backend-system">Extending the backend system</h2>
+<div class="admonition note">
+<p class="admonition-title">Advanced, rarely needed</p>
+<p>Most users never touch this. The built-in backends already cover NIfTI,
+NIfTI-Zarr, zarr stores, NiBabel images, and in-memory tensors. Reach for a
+custom backend only when you need lazy access to a format TorchIO does not
+support out of the box.</p>
+</div>
+<p>Backend selection is driven by a registry, so you can support a new format
+without editing <code>Image</code>. Register a <em>matcher</em> (which decides whether a
+<code>BackendRequest</code> applies) and a <em>factory</em> (which builds the backend).</p>
+<p>As a concrete example, here is a lazy backend for plain NumPy <code>.npy</code> volumes.
+<code>np.load(..., mmap_mode="r")</code> memory-maps the file, so reading a small region
+only touches the bytes you ask for, exactly like the built-in <code>.nii</code> path:</p>
+<!-- pytest-codeblocks:skip -->
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">torchio.data</span><span class="w"> </span><span class="kn">import</span> <span class="n">register_backend</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="kn">from</span><span class="w"> </span><span class="nn">torchio.data.backends</span><span class="w"> </span><span class="kn">import</span> <span class="n">BackendRequest</span><span class="p">,</span> <span class="n">normalize_index</span>
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>
+<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="k">class</span><span class="w"> </span><span class="nc">NpyBackend</span><span class="p">:</span>
+<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Lazy, memory-mapped backend for single-channel ``.npy`` volumes.&quot;&quot;&quot;</span>
+<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>
+<a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">):</span>
+<a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_memmap</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">mmap_mode</span><span class="o">=</span><span class="s2">&quot;r&quot;</span><span class="p">)</span>  <span class="c1"># shape (I, J, K), unread</span>
+<a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a>
+<a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a>    <span class="nd">@property</span>
+<a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">shape</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a>        <span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">,</span> <span class="n">k</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_memmap</span><span class="o">.</span><span class="n">shape</span>
+<a id="__codelineno-2-17" name="__codelineno-2-17" href="#__codelineno-2-17"></a>        <span class="k">return</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">,</span> <span class="n">k</span><span class="p">)</span>  <span class="c1"># always (C, I, J, K)</span>
+<a id="__codelineno-2-18" name="__codelineno-2-18" href="#__codelineno-2-18"></a>
+<a id="__codelineno-2-19" name="__codelineno-2-19" href="#__codelineno-2-19"></a>    <span class="nd">@property</span>
+<a id="__codelineno-2-20" name="__codelineno-2-20" href="#__codelineno-2-20"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">affine</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<a id="__codelineno-2-21" name="__codelineno-2-21" href="#__codelineno-2-21"></a>        <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>  <span class="c1"># unknown here: identity</span>
+<a id="__codelineno-2-22" name="__codelineno-2-22" href="#__codelineno-2-22"></a>
+<a id="__codelineno-2-23" name="__codelineno-2-23" href="#__codelineno-2-23"></a>    <span class="nd">@property</span>
+<a id="__codelineno-2-24" name="__codelineno-2-24" href="#__codelineno-2-24"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">dtype</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<a id="__codelineno-2-25" name="__codelineno-2-25" href="#__codelineno-2-25"></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_memmap</span><span class="o">.</span><span class="n">dtype</span>
+<a id="__codelineno-2-26" name="__codelineno-2-26" href="#__codelineno-2-26"></a>
+<a id="__codelineno-2-27" name="__codelineno-2-27" href="#__codelineno-2-27"></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">index</span><span class="p">):</span>
+<a id="__codelineno-2-28" name="__codelineno-2-28" href="#__codelineno-2-28"></a>        <span class="c1"># normalize_index keeps the result 4D and never drops axes.</span>
+<a id="__codelineno-2-29" name="__codelineno-2-29" href="#__codelineno-2-29"></a>        <span class="n">sc</span><span class="p">,</span> <span class="n">si</span><span class="p">,</span> <span class="n">sj</span><span class="p">,</span> <span class="n">sk</span> <span class="o">=</span> <span class="n">normalize_index</span><span class="p">(</span><span class="n">index</span><span class="p">)</span>
+<a id="__codelineno-2-30" name="__codelineno-2-30" href="#__codelineno-2-30"></a>        <span class="n">region</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_memmap</span><span class="p">[</span><span class="n">si</span><span class="p">,</span> <span class="n">sj</span><span class="p">,</span> <span class="n">sk</span><span class="p">])</span>  <span class="c1"># reads only this block</span>
+<a id="__codelineno-2-31" name="__codelineno-2-31" href="#__codelineno-2-31"></a>        <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">from_numpy</span><span class="p">(</span><span class="n">region</span><span class="p">)[</span><span class="kc">None</span><span class="p">][</span><span class="n">sc</span><span class="p">]</span>  <span class="c1"># add channel axis, then select</span>
+<a id="__codelineno-2-32" name="__codelineno-2-32" href="#__codelineno-2-32"></a>
+<a id="__codelineno-2-33" name="__codelineno-2-33" href="#__codelineno-2-33"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">to_tensor</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<a id="__codelineno-2-34" name="__codelineno-2-34" href="#__codelineno-2-34"></a>        <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">from_numpy</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_memmap</span><span class="p">))[</span><span class="kc">None</span><span class="p">]</span>
+<a id="__codelineno-2-35" name="__codelineno-2-35" href="#__codelineno-2-35"></a>
+<a id="__codelineno-2-36" name="__codelineno-2-36" href="#__codelineno-2-36"></a>
+<a id="__codelineno-2-37" name="__codelineno-2-37" href="#__codelineno-2-37"></a><span class="n">register_backend</span><span class="p">(</span>
+<a id="__codelineno-2-38" name="__codelineno-2-38" href="#__codelineno-2-38"></a>    <span class="s2">&quot;npy&quot;</span><span class="p">,</span>
+<a id="__codelineno-2-39" name="__codelineno-2-39" href="#__codelineno-2-39"></a>    <span class="k">lambda</span> <span class="n">request</span><span class="p">:</span> <span class="n">request</span><span class="o">.</span><span class="n">path</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">request</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">suffix</span> <span class="o">==</span> <span class="s2">&quot;.npy&quot;</span><span class="p">,</span>
+<a id="__codelineno-2-40" name="__codelineno-2-40" href="#__codelineno-2-40"></a>    <span class="k">lambda</span> <span class="n">request</span><span class="p">:</span> <span class="n">NpyBackend</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">path</span><span class="p">),</span>
+<a id="__codelineno-2-41" name="__codelineno-2-41" href="#__codelineno-2-41"></a><span class="p">)</span>
+<a id="__codelineno-2-42" name="__codelineno-2-42" href="#__codelineno-2-42"></a>
+<a id="__codelineno-2-43" name="__codelineno-2-43" href="#__codelineno-2-43"></a><span class="c1"># .npy files are now first-class and lazy:</span>
+<a id="__codelineno-2-44" name="__codelineno-2-44" href="#__codelineno-2-44"></a><span class="n">image</span> <span class="o">=</span> <span class="n">tio</span><span class="o">.</span><span class="n">ScalarImage</span><span class="p">(</span><span class="s2">&quot;volume.npy&quot;</span><span class="p">)</span>
+<a id="__codelineno-2-45" name="__codelineno-2-45" href="#__codelineno-2-45"></a><span class="nb">print</span><span class="p">(</span><span class="n">image</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>                       <span class="c1"># read from the header, no full load</span>
+<a id="__codelineno-2-46" name="__codelineno-2-46" href="#__codelineno-2-46"></a><span class="n">patch</span> <span class="o">=</span> <span class="n">image</span><span class="p">[:,</span> <span class="mi">10</span><span class="p">:</span><span class="mi">20</span><span class="p">,</span> <span class="mi">10</span><span class="p">:</span><span class="mi">20</span><span class="p">,</span> <span class="mi">10</span><span class="p">:</span><span class="mi">20</span><span class="p">]</span>    <span class="c1"># reads just that block</span>
+</code></pre></div>
+<p>A matcher can key off anything in the <code>BackendRequest</code> (the path, a zarr store,
+the reader, and so on), and registered backends are consulted before the
+built-ins, so you can also override a built-in for a given source.</p>
+<p>Alternatively, if you already pass a custom <code>reader</code> to a specific image, make
+it a lazy reader by implementing <code>create_backend</code> (see
+<a href="../../how-to/custom-reader/">Use a custom reader</a>). Simple readers that just
+return <code>(tensor, affine)</code> keep working unchanged: they load eagerly.</p>
 <h2 id="file-format-recommendations">File format recommendations</h2>
 <table>
 <thead>

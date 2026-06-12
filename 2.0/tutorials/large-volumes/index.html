@@ -1582,6 +1582,33 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/backends/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Backends
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -3761,9 +3788,9 @@
 occupy several gigabytes. This tutorial shows how to work with such
 volumes efficiently using TorchIO's lazy loading and backend system.</p>
 <h2 id="the-problem">The problem</h2>
-<p>Loading a 724 x 868 x 724 float32 volume takes ~45 seconds and
-allocates 1.8 GB of RAM. If you only need a small region, that is
-wasteful.</p>
+<p>Loading a 724 x 868 x 724 float32 volume allocates ~1.8 GB of RAM (and
+can take many seconds to read and decompress). If you only need a small
+region, that is wasteful.</p>
 <h2 id="lazy-slicing">Lazy slicing</h2>
 <p>TorchIO images are lazy by default. Slicing a lazy image reads <strong>only
 the requested region</strong> through the backend, without loading the full
@@ -3780,7 +3807,9 @@ volume into memory:</p>
 <a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="c1"># The original image was never fully loaded</span>
 <a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="nb">print</span><span class="p">(</span><span class="n">image</span><span class="o">.</span><span class="n">is_loaded</span><span class="p">)</span>  <span class="c1"># False</span>
 </code></pre></div>
-<p>On a 724 x 868 x 724 volume, this takes ~0.1 seconds instead of ~45.</p>
+<p>For uncompressed <code>.nii</code> (memory-mapped) and <code>.nii.zarr</code> (chunked), this can be
+orders of magnitude faster than a full load. For <code>.nii.gz</code> the gain is more
+modest, because gzip must be decompressed from the start (see below).</p>
 <h2 id="file-format-comparison">File format comparison</h2>
 <p>Not all formats are equally efficient for partial reads:</p>
 <table>
@@ -3803,7 +3832,7 @@ volume into memory:</p>
 <td>Compressed NIfTI</td>
 <td><code>.nii.gz</code></td>
 <td>Buffered by nibabel</td>
-<td>Fast for small regions, but gzip has no true random access</td>
+<td>Modest speedup for small regions; gzip has no true random access</td>
 </tr>
 <tr>
 <td>NIfTI-Zarr</td>
@@ -3842,9 +3871,11 @@ chunk does not require decompressing any other. This is ideal for:</p>
 </div>
 <h2 id="the-backend-system">The backend system</h2>
 <p>TorchIO uses a pluggable backend system to support different storage
-formats:</p>
+formats. The choice is not hard-coded in <code>Image</code>: a resolver consults a
+registry of backends, so new formats can be added without modifying <code>Image</code>
+(see <a href="../../concepts/lazy-loading/">Lazy loading and backends</a>).</p>
 <pre class="mermaid"><code>flowchart TD
-    I["Image(path)"] --&gt; check{File type?}
+    I["Image(path)"] --&gt; check{Resolver}
     check --&gt;|".nii"| NB[NibabelBackend&lt;br/&gt;memory-mapped]
     check --&gt;|".nii.gz"| NB
     check --&gt;|".nii.zarr"| ZB[ZarrBackend&lt;br/&gt;chunked reads]
@@ -3857,7 +3888,8 @@ formats:</p>
     SITK --&gt;|"image.data"| full</code></pre>
 <ul>
 <li><strong><code>image.data</code></strong>: materializes the full tensor (triggers load if needed)</li>
-<li><strong><code>image.dataobj</code></strong>: returns the lazy backend for advanced slicing</li>
+<li><strong><code>image.dataobj</code></strong>: returns the lazy backend for advanced slicing;
+  <code>image.dataobj[slices]</code> returns a 4D <code>(C, I, J, K)</code> <code>torch.Tensor</code></li>
 <li><strong><code>image[slices]</code></strong>: uses the backend automatically, returns a new image</li>
 </ul>
 <h2 id="tips">Tips</h2>
