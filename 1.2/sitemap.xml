@@ -1,198 +1,198 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
       <url>
-        <loc>https://torchio.org/1.2/</loc>
+        <loc>https://docs.torchio.org/1.2/</loc>
       </url>
       <url>
-        <loc>https://torchio.org/1.2/getting-started/</loc>
+        <loc>https://docs.torchio.org/1.2/getting-started/</loc>
       </url>
       <url>
-        <loc>https://torchio.org/1.2/data/</loc>
+        <loc>https://docs.torchio.org/1.2/data/</loc>
       </url>
       <url>
-        <loc>https://torchio.org/1.2/data/image/</loc>
+        <loc>https://docs.torchio.org/1.2/data/image/</loc>
       </url>
       <url>
-        <loc>https://torchio.org/1.2/data/subject/</loc>
+        <loc>https://docs.torchio.org/1.2/data/subject/</loc>
       </url>
       <url>
-        <loc>https://torchio.org/1.2/data/dataset/</loc>
+        <loc>https://docs.torchio.org/1.2/data/dataset/</loc>
       </url>
       <url>
-        <loc>https://torchio.org/1.2/data/loader/</loc>
+        <loc>https://docs.torchio.org/1.2/data/loader/</loc>
       </url>
       <url>
-        <loc>https://torchio.org/1.2/patches/</loc>
+        <loc>https://docs.torchio.org/1.2/patches/</loc>
       </url>
       <url>
-        <loc>https://torchio.org/1.2/patches/training/</loc>
+        <loc>https://docs.torchio.org/1.2/patches/training/</loc>
       </url>
       <url>
-        <loc>https://torchio.org/1.2/patches/inference/</loc>
+        <loc>https://docs.torchio.org/1.2/patches/inference/</loc>
       </url>
       <url>
-        <loc>https://torchio.org/1.2/transforms/</loc>
+        <loc>https://docs.torchio.org/1.2/transforms/</loc>
       </url>
       <url>
-        <loc>https://torchio.org/1.2/transforms/augmentation/</loc>
+        <loc>https://docs.torchio.org/1.2/transforms/augmentation/</loc>
       </url>
       <url>
-        <loc>https://torchio.org/1.2/transforms/augmentation/Compose/</loc>
+        <loc>https://docs.torchio.org/1.2/transforms/augmentation/Compose/</loc>
       </url>
       <url>
-        <loc>https://torchio.org/1.2/transforms/augmentation/OneOf/</loc>
+        <loc>https://docs.torchio.org/1.2/transforms/augmentation/OneOf/</loc>
       </url>
       <url>
-        <loc>https://torchio.org/1.2/transforms/augmentation/RandomFlip/</loc>
+        <loc>https://docs.torchio.org/1.2/transforms/augmentation/RandomFlip/</loc>
       </url>
       <url>
-        <loc>https://torchio.org/1.2/transforms/augmentation/RandomAffine/</loc>
+        <loc>https://docs.torchio.org/1.2/transforms/augmentation/RandomAffine/</loc>
       </url>
       <url>
-        <loc>https://torchio.org/1.2/transforms/augmentation/RandomElasticDeformation/</loc>
+        <loc>https://docs.torchio.org/1.2/transforms/augmentation/RandomElasticDeformation/</loc>
       </url>
       <url>
-        <loc>https://torchio.org/1.2/transforms/augmentation/RandomAffineElasticDeformation/</loc>
+        <loc>https://docs.torchio.org/1.2/transforms/augmentation/RandomAffineElasticDeformation/</loc>
       </url>
       <url>
-        <loc>https://torchio.org/1.2/transforms/augmentation/RandomAnisotropy/</loc>
+        <loc>https://docs.torchio.org/1.2/transforms/augmentation/RandomAnisotropy/</loc>
       </url>
       <url>
-        <loc>https://torchio.org/1.2/transforms/augmentation/RandomMotion/</loc>
+        <loc>https://docs.torchio.org/1.2/transforms/augmentation/RandomMotion/</loc>
       </url>
       <url>
-        <loc>https://torchio.org/1.2/transforms/augmentation/RandomGhosting/</loc>
+        <loc>https://docs.torchio.org/1.2/transforms/augmentation/RandomGhosting/</loc>
       </url>
       <url>
-        <loc>https://torchio.org/1.2/transforms/augmentation/RandomSpike/</loc>
+        <loc>https://docs.torchio.org/1.2/transforms/augmentation/RandomSpike/</loc>
       </url>
       <url>
-        <loc>https://torchio.org/1.2/transforms/augmentation/RandomBiasField/</loc>
+        <loc>https://docs.torchio.org/1.2/transforms/augmentation/RandomBiasField/</loc>
       </url>
       <url>
-        <loc>https://torchio.org/1.2/transforms/augmentation/RandomBlur/</loc>
+        <loc>https://docs.torchio.org/1.2/transforms/augmentation/RandomBlur/</loc>
       </url>
       <url>
-        <loc>https://torchio.org/1.2/transforms/augmentation/RandomNoise/</loc>
+        <loc>https://docs.torchio.org/1.2/transforms/augmentation/RandomNoise/</loc>
       </url>
       <url>
-        <loc>https://torchio.org/1.2/transforms/augmentation/RandomSwap/</loc>
+        <loc>https://docs.torchio.org/1.2/transforms/augmentation/RandomSwap/</loc>
       </url>
       <url>
-        <loc>https://torchio.org/1.2/transforms/augmentation/RandomLabelsToImage/</loc>
+        <loc>https://docs.torchio.org/1.2/transforms/augmentation/RandomLabelsToImage/</loc>
       </url>
       <url>
-        <loc>https://torchio.org/1.2/transforms/augmentation/RandomGamma/</loc>
+        <loc>https://docs.torchio.org/1.2/transforms/augmentation/RandomGamma/</loc>
       </url>
       <url>
-        <loc>https://torchio.org/1.2/transforms/preprocessing/</loc>
+        <loc>https://docs.torchio.org/1.2/transforms/preprocessing/</loc>
       </url>
       <url>
-        <loc>https://torchio.org/1.2/transforms/preprocessing/RescaleIntensity/</loc>
+        <loc>https://docs.torchio.org/1.2/transforms/preprocessing/RescaleIntensity/</loc>
       </url>
       <url>
-        <loc>https://torchio.org/1.2/transforms/preprocessing/ZNormalization/</loc>
+        <loc>https://docs.torchio.org/1.2/transforms/preprocessing/ZNormalization/</loc>
       </url>
       <url>
-        <loc>https://torchio.org/1.2/transforms/preprocessing/HistogramStandardization/</loc>
+        <loc>https://docs.torchio.org/1.2/transforms/preprocessing/HistogramStandardization/</loc>
       </url>
       <url>
-        <loc>https://torchio.org/1.2/transforms/preprocessing/Mask/</loc>
+        <loc>https://docs.torchio.org/1.2/transforms/preprocessing/Mask/</loc>
       </url>
       <url>
-        <loc>https://torchio.org/1.2/transforms/preprocessing/Clamp/</loc>
+        <loc>https://docs.torchio.org/1.2/transforms/preprocessing/Clamp/</loc>
       </url>
       <url>
-        <loc>https://torchio.org/1.2/transforms/preprocessing/PCA/</loc>
+        <loc>https://docs.torchio.org/1.2/transforms/preprocessing/PCA/</loc>
       </url>
       <url>
-        <loc>https://torchio.org/1.2/transforms/preprocessing/To/</loc>
+        <loc>https://docs.torchio.org/1.2/transforms/preprocessing/To/</loc>
       </url>
       <url>
-        <loc>https://torchio.org/1.2/transforms/preprocessing/CropOrPad/</loc>
+        <loc>https://docs.torchio.org/1.2/transforms/preprocessing/CropOrPad/</loc>
       </url>
       <url>
-        <loc>https://torchio.org/1.2/transforms/preprocessing/Crop/</loc>
+        <loc>https://docs.torchio.org/1.2/transforms/preprocessing/Crop/</loc>
       </url>
       <url>
-        <loc>https://torchio.org/1.2/transforms/preprocessing/Pad/</loc>
+        <loc>https://docs.torchio.org/1.2/transforms/preprocessing/Pad/</loc>
       </url>
       <url>
-        <loc>https://torchio.org/1.2/transforms/preprocessing/Resize/</loc>
+        <loc>https://docs.torchio.org/1.2/transforms/preprocessing/Resize/</loc>
       </url>
       <url>
-        <loc>https://torchio.org/1.2/transforms/preprocessing/Resample/</loc>
+        <loc>https://docs.torchio.org/1.2/transforms/preprocessing/Resample/</loc>
       </url>
       <url>
-        <loc>https://torchio.org/1.2/transforms/preprocessing/ToCanonical/</loc>
+        <loc>https://docs.torchio.org/1.2/transforms/preprocessing/ToCanonical/</loc>
       </url>
       <url>
-        <loc>https://torchio.org/1.2/transforms/preprocessing/ToOrientation/</loc>
+        <loc>https://docs.torchio.org/1.2/transforms/preprocessing/ToOrientation/</loc>
       </url>
       <url>
-        <loc>https://torchio.org/1.2/transforms/preprocessing/ToReferenceSpace/</loc>
+        <loc>https://docs.torchio.org/1.2/transforms/preprocessing/ToReferenceSpace/</loc>
       </url>
       <url>
-        <loc>https://torchio.org/1.2/transforms/preprocessing/Transpose/</loc>
+        <loc>https://docs.torchio.org/1.2/transforms/preprocessing/Transpose/</loc>
       </url>
       <url>
-        <loc>https://torchio.org/1.2/transforms/preprocessing/EnsureShapeMultiple/</loc>
+        <loc>https://docs.torchio.org/1.2/transforms/preprocessing/EnsureShapeMultiple/</loc>
       </url>
       <url>
-        <loc>https://torchio.org/1.2/transforms/preprocessing/CopyAffine/</loc>
+        <loc>https://docs.torchio.org/1.2/transforms/preprocessing/CopyAffine/</loc>
       </url>
       <url>
-        <loc>https://torchio.org/1.2/transforms/preprocessing/RemapLabels/</loc>
+        <loc>https://docs.torchio.org/1.2/transforms/preprocessing/RemapLabels/</loc>
       </url>
       <url>
-        <loc>https://torchio.org/1.2/transforms/preprocessing/RemoveLabels/</loc>
+        <loc>https://docs.torchio.org/1.2/transforms/preprocessing/RemoveLabels/</loc>
       </url>
       <url>
-        <loc>https://torchio.org/1.2/transforms/preprocessing/SequentialLabels/</loc>
+        <loc>https://docs.torchio.org/1.2/transforms/preprocessing/SequentialLabels/</loc>
       </url>
       <url>
-        <loc>https://torchio.org/1.2/transforms/preprocessing/OneHot/</loc>
+        <loc>https://docs.torchio.org/1.2/transforms/preprocessing/OneHot/</loc>
       </url>
       <url>
-        <loc>https://torchio.org/1.2/transforms/preprocessing/Contour/</loc>
+        <loc>https://docs.torchio.org/1.2/transforms/preprocessing/Contour/</loc>
       </url>
       <url>
-        <loc>https://torchio.org/1.2/transforms/preprocessing/KeepLargestComponent/</loc>
+        <loc>https://docs.torchio.org/1.2/transforms/preprocessing/KeepLargestComponent/</loc>
       </url>
       <url>
-        <loc>https://torchio.org/1.2/transforms/others/Lambda/</loc>
+        <loc>https://docs.torchio.org/1.2/transforms/others/Lambda/</loc>
       </url>
       <url>
-        <loc>https://torchio.org/1.2/transforms/others/MonaiAdapter/</loc>
+        <loc>https://docs.torchio.org/1.2/transforms/others/MonaiAdapter/</loc>
       </url>
       <url>
-        <loc>https://torchio.org/1.2/datasets/</loc>
+        <loc>https://docs.torchio.org/1.2/datasets/</loc>
       </url>
       <url>
-        <loc>https://torchio.org/1.2/examples/</loc>
+        <loc>https://docs.torchio.org/1.2/examples/</loc>
       </url>
       <url>
-        <loc>https://torchio.org/1.2/examples/plot_colin27/</loc>
+        <loc>https://docs.torchio.org/1.2/examples/plot_colin27/</loc>
       </url>
       <url>
-        <loc>https://torchio.org/1.2/examples/plot_include_exclude/</loc>
+        <loc>https://docs.torchio.org/1.2/examples/plot_include_exclude/</loc>
       </url>
       <url>
-        <loc>https://torchio.org/1.2/examples/plot_custom_z_spacing/</loc>
+        <loc>https://docs.torchio.org/1.2/examples/plot_custom_z_spacing/</loc>
       </url>
       <url>
-        <loc>https://torchio.org/1.2/examples/plot_3d_to_2d/</loc>
+        <loc>https://docs.torchio.org/1.2/examples/plot_3d_to_2d/</loc>
       </url>
       <url>
-        <loc>https://torchio.org/1.2/examples/plot_history/</loc>
+        <loc>https://docs.torchio.org/1.2/examples/plot_history/</loc>
       </url>
       <url>
-        <loc>https://torchio.org/1.2/examples/plot_video/</loc>
+        <loc>https://docs.torchio.org/1.2/examples/plot_video/</loc>
       </url>
       <url>
-        <loc>https://torchio.org/1.2/interfaces/cli/</loc>
+        <loc>https://docs.torchio.org/1.2/interfaces/cli/</loc>
       </url>
       <url>
-        <loc>https://torchio.org/1.2/interfaces/slicer/</loc>
+        <loc>https://docs.torchio.org/1.2/interfaces/slicer/</loc>
       </url>
 </urlset>
