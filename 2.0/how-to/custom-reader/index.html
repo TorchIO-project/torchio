@@ -3706,7 +3706,7 @@ care about avoiding full loads (for example, very large volumes).</p>
 without loading everything, implement <code>create_backend</code> so TorchIO can access
 it lazily. A lazy reader is any object that has a <code>create_backend</code> method
 returning an object implementing the
-<a class="autorefs autorefs-internal" href="../../reference/backends/#torchio.data.backends.ImageDataBackend"><code>ImageDataBackend</code></a> protocol.</p>
+<a href="../../reference/backends/"><code>ImageDataBackend</code></a> protocol.</p>
 <p>Building on the <code>.npy</code> reader above, this version is lazy: it returns a
 memory-mapped backend, so <code>.shape</code> reads only the header and slicing reads only
 the requested block.</p>
@@ -3764,7 +3764,7 @@ the requested block.</p>
 slicing all go through your backend without materializing the full tensor.</p>
 <p>Passing <code>reader=...</code> is per image. If instead you want <em>every</em> <code>.npy</code> file to
 use this backend, register it once globally with
-<a class="autorefs autorefs-internal" title="&lt;code class=&quot;highlight language-python&quot;&gt;&lt;span class=&quot;n&quot;&gt;register_backend&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;name&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;matcher&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;factory&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;prepend&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;kc&quot;&gt;True&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;&lt;/code&gt;" href="../../reference/backends/#torchio.data.backends.register_backend"><code>register_backend</code></a>; see
+<a href="../../reference/backends/"><code>register_backend</code></a>; see
 <a href="../../concepts/lazy-loading/">Lazy loading and backends</a> for the backend
 contract and that registry-based alternative.</p>
 
