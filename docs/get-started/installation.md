@@ -57,8 +57,6 @@ pip install "torchio[niivue]"
 
 ## Verify
 
-```python
-import torchio as tio
-
-print(tio.__version__)
+```shell
+torchio --version
 ```

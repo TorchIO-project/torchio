@@ -8,6 +8,8 @@ TorchIO includes a `torchio` command with several subcommands.
 torchio [plot|animate|info|convert|transform|cache] [options]
 ```
 
+Pass `--version` to print the installed TorchIO version and exit.
+
 ## Reference
 
 The CLI is built with [tyro](https://brentyi.github.io/tyro/).

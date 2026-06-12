@@ -7,12 +7,14 @@ of spawning a new Python interpreter and re-importing PyTorch.
 
 from __future__ import annotations
 
+import sys
 from pathlib import Path
 
 import nibabel as nib
 import numpy as np
 import pytest
 
+import torchio as tio
 from torchio.cli import Animate
 from torchio.cli import Cache
 from torchio.cli import Convert
@@ -20,6 +22,7 @@ from torchio.cli import Dir
 from torchio.cli import Info
 from torchio.cli import Plot
 from torchio.cli import Transform
+from torchio.cli import main
 
 
 @pytest.fixture
@@ -128,3 +131,31 @@ class TestAnimate:
         output = tmp_path / "bad.avi"
         with pytest.raises(SystemExit):
             Animate(path=nii_path, output=output).run()
+
+
+class TestVersion:
+    @pytest.mark.parametrize("flag", ["--version"])
+    def test_version_flag_prints_version_and_exits(
+        self,
+        flag: str,
+        capsys: pytest.CaptureFixture[str],
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        monkeypatch.setattr(sys, "argv", ["torchio", flag])
+        with pytest.raises(SystemExit) as exc_info:
+            main()
+        assert exc_info.value.code == 0
+        captured = capsys.readouterr()
+        assert tio.__version__ in captured.out
+
+    def test_version_flag_short_circuits_subcommand(
+        self,
+        capsys: pytest.CaptureFixture[str],
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        monkeypatch.setattr(sys, "argv", ["torchio", "--version", "info"])
+        with pytest.raises(SystemExit) as exc_info:
+            main()
+        assert exc_info.value.code == 0
+        captured = capsys.readouterr()
+        assert tio.__version__ in captured.out

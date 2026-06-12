@@ -257,6 +257,9 @@ def _parse_value(value_str: str) -> object:
 
 def main() -> None:
     """TorchIO CLI: tools for medical image processing."""
+    if "--version" in sys.argv[1:]:
+        print(f"torchio {tio.__version__}")
+        raise SystemExit(0)
     cmd = tyro.cli(Command)  # ty: ignore[no-matching-overload]
     cmd.run()
 
