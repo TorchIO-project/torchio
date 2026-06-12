@@ -1746,14 +1746,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../parameter_range/" class="md-nav__link">
+      <a href="../../random_parameters/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-  ParameterRange
+  Random parameters
 
     
   </span>
@@ -4466,7 +4466,7 @@ class name and only non-default field values included.</p>
 <a id="__codelineno-0-277" name="__codelineno-0-277"></a><span class="sd">    Returns:</span>
 <a id="__codelineno-0-278" name="__codelineno-0-278"></a><span class="sd">        Dict suitable for `hydra.utils.instantiate()`.</span>
 <a id="__codelineno-0-279" name="__codelineno-0-279"></a><span class="sd">    &quot;&quot;&quot;</span>
-<a id="__codelineno-0-280" name="__codelineno-0-280"></a>    <span class="kn">from</span><span class="w"> </span><span class="nn">.parameter_range</span><span class="w"> </span><span class="kn">import</span> <span class="n">ParameterRange</span>
+<a id="__codelineno-0-280" name="__codelineno-0-280"></a>    <span class="kn">from</span><span class="w"> </span><span class="nn">.parameter_range</span><span class="w"> </span><span class="kn">import</span> <span class="n">_ParameterRange</span>
 <a id="__codelineno-0-281" name="__codelineno-0-281"></a>
 <a id="__codelineno-0-282" name="__codelineno-0-282"></a>    <span class="bp">cls</span> <span class="o">=</span> <span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
 <a id="__codelineno-0-283" name="__codelineno-0-283"></a>    <span class="n">target</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;torchio.</span><span class="si">{</span><span class="bp">cls</span><span class="o">.</span><span class="vm">__qualname__</span><span class="si">}</span><span class="s2">&quot;</span>
@@ -4474,7 +4474,7 @@ class name and only non-default field values included.</p>
 <a id="__codelineno-0-285" name="__codelineno-0-285"></a>
 <a id="__codelineno-0-286" name="__codelineno-0-286"></a>    <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">default</span> <span class="ow">in</span> <span class="n">_collect_init_params</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
 <a id="__codelineno-0-287" name="__codelineno-0-287"></a>        <span class="n">value</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">default</span><span class="p">)</span>
-<a id="__codelineno-0-288" name="__codelineno-0-288"></a>        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">ParameterRange</span><span class="p">):</span>
+<a id="__codelineno-0-288" name="__codelineno-0-288"></a>        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">_ParameterRange</span><span class="p">):</span>
 <a id="__codelineno-0-289" name="__codelineno-0-289"></a>            <span class="k">if</span> <span class="n">value</span><span class="o">.</span><span class="n">_original</span> <span class="o">==</span> <span class="n">default</span><span class="p">:</span>
 <a id="__codelineno-0-290" name="__codelineno-0-290"></a>                <span class="k">continue</span>
 <a id="__codelineno-0-291" name="__codelineno-0-291"></a>            <span class="n">value</span> <span class="o">=</span> <span class="n">_hydra_value</span><span class="p">(</span><span class="n">value</span><span class="o">.</span><span class="n">_original</span><span class="p">)</span>

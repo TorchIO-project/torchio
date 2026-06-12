@@ -1746,14 +1746,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../parameter_range/" class="md-nav__link">
+      <a href="../../random_parameters/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-  ParameterRange
+  Random parameters
 
     
   </span>
@@ -4027,23 +4027,7 @@ Default: <code>7.5</code> mm.</p>
 
               <details class="mkdocstrings-source">
                 <summary>Source code in <code>src/torchio/transforms/spatial/spatial.py</code></summary>
-                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-599">599</a></span>
-<span class="normal"><a href="#__codelineno-0-600">600</a></span>
-<span class="normal"><a href="#__codelineno-0-601">601</a></span>
-<span class="normal"><a href="#__codelineno-0-602">602</a></span>
-<span class="normal"><a href="#__codelineno-0-603">603</a></span>
-<span class="normal"><a href="#__codelineno-0-604">604</a></span>
-<span class="normal"><a href="#__codelineno-0-605">605</a></span>
-<span class="normal"><a href="#__codelineno-0-606">606</a></span>
-<span class="normal"><a href="#__codelineno-0-607">607</a></span>
-<span class="normal"><a href="#__codelineno-0-608">608</a></span>
-<span class="normal"><a href="#__codelineno-0-609">609</a></span>
-<span class="normal"><a href="#__codelineno-0-610">610</a></span>
-<span class="normal"><a href="#__codelineno-0-611">611</a></span>
-<span class="normal"><a href="#__codelineno-0-612">612</a></span>
-<span class="normal"><a href="#__codelineno-0-613">613</a></span>
-<span class="normal"><a href="#__codelineno-0-614">614</a></span>
-<span class="normal"><a href="#__codelineno-0-615">615</a></span>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-615">615</a></span>
 <span class="normal"><a href="#__codelineno-0-616">616</a></span>
 <span class="normal"><a href="#__codelineno-0-617">617</a></span>
 <span class="normal"><a href="#__codelineno-0-618">618</a></span>
@@ -4074,54 +4058,70 @@ Default: <code>7.5</code> mm.</p>
 <span class="normal"><a href="#__codelineno-0-643">643</a></span>
 <span class="normal"><a href="#__codelineno-0-644">644</a></span>
 <span class="normal"><a href="#__codelineno-0-645">645</a></span>
-<span class="normal"><a href="#__codelineno-0-646">646</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-599" name="__codelineno-0-599"></a><span class="k">class</span><span class="w"> </span><span class="nc">ElasticDeformation</span><span class="p">(</span><span class="n">Spatial</span><span class="p">):</span>
-<a id="__codelineno-0-600" name="__codelineno-0-600"></a><span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Apply a dense random elastic deformation.</span>
-<a id="__codelineno-0-601" name="__codelineno-0-601"></a>
-<a id="__codelineno-0-602" name="__codelineno-0-602"></a><span class="sd">    Convenience wrapper around [`Spatial`][torchio.Spatial] exposing</span>
-<a id="__codelineno-0-603" name="__codelineno-0-603"></a><span class="sd">    only the elastic parameters.</span>
-<a id="__codelineno-0-604" name="__codelineno-0-604"></a>
-<a id="__codelineno-0-605" name="__codelineno-0-605"></a><span class="sd">    A random displacement is assigned to a coarse grid of control</span>
-<a id="__codelineno-0-606" name="__codelineno-0-606"></a><span class="sd">    points and trilinearly upsampled to the image resolution.</span>
-<a id="__codelineno-0-607" name="__codelineno-0-607"></a>
-<a id="__codelineno-0-608" name="__codelineno-0-608"></a><span class="sd">    Args:</span>
-<a id="__codelineno-0-609" name="__codelineno-0-609"></a><span class="sd">        control_points: See [`Spatial`][torchio.Spatial].</span>
-<a id="__codelineno-0-610" name="__codelineno-0-610"></a><span class="sd">        num_control_points: See [`Spatial`][torchio.Spatial].</span>
-<a id="__codelineno-0-611" name="__codelineno-0-611"></a><span class="sd">        max_displacement: See [`Spatial`][torchio.Spatial].</span>
-<a id="__codelineno-0-612" name="__codelineno-0-612"></a><span class="sd">            Default: `7.5` mm.</span>
-<a id="__codelineno-0-613" name="__codelineno-0-613"></a><span class="sd">        locked_borders: See [`Spatial`][torchio.Spatial].</span>
-<a id="__codelineno-0-614" name="__codelineno-0-614"></a><span class="sd">        image_interpolation: See [`Spatial`][torchio.Spatial].</span>
-<a id="__codelineno-0-615" name="__codelineno-0-615"></a><span class="sd">        label_interpolation: See [`Spatial`][torchio.Spatial].</span>
-<a id="__codelineno-0-616" name="__codelineno-0-616"></a><span class="sd">        **kwargs: See [`Transform`][torchio.Transform].</span>
+<span class="normal"><a href="#__codelineno-0-646">646</a></span>
+<span class="normal"><a href="#__codelineno-0-647">647</a></span>
+<span class="normal"><a href="#__codelineno-0-648">648</a></span>
+<span class="normal"><a href="#__codelineno-0-649">649</a></span>
+<span class="normal"><a href="#__codelineno-0-650">650</a></span>
+<span class="normal"><a href="#__codelineno-0-651">651</a></span>
+<span class="normal"><a href="#__codelineno-0-652">652</a></span>
+<span class="normal"><a href="#__codelineno-0-653">653</a></span>
+<span class="normal"><a href="#__codelineno-0-654">654</a></span>
+<span class="normal"><a href="#__codelineno-0-655">655</a></span>
+<span class="normal"><a href="#__codelineno-0-656">656</a></span>
+<span class="normal"><a href="#__codelineno-0-657">657</a></span>
+<span class="normal"><a href="#__codelineno-0-658">658</a></span>
+<span class="normal"><a href="#__codelineno-0-659">659</a></span>
+<span class="normal"><a href="#__codelineno-0-660">660</a></span>
+<span class="normal"><a href="#__codelineno-0-661">661</a></span>
+<span class="normal"><a href="#__codelineno-0-662">662</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-615" name="__codelineno-0-615"></a><span class="k">class</span><span class="w"> </span><span class="nc">ElasticDeformation</span><span class="p">(</span><span class="n">Spatial</span><span class="p">):</span>
+<a id="__codelineno-0-616" name="__codelineno-0-616"></a><span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Apply a dense random elastic deformation.</span>
 <a id="__codelineno-0-617" name="__codelineno-0-617"></a>
-<a id="__codelineno-0-618" name="__codelineno-0-618"></a><span class="sd">    Examples:</span>
-<a id="__codelineno-0-619" name="__codelineno-0-619"></a><span class="sd">        &gt;&gt;&gt; import torchio as tio</span>
-<a id="__codelineno-0-620" name="__codelineno-0-620"></a><span class="sd">        &gt;&gt;&gt; transform = tio.ElasticDeformation()</span>
-<a id="__codelineno-0-621" name="__codelineno-0-621"></a><span class="sd">        &gt;&gt;&gt; transform = tio.ElasticDeformation(</span>
-<a id="__codelineno-0-622" name="__codelineno-0-622"></a><span class="sd">        ...     max_displacement=10,</span>
-<a id="__codelineno-0-623" name="__codelineno-0-623"></a><span class="sd">        ...     num_control_points=5,</span>
-<a id="__codelineno-0-624" name="__codelineno-0-624"></a><span class="sd">        ... )</span>
-<a id="__codelineno-0-625" name="__codelineno-0-625"></a><span class="sd">    &quot;&quot;&quot;</span>
-<a id="__codelineno-0-626" name="__codelineno-0-626"></a>
-<a id="__codelineno-0-627" name="__codelineno-0-627"></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
-<a id="__codelineno-0-628" name="__codelineno-0-628"></a>        <span class="bp">self</span><span class="p">,</span>
-<a id="__codelineno-0-629" name="__codelineno-0-629"></a>        <span class="o">*</span><span class="p">,</span>
-<a id="__codelineno-0-630" name="__codelineno-0-630"></a>        <span class="n">control_points</span><span class="p">:</span> <span class="n">TypeControlPoints</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-631" name="__codelineno-0-631"></a>        <span class="n">num_control_points</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="n">TypeThreeInts</span> <span class="o">=</span> <span class="mi">7</span><span class="p">,</span>
-<a id="__codelineno-0-632" name="__codelineno-0-632"></a>        <span class="n">max_displacement</span><span class="p">:</span> <span class="n">TypeParameterValue</span> <span class="o">=</span> <span class="mf">7.5</span><span class="p">,</span>
-<a id="__codelineno-0-633" name="__codelineno-0-633"></a>        <span class="n">locked_borders</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span>
-<a id="__codelineno-0-634" name="__codelineno-0-634"></a>        <span class="n">image_interpolation</span><span class="p">:</span> <span class="n">TypeInterpolation</span> <span class="o">=</span> <span class="s2">&quot;linear&quot;</span><span class="p">,</span>
-<a id="__codelineno-0-635" name="__codelineno-0-635"></a>        <span class="n">label_interpolation</span><span class="p">:</span> <span class="n">TypeInterpolation</span> <span class="o">=</span> <span class="s2">&quot;nearest&quot;</span><span class="p">,</span>
-<a id="__codelineno-0-636" name="__codelineno-0-636"></a>        <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
-<a id="__codelineno-0-637" name="__codelineno-0-637"></a>    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-638" name="__codelineno-0-638"></a>        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
-<a id="__codelineno-0-639" name="__codelineno-0-639"></a>            <span class="n">control_points</span><span class="o">=</span><span class="n">control_points</span><span class="p">,</span>
-<a id="__codelineno-0-640" name="__codelineno-0-640"></a>            <span class="n">num_control_points</span><span class="o">=</span><span class="n">num_control_points</span><span class="p">,</span>
-<a id="__codelineno-0-641" name="__codelineno-0-641"></a>            <span class="n">max_displacement</span><span class="o">=</span><span class="n">max_displacement</span><span class="p">,</span>
-<a id="__codelineno-0-642" name="__codelineno-0-642"></a>            <span class="n">locked_borders</span><span class="o">=</span><span class="n">locked_borders</span><span class="p">,</span>
-<a id="__codelineno-0-643" name="__codelineno-0-643"></a>            <span class="n">image_interpolation</span><span class="o">=</span><span class="n">image_interpolation</span><span class="p">,</span>
-<a id="__codelineno-0-644" name="__codelineno-0-644"></a>            <span class="n">label_interpolation</span><span class="o">=</span><span class="n">label_interpolation</span><span class="p">,</span>
-<a id="__codelineno-0-645" name="__codelineno-0-645"></a>            <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
-<a id="__codelineno-0-646" name="__codelineno-0-646"></a>        <span class="p">)</span>
+<a id="__codelineno-0-618" name="__codelineno-0-618"></a><span class="sd">    Convenience wrapper around [`Spatial`][torchio.Spatial] exposing</span>
+<a id="__codelineno-0-619" name="__codelineno-0-619"></a><span class="sd">    only the elastic parameters.</span>
+<a id="__codelineno-0-620" name="__codelineno-0-620"></a>
+<a id="__codelineno-0-621" name="__codelineno-0-621"></a><span class="sd">    A random displacement is assigned to a coarse grid of control</span>
+<a id="__codelineno-0-622" name="__codelineno-0-622"></a><span class="sd">    points and trilinearly upsampled to the image resolution.</span>
+<a id="__codelineno-0-623" name="__codelineno-0-623"></a>
+<a id="__codelineno-0-624" name="__codelineno-0-624"></a><span class="sd">    Args:</span>
+<a id="__codelineno-0-625" name="__codelineno-0-625"></a><span class="sd">        control_points: See [`Spatial`][torchio.Spatial].</span>
+<a id="__codelineno-0-626" name="__codelineno-0-626"></a><span class="sd">        num_control_points: See [`Spatial`][torchio.Spatial].</span>
+<a id="__codelineno-0-627" name="__codelineno-0-627"></a><span class="sd">        max_displacement: See [`Spatial`][torchio.Spatial].</span>
+<a id="__codelineno-0-628" name="__codelineno-0-628"></a><span class="sd">            Default: `7.5` mm.</span>
+<a id="__codelineno-0-629" name="__codelineno-0-629"></a><span class="sd">        locked_borders: See [`Spatial`][torchio.Spatial].</span>
+<a id="__codelineno-0-630" name="__codelineno-0-630"></a><span class="sd">        image_interpolation: See [`Spatial`][torchio.Spatial].</span>
+<a id="__codelineno-0-631" name="__codelineno-0-631"></a><span class="sd">        label_interpolation: See [`Spatial`][torchio.Spatial].</span>
+<a id="__codelineno-0-632" name="__codelineno-0-632"></a><span class="sd">        **kwargs: See [`Transform`][torchio.Transform].</span>
+<a id="__codelineno-0-633" name="__codelineno-0-633"></a>
+<a id="__codelineno-0-634" name="__codelineno-0-634"></a><span class="sd">    Examples:</span>
+<a id="__codelineno-0-635" name="__codelineno-0-635"></a><span class="sd">        &gt;&gt;&gt; import torchio as tio</span>
+<a id="__codelineno-0-636" name="__codelineno-0-636"></a><span class="sd">        &gt;&gt;&gt; transform = tio.ElasticDeformation()</span>
+<a id="__codelineno-0-637" name="__codelineno-0-637"></a><span class="sd">        &gt;&gt;&gt; transform = tio.ElasticDeformation(</span>
+<a id="__codelineno-0-638" name="__codelineno-0-638"></a><span class="sd">        ...     max_displacement=10,</span>
+<a id="__codelineno-0-639" name="__codelineno-0-639"></a><span class="sd">        ...     num_control_points=5,</span>
+<a id="__codelineno-0-640" name="__codelineno-0-640"></a><span class="sd">        ... )</span>
+<a id="__codelineno-0-641" name="__codelineno-0-641"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-0-642" name="__codelineno-0-642"></a>
+<a id="__codelineno-0-643" name="__codelineno-0-643"></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+<a id="__codelineno-0-644" name="__codelineno-0-644"></a>        <span class="bp">self</span><span class="p">,</span>
+<a id="__codelineno-0-645" name="__codelineno-0-645"></a>        <span class="o">*</span><span class="p">,</span>
+<a id="__codelineno-0-646" name="__codelineno-0-646"></a>        <span class="n">control_points</span><span class="p">:</span> <span class="n">TypeControlPoints</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-647" name="__codelineno-0-647"></a>        <span class="n">num_control_points</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="n">TypeThreeInts</span> <span class="o">=</span> <span class="mi">7</span><span class="p">,</span>
+<a id="__codelineno-0-648" name="__codelineno-0-648"></a>        <span class="n">max_displacement</span><span class="p">:</span> <span class="n">TypeParameterValue</span> <span class="o">=</span> <span class="mf">7.5</span><span class="p">,</span>
+<a id="__codelineno-0-649" name="__codelineno-0-649"></a>        <span class="n">locked_borders</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span>
+<a id="__codelineno-0-650" name="__codelineno-0-650"></a>        <span class="n">image_interpolation</span><span class="p">:</span> <span class="n">TypeInterpolation</span> <span class="o">=</span> <span class="s2">&quot;linear&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-651" name="__codelineno-0-651"></a>        <span class="n">label_interpolation</span><span class="p">:</span> <span class="n">TypeInterpolation</span> <span class="o">=</span> <span class="s2">&quot;nearest&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-652" name="__codelineno-0-652"></a>        <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+<a id="__codelineno-0-653" name="__codelineno-0-653"></a>    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-654" name="__codelineno-0-654"></a>        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+<a id="__codelineno-0-655" name="__codelineno-0-655"></a>            <span class="n">control_points</span><span class="o">=</span><span class="n">control_points</span><span class="p">,</span>
+<a id="__codelineno-0-656" name="__codelineno-0-656"></a>            <span class="n">num_control_points</span><span class="o">=</span><span class="n">num_control_points</span><span class="p">,</span>
+<a id="__codelineno-0-657" name="__codelineno-0-657"></a>            <span class="n">max_displacement</span><span class="o">=</span><span class="n">max_displacement</span><span class="p">,</span>
+<a id="__codelineno-0-658" name="__codelineno-0-658"></a>            <span class="n">locked_borders</span><span class="o">=</span><span class="n">locked_borders</span><span class="p">,</span>
+<a id="__codelineno-0-659" name="__codelineno-0-659"></a>            <span class="n">image_interpolation</span><span class="o">=</span><span class="n">image_interpolation</span><span class="p">,</span>
+<a id="__codelineno-0-660" name="__codelineno-0-660"></a>            <span class="n">label_interpolation</span><span class="o">=</span><span class="n">label_interpolation</span><span class="p">,</span>
+<a id="__codelineno-0-661" name="__codelineno-0-661"></a>            <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+<a id="__codelineno-0-662" name="__codelineno-0-662"></a>        <span class="p">)</span>
 </code></pre></div></td></tr></table></div>
               </details>
 
@@ -4336,23 +4336,7 @@ image in the batch.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/torchio/transforms/spatial/spatial.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-278">278</a></span>
-<span class="normal"><a href="#__codelineno-0-279">279</a></span>
-<span class="normal"><a href="#__codelineno-0-280">280</a></span>
-<span class="normal"><a href="#__codelineno-0-281">281</a></span>
-<span class="normal"><a href="#__codelineno-0-282">282</a></span>
-<span class="normal"><a href="#__codelineno-0-283">283</a></span>
-<span class="normal"><a href="#__codelineno-0-284">284</a></span>
-<span class="normal"><a href="#__codelineno-0-285">285</a></span>
-<span class="normal"><a href="#__codelineno-0-286">286</a></span>
-<span class="normal"><a href="#__codelineno-0-287">287</a></span>
-<span class="normal"><a href="#__codelineno-0-288">288</a></span>
-<span class="normal"><a href="#__codelineno-0-289">289</a></span>
-<span class="normal"><a href="#__codelineno-0-290">290</a></span>
-<span class="normal"><a href="#__codelineno-0-291">291</a></span>
-<span class="normal"><a href="#__codelineno-0-292">292</a></span>
-<span class="normal"><a href="#__codelineno-0-293">293</a></span>
-<span class="normal"><a href="#__codelineno-0-294">294</a></span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-294">294</a></span>
 <span class="normal"><a href="#__codelineno-0-295">295</a></span>
 <span class="normal"><a href="#__codelineno-0-296">296</a></span>
 <span class="normal"><a href="#__codelineno-0-297">297</a></span>
@@ -4404,75 +4388,91 @@ image in the batch.</p>
 <span class="normal"><a href="#__codelineno-0-343">343</a></span>
 <span class="normal"><a href="#__codelineno-0-344">344</a></span>
 <span class="normal"><a href="#__codelineno-0-345">345</a></span>
-<span class="normal"><a href="#__codelineno-0-346">346</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-278" name="__codelineno-0-278"></a><span class="k">def</span><span class="w"> </span><span class="nf">make_params</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">batch</span><span class="p">:</span> <span class="n">SubjectsBatch</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
-<a id="__codelineno-0-279" name="__codelineno-0-279"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Sample random parameters and resolve the output space.</span>
-<a id="__codelineno-0-280" name="__codelineno-0-280"></a>
-<a id="__codelineno-0-281" name="__codelineno-0-281"></a><span class="sd">    Scales, degrees, translation, and control-point displacements are</span>
-<a id="__codelineno-0-282" name="__codelineno-0-282"></a><span class="sd">    sampled once and applied identically to every sample and every</span>
-<a id="__codelineno-0-283" name="__codelineno-0-283"></a><span class="sd">    image in the batch.</span>
-<a id="__codelineno-0-284" name="__codelineno-0-284"></a>
-<a id="__codelineno-0-285" name="__codelineno-0-285"></a><span class="sd">    Returns:</span>
-<a id="__codelineno-0-286" name="__codelineno-0-286"></a><span class="sd">        Dict of serializable parameters for `apply_transform` and</span>
-<a id="__codelineno-0-287" name="__codelineno-0-287"></a><span class="sd">        history replay.</span>
-<a id="__codelineno-0-288" name="__codelineno-0-288"></a><span class="sd">    &quot;&quot;&quot;</span>
-<a id="__codelineno-0-289" name="__codelineno-0-289"></a>    <span class="n">images</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_images</span><span class="p">(</span><span class="n">batch</span><span class="p">)</span>
-<a id="__codelineno-0-290" name="__codelineno-0-290"></a>    <span class="k">if</span> <span class="ow">not</span> <span class="n">images</span><span class="p">:</span>
-<a id="__codelineno-0-291" name="__codelineno-0-291"></a>        <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;selected_images&quot;</span><span class="p">:</span> <span class="p">[]}</span>
-<a id="__codelineno-0-292" name="__codelineno-0-292"></a>
-<a id="__codelineno-0-293" name="__codelineno-0-293"></a>    <span class="n">_</span><span class="p">,</span> <span class="n">first_batch</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="nb">iter</span><span class="p">(</span><span class="n">images</span><span class="o">.</span><span class="n">items</span><span class="p">()))</span>
-<a id="__codelineno-0-294" name="__codelineno-0-294"></a>    <span class="n">first_shape</span> <span class="o">=</span> <span class="n">_get_spatial_shape</span><span class="p">(</span><span class="n">first_batch</span><span class="p">)</span>
-<a id="__codelineno-0-295" name="__codelineno-0-295"></a>    <span class="n">first_affine</span> <span class="o">=</span> <span class="n">first_batch</span><span class="o">.</span><span class="n">affines</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+<span class="normal"><a href="#__codelineno-0-346">346</a></span>
+<span class="normal"><a href="#__codelineno-0-347">347</a></span>
+<span class="normal"><a href="#__codelineno-0-348">348</a></span>
+<span class="normal"><a href="#__codelineno-0-349">349</a></span>
+<span class="normal"><a href="#__codelineno-0-350">350</a></span>
+<span class="normal"><a href="#__codelineno-0-351">351</a></span>
+<span class="normal"><a href="#__codelineno-0-352">352</a></span>
+<span class="normal"><a href="#__codelineno-0-353">353</a></span>
+<span class="normal"><a href="#__codelineno-0-354">354</a></span>
+<span class="normal"><a href="#__codelineno-0-355">355</a></span>
+<span class="normal"><a href="#__codelineno-0-356">356</a></span>
+<span class="normal"><a href="#__codelineno-0-357">357</a></span>
+<span class="normal"><a href="#__codelineno-0-358">358</a></span>
+<span class="normal"><a href="#__codelineno-0-359">359</a></span>
+<span class="normal"><a href="#__codelineno-0-360">360</a></span>
+<span class="normal"><a href="#__codelineno-0-361">361</a></span>
+<span class="normal"><a href="#__codelineno-0-362">362</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-294" name="__codelineno-0-294"></a><span class="k">def</span><span class="w"> </span><span class="nf">make_params</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">batch</span><span class="p">:</span> <span class="n">SubjectsBatch</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<a id="__codelineno-0-295" name="__codelineno-0-295"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Sample random parameters and resolve the output space.</span>
 <a id="__codelineno-0-296" name="__codelineno-0-296"></a>
-<a id="__codelineno-0-297" name="__codelineno-0-297"></a>    <span class="n">sampled_scales</span> <span class="o">=</span> <span class="n">_sample_scales</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">scales</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">isotropic</span><span class="p">)</span>
-<a id="__codelineno-0-298" name="__codelineno-0-298"></a>    <span class="n">sampled_degrees</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">degrees</span><span class="o">.</span><span class="n">sample</span><span class="p">()</span>
-<a id="__codelineno-0-299" name="__codelineno-0-299"></a>    <span class="n">sampled_translation</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">translation</span><span class="o">.</span><span class="n">sample</span><span class="p">()</span>
-<a id="__codelineno-0-300" name="__codelineno-0-300"></a>    <span class="n">has_affine</span> <span class="o">=</span> <span class="n">_has_affine_component</span><span class="p">(</span>
-<a id="__codelineno-0-301" name="__codelineno-0-301"></a>        <span class="n">sampled_scales</span><span class="p">,</span>
-<a id="__codelineno-0-302" name="__codelineno-0-302"></a>        <span class="n">sampled_degrees</span><span class="p">,</span>
-<a id="__codelineno-0-303" name="__codelineno-0-303"></a>        <span class="n">sampled_translation</span><span class="p">,</span>
-<a id="__codelineno-0-304" name="__codelineno-0-304"></a>    <span class="p">)</span>
-<a id="__codelineno-0-305" name="__codelineno-0-305"></a>    <span class="n">control_points</span><span class="p">,</span> <span class="n">max_displacement</span> <span class="o">=</span> <span class="n">_resolve_control_points</span><span class="p">(</span>
-<a id="__codelineno-0-306" name="__codelineno-0-306"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">control_points</span><span class="p">,</span>
-<a id="__codelineno-0-307" name="__codelineno-0-307"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">num_control_points</span><span class="p">,</span>
-<a id="__codelineno-0-308" name="__codelineno-0-308"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">max_displacement</span><span class="p">,</span>
-<a id="__codelineno-0-309" name="__codelineno-0-309"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">locked_borders</span><span class="p">,</span>
-<a id="__codelineno-0-310" name="__codelineno-0-310"></a>    <span class="p">)</span>
-<a id="__codelineno-0-311" name="__codelineno-0-311"></a>    <span class="n">has_elastic</span> <span class="o">=</span> <span class="n">control_points</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+<a id="__codelineno-0-297" name="__codelineno-0-297"></a><span class="sd">    Scales, degrees, translation, and control-point displacements are</span>
+<a id="__codelineno-0-298" name="__codelineno-0-298"></a><span class="sd">    sampled once and applied identically to every sample and every</span>
+<a id="__codelineno-0-299" name="__codelineno-0-299"></a><span class="sd">    image in the batch.</span>
+<a id="__codelineno-0-300" name="__codelineno-0-300"></a>
+<a id="__codelineno-0-301" name="__codelineno-0-301"></a><span class="sd">    Returns:</span>
+<a id="__codelineno-0-302" name="__codelineno-0-302"></a><span class="sd">        Dict of serializable parameters for `apply_transform` and</span>
+<a id="__codelineno-0-303" name="__codelineno-0-303"></a><span class="sd">        history replay.</span>
+<a id="__codelineno-0-304" name="__codelineno-0-304"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-0-305" name="__codelineno-0-305"></a>    <span class="n">images</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_images</span><span class="p">(</span><span class="n">batch</span><span class="p">)</span>
+<a id="__codelineno-0-306" name="__codelineno-0-306"></a>    <span class="k">if</span> <span class="ow">not</span> <span class="n">images</span><span class="p">:</span>
+<a id="__codelineno-0-307" name="__codelineno-0-307"></a>        <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;selected_images&quot;</span><span class="p">:</span> <span class="p">[]}</span>
+<a id="__codelineno-0-308" name="__codelineno-0-308"></a>
+<a id="__codelineno-0-309" name="__codelineno-0-309"></a>    <span class="n">_</span><span class="p">,</span> <span class="n">first_batch</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="nb">iter</span><span class="p">(</span><span class="n">images</span><span class="o">.</span><span class="n">items</span><span class="p">()))</span>
+<a id="__codelineno-0-310" name="__codelineno-0-310"></a>    <span class="n">first_shape</span> <span class="o">=</span> <span class="n">_get_spatial_shape</span><span class="p">(</span><span class="n">first_batch</span><span class="p">)</span>
+<a id="__codelineno-0-311" name="__codelineno-0-311"></a>    <span class="n">first_affine</span> <span class="o">=</span> <span class="n">first_batch</span><span class="o">.</span><span class="n">affines</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
 <a id="__codelineno-0-312" name="__codelineno-0-312"></a>
-<a id="__codelineno-0-313" name="__codelineno-0-313"></a>    <span class="k">if</span> <span class="n">has_affine</span> <span class="ow">or</span> <span class="n">has_elastic</span><span class="p">:</span>
-<a id="__codelineno-0-314" name="__codelineno-0-314"></a>        <span class="n">_check_shared_space</span><span class="p">(</span><span class="n">images</span><span class="p">,</span> <span class="n">first_shape</span><span class="p">,</span> <span class="n">first_affine</span><span class="p">)</span>
-<a id="__codelineno-0-315" name="__codelineno-0-315"></a>
-<a id="__codelineno-0-316" name="__codelineno-0-316"></a>    <span class="n">target_space</span> <span class="o">=</span> <span class="n">_resolve_target_space</span><span class="p">(</span>
-<a id="__codelineno-0-317" name="__codelineno-0-317"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">target</span><span class="p">,</span>
-<a id="__codelineno-0-318" name="__codelineno-0-318"></a>        <span class="n">batch</span><span class="p">,</span>
-<a id="__codelineno-0-319" name="__codelineno-0-319"></a>        <span class="n">first_shape</span><span class="p">,</span>
-<a id="__codelineno-0-320" name="__codelineno-0-320"></a>        <span class="n">first_affine</span><span class="p">,</span>
-<a id="__codelineno-0-321" name="__codelineno-0-321"></a>    <span class="p">)</span>
-<a id="__codelineno-0-322" name="__codelineno-0-322"></a>    <span class="n">forward_affine</span> <span class="o">=</span> <span class="kc">None</span>
-<a id="__codelineno-0-323" name="__codelineno-0-323"></a>    <span class="k">if</span> <span class="n">has_affine</span><span class="p">:</span>
-<a id="__codelineno-0-324" name="__codelineno-0-324"></a>        <span class="n">forward_affine</span> <span class="o">=</span> <span class="n">_build_forward_affine</span><span class="p">(</span>
-<a id="__codelineno-0-325" name="__codelineno-0-325"></a>            <span class="n">scales</span><span class="o">=</span><span class="n">sampled_scales</span><span class="p">,</span>
-<a id="__codelineno-0-326" name="__codelineno-0-326"></a>            <span class="n">degrees</span><span class="o">=</span><span class="n">sampled_degrees</span><span class="p">,</span>
-<a id="__codelineno-0-327" name="__codelineno-0-327"></a>            <span class="n">translation</span><span class="o">=</span><span class="n">sampled_translation</span><span class="p">,</span>
-<a id="__codelineno-0-328" name="__codelineno-0-328"></a>            <span class="n">center</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">center</span><span class="p">,</span>
-<a id="__codelineno-0-329" name="__codelineno-0-329"></a>            <span class="n">shape</span><span class="o">=</span><span class="n">first_shape</span><span class="p">,</span>
-<a id="__codelineno-0-330" name="__codelineno-0-330"></a>            <span class="n">affine</span><span class="o">=</span><span class="n">first_affine</span><span class="p">,</span>
-<a id="__codelineno-0-331" name="__codelineno-0-331"></a>        <span class="p">)</span>
-<a id="__codelineno-0-332" name="__codelineno-0-332"></a>
-<a id="__codelineno-0-333" name="__codelineno-0-333"></a>    <span class="k">return</span> <span class="p">{</span>
-<a id="__codelineno-0-334" name="__codelineno-0-334"></a>        <span class="s2">&quot;selected_images&quot;</span><span class="p">:</span> <span class="nb">list</span><span class="p">(</span><span class="n">images</span><span class="o">.</span><span class="n">keys</span><span class="p">()),</span>
-<a id="__codelineno-0-335" name="__codelineno-0-335"></a>        <span class="s2">&quot;target&quot;</span><span class="p">:</span> <span class="n">_serialize_space</span><span class="p">(</span><span class="n">target_space</span><span class="p">),</span>
-<a id="__codelineno-0-336" name="__codelineno-0-336"></a>        <span class="s2">&quot;original&quot;</span><span class="p">:</span> <span class="n">_serialize_space</span><span class="p">((</span><span class="n">first_shape</span><span class="p">,</span> <span class="n">first_affine</span><span class="p">)),</span>
-<a id="__codelineno-0-337" name="__codelineno-0-337"></a>        <span class="s2">&quot;affine_matrix&quot;</span><span class="p">:</span> <span class="n">_serialize_matrix</span><span class="p">(</span><span class="n">forward_affine</span><span class="p">),</span>
-<a id="__codelineno-0-338" name="__codelineno-0-338"></a>        <span class="s2">&quot;control_points&quot;</span><span class="p">:</span> <span class="n">_serialize_control_points</span><span class="p">(</span><span class="n">control_points</span><span class="p">),</span>
-<a id="__codelineno-0-339" name="__codelineno-0-339"></a>        <span class="s2">&quot;max_displacement&quot;</span><span class="p">:</span> <span class="nb">list</span><span class="p">(</span><span class="n">max_displacement</span><span class="p">)</span> <span class="k">if</span> <span class="n">max_displacement</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-340" name="__codelineno-0-340"></a>        <span class="s2">&quot;affine_first&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">affine_first</span><span class="p">,</span>
-<a id="__codelineno-0-341" name="__codelineno-0-341"></a>        <span class="s2">&quot;image_interpolation&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">image_interpolation</span><span class="p">,</span>
-<a id="__codelineno-0-342" name="__codelineno-0-342"></a>        <span class="s2">&quot;label_interpolation&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">label_interpolation</span><span class="p">,</span>
-<a id="__codelineno-0-343" name="__codelineno-0-343"></a>        <span class="s2">&quot;antialias&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">antialias</span><span class="p">,</span>
-<a id="__codelineno-0-344" name="__codelineno-0-344"></a>        <span class="s2">&quot;default_pad_value&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_pad_value</span><span class="p">,</span>
-<a id="__codelineno-0-345" name="__codelineno-0-345"></a>        <span class="s2">&quot;default_pad_label&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_pad_label</span><span class="p">,</span>
-<a id="__codelineno-0-346" name="__codelineno-0-346"></a>    <span class="p">}</span>
+<a id="__codelineno-0-313" name="__codelineno-0-313"></a>    <span class="n">sampled_scales</span> <span class="o">=</span> <span class="n">_sample_scales</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">scales</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">isotropic</span><span class="p">)</span>
+<a id="__codelineno-0-314" name="__codelineno-0-314"></a>    <span class="n">sampled_degrees</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">degrees</span><span class="o">.</span><span class="n">sample</span><span class="p">()</span>
+<a id="__codelineno-0-315" name="__codelineno-0-315"></a>    <span class="n">sampled_translation</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">translation</span><span class="o">.</span><span class="n">sample</span><span class="p">()</span>
+<a id="__codelineno-0-316" name="__codelineno-0-316"></a>    <span class="n">has_affine</span> <span class="o">=</span> <span class="n">_has_affine_component</span><span class="p">(</span>
+<a id="__codelineno-0-317" name="__codelineno-0-317"></a>        <span class="n">sampled_scales</span><span class="p">,</span>
+<a id="__codelineno-0-318" name="__codelineno-0-318"></a>        <span class="n">sampled_degrees</span><span class="p">,</span>
+<a id="__codelineno-0-319" name="__codelineno-0-319"></a>        <span class="n">sampled_translation</span><span class="p">,</span>
+<a id="__codelineno-0-320" name="__codelineno-0-320"></a>    <span class="p">)</span>
+<a id="__codelineno-0-321" name="__codelineno-0-321"></a>    <span class="n">control_points</span><span class="p">,</span> <span class="n">max_displacement</span> <span class="o">=</span> <span class="n">_resolve_control_points</span><span class="p">(</span>
+<a id="__codelineno-0-322" name="__codelineno-0-322"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">control_points</span><span class="p">,</span>
+<a id="__codelineno-0-323" name="__codelineno-0-323"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">num_control_points</span><span class="p">,</span>
+<a id="__codelineno-0-324" name="__codelineno-0-324"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">max_displacement</span><span class="p">,</span>
+<a id="__codelineno-0-325" name="__codelineno-0-325"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">locked_borders</span><span class="p">,</span>
+<a id="__codelineno-0-326" name="__codelineno-0-326"></a>    <span class="p">)</span>
+<a id="__codelineno-0-327" name="__codelineno-0-327"></a>    <span class="n">has_elastic</span> <span class="o">=</span> <span class="n">control_points</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+<a id="__codelineno-0-328" name="__codelineno-0-328"></a>
+<a id="__codelineno-0-329" name="__codelineno-0-329"></a>    <span class="k">if</span> <span class="n">has_affine</span> <span class="ow">or</span> <span class="n">has_elastic</span><span class="p">:</span>
+<a id="__codelineno-0-330" name="__codelineno-0-330"></a>        <span class="n">_check_shared_space</span><span class="p">(</span><span class="n">images</span><span class="p">,</span> <span class="n">first_shape</span><span class="p">,</span> <span class="n">first_affine</span><span class="p">)</span>
+<a id="__codelineno-0-331" name="__codelineno-0-331"></a>
+<a id="__codelineno-0-332" name="__codelineno-0-332"></a>    <span class="n">target_space</span> <span class="o">=</span> <span class="n">_resolve_target_space</span><span class="p">(</span>
+<a id="__codelineno-0-333" name="__codelineno-0-333"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">target</span><span class="p">,</span>
+<a id="__codelineno-0-334" name="__codelineno-0-334"></a>        <span class="n">batch</span><span class="p">,</span>
+<a id="__codelineno-0-335" name="__codelineno-0-335"></a>        <span class="n">first_shape</span><span class="p">,</span>
+<a id="__codelineno-0-336" name="__codelineno-0-336"></a>        <span class="n">first_affine</span><span class="p">,</span>
+<a id="__codelineno-0-337" name="__codelineno-0-337"></a>    <span class="p">)</span>
+<a id="__codelineno-0-338" name="__codelineno-0-338"></a>    <span class="n">forward_affine</span> <span class="o">=</span> <span class="kc">None</span>
+<a id="__codelineno-0-339" name="__codelineno-0-339"></a>    <span class="k">if</span> <span class="n">has_affine</span><span class="p">:</span>
+<a id="__codelineno-0-340" name="__codelineno-0-340"></a>        <span class="n">forward_affine</span> <span class="o">=</span> <span class="n">_build_forward_affine</span><span class="p">(</span>
+<a id="__codelineno-0-341" name="__codelineno-0-341"></a>            <span class="n">scales</span><span class="o">=</span><span class="n">sampled_scales</span><span class="p">,</span>
+<a id="__codelineno-0-342" name="__codelineno-0-342"></a>            <span class="n">degrees</span><span class="o">=</span><span class="n">sampled_degrees</span><span class="p">,</span>
+<a id="__codelineno-0-343" name="__codelineno-0-343"></a>            <span class="n">translation</span><span class="o">=</span><span class="n">sampled_translation</span><span class="p">,</span>
+<a id="__codelineno-0-344" name="__codelineno-0-344"></a>            <span class="n">center</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">center</span><span class="p">,</span>
+<a id="__codelineno-0-345" name="__codelineno-0-345"></a>            <span class="n">shape</span><span class="o">=</span><span class="n">first_shape</span><span class="p">,</span>
+<a id="__codelineno-0-346" name="__codelineno-0-346"></a>            <span class="n">affine</span><span class="o">=</span><span class="n">first_affine</span><span class="p">,</span>
+<a id="__codelineno-0-347" name="__codelineno-0-347"></a>        <span class="p">)</span>
+<a id="__codelineno-0-348" name="__codelineno-0-348"></a>
+<a id="__codelineno-0-349" name="__codelineno-0-349"></a>    <span class="k">return</span> <span class="p">{</span>
+<a id="__codelineno-0-350" name="__codelineno-0-350"></a>        <span class="s2">&quot;selected_images&quot;</span><span class="p">:</span> <span class="nb">list</span><span class="p">(</span><span class="n">images</span><span class="o">.</span><span class="n">keys</span><span class="p">()),</span>
+<a id="__codelineno-0-351" name="__codelineno-0-351"></a>        <span class="s2">&quot;target&quot;</span><span class="p">:</span> <span class="n">_serialize_space</span><span class="p">(</span><span class="n">target_space</span><span class="p">),</span>
+<a id="__codelineno-0-352" name="__codelineno-0-352"></a>        <span class="s2">&quot;original&quot;</span><span class="p">:</span> <span class="n">_serialize_space</span><span class="p">((</span><span class="n">first_shape</span><span class="p">,</span> <span class="n">first_affine</span><span class="p">)),</span>
+<a id="__codelineno-0-353" name="__codelineno-0-353"></a>        <span class="s2">&quot;affine_matrix&quot;</span><span class="p">:</span> <span class="n">_serialize_matrix</span><span class="p">(</span><span class="n">forward_affine</span><span class="p">),</span>
+<a id="__codelineno-0-354" name="__codelineno-0-354"></a>        <span class="s2">&quot;control_points&quot;</span><span class="p">:</span> <span class="n">_serialize_control_points</span><span class="p">(</span><span class="n">control_points</span><span class="p">),</span>
+<a id="__codelineno-0-355" name="__codelineno-0-355"></a>        <span class="s2">&quot;max_displacement&quot;</span><span class="p">:</span> <span class="nb">list</span><span class="p">(</span><span class="n">max_displacement</span><span class="p">)</span> <span class="k">if</span> <span class="n">max_displacement</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-356" name="__codelineno-0-356"></a>        <span class="s2">&quot;affine_first&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">affine_first</span><span class="p">,</span>
+<a id="__codelineno-0-357" name="__codelineno-0-357"></a>        <span class="s2">&quot;image_interpolation&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">image_interpolation</span><span class="p">,</span>
+<a id="__codelineno-0-358" name="__codelineno-0-358"></a>        <span class="s2">&quot;label_interpolation&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">label_interpolation</span><span class="p">,</span>
+<a id="__codelineno-0-359" name="__codelineno-0-359"></a>        <span class="s2">&quot;antialias&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">antialias</span><span class="p">,</span>
+<a id="__codelineno-0-360" name="__codelineno-0-360"></a>        <span class="s2">&quot;default_pad_value&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_pad_value</span><span class="p">,</span>
+<a id="__codelineno-0-361" name="__codelineno-0-361"></a>        <span class="s2">&quot;default_pad_label&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_pad_label</span><span class="p">,</span>
+<a id="__codelineno-0-362" name="__codelineno-0-362"></a>    <span class="p">}</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -4497,23 +4497,7 @@ image in the batch.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/torchio/transforms/spatial/spatial.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-348">348</a></span>
-<span class="normal"><a href="#__codelineno-0-349">349</a></span>
-<span class="normal"><a href="#__codelineno-0-350">350</a></span>
-<span class="normal"><a href="#__codelineno-0-351">351</a></span>
-<span class="normal"><a href="#__codelineno-0-352">352</a></span>
-<span class="normal"><a href="#__codelineno-0-353">353</a></span>
-<span class="normal"><a href="#__codelineno-0-354">354</a></span>
-<span class="normal"><a href="#__codelineno-0-355">355</a></span>
-<span class="normal"><a href="#__codelineno-0-356">356</a></span>
-<span class="normal"><a href="#__codelineno-0-357">357</a></span>
-<span class="normal"><a href="#__codelineno-0-358">358</a></span>
-<span class="normal"><a href="#__codelineno-0-359">359</a></span>
-<span class="normal"><a href="#__codelineno-0-360">360</a></span>
-<span class="normal"><a href="#__codelineno-0-361">361</a></span>
-<span class="normal"><a href="#__codelineno-0-362">362</a></span>
-<span class="normal"><a href="#__codelineno-0-363">363</a></span>
-<span class="normal"><a href="#__codelineno-0-364">364</a></span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-364">364</a></span>
 <span class="normal"><a href="#__codelineno-0-365">365</a></span>
 <span class="normal"><a href="#__codelineno-0-366">366</a></span>
 <span class="normal"><a href="#__codelineno-0-367">367</a></span>
@@ -4530,40 +4514,56 @@ image in the batch.</p>
 <span class="normal"><a href="#__codelineno-0-378">378</a></span>
 <span class="normal"><a href="#__codelineno-0-379">379</a></span>
 <span class="normal"><a href="#__codelineno-0-380">380</a></span>
-<span class="normal"><a href="#__codelineno-0-381">381</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-348" name="__codelineno-0-348"></a><span class="k">def</span><span class="w"> </span><span class="nf">apply_transform</span><span class="p">(</span>
-<a id="__codelineno-0-349" name="__codelineno-0-349"></a>    <span class="bp">self</span><span class="p">,</span>
-<a id="__codelineno-0-350" name="__codelineno-0-350"></a>    <span class="n">batch</span><span class="p">:</span> <span class="n">SubjectsBatch</span><span class="p">,</span>
-<a id="__codelineno-0-351" name="__codelineno-0-351"></a>    <span class="n">params</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
-<a id="__codelineno-0-352" name="__codelineno-0-352"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SubjectsBatch</span><span class="p">:</span>
-<a id="__codelineno-0-353" name="__codelineno-0-353"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Apply the spatial mapping to every selected image in *batch*.</span>
-<a id="__codelineno-0-354" name="__codelineno-0-354"></a>
-<a id="__codelineno-0-355" name="__codelineno-0-355"></a><span class="sd">    The sampling grid is built once from the parameters produced by</span>
-<a id="__codelineno-0-356" name="__codelineno-0-356"></a><span class="sd">    `make_params` and reused for all images and all batch samples.</span>
-<a id="__codelineno-0-357" name="__codelineno-0-357"></a><span class="sd">    &quot;&quot;&quot;</span>
-<a id="__codelineno-0-358" name="__codelineno-0-358"></a>    <span class="n">selected_images</span> <span class="o">=</span> <span class="n">params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;selected_images&quot;</span><span class="p">,</span> <span class="p">[])</span>
-<a id="__codelineno-0-359" name="__codelineno-0-359"></a>    <span class="k">if</span> <span class="ow">not</span> <span class="n">selected_images</span><span class="p">:</span>
-<a id="__codelineno-0-360" name="__codelineno-0-360"></a>        <span class="k">return</span> <span class="n">batch</span>
-<a id="__codelineno-0-361" name="__codelineno-0-361"></a>
-<a id="__codelineno-0-362" name="__codelineno-0-362"></a>    <span class="n">target_space</span> <span class="o">=</span> <span class="n">_deserialize_space</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;target&quot;</span><span class="p">])</span>
-<a id="__codelineno-0-363" name="__codelineno-0-363"></a>    <span class="n">affine_matrix</span> <span class="o">=</span> <span class="n">_deserialize_matrix</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;affine_matrix&quot;</span><span class="p">])</span>
-<a id="__codelineno-0-364" name="__codelineno-0-364"></a>    <span class="n">control_points</span> <span class="o">=</span> <span class="n">_deserialize_control_points</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;control_points&quot;</span><span class="p">])</span>
-<a id="__codelineno-0-365" name="__codelineno-0-365"></a>    <span class="n">max_displacement</span> <span class="o">=</span> <span class="n">_deserialize_max_displacement</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;max_displacement&quot;</span><span class="p">])</span>
-<a id="__codelineno-0-366" name="__codelineno-0-366"></a>
-<a id="__codelineno-0-367" name="__codelineno-0-367"></a>    <span class="n">_apply_spatial_to_batch</span><span class="p">(</span>
-<a id="__codelineno-0-368" name="__codelineno-0-368"></a>        <span class="n">batch</span><span class="o">=</span><span class="n">batch</span><span class="p">,</span>
-<a id="__codelineno-0-369" name="__codelineno-0-369"></a>        <span class="n">image_names</span><span class="o">=</span><span class="n">selected_images</span><span class="p">,</span>
-<a id="__codelineno-0-370" name="__codelineno-0-370"></a>        <span class="n">target_space</span><span class="o">=</span><span class="n">target_space</span><span class="p">,</span>
-<a id="__codelineno-0-371" name="__codelineno-0-371"></a>        <span class="n">affine_matrix</span><span class="o">=</span><span class="n">affine_matrix</span><span class="p">,</span>
-<a id="__codelineno-0-372" name="__codelineno-0-372"></a>        <span class="n">control_points</span><span class="o">=</span><span class="n">control_points</span><span class="p">,</span>
-<a id="__codelineno-0-373" name="__codelineno-0-373"></a>        <span class="n">max_displacement</span><span class="o">=</span><span class="n">max_displacement</span><span class="p">,</span>
-<a id="__codelineno-0-374" name="__codelineno-0-374"></a>        <span class="n">affine_first</span><span class="o">=</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;affine_first&quot;</span><span class="p">],</span>
-<a id="__codelineno-0-375" name="__codelineno-0-375"></a>        <span class="n">image_interpolation</span><span class="o">=</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;image_interpolation&quot;</span><span class="p">],</span>
-<a id="__codelineno-0-376" name="__codelineno-0-376"></a>        <span class="n">label_interpolation</span><span class="o">=</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;label_interpolation&quot;</span><span class="p">],</span>
-<a id="__codelineno-0-377" name="__codelineno-0-377"></a>        <span class="n">antialias</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;antialias&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">),</span>
-<a id="__codelineno-0-378" name="__codelineno-0-378"></a>        <span class="n">default_pad_value</span><span class="o">=</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;default_pad_value&quot;</span><span class="p">],</span>
-<a id="__codelineno-0-379" name="__codelineno-0-379"></a>        <span class="n">default_pad_label</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;default_pad_label&quot;</span><span class="p">]),</span>
-<a id="__codelineno-0-380" name="__codelineno-0-380"></a>    <span class="p">)</span>
-<a id="__codelineno-0-381" name="__codelineno-0-381"></a>    <span class="k">return</span> <span class="n">batch</span>
+<span class="normal"><a href="#__codelineno-0-381">381</a></span>
+<span class="normal"><a href="#__codelineno-0-382">382</a></span>
+<span class="normal"><a href="#__codelineno-0-383">383</a></span>
+<span class="normal"><a href="#__codelineno-0-384">384</a></span>
+<span class="normal"><a href="#__codelineno-0-385">385</a></span>
+<span class="normal"><a href="#__codelineno-0-386">386</a></span>
+<span class="normal"><a href="#__codelineno-0-387">387</a></span>
+<span class="normal"><a href="#__codelineno-0-388">388</a></span>
+<span class="normal"><a href="#__codelineno-0-389">389</a></span>
+<span class="normal"><a href="#__codelineno-0-390">390</a></span>
+<span class="normal"><a href="#__codelineno-0-391">391</a></span>
+<span class="normal"><a href="#__codelineno-0-392">392</a></span>
+<span class="normal"><a href="#__codelineno-0-393">393</a></span>
+<span class="normal"><a href="#__codelineno-0-394">394</a></span>
+<span class="normal"><a href="#__codelineno-0-395">395</a></span>
+<span class="normal"><a href="#__codelineno-0-396">396</a></span>
+<span class="normal"><a href="#__codelineno-0-397">397</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-364" name="__codelineno-0-364"></a><span class="k">def</span><span class="w"> </span><span class="nf">apply_transform</span><span class="p">(</span>
+<a id="__codelineno-0-365" name="__codelineno-0-365"></a>    <span class="bp">self</span><span class="p">,</span>
+<a id="__codelineno-0-366" name="__codelineno-0-366"></a>    <span class="n">batch</span><span class="p">:</span> <span class="n">SubjectsBatch</span><span class="p">,</span>
+<a id="__codelineno-0-367" name="__codelineno-0-367"></a>    <span class="n">params</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
+<a id="__codelineno-0-368" name="__codelineno-0-368"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SubjectsBatch</span><span class="p">:</span>
+<a id="__codelineno-0-369" name="__codelineno-0-369"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Apply the spatial mapping to every selected image in *batch*.</span>
+<a id="__codelineno-0-370" name="__codelineno-0-370"></a>
+<a id="__codelineno-0-371" name="__codelineno-0-371"></a><span class="sd">    The sampling grid is built once from the parameters produced by</span>
+<a id="__codelineno-0-372" name="__codelineno-0-372"></a><span class="sd">    `make_params` and reused for all images and all batch samples.</span>
+<a id="__codelineno-0-373" name="__codelineno-0-373"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-0-374" name="__codelineno-0-374"></a>    <span class="n">selected_images</span> <span class="o">=</span> <span class="n">params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;selected_images&quot;</span><span class="p">,</span> <span class="p">[])</span>
+<a id="__codelineno-0-375" name="__codelineno-0-375"></a>    <span class="k">if</span> <span class="ow">not</span> <span class="n">selected_images</span><span class="p">:</span>
+<a id="__codelineno-0-376" name="__codelineno-0-376"></a>        <span class="k">return</span> <span class="n">batch</span>
+<a id="__codelineno-0-377" name="__codelineno-0-377"></a>
+<a id="__codelineno-0-378" name="__codelineno-0-378"></a>    <span class="n">target_space</span> <span class="o">=</span> <span class="n">_deserialize_space</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;target&quot;</span><span class="p">])</span>
+<a id="__codelineno-0-379" name="__codelineno-0-379"></a>    <span class="n">affine_matrix</span> <span class="o">=</span> <span class="n">_deserialize_matrix</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;affine_matrix&quot;</span><span class="p">])</span>
+<a id="__codelineno-0-380" name="__codelineno-0-380"></a>    <span class="n">control_points</span> <span class="o">=</span> <span class="n">_deserialize_control_points</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;control_points&quot;</span><span class="p">])</span>
+<a id="__codelineno-0-381" name="__codelineno-0-381"></a>    <span class="n">max_displacement</span> <span class="o">=</span> <span class="n">_deserialize_max_displacement</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;max_displacement&quot;</span><span class="p">])</span>
+<a id="__codelineno-0-382" name="__codelineno-0-382"></a>
+<a id="__codelineno-0-383" name="__codelineno-0-383"></a>    <span class="n">_apply_spatial_to_batch</span><span class="p">(</span>
+<a id="__codelineno-0-384" name="__codelineno-0-384"></a>        <span class="n">batch</span><span class="o">=</span><span class="n">batch</span><span class="p">,</span>
+<a id="__codelineno-0-385" name="__codelineno-0-385"></a>        <span class="n">image_names</span><span class="o">=</span><span class="n">selected_images</span><span class="p">,</span>
+<a id="__codelineno-0-386" name="__codelineno-0-386"></a>        <span class="n">target_space</span><span class="o">=</span><span class="n">target_space</span><span class="p">,</span>
+<a id="__codelineno-0-387" name="__codelineno-0-387"></a>        <span class="n">affine_matrix</span><span class="o">=</span><span class="n">affine_matrix</span><span class="p">,</span>
+<a id="__codelineno-0-388" name="__codelineno-0-388"></a>        <span class="n">control_points</span><span class="o">=</span><span class="n">control_points</span><span class="p">,</span>
+<a id="__codelineno-0-389" name="__codelineno-0-389"></a>        <span class="n">max_displacement</span><span class="o">=</span><span class="n">max_displacement</span><span class="p">,</span>
+<a id="__codelineno-0-390" name="__codelineno-0-390"></a>        <span class="n">affine_first</span><span class="o">=</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;affine_first&quot;</span><span class="p">],</span>
+<a id="__codelineno-0-391" name="__codelineno-0-391"></a>        <span class="n">image_interpolation</span><span class="o">=</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;image_interpolation&quot;</span><span class="p">],</span>
+<a id="__codelineno-0-392" name="__codelineno-0-392"></a>        <span class="n">label_interpolation</span><span class="o">=</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;label_interpolation&quot;</span><span class="p">],</span>
+<a id="__codelineno-0-393" name="__codelineno-0-393"></a>        <span class="n">antialias</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;antialias&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">),</span>
+<a id="__codelineno-0-394" name="__codelineno-0-394"></a>        <span class="n">default_pad_value</span><span class="o">=</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;default_pad_value&quot;</span><span class="p">],</span>
+<a id="__codelineno-0-395" name="__codelineno-0-395"></a>        <span class="n">default_pad_label</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;default_pad_label&quot;</span><span class="p">]),</span>
+<a id="__codelineno-0-396" name="__codelineno-0-396"></a>    <span class="p">)</span>
+<a id="__codelineno-0-397" name="__codelineno-0-397"></a>    <span class="k">return</span> <span class="n">batch</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -4644,23 +4644,7 @@ run in the opposite order.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/torchio/transforms/spatial/spatial.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-388">388</a></span>
-<span class="normal"><a href="#__codelineno-0-389">389</a></span>
-<span class="normal"><a href="#__codelineno-0-390">390</a></span>
-<span class="normal"><a href="#__codelineno-0-391">391</a></span>
-<span class="normal"><a href="#__codelineno-0-392">392</a></span>
-<span class="normal"><a href="#__codelineno-0-393">393</a></span>
-<span class="normal"><a href="#__codelineno-0-394">394</a></span>
-<span class="normal"><a href="#__codelineno-0-395">395</a></span>
-<span class="normal"><a href="#__codelineno-0-396">396</a></span>
-<span class="normal"><a href="#__codelineno-0-397">397</a></span>
-<span class="normal"><a href="#__codelineno-0-398">398</a></span>
-<span class="normal"><a href="#__codelineno-0-399">399</a></span>
-<span class="normal"><a href="#__codelineno-0-400">400</a></span>
-<span class="normal"><a href="#__codelineno-0-401">401</a></span>
-<span class="normal"><a href="#__codelineno-0-402">402</a></span>
-<span class="normal"><a href="#__codelineno-0-403">403</a></span>
-<span class="normal"><a href="#__codelineno-0-404">404</a></span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-404">404</a></span>
 <span class="normal"><a href="#__codelineno-0-405">405</a></span>
 <span class="normal"><a href="#__codelineno-0-406">406</a></span>
 <span class="normal"><a href="#__codelineno-0-407">407</a></span>
@@ -4682,45 +4666,61 @@ run in the opposite order.</p>
 <span class="normal"><a href="#__codelineno-0-423">423</a></span>
 <span class="normal"><a href="#__codelineno-0-424">424</a></span>
 <span class="normal"><a href="#__codelineno-0-425">425</a></span>
-<span class="normal"><a href="#__codelineno-0-426">426</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-388" name="__codelineno-0-388"></a><span class="k">def</span><span class="w"> </span><span class="nf">inverse</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">params</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">_SpatialInverse</span><span class="p">:</span>
-<a id="__codelineno-0-389" name="__codelineno-0-389"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Build the inverse transform from recorded parameters.</span>
-<a id="__codelineno-0-390" name="__codelineno-0-390"></a>
-<a id="__codelineno-0-391" name="__codelineno-0-391"></a><span class="sd">    The affine component is inverted exactly.  The elastic component</span>
-<a id="__codelineno-0-392" name="__codelineno-0-392"></a><span class="sd">    is approximated by negating the sampled displacement field.  The</span>
-<a id="__codelineno-0-393" name="__codelineno-0-393"></a><span class="sd">    `affine_first` flag is flipped so that the inverse operations</span>
-<a id="__codelineno-0-394" name="__codelineno-0-394"></a><span class="sd">    run in the opposite order.</span>
-<a id="__codelineno-0-395" name="__codelineno-0-395"></a>
-<a id="__codelineno-0-396" name="__codelineno-0-396"></a><span class="sd">    Args:</span>
-<a id="__codelineno-0-397" name="__codelineno-0-397"></a><span class="sd">        params: The parameter dict produced by `make_params`.</span>
-<a id="__codelineno-0-398" name="__codelineno-0-398"></a>
-<a id="__codelineno-0-399" name="__codelineno-0-399"></a><span class="sd">    Returns:</span>
-<a id="__codelineno-0-400" name="__codelineno-0-400"></a><span class="sd">        A `_SpatialInverse` that resamples back to the original grid.</span>
-<a id="__codelineno-0-401" name="__codelineno-0-401"></a><span class="sd">    &quot;&quot;&quot;</span>
-<a id="__codelineno-0-402" name="__codelineno-0-402"></a>    <span class="n">affine_matrix</span> <span class="o">=</span> <span class="n">_deserialize_matrix</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;affine_matrix&quot;</span><span class="p">])</span>
-<a id="__codelineno-0-403" name="__codelineno-0-403"></a>    <span class="n">inverse_affine</span> <span class="o">=</span> <span class="kc">None</span>
-<a id="__codelineno-0-404" name="__codelineno-0-404"></a>    <span class="k">if</span> <span class="n">affine_matrix</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-405" name="__codelineno-0-405"></a>        <span class="n">inverse_affine</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">inv</span><span class="p">(</span><span class="n">affine_matrix</span><span class="p">)</span>
+<span class="normal"><a href="#__codelineno-0-426">426</a></span>
+<span class="normal"><a href="#__codelineno-0-427">427</a></span>
+<span class="normal"><a href="#__codelineno-0-428">428</a></span>
+<span class="normal"><a href="#__codelineno-0-429">429</a></span>
+<span class="normal"><a href="#__codelineno-0-430">430</a></span>
+<span class="normal"><a href="#__codelineno-0-431">431</a></span>
+<span class="normal"><a href="#__codelineno-0-432">432</a></span>
+<span class="normal"><a href="#__codelineno-0-433">433</a></span>
+<span class="normal"><a href="#__codelineno-0-434">434</a></span>
+<span class="normal"><a href="#__codelineno-0-435">435</a></span>
+<span class="normal"><a href="#__codelineno-0-436">436</a></span>
+<span class="normal"><a href="#__codelineno-0-437">437</a></span>
+<span class="normal"><a href="#__codelineno-0-438">438</a></span>
+<span class="normal"><a href="#__codelineno-0-439">439</a></span>
+<span class="normal"><a href="#__codelineno-0-440">440</a></span>
+<span class="normal"><a href="#__codelineno-0-441">441</a></span>
+<span class="normal"><a href="#__codelineno-0-442">442</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-404" name="__codelineno-0-404"></a><span class="k">def</span><span class="w"> </span><span class="nf">inverse</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">params</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">_SpatialInverse</span><span class="p">:</span>
+<a id="__codelineno-0-405" name="__codelineno-0-405"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Build the inverse transform from recorded parameters.</span>
 <a id="__codelineno-0-406" name="__codelineno-0-406"></a>
-<a id="__codelineno-0-407" name="__codelineno-0-407"></a>    <span class="n">control_points</span> <span class="o">=</span> <span class="n">_deserialize_control_points</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;control_points&quot;</span><span class="p">])</span>
-<a id="__codelineno-0-408" name="__codelineno-0-408"></a>    <span class="n">inverse_control_points</span> <span class="o">=</span> <span class="kc">None</span>
-<a id="__codelineno-0-409" name="__codelineno-0-409"></a>    <span class="k">if</span> <span class="n">control_points</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-410" name="__codelineno-0-410"></a>        <span class="n">inverse_control_points</span> <span class="o">=</span> <span class="o">-</span><span class="n">control_points</span>
-<a id="__codelineno-0-411" name="__codelineno-0-411"></a>    <span class="n">original_space</span> <span class="o">=</span> <span class="n">_deserialize_space</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;original&quot;</span><span class="p">])</span>
-<a id="__codelineno-0-412" name="__codelineno-0-412"></a>    <span class="k">if</span> <span class="n">original_space</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-413" name="__codelineno-0-413"></a>        <span class="n">msg</span> <span class="o">=</span> <span class="s2">&quot;Spatial inverse needs the original output space&quot;</span>
-<a id="__codelineno-0-414" name="__codelineno-0-414"></a>        <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
-<a id="__codelineno-0-415" name="__codelineno-0-415"></a>
-<a id="__codelineno-0-416" name="__codelineno-0-416"></a>    <span class="k">return</span> <span class="n">_SpatialInverse</span><span class="p">(</span>
-<a id="__codelineno-0-417" name="__codelineno-0-417"></a>        <span class="n">target</span><span class="o">=</span><span class="n">original_space</span><span class="p">,</span>
-<a id="__codelineno-0-418" name="__codelineno-0-418"></a>        <span class="n">affine_matrix</span><span class="o">=</span><span class="n">inverse_affine</span><span class="p">,</span>
-<a id="__codelineno-0-419" name="__codelineno-0-419"></a>        <span class="n">control_points</span><span class="o">=</span><span class="n">inverse_control_points</span><span class="p">,</span>
-<a id="__codelineno-0-420" name="__codelineno-0-420"></a>        <span class="n">affine_first</span><span class="o">=</span><span class="ow">not</span> <span class="n">params</span><span class="p">[</span><span class="s2">&quot;affine_first&quot;</span><span class="p">],</span>
-<a id="__codelineno-0-421" name="__codelineno-0-421"></a>        <span class="n">image_interpolation</span><span class="o">=</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;image_interpolation&quot;</span><span class="p">],</span>
-<a id="__codelineno-0-422" name="__codelineno-0-422"></a>        <span class="n">label_interpolation</span><span class="o">=</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;label_interpolation&quot;</span><span class="p">],</span>
-<a id="__codelineno-0-423" name="__codelineno-0-423"></a>        <span class="n">default_pad_value</span><span class="o">=</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;default_pad_value&quot;</span><span class="p">],</span>
-<a id="__codelineno-0-424" name="__codelineno-0-424"></a>        <span class="n">default_pad_label</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;default_pad_label&quot;</span><span class="p">]),</span>
-<a id="__codelineno-0-425" name="__codelineno-0-425"></a>        <span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-<a id="__codelineno-0-426" name="__codelineno-0-426"></a>    <span class="p">)</span>
+<a id="__codelineno-0-407" name="__codelineno-0-407"></a><span class="sd">    The affine component is inverted exactly.  The elastic component</span>
+<a id="__codelineno-0-408" name="__codelineno-0-408"></a><span class="sd">    is approximated by negating the sampled displacement field.  The</span>
+<a id="__codelineno-0-409" name="__codelineno-0-409"></a><span class="sd">    `affine_first` flag is flipped so that the inverse operations</span>
+<a id="__codelineno-0-410" name="__codelineno-0-410"></a><span class="sd">    run in the opposite order.</span>
+<a id="__codelineno-0-411" name="__codelineno-0-411"></a>
+<a id="__codelineno-0-412" name="__codelineno-0-412"></a><span class="sd">    Args:</span>
+<a id="__codelineno-0-413" name="__codelineno-0-413"></a><span class="sd">        params: The parameter dict produced by `make_params`.</span>
+<a id="__codelineno-0-414" name="__codelineno-0-414"></a>
+<a id="__codelineno-0-415" name="__codelineno-0-415"></a><span class="sd">    Returns:</span>
+<a id="__codelineno-0-416" name="__codelineno-0-416"></a><span class="sd">        A `_SpatialInverse` that resamples back to the original grid.</span>
+<a id="__codelineno-0-417" name="__codelineno-0-417"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-0-418" name="__codelineno-0-418"></a>    <span class="n">affine_matrix</span> <span class="o">=</span> <span class="n">_deserialize_matrix</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;affine_matrix&quot;</span><span class="p">])</span>
+<a id="__codelineno-0-419" name="__codelineno-0-419"></a>    <span class="n">inverse_affine</span> <span class="o">=</span> <span class="kc">None</span>
+<a id="__codelineno-0-420" name="__codelineno-0-420"></a>    <span class="k">if</span> <span class="n">affine_matrix</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-421" name="__codelineno-0-421"></a>        <span class="n">inverse_affine</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">inv</span><span class="p">(</span><span class="n">affine_matrix</span><span class="p">)</span>
+<a id="__codelineno-0-422" name="__codelineno-0-422"></a>
+<a id="__codelineno-0-423" name="__codelineno-0-423"></a>    <span class="n">control_points</span> <span class="o">=</span> <span class="n">_deserialize_control_points</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;control_points&quot;</span><span class="p">])</span>
+<a id="__codelineno-0-424" name="__codelineno-0-424"></a>    <span class="n">inverse_control_points</span> <span class="o">=</span> <span class="kc">None</span>
+<a id="__codelineno-0-425" name="__codelineno-0-425"></a>    <span class="k">if</span> <span class="n">control_points</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-426" name="__codelineno-0-426"></a>        <span class="n">inverse_control_points</span> <span class="o">=</span> <span class="o">-</span><span class="n">control_points</span>
+<a id="__codelineno-0-427" name="__codelineno-0-427"></a>    <span class="n">original_space</span> <span class="o">=</span> <span class="n">_deserialize_space</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;original&quot;</span><span class="p">])</span>
+<a id="__codelineno-0-428" name="__codelineno-0-428"></a>    <span class="k">if</span> <span class="n">original_space</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-429" name="__codelineno-0-429"></a>        <span class="n">msg</span> <span class="o">=</span> <span class="s2">&quot;Spatial inverse needs the original output space&quot;</span>
+<a id="__codelineno-0-430" name="__codelineno-0-430"></a>        <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+<a id="__codelineno-0-431" name="__codelineno-0-431"></a>
+<a id="__codelineno-0-432" name="__codelineno-0-432"></a>    <span class="k">return</span> <span class="n">_SpatialInverse</span><span class="p">(</span>
+<a id="__codelineno-0-433" name="__codelineno-0-433"></a>        <span class="n">target</span><span class="o">=</span><span class="n">original_space</span><span class="p">,</span>
+<a id="__codelineno-0-434" name="__codelineno-0-434"></a>        <span class="n">affine_matrix</span><span class="o">=</span><span class="n">inverse_affine</span><span class="p">,</span>
+<a id="__codelineno-0-435" name="__codelineno-0-435"></a>        <span class="n">control_points</span><span class="o">=</span><span class="n">inverse_control_points</span><span class="p">,</span>
+<a id="__codelineno-0-436" name="__codelineno-0-436"></a>        <span class="n">affine_first</span><span class="o">=</span><span class="ow">not</span> <span class="n">params</span><span class="p">[</span><span class="s2">&quot;affine_first&quot;</span><span class="p">],</span>
+<a id="__codelineno-0-437" name="__codelineno-0-437"></a>        <span class="n">image_interpolation</span><span class="o">=</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;image_interpolation&quot;</span><span class="p">],</span>
+<a id="__codelineno-0-438" name="__codelineno-0-438"></a>        <span class="n">label_interpolation</span><span class="o">=</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;label_interpolation&quot;</span><span class="p">],</span>
+<a id="__codelineno-0-439" name="__codelineno-0-439"></a>        <span class="n">default_pad_value</span><span class="o">=</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;default_pad_value&quot;</span><span class="p">],</span>
+<a id="__codelineno-0-440" name="__codelineno-0-440"></a>        <span class="n">default_pad_label</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;default_pad_label&quot;</span><span class="p">]),</span>
+<a id="__codelineno-0-441" name="__codelineno-0-441"></a>        <span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+<a id="__codelineno-0-442" name="__codelineno-0-442"></a>    <span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -4803,7 +4803,7 @@ class name and only non-default field values included.</p>
 <a id="__codelineno-0-277" name="__codelineno-0-277"></a><span class="sd">    Returns:</span>
 <a id="__codelineno-0-278" name="__codelineno-0-278"></a><span class="sd">        Dict suitable for `hydra.utils.instantiate()`.</span>
 <a id="__codelineno-0-279" name="__codelineno-0-279"></a><span class="sd">    &quot;&quot;&quot;</span>
-<a id="__codelineno-0-280" name="__codelineno-0-280"></a>    <span class="kn">from</span><span class="w"> </span><span class="nn">.parameter_range</span><span class="w"> </span><span class="kn">import</span> <span class="n">ParameterRange</span>
+<a id="__codelineno-0-280" name="__codelineno-0-280"></a>    <span class="kn">from</span><span class="w"> </span><span class="nn">.parameter_range</span><span class="w"> </span><span class="kn">import</span> <span class="n">_ParameterRange</span>
 <a id="__codelineno-0-281" name="__codelineno-0-281"></a>
 <a id="__codelineno-0-282" name="__codelineno-0-282"></a>    <span class="bp">cls</span> <span class="o">=</span> <span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
 <a id="__codelineno-0-283" name="__codelineno-0-283"></a>    <span class="n">target</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;torchio.</span><span class="si">{</span><span class="bp">cls</span><span class="o">.</span><span class="vm">__qualname__</span><span class="si">}</span><span class="s2">&quot;</span>
@@ -4811,7 +4811,7 @@ class name and only non-default field values included.</p>
 <a id="__codelineno-0-285" name="__codelineno-0-285"></a>
 <a id="__codelineno-0-286" name="__codelineno-0-286"></a>    <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">default</span> <span class="ow">in</span> <span class="n">_collect_init_params</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
 <a id="__codelineno-0-287" name="__codelineno-0-287"></a>        <span class="n">value</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">default</span><span class="p">)</span>
-<a id="__codelineno-0-288" name="__codelineno-0-288"></a>        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">ParameterRange</span><span class="p">):</span>
+<a id="__codelineno-0-288" name="__codelineno-0-288"></a>        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">_ParameterRange</span><span class="p">):</span>
 <a id="__codelineno-0-289" name="__codelineno-0-289"></a>            <span class="k">if</span> <span class="n">value</span><span class="o">.</span><span class="n">_original</span> <span class="o">==</span> <span class="n">default</span><span class="p">:</span>
 <a id="__codelineno-0-290" name="__codelineno-0-290"></a>                <span class="k">continue</span>
 <a id="__codelineno-0-291" name="__codelineno-0-291"></a>            <span class="n">value</span> <span class="o">=</span> <span class="n">_hydra_value</span><span class="p">(</span><span class="n">value</span><span class="o">.</span><span class="n">_original</span><span class="p">)</span>

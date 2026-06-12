@@ -1893,14 +1893,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../reference/parameter_range/" class="md-nav__link">
+      <a href="../../reference/random_parameters/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-  ParameterRange
+  Random parameters
 
     
   </span>
@@ -3878,8 +3878,8 @@ boxes in a Subject. Params are saved in history for replay.</p>
 <a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="kn">from</span><span class="w"> </span><span class="nn">torch.distributions</span><span class="w"> </span><span class="kn">import</span> <span class="n">LogNormal</span>
 <a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="n">tio</span><span class="o">.</span><span class="n">Noise</span><span class="p">(</span><span class="n">std</span><span class="o">=</span><span class="n">LogNormal</span><span class="p">(</span><span class="n">loc</span><span class="o">=-</span><span class="mi">2</span><span class="p">,</span> <span class="n">scale</span><span class="o">=</span><span class="mf">0.5</span><span class="p">))</span>
 </code></pre></div>
-<p>This is powered by <code>ParameterRange</code>, which handles all the parsing
-and sampling. Any <code>torch.distributions.Distribution</code> can be used
+<p>This parsing and sampling is handled internally. Any
+<code>torch.distributions.Distribution</code> can be used
 for full control over the sampling strategy.</p>
 <div class="admonition note">
 <p class="admonition-title">No arguments means no augmentation</p>
