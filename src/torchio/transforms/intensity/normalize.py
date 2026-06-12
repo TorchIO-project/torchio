@@ -13,7 +13,7 @@ from ...data.batch import ImagesBatch
 from ...data.batch import SubjectsBatch
 from ...data.image import LabelMap
 from ..parameter_range import Choice
-from ..parameter_range import ParameterRange
+from ..parameter_range import _ParameterRange
 from ..transform import IntensityTransform
 
 TypeParameterValue = float | tuple | Choice | torch.distributions.Distribution
@@ -21,13 +21,13 @@ TypeParameterValue = float | tuple | Choice | torch.distributions.Distribution
 
 def _to_range(
     value: TypeParameterValue,
-) -> ParameterRange:
-    """Convert a scalar, tuple, Choice, or Distribution to a ParameterRange."""
+) -> _ParameterRange:
+    """Convert a scalar, tuple, Choice, or Distribution to a _ParameterRange."""
     if isinstance(value, (torch.distributions.Distribution, Choice)):
-        return ParameterRange(value)
+        return _ParameterRange(value)
     if isinstance(value, (int, float)):
-        return ParameterRange(float(value))
-    return ParameterRange(tuple(float(v) for v in value))
+        return _ParameterRange(float(value))
+    return _ParameterRange(tuple(float(v) for v in value))
 
 
 class Normalize(IntensityTransform):

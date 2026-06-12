@@ -41,7 +41,7 @@ from ...data.image import ScalarImage
 from ...types import TypeSpacing
 from ...types import TypeThreeInts
 from ..parameter_range import Choice
-from ..parameter_range import ParameterRange
+from ..parameter_range import _ParameterRange
 from ..transform import SpatialTransform
 
 TypeParameterValue: TypeAlias = (
@@ -810,7 +810,7 @@ def _resolve_target_spacing(
     if isinstance(value, (int, float)):
         return _parse_spacing(float(value))
     spec = tuple(value) if isinstance(value, list) else value
-    sampled = ParameterRange(spec).sample()
+    sampled = _ParameterRange(spec).sample()
     return _parse_spacing(sampled)
 
 
@@ -1407,7 +1407,7 @@ def _check_folding(
 def _resolve_control_points(
     control_points: Tensor | None,
     num_control_points: TypeThreeInts,
-    max_displacement: ParameterRange,
+    max_displacement: _ParameterRange,
     locked_borders: int,
 ) -> tuple[Tensor | None, tuple[float, float, float] | None]:
     """Return a concrete control-point field and its max displacement.
@@ -1683,7 +1683,7 @@ def _max_abs_displacement(control_points: Tensor) -> tuple[float, float, float]:
 
 
 def _sample_scales(
-    scales: ParameterRange,
+    scales: _ParameterRange,
     isotropic: bool,
 ) -> tuple[float, float, float]:
     """Sample a 3-tuple of scale factors, optionally isotropic."""
@@ -1820,8 +1820,8 @@ def _parse_center(center: TypeCenter) -> TypeCenter:
 
 def _to_positive_range(
     value: TypeParameterValue,
-) -> ParameterRange:
-    """Convert to a `ParameterRange`, rejecting non-positive scales."""
+) -> _ParameterRange:
+    """Convert to a `_ParameterRange`, rejecting non-positive scales."""
     result = _to_parameter_range(value)
     if result._distribution is None:
         for low, high in result._ranges:
@@ -1892,7 +1892,7 @@ def _parse_control_points(control_points: TypeControlPoints) -> Tensor:
 def _normalize_parameter_value(
     value: TypeParameterValue,
 ) -> float | tuple | Distribution | Choice:
-    """Cast ints to floats so `ParameterRange` always receives floats."""
+    """Cast ints to floats so `_ParameterRange` always receives floats."""
     if isinstance(value, (Distribution, Choice)):
         return value
     if isinstance(value, (int, float)):
@@ -1906,12 +1906,12 @@ def _normalize_parameter_value(
     return value
 
 
-def _to_parameter_range(value: TypeParameterValue) -> ParameterRange:
-    """Convert a `TypeParameterValue` to a `ParameterRange`."""
-    return ParameterRange(_normalize_parameter_value(value))
+def _to_parameter_range(value: TypeParameterValue) -> _ParameterRange:
+    """Convert a `TypeParameterValue` to a `_ParameterRange`."""
+    return _ParameterRange(_normalize_parameter_value(value))
 
 
-def _to_nonnegative_parameter_range(value: TypeParameterValue) -> ParameterRange:
+def _to_nonnegative_parameter_range(value: TypeParameterValue) -> _ParameterRange:
     """Like `_to_parameter_range`, but rejects negative values."""
     result = _to_parameter_range(value)
     if result._distribution is None:

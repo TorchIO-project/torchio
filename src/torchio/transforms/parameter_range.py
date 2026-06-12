@@ -1,15 +1,15 @@
-"""ParameterRange: scalar, range, choice, or distribution for transform parameters.
+"""_ParameterRange: scalar, range, choice, or distribution for transform parameters.
 
 Each axis can be specified independently when a 3-element tuple is
 used, where each element can be a float, `(lo, hi)` range,
 `Choice`, or `Distribution`.
 
 Examples:
-    >>> ParameterRange(0.5)                              # deterministic
-    >>> ParameterRange((5.0, 15.0))                      # U(5, 15) all axes
-    >>> ParameterRange((1.0, 2.0, 3.0))                  # per-axis fixed
-    >>> ParameterRange(Choice([-10, 0, 10]))             # discrete choice
-    >>> ParameterRange((0, 0, Choice([-90, 0, 90])))     # per-axis mix
+    >>> _ParameterRange(0.5)                              # deterministic
+    >>> _ParameterRange((5.0, 15.0))                      # U(5, 15) all axes
+    >>> _ParameterRange((1.0, 2.0, 3.0))                  # per-axis fixed
+    >>> _ParameterRange(Choice([-10, 0, 10]))             # discrete choice
+    >>> _ParameterRange((0, 0, Choice([-90, 0, 90])))     # per-axis mix
 """
 
 from __future__ import annotations
@@ -93,10 +93,10 @@ def _sample_axis(
     return torch.empty(1).uniform_(float(lo), float(hi), generator=generator).item()
 
 
-# ── ParameterRange ───────────────────────────────────────────────────
+# ── _ParameterRange ───────────────────────────────────────────────────
 
 
-class ParameterRange:
+class _ParameterRange:
     """Encapsulates the range-or-scalar pattern for transform params.
 
     Args:
@@ -288,16 +288,16 @@ def _parse_single(spec: object) -> AxisSpec:
 
 def to_range(
     value: float | tuple | Distribution | Choice,
-) -> ParameterRange:
-    """Convert to a ParameterRange."""
-    return ParameterRange(value)
+) -> _ParameterRange:
+    """Convert to a _ParameterRange."""
+    return _ParameterRange(value)
 
 
 def to_nonneg_range(
     value: float | tuple | Distribution | Choice,
-) -> ParameterRange:
+) -> _ParameterRange:
     """Like `to_range`, but rejects negative values in tuple ranges."""
-    pr = ParameterRange(value)
+    pr = _ParameterRange(value)
     if pr._distribution is None:
         for lo, hi in pr._ranges:
             if lo < 0 or hi < 0:

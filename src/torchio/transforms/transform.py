@@ -121,12 +121,12 @@ class Transform(nn.Module):
 
     def __repr__(self) -> str:
         """Show only non-default fields for a compact repr."""
-        from .parameter_range import ParameterRange
+        from .parameter_range import _ParameterRange
 
         parts = []
         for name, default in _collect_init_params(type(self)).items():
             value = getattr(self, name, default)
-            if isinstance(value, ParameterRange):
+            if isinstance(value, _ParameterRange):
                 if value._original == default:
                     continue
             elif value == default:
@@ -277,7 +277,7 @@ class Transform(nn.Module):
         Returns:
             Dict suitable for `hydra.utils.instantiate()`.
         """
-        from .parameter_range import ParameterRange
+        from .parameter_range import _ParameterRange
 
         cls = type(self)
         target = f"torchio.{cls.__qualname__}"
@@ -285,7 +285,7 @@ class Transform(nn.Module):
 
         for name, default in _collect_init_params(cls).items():
             value = getattr(self, name, default)
-            if isinstance(value, ParameterRange):
+            if isinstance(value, _ParameterRange):
                 if value._original == default:
                     continue
                 value = _hydra_value(value._original)
