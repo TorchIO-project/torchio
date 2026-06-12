@@ -54,7 +54,7 @@ If your format supports reading the shape, affine, dtype, or sub-regions
 without loading everything, implement `create_backend` so TorchIO can access
 it lazily. A lazy reader is any object that has a `create_backend` method
 returning an object implementing the
-[`ImageDataBackend`][torchio.data.backends.ImageDataBackend] protocol.
+[`ImageDataBackend`](../reference/backends.md) protocol.
 
 Building on the `.npy` reader above, this version is lazy: it returns a
 memory-mapped backend, so `.shape` reads only the header and slicing reads only
@@ -117,6 +117,6 @@ slicing all go through your backend without materializing the full tensor.
 
 Passing `reader=...` is per image. If instead you want *every* `.npy` file to
 use this backend, register it once globally with
-[`register_backend`][torchio.data.backends.register_backend]; see
+[`register_backend`](../reference/backends.md); see
 [Lazy loading and backends](../concepts/lazy-loading.md) for the backend
 contract and that registry-based alternative.
