@@ -334,7 +334,7 @@ New exports in v2:
 - `AffineMatrix`: the affine matrix class
 - `Points`, `BoundingBoxes`, `BoundingBoxFormat`: annotation types
 - `SubjectsBatch`, `ImagesBatch`: batch containers
-- `Choice`, `ParameterRange`: parameter sampling utilities
+- `Choice`: discrete parameter sampling utility
 - `SomeOf`: random subset composition
 - `PatchAggregator`: renamed from `GridAggregator`
 - `apply_inverse_transform`: standalone inverse function

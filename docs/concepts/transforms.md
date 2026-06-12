@@ -63,8 +63,8 @@ from torch.distributions import LogNormal
 tio.Noise(std=LogNormal(loc=-2, scale=0.5))
 ```
 
-This is powered by `ParameterRange`, which handles all the parsing
-and sampling. Any `torch.distributions.Distribution` can be used
+This parsing and sampling is handled internally. Any
+`torch.distributions.Distribution` can be used
 for full control over the sampling strategy.
 
 !!! note "No arguments means no augmentation"

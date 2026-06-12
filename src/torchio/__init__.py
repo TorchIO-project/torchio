@@ -65,7 +65,6 @@ from .transforms import Normalize
 from .transforms import OneHot
 from .transforms import OneOf
 from .transforms import Pad
-from .transforms import ParameterRange
 from .transforms import RemapLabels
 from .transforms import RemoveLabels
 from .transforms import Reorient
@@ -138,7 +137,6 @@ __all__ = [
     "OneHot",
     "OneOf",
     "Pad",
-    "ParameterRange",
     "PatchAggregator",
     "PatchLocation",
     "PatchSampler",

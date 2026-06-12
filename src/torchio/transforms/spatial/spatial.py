@@ -66,11 +66,19 @@ TypeTarget: TypeAlias = (
     int
     | float
     | TypeSpacing
+    | tuple[float, float]  # uniform spacing range, per axis
+    | tuple[float, float, float, float, float, float]  # per-axis spacing ranges
+    | Choice
+    | Distribution
     | str
     | Path
     | Image
     | tuple[Sequence[int], AffineMatrix | Tensor | npt.ArrayLike]
     | None
+)
+#: The spacing forms of `target` that resolve to a (possibly random) spacing.
+TypeSpacingSpec: TypeAlias = (
+    int | float | tuple | list | np.ndarray | Choice | Distribution
 )
 TypeControlPoints: TypeAlias = Tensor | npt.ArrayLike
 TypeTargetSpace: TypeAlias = tuple[TypeThreeInts, AffineMatrix]
@@ -137,6 +145,11 @@ class Spatial(SpatialTransform):
             - A scalar or 3-tuple of floats: output voxel spacing in mm.
               E.g., `1` for 1 mm isotropic, `(0.5, 0.5, 2.0)` for
               anisotropic.
+            - A random spacing spec, sampled once per call at apply time: a
+              2-tuple `(lo, hi)` (uniform, per axis), a 6-tuple
+              `(lo1, hi1, lo2, hi2, lo3, hi3)` (per-axis ranges), a `Choice`,
+              or a `torch.distributions.Distribution`. E.g.,
+              `target=(1, 2)` or `target=(2, 4, 2, 4, 3, 6)`.
             - A `str`: either a path to an image file, or the name of
               an image in the subject (e.g., `"t1"`).
             - An [`Image`][torchio.Image] instance.
@@ -200,11 +213,14 @@ class Spatial(SpatialTransform):
         **kwargs: See [`Transform`][torchio.Transform].
 
     Note:
-        All parameters that accept a value/range/distribution use the
-        [`ParameterRange`][torchio.ParameterRange] convention:
-        a scalar is deterministic, a 2-tuple $(a, b)$ samples
-        uniformly, and a `torch.distributions.Distribution` samples
-        from the given distribution.
+        The randomizable parameters (`scales`, `degrees`, `translation`,
+        `max_displacement`, and the spacing form of `target`) follow a common
+        value/range/distribution convention: a scalar is deterministic, a
+        2-tuple $(a, b)$ samples uniformly, a 3-tuple sets per-axis values, a
+        6-tuple sets per-axis ranges, and a `Choice` or
+        `torch.distributions.Distribution` samples from a discrete set or a
+        distribution. Structural parameters (`center`, interpolation, padding)
+        are not randomizable.
 
     Examples:
         >>> import torchio as tio
@@ -740,15 +756,15 @@ def _resolve_target_space(
     if _is_target_space_tuple(target):
         shape, affine = target
         return _parse_target_space_tuple(shape, affine)
-    # Remaining cases: int, float, tuple of numbers, list, ndarray.
-    if not isinstance(target, (int, float, tuple, list, np.ndarray)):
+    # Remaining cases: int, float, tuple of numbers, list, ndarray, or a
+    # random spacing spec (range, Choice, or Distribution).
+    if not isinstance(
+        target, (int, float, tuple, list, np.ndarray, Choice, Distribution)
+    ):
         msg = f'Target not understood: "{target}"'
         raise ValueError(msg)
-    spacing_value = cast(
-        "TypeSpacing | Sequence[float] | np.ndarray | float | int",
-        target,
-    )
-    return _target_from_spacing(spacing_value, first_shape, first_affine)
+    spacing = _resolve_target_spacing(target)
+    return _compute_new_shape_affine(first_shape, first_affine, spacing)
 
 
 def _target_from_string_or_path(
@@ -772,16 +788,30 @@ def _target_from_string_or_path(
     raise ValueError(msg)
 
 
-def _target_from_spacing(
-    value: TypeSpacing | Sequence[float] | np.ndarray | float | int,
-    first_shape: TypeThreeInts,
-    first_affine: AffineMatrix,
-) -> TypeTargetSpace:
-    """Resolve a numeric spacing target to `(shape, affine)`."""
+def _resolve_target_spacing(
+    value: TypeSpacingSpec,
+) -> TypeSpacing:
+    """Resolve a (possibly random) spacing spec to a positive 3-tuple.
+
+    Scalars and 3-number sequences are deterministic. Ranges (a 2-tuple
+    `(lo, hi)` or a 6-tuple of per-axis ranges), a `Choice`, or a
+    `torch.distributions.Distribution` are sampled once, here, at apply time,
+    using the same convention as the other spatial parameters. NumPy arrays are
+    treated as deterministic 3-element spacings.
+
+    Args:
+        value: A scalar, sequence, range, `Choice`, or `Distribution`.
+
+    Returns:
+        A strictly-positive `(sx, sy, sz)` spacing tuple.
+    """
     if isinstance(value, np.ndarray):
-        value = tuple(float(v) for v in value.flat)
-    spacing = _parse_spacing(value)
-    return _compute_new_shape_affine(first_shape, first_affine, spacing)
+        return _parse_spacing(tuple(float(v) for v in value.flat))
+    if isinstance(value, (int, float)):
+        return _parse_spacing(float(value))
+    spec = tuple(value) if isinstance(value, list) else value
+    sampled = ParameterRange(spec).sample()
+    return _parse_spacing(sampled)
 
 
 def _compute_new_shape_affine(
@@ -1708,8 +1738,17 @@ def _is_spacing_list(target: object) -> TypeGuard[list[int | float]]:
 def _is_target_space_tuple(
     target: object,
 ) -> TypeGuard[tuple[Sequence[int], AffineMatrix | Tensor | npt.ArrayLike]]:
-    """Type-guard: *target* is a 2-element `(shape, affine)` tuple."""
-    return isinstance(target, tuple) and len(target) == 2
+    """Type-guard: *target* is a 2-element `(shape, affine)` tuple.
+
+    The first element of a target-space tuple is a shape sequence, never a
+    plain number, so a 2-tuple of numbers like `(2, 4)` is treated as a
+    spacing range rather than a `(shape, affine)` pair.
+    """
+    return (
+        isinstance(target, tuple)
+        and len(target) == 2
+        and not isinstance(target[0], Number)
+    )
 
 
 def _parse_spacing(

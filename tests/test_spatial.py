@@ -180,6 +180,77 @@ class TestResample:
         transformed = tio.Resample(target=np.array([2.0, 2.0, 2.0]))(subject)
         assert transformed.t1.spatial_shape == (6, 6, 6)
 
+
+class TestResampleTargetRange:
+    """The spacing form of `target` accepts random ranges and distributions.
+
+    See discussion #1472: `Resample(target=range)` should sample a spacing at
+    apply time, consistent with how `degrees`/`scales` accept ranges.
+    """
+
+    def test_deterministic_forms_unchanged(self) -> None:
+        # Scalar and 3-tuple spacings stay deterministic.
+        subject = _make_subject(shape=(12, 12, 12), spacing=(1.0, 1.0, 1.0))
+        np.testing.assert_allclose(tio.Resample(2)(subject).t1.spacing, (2.0, 2.0, 2.0))
+        np.testing.assert_allclose(
+            tio.Resample(target=(2.0, 3.0, 4.0))(subject).t1.spacing,
+            (2.0, 3.0, 4.0),
+        )
+
+    def test_two_tuple_uniform_range_within_bounds(self) -> None:
+        subject = _make_subject(shape=(40, 40, 40), spacing=(1.0, 1.0, 1.0))
+        torch.manual_seed(0)
+        for _ in range(10):
+            spacing = tio.Resample(target=(2.0, 4.0))(subject).t1.spacing
+            assert all(2.0 <= s <= 4.0 for s in spacing)
+
+    def test_six_tuple_per_axis_ranges_within_bounds(self) -> None:
+        # The exact form from discussion #1472.
+        subject = _make_subject(shape=(40, 40, 40), spacing=(1.0, 1.0, 1.0))
+        bounds = [(2.0, 4.0), (2.0, 4.0), (3.0, 6.0)]
+        torch.manual_seed(0)
+        for _ in range(10):
+            spacing = tio.Resample(target=(2, 4, 2, 4, 3, 6))(subject).t1.spacing
+            for value, (low, high) in zip(spacing, bounds, strict=True):
+                assert low <= value <= high
+
+    def test_choice_target(self) -> None:
+        from torchio.transforms.parameter_range import Choice
+
+        subject = _make_subject(shape=(40, 40, 40), spacing=(1.0, 1.0, 1.0))
+        torch.manual_seed(0)
+        for _ in range(10):
+            spacing = tio.Resample(target=Choice([2.0, 4.0]))(subject).t1.spacing
+            assert all(s in (2.0, 4.0) for s in spacing)
+
+    def test_distribution_target(self) -> None:
+        from torch.distributions import Uniform
+
+        subject = _make_subject(shape=(40, 40, 40), spacing=(1.0, 1.0, 1.0))
+        torch.manual_seed(0)
+        spacing = tio.Resample(target=Uniform(2.0, 4.0))(subject).t1.spacing
+        assert all(2.0 <= s <= 4.0 for s in spacing)
+
+    def test_two_tuple_not_treated_as_shape_affine(self) -> None:
+        # Regression: a 2-tuple of numbers must be a spacing range, not an
+        # attempted (shape, affine) pair (which used to raise).
+        subject = _make_subject(shape=(20, 20, 20), spacing=(1.0, 1.0, 1.0))
+        transformed = tio.Resample(target=(2.0, 4.0))(subject)
+        assert all(2.0 <= s <= 4.0 for s in transformed.t1.spacing)
+
+    def test_nonpositive_range_raises(self) -> None:
+        subject = _make_subject(shape=(12, 12, 12), spacing=(1.0, 1.0, 1.0))
+        with pytest.raises(ValueError, match="positive"):
+            tio.Resample(target=(-2.0, -1.0))(subject)
+
+    def test_seed_reproducible(self) -> None:
+        subject = _make_subject(shape=(40, 40, 40), spacing=(1.0, 1.0, 1.0))
+        torch.manual_seed(123)
+        first = tio.Resample(target=(2, 4, 2, 4, 3, 6))(subject).t1.spacing
+        torch.manual_seed(123)
+        second = tio.Resample(target=(2, 4, 2, 4, 3, 6))(subject).t1.spacing
+        np.testing.assert_allclose(first, second)
+
     def test_antialias_smooths_before_downsample(self) -> None:
         subject = _make_subject(shape=(20, 20, 20), spacing=(0.5, 0.5, 0.5))
         no_aa = tio.Resample(2)(subject)
@@ -565,6 +636,8 @@ class TestTypeGuards:
     def test_is_target_space_tuple(self) -> None:
         assert _is_target_space_tuple(((6, 6, 6), np.eye(4)))
         assert not _is_target_space_tuple((1.0, 2.0, 3.0))
+        # A 2-tuple of plain numbers is a spacing range, not a (shape, affine).
+        assert not _is_target_space_tuple((2.0, 4.0))
 
 
 class TestEdgeCases:

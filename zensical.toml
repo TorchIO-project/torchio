@@ -62,7 +62,7 @@ nav = [
     ] },
     { "Transforms" = [
       "reference/transforms.md",
-      "reference/parameter_range.md",
+      "reference/random_parameters.md",
       { "Composition" = [
         "reference/transforms/compose.md",
         "reference/transforms/one_of.md",

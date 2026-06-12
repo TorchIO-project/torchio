@@ -1,3 +1,0 @@
-# ParameterRange
-
-::: torchio.ParameterRange

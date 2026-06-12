@@ -15,6 +15,7 @@ import pytest
 import torch
 
 import torchio as tio
+from torchio.transforms.parameter_range import ParameterRange
 
 # Transforms that must be a deterministic no-op (and warn) with no args.
 NOOP_TRANSFORMS = ["Affine", "Anisotropy", "Blur", "Gamma", "Ghosting", "Spike"]
@@ -76,12 +77,12 @@ def test_stochastic_no_args_does_not_warn(name: str) -> None:
 
 class TestIsConstant:
     def test_scalar(self) -> None:
-        assert tio.ParameterRange(0.0).is_constant(0.0)
-        assert tio.ParameterRange(1.0).is_constant(1.0)
-        assert not tio.ParameterRange(0.0).is_constant(1.0)
+        assert ParameterRange(0.0).is_constant(0.0)
+        assert ParameterRange(1.0).is_constant(1.0)
+        assert not ParameterRange(0.0).is_constant(1.0)
 
     def test_degenerate_range_is_constant(self) -> None:
-        assert tio.ParameterRange((0.0, 0.0)).is_constant(0.0)
+        assert ParameterRange((0.0, 0.0)).is_constant(0.0)
 
     def test_real_range_is_not_constant(self) -> None:
-        assert not tio.ParameterRange((0.0, 2.0)).is_constant(0.0)
+        assert not ParameterRange((0.0, 2.0)).is_constant(0.0)

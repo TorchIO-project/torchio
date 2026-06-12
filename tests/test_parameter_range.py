@@ -155,26 +155,26 @@ class TestChoiceEdgeCases:
 class TestParameterRangeEdgeCases:
     def test_invalid_type_raises(self) -> None:
         with pytest.raises(TypeError, match="Expected float"):
-            tio.ParameterRange("bad")  # type: ignore[arg-type]
+            ParameterRange("bad")  # type: ignore[arg-type]
 
     def test_ranges_for_choice_axis(self) -> None:
-        pr = tio.ParameterRange(tio.Choice([1.0, 2.0]))
+        pr = ParameterRange(tio.Choice([1.0, 2.0]))
         lo, hi = pr._ranges[0]
         assert lo == 0.0
         assert hi == 0.0
 
     def test_mixed_specs_wrong_count_raises(self) -> None:
         with pytest.raises(ValueError, match="Mixed per-axis"):
-            tio.ParameterRange((tio.Choice([1.0]), tio.Choice([2.0])))
+            ParameterRange((tio.Choice([1.0]), tio.Choice([2.0])))
 
     def test_single_element_tuple(self) -> None:
-        pr = tio.ParameterRange((5.0,))
+        pr = ParameterRange((5.0,))
         assert pr._ranges == ((5.0, 5.0), (5.0, 5.0), (5.0, 5.0))
 
     def test_invalid_axis_spec_raises(self) -> None:
         with pytest.raises(TypeError, match="Per-axis spec"):
-            tio.ParameterRange(("a", "b", "c"))  # type: ignore[arg-type]
+            ParameterRange(("a", "b", "c"))  # type: ignore[arg-type]
 
     def test_invalid_tuple_length_raises(self) -> None:
         with pytest.raises(ValueError, match="1, 2, 3, or 6"):
-            tio.ParameterRange((1.0, 2.0, 3.0, 4.0))
+            ParameterRange((1.0, 2.0, 3.0, 4.0))

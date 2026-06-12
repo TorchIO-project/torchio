@@ -30,7 +30,6 @@ from .label.sequential_labels import SequentialLabels
 from .lambda_transform import Lambda
 from .monai_adapter import MonaiAdapter
 from .parameter_range import Choice
-from .parameter_range import ParameterRange
 from .spatial.anisotropy import Anisotropy
 from .spatial.copy_affine import CopyAffine
 from .spatial.crop import Crop
@@ -85,7 +84,6 @@ __all__ = [
     "OneHot",
     "OneOf",
     "Pad",
-    "ParameterRange",
     "RemapLabels",
     "RemoveLabels",
     "Reorient",
