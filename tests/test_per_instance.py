@@ -48,21 +48,32 @@ class TestCapabilityFlags:
 
 
 class TestUnconvertedTransforms:
-    def test_blur_is_batch_shared(self) -> None:
-        """Blur has not been converted, so a random std is shared."""
-        torch.manual_seed(0)
-        batch = _identical_batch()
-        result = tio.Blur(std=(1.0, 3.0))(batch)
-        data = result.t1.data
-        torch.testing.assert_close(data[0], data[1])
-        torch.testing.assert_close(data[1], data[2])
+    """A transform that does not opt in stays batch-shared on a batch."""
 
-    def test_blur_records_shared_params(self) -> None:
-        torch.manual_seed(0)
+    def test_unconverted_transform_resolves_no_batch(self) -> None:
+        class Plain(tio.transforms.IntensityTransform):
+            # Does not override the capability flags, so it never samples
+            # per-instance parameters even for a batch.
+            def make_params(self, batch):
+                return {"n": self._resolve_n(batch)}
+
+            def apply_transform(self, batch, params):
+                return batch
+
         batch = _identical_batch()
-        result = tio.Blur(std=(1.0, 3.0))(batch)
+        result = Plain()(batch)
         params = result.applied_transforms[-1].params
+        assert params["n"] is None
         assert "_batched_keys" not in params
+
+    def test_unconverted_flags_default_false(self) -> None:
+        class Plain(tio.transforms.IntensityTransform):
+            def apply_transform(self, batch, params):
+                return batch
+
+        transform = Plain()
+        assert not transform.supports_per_instance_params
+        assert not transform.supports_per_instance_p
 
 
 class TestComposePerInstance:

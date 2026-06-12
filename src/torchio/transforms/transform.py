@@ -325,6 +325,11 @@ class Transform(nn.Module):
             return value.tolist()
         return value
 
+    @staticmethod
+    def _is_per_instance_params(params: dict[str, Any]) -> bool:
+        """Whether *params* holds per-element (batched) values."""
+        return "_batched_keys" in params
+
     def _tag_batched(
         self,
         params: dict[str, Any],

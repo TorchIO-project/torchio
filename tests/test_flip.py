@@ -235,3 +235,52 @@ class TestFlip:
             transformed.apply_inverse_transform(ignore_intensity=True)
             # No warning about Noise since intensity is ignored
             assert not any("Noise" in str(x.message) for x in w)
+
+
+class TestFlipPerInstance:
+    def _batch(self, batch_size: int = 6) -> tio.SubjectsBatch:
+        data = torch.rand(1, 8, 8, 8)
+        subjects = [
+            tio.Subject(t1=tio.ScalarImage(data.clone())) for _ in range(batch_size)
+        ]
+        return tio.SubjectsBatch.from_subjects(subjects)
+
+    def test_per_instance_axes_differ_across_batch(self) -> None:
+        torch.manual_seed(0)
+        batch = self._batch()
+        result = tio.Flip(axes=(0, 1, 2), flip_probability=0.5)(batch)
+        params = result.applied_transforms[-1].params
+        assert "_batched_keys" in params
+        assert len(params["axes"]) == batch.batch_size
+        distinct = {tuple(a) for a in params["axes"]}
+        assert len(distinct) > 1
+
+    def test_per_instance_false_is_shared(self) -> None:
+        torch.manual_seed(0)
+        batch = self._batch()
+        result = tio.Flip(axes=(0, 1, 2), flip_probability=0.5, per_instance=False)(
+            batch
+        )
+        torch.testing.assert_close(result.t1.data[0], result.t1.data[1])
+
+    def test_single_subject_keeps_scalar_params(self) -> None:
+        subject = tio.Subject(t1=tio.ScalarImage(torch.rand(1, 8, 8, 8)))
+        result = tio.Flip(axes=(0, 1, 2), flip_probability=0.5)(subject)
+        assert "_batched_keys" not in result.applied_transforms[-1].params
+
+    def test_per_instance_inverse_round_trip(self) -> None:
+        torch.manual_seed(0)
+        batch = self._batch()
+        original = batch.t1.data.clone()
+        result = tio.Flip(axes=(0, 1, 2), flip_probability=0.5)(batch)
+        restored = result.apply_inverse_transform()
+        torch.testing.assert_close(restored.t1.data, original)
+
+    def test_per_instance_inverse_after_unbatch(self) -> None:
+        torch.manual_seed(0)
+        batch = self._batch()
+        original = batch.t1.data.clone()
+        result = tio.Flip(axes=(0, 1, 2), flip_probability=0.5)(batch)
+        for index, subject in enumerate(result.unbatch()):
+            restored = subject.apply_inverse_transform()
+            torch.testing.assert_close(restored.t1.data, original[index])

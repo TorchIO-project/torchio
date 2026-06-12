@@ -60,14 +60,45 @@ class Spike(IntensityTransform):
         )
 
     def make_params(self, batch: SubjectsBatch) -> dict[str, Any]:
-        """Sample the number and positions of spikes."""
-        n = max(1, round(self.num_spikes.sample_1d()))
-        positions = torch.rand(n, 3).tolist()
-        return {
-            "positions": positions,
-            "intensity": self.intensity.sample_1d(),
-            "seed": int(torch.randint(0, 2**31, (1,)).item()),
+        """Sample the number and positions of spikes (per element when batched)."""
+        n = self._resolve_n(batch)
+        if n is None:
+            num_spikes = max(1, round(self.num_spikes.sample_1d()))
+            positions = torch.rand(num_spikes, 3).tolist()
+            intensity = self.intensity.sample_1d()
+            seed = int(torch.randint(0, 2**31, (1,)).item())
+            return {
+                "positions": positions,
+                "intensity": intensity,
+                "seed": seed,
+            }
+        keep = self._keep_mask(batch, n)
+        positions_list: list[list[list[float]]] = []
+        intensity_list: list[float] = []
+        for index in range(n):
+            if keep is not None and not keep[index]:
+                positions_list.append([])
+                intensity_list.append(0.0)
+                continue
+            num_spikes = max(1, round(self.num_spikes.sample_1d()))
+            positions_list.append(torch.rand(num_spikes, 3).tolist())
+            intensity_list.append(self.intensity.sample_1d())
+        seed = int(torch.randint(0, 2**31, (1,)).item())
+        params = {
+            "positions": positions_list,
+            "intensity": intensity_list,
+            "seed": seed,
         }
+        self._tag_batched(params, batch, n, keep, ["positions", "intensity"])
+        return params
+
+    @property
+    def supports_per_instance_params(self) -> bool:
+        return True
+
+    @property
+    def supports_per_instance_p(self) -> bool:
+        return True
 
     def apply_transform(
         self,
@@ -75,14 +106,25 @@ class Spike(IntensityTransform):
         params: dict[str, Any],
     ) -> SubjectsBatch:
         """Add spike artifacts to each selected image."""
-        positions = params["positions"]
-        intensity = params["intensity"]
+        per_instance = self._is_per_instance_params(params)
         for _name, img_batch in self._get_images(batch).items():
-            img_batch.data = _add_spikes(
-                img_batch.data,
-                positions,
-                intensity,
-            )
+            if per_instance:
+                data = img_batch.data
+                outputs = [
+                    _add_spikes(
+                        data[index : index + 1],
+                        params["positions"][index],
+                        params["intensity"][index],
+                    )
+                    for index in range(data.shape[0])
+                ]
+                img_batch.data = torch.cat(outputs, dim=0)
+            else:
+                img_batch.data = _add_spikes(
+                    img_batch.data,
+                    params["positions"],
+                    params["intensity"],
+                )
         return batch
 
 
@@ -118,7 +160,7 @@ def _add_spikes(
 
     for pos in positions:
         idx = [int(p * s) % s for p, s in zip(pos, shape, strict=True)]
-        spectrum[:, :, idx[0], idx[1], idx[2]] += peak.squeeze() * intensity
+        spectrum[:, :, idx[0], idx[1], idx[2]] += peak[..., 0, 0, 0] * intensity
 
     result = torch.fft.ifftn(
         torch.fft.ifftshift(spectrum, dim=(-3, -2, -1)),
