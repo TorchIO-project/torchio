@@ -92,6 +92,10 @@ doc = [
     "mkdocstrings-python>=2.0.2",
     "zensical>=0.0.23",
 ]
+docs-deploy = [
+    { include-group = "doc" },
+    "mike",
+]
 maintain = ["bump-my-version"]
 quality = ["ruff"]
 types = [
@@ -115,6 +119,12 @@ test = [
     "scikit-learn",
     "tox-uv",
 ]
+
+# Zensical integrates with the Material team's fork of mike for versioned docs.
+# The fork is not published on PyPI, so it is pinned directly from GitHub.
+# See https://zensical.org/docs/setup/versioning/
+[tool.uv.sources]
+mike = { git = "https://github.com/squidfunk/mike.git" }
 
 [tool.bumpversion]
 current_version = "1.2.1"
