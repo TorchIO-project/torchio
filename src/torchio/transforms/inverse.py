@@ -53,7 +53,9 @@ def get_inverse_transform(
                 )
             continue
         steps.append(instance.inverse(trace.params))
-    return Compose(steps, copy=False)
+    # copy=True (the default) so applying the inverse does not mutate the
+    # caller's data in place, matching every other transform.
+    return Compose(steps)
 
 
 def apply_inverse_transform(
