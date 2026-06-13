@@ -139,6 +139,31 @@ class SubjectsBatch(Invertible):
         self._images = images
         self._metadata: dict[str, list[Any]] = metadata or {}
         self.applied_transforms: list[Any] = []
+        # When per-element branching occurs (e.g. per-instance OneOf),
+        # this stores the frozen per-element history prefix. Transforms
+        # applied afterwards still append to `applied_transforms`, and
+        # `unbatch()` merges the prefix with the sliced suffix.
+        self._per_element_history: list[list[Any]] | None = None
+
+    def set_per_element_history(self, histories: list[list[Any]]) -> None:
+        """Freeze a distinct transform history for each batch element.
+
+        Used when different elements receive different transforms (for
+        example per-instance [`OneOf`][torchio.OneOf]). Resets the shared
+        `applied_transforms` so that subsequent transforms accumulate as
+        a common suffix.
+
+        Args:
+            histories: One history list per batch element.
+        """
+        if len(histories) != self.batch_size:
+            msg = (
+                f"Expected {self.batch_size} per-element histories,"
+                f" got {len(histories)}"
+            )
+            raise ValueError(msg)
+        self._per_element_history = [list(history) for history in histories]
+        self.applied_transforms = []
 
     @classmethod
     def from_subjects(cls, subjects: list[Any]) -> Self:
@@ -230,12 +255,75 @@ class SubjectsBatch(Invertible):
             for key, values in self._metadata.items():
                 kwargs[key] = values[i]
             sub = Subject(**kwargs)
-            sub.applied_transforms = _slice_history(self.applied_transforms, i)
+            suffix = _slice_history(self.applied_transforms, i)
+            if self._per_element_history is not None:
+                sub.applied_transforms = list(self._per_element_history[i]) + suffix
+            else:
+                sub.applied_transforms = suffix
             subjects.append(sub)
         return subjects
 
     def __len__(self) -> int:
         return self.batch_size
+
+    def adopt_history(self, source: SubjectsBatch, subjects: list[Any]) -> None:
+        """Carry transform history from *source* after rebuilding the batch.
+
+        Used by code that unbatches, processes, and re-stacks subjects
+        (for example the MONAI and Cornucopia adapters). Preserves a
+        per-element history if *source* had one, otherwise copies the
+        shared history.
+
+        Args:
+            source: The batch the subjects were unbatched from.
+            subjects: The processed subjects, in batch order.
+        """
+        if source._per_element_history is not None:
+            self.set_per_element_history([s.applied_transforms for s in subjects])
+        else:
+            self.applied_transforms = list(source.applied_transforms)
+
+    def clear_history(self) -> None:
+        """Remove all applied transform records, including per-element ones."""
+        self.applied_transforms = []
+        self._per_element_history = None
+
+    def get_inverse_transform(self, **kwargs: Any) -> Any:
+        """Build a transform that inverts the recorded history.
+
+        Raises:
+            RuntimeError: If the batch carries per-element histories (from
+                a per-instance `OneOf`/`SomeOf`), since a single batch
+                inverse is ambiguous. Call `apply_inverse_transform`
+                (which inverts each element) or `unbatch()` and invert
+                each subject.
+        """
+        if self._per_element_history is not None:
+            msg = (
+                "This batch has per-element transform histories from a"
+                " per-instance OneOf/SomeOf, so a single batch inverse is"
+                " ambiguous. Call apply_inverse_transform() (which inverts"
+                " each element) or unbatch() and invert each subject."
+            )
+            raise RuntimeError(msg)
+        return super().get_inverse_transform(**kwargs)
+
+    def apply_inverse_transform(self, **kwargs: Any) -> SubjectsBatch:
+        """Apply the inverse of the recorded history.
+
+        When the batch carries per-element histories, each element is
+        inverted independently and the results are re-stacked.
+
+        Args:
+            **kwargs: Forwarded to `get_inverse_transform`.
+
+        Returns:
+            A batch with the transforms undone.
+        """
+        if self._per_element_history is not None:
+            inverted = [s.apply_inverse_transform(**kwargs) for s in self.unbatch()]
+            return type(self).from_subjects(inverted)
+        return super().apply_inverse_transform(**kwargs)
 
     def __repr__(self) -> str:
         names = ", ".join(self._images.keys())
