@@ -237,7 +237,7 @@ class _RescaleInverse(IntensityTransform):
     def __init__(
         self,
         *,
-        out_min: float,
+        out_min: float | list[float],
         out_max: float | list[float],
         in_min: float | None,
         in_max: float | None,
