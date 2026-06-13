@@ -118,6 +118,8 @@ class OneOf(Transform):
             self.weights = [1.0 / n] * n
 
     def forward(self, data):
+        if self.copy:
+            data = copy.deepcopy(data)
         batch, unwrap = self._wrap(data)
         if self.per_instance and batch.batch_size > 1:
             return unwrap(self._forward_per_element(batch))
@@ -208,6 +210,8 @@ class SomeOf(Transform):
         return self.num_transforms[1]
 
     def forward(self, data):
+        if self.copy:
+            data = copy.deepcopy(data)
         batch, unwrap = self._wrap(data)
         if self.per_instance and batch.batch_size > 1:
             return unwrap(self._forward_per_element(batch))
