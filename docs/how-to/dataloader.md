@@ -104,12 +104,12 @@ passed through `tio.Affine(degrees=(0, 45))` receives a different
 rotation per element, and `tio.Gamma(log_gamma=(-0.3, 0.3))` a
 different gamma per element.
 
-When the probability `p` is below 1, each element is also gated
-independently: some elements receive the transform and others are
-left unchanged.
+When a transform opts into per-element probability and `p` is below
+1, each element is also gated independently: some elements receive
+the transform and others are left unchanged.
 
 To recover the legacy behavior, where one parameter set is sampled
-and applied identically to every element, pass `per_instance=False`:
+and shared across every element, pass `per_instance=False`:
 
 <!-- pytest-codeblocks:skip -->
 ```python

@@ -79,6 +79,12 @@ class Compose(Transform):
 class OneOf(Transform):
     """Apply one of the given transforms, chosen at random.
 
+    When applied to a batch with `per_instance=True` (the default),
+    each batch element independently chooses which transform to apply.
+    This requires shape- and schema-preserving transforms so the
+    elements can be re-stacked. Pass `per_instance=False` to choose a
+    single transform for the whole batch.
+
     Args:
         transforms: Sequence of transforms, or a `dict` mapping
             transforms to their relative weights. If a sequence is
@@ -151,6 +157,12 @@ class OneOf(Transform):
 
 class SomeOf(Transform):
     """Apply a random subset of the given transforms.
+
+    When applied to a batch with `per_instance=True` (the default),
+    each batch element independently samples its own subset. This
+    requires shape- and schema-preserving transforms so the elements
+    can be re-stacked. Pass `per_instance=False` to sample a single
+    subset for the whole batch.
 
     Args:
         transforms: Sequence of candidate transforms.

@@ -302,8 +302,9 @@ for batch in loader:
 Each `ImagesBatch` stores per-sample affine matrices, so subjects
 with different spatial properties batch correctly.
 
-Transforms work directly on batches. Parameters are sampled once
-and applied to all samples:
+Transforms work directly on batches. By default, transforms that
+support it sample independent parameters per batch element (see
+[Per-instance augmentation](per-instance-augmentation.md)):
 
 <!-- pytest-codeblocks:skip -->
 ```python
