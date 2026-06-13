@@ -398,6 +398,21 @@ class TestSpatialPerInstance:
         assert not torch.allclose(data[0], data[1])
         assert not torch.allclose(data[1], data[2])
 
+    def test_per_instance_cubic_interpolation(self) -> None:
+        # Exercises the per-sample high-order interpolation path
+        # (interpol.grid_pull) with batched grids.
+        pytest.importorskip("interpol")
+        torch.manual_seed(0)
+        batch = self._identical_batch()
+        transform = AffineTransform(
+            degrees=(20.0, 80.0),
+            default_pad_value=0.0,
+            image_interpolation="cubic",
+        )
+        result = transform(batch)
+        assert result.t1.data.shape == batch.t1.data.shape
+        assert not torch.allclose(result.t1.data[0], result.t1.data[1])
+
     def test_per_instance_false_is_shared(self) -> None:
         torch.manual_seed(0)
         batch = self._identical_batch()
