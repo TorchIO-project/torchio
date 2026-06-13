@@ -5,6 +5,7 @@ from __future__ import annotations
 import warnings
 from collections.abc import Callable
 from typing import Any
+from typing import cast
 
 import torch
 from torch import Tensor
@@ -102,43 +103,49 @@ class Normalize(IntensityTransform):
     def make_params(self, batch: SubjectsBatch) -> dict[str, Any]:
         """Sample random parameters and compute the input range.
 
+        When per-instance augmentation is active, the output range is
+        sampled independently per batch element; the data-driven input
+        range stays batch-shared.
+
         Returns:
-            Dict with `out_min`, `out_max`, `in_min`, `in_max`
-            (per image name).
+            Dict with `out_min`, `out_max`, and either `in_min`/`in_max`
+            or `in_ranges` (per image name).
         """
-        out_min = self.out_min.sample_1d()
-        out_max = self.out_max.sample_1d()
+        n = self._resolve_n(batch)
+        out_min = self.out_min.sample_1d(n)
+        out_max = self.out_max.sample_1d(n)
         pct_low = self.percentile_low.sample_1d()
         pct_high = self.percentile_high.sample_1d()
 
+        params: dict[str, Any] = {
+            "out_min": self._serialize_param(out_min),
+            "out_max": self._serialize_param(out_max),
+        }
         # If explicit in_min/in_max are given, sample them directly.
         if self.in_min is not None and self.in_max is not None:
-            return {
-                "out_min": out_min,
-                "out_max": out_max,
-                "in_min": self.in_min.sample_1d(),
-                "in_max": self.in_max.sample_1d(),
-            }
+            params["in_min"] = self.in_min.sample_1d()
+            params["in_max"] = self.in_max.sample_1d()
+        else:
+            # Otherwise, compute per-image input range from percentiles.
+            in_ranges: dict[str, tuple[float, float]] = {}
+            for name, img_batch in self._get_images(batch).items():
+                mask = self._get_mask(img_batch, batch)
+                in_ranges[name] = _percentile_range(
+                    img_batch.data[0],
+                    mask,
+                    pct_low,
+                    pct_high,
+                    name,
+                )
+            params["in_ranges"] = in_ranges
 
-        # Otherwise, compute per-image input range from percentiles.
-        images = self._get_images(batch)
-        in_ranges: dict[str, tuple[float, float]] = {}
-        for name, img_batch in images.items():
-            mask = self._get_mask(img_batch, batch)
-            in_min, in_max = _percentile_range(
-                img_batch.data[0],
-                mask,
-                pct_low,
-                pct_high,
-                name,
-            )
-            in_ranges[name] = (in_min, in_max)
+        if n is not None:
+            self._tag_batched(params, batch, n, None, ["out_min", "out_max"])
+        return params
 
-        return {
-            "out_min": out_min,
-            "out_max": out_max,
-            "in_ranges": in_ranges,
-        }
+    @property
+    def supports_per_instance_params(self) -> bool:
+        return True
 
     def apply_transform(
         self,
@@ -146,10 +153,6 @@ class Normalize(IntensityTransform):
         params: dict[str, Any],
     ) -> SubjectsBatch:
         """Clip and linearly rescale each selected image."""
-        out_min = params["out_min"]
-        out_max = params["out_max"]
-        out_range = out_max - out_min
-
         for name, img_batch in self._get_images(batch).items():
             if "in_min" in params:
                 in_min = params["in_min"]
@@ -170,6 +173,11 @@ class Normalize(IntensityTransform):
                 continue
 
             data = img_batch.data.float()
+            out_min, out_range = _out_min_and_range(
+                params["out_min"],
+                params["out_max"],
+                data,
+            )
             data = data.clamp(in_min, in_max)
             data = (data - in_min) / in_range * out_range + out_min
             img_batch.data = data
@@ -230,7 +238,7 @@ class _RescaleInverse(IntensityTransform):
         self,
         *,
         out_min: float,
-        out_max: float,
+        out_max: float | list[float],
         in_min: float | None,
         in_max: float | None,
         in_ranges: dict[str, tuple[float, float]] | None,
@@ -253,8 +261,6 @@ class _RescaleInverse(IntensityTransform):
         params: dict[str, Any],
     ) -> SubjectsBatch:
         """Reverse the linear rescaling."""
-        out_range = self._out_max - self._out_min
-
         for name, img_batch in self._get_images(batch).items():
             if self._in_min is not None and self._in_max is not None:
                 in_min = self._in_min
@@ -265,15 +271,62 @@ class _RescaleInverse(IntensityTransform):
                 continue
 
             in_range = in_max - in_min
-            if in_range == 0 or out_range == 0:
+            if in_range == 0:
                 continue
 
             data = img_batch.data.float()
-            # Reverse: v_original = (v - out_min) / out_range * in_range + in_min
-            data = (data - self._out_min) / out_range * in_range + in_min
+            out_min, out_range = _out_min_and_range(
+                self._out_min,
+                self._out_max,
+                data,
+            )
+            if isinstance(out_range, float):
+                if out_range == 0:
+                    continue
+                data = (data - out_min) / out_range * in_range + in_min
+            else:
+                # Per-element: leave zero-range elements (out_min == out_max)
+                # unchanged instead of dividing by zero.
+                out_range_t = cast("Tensor", out_range)
+                out_min_t = cast("Tensor", out_min)
+                zero = out_range_t == 0
+                safe_range = torch.where(
+                    zero, torch.ones_like(out_range_t), out_range_t
+                )
+                reversed_data = (data - out_min_t) / safe_range * in_range + in_min
+                data = torch.where(zero, data, reversed_data)
             img_batch.data = data
 
         return batch
+
+
+def _out_min_and_range(
+    out_min: float | list[float],
+    out_max: float | list[float],
+    data: Tensor,
+) -> tuple[float | Tensor, float | Tensor]:
+    """Resolve the output min and range, broadcasting per element if needed.
+
+    Args:
+        out_min: Scalar (batch-shared) or per-element output minimum.
+        out_max: Scalar or per-element output maximum.
+        data: The `(B, C, I, J, K)` tensor being rescaled.
+
+    Returns:
+        A `(out_min, out_range)` pair, each a float (scalar case) or a
+        `(B, 1, 1, 1, 1)` tensor (per-element case).
+    """
+    if isinstance(out_min, list):
+        from einops import rearrange
+
+        min_t = torch.tensor(out_min, dtype=torch.float32, device=data.device)
+        max_t = torch.tensor(out_max, dtype=torch.float32, device=data.device)
+        min_b = rearrange(min_t, "b -> b 1 1 1 1")
+        max_b = rearrange(max_t, "b -> b 1 1 1 1")
+        return min_b, max_b - min_b
+    low = cast("float", out_min)
+    high = cast("float", out_max)
+    return low, high - low
 
 
 def _percentile_range(
