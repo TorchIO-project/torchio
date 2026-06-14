@@ -235,22 +235,30 @@ class TestNormalizeLargeImage:
     LIMIT = 2**24
 
     def test_percentile_range_min_max_endpoints(self) -> None:
+        # The 0/100 endpoints use min/max, which has no size limit.
         from torchio.transforms.intensity.normalize import _percentile_range
 
-        values = torch.linspace(-5.0, 10.0, self.LIMIT + 1000).reshape(1, -1, 1, 1)
+        values = torch.linspace(-5.0, 10.0, 10_000).reshape(1, -1, 1, 1)
         low, high = _percentile_range(values, None, 0.0, 100.0, "t1")
         assert low == pytest.approx(-5.0, abs=1e-3)
         assert high == pytest.approx(10.0, abs=1e-3)
 
-    def test_percentile_range_interior_subsamples(self) -> None:
-        from torchio.transforms.intensity.normalize import _percentile_range
+    def test_percentile_range_interior_subsamples(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        # Exercise the subsample branch quickly via a small cap.
+        from torchio.transforms.intensity import normalize as norm
 
-        values = torch.linspace(0.0, 100.0, self.LIMIT + 1000).reshape(1, -1, 1, 1)
-        low, high = _percentile_range(values, None, 25.0, 75.0, "t1")
+        monkeypatch.setattr(norm, "_QUANTILE_SUBSAMPLE_SIZE", 1000)
+        values = torch.linspace(0.0, 100.0, 5000).reshape(1, -1, 1, 1)
+        low, high = norm._percentile_range(values, None, 25.0, 75.0, "t1")
         assert 24.0 < low < 26.0
         assert 74.0 < high < 76.0
 
     def test_rescale_intensity_large_image(self) -> None:
+        # Full integration on a tensor exceeding torch.quantile's 2**24 limit.
+        # The default 0/100 percentiles use min/max, so this stays fast.
         data = torch.linspace(0.0, 1000.0, self.LIMIT + 1000).reshape(1, -1, 1, 1)
         result = tio.RescaleIntensity(out_min=0, out_max=1)(tio.ScalarImage(data))
         assert float(result.data.min()) == pytest.approx(0.0, abs=1e-4)
