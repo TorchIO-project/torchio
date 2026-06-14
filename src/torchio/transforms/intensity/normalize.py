@@ -51,14 +51,11 @@ class Normalize(IntensityTransform):
             from *percentile_high* of the (masked) input data.
         percentile_low: Lower percentile for auto input range.
         percentile_high: Upper percentile for auto input range.
-            Use `(0.5, 99.5)` for the nn-UNet convention.
-
-            Note:
-                The `0` and `100` percentiles are computed exactly (as
-                the min and max). For very large images, *interior*
-                percentiles are estimated from a deterministic strided
-                subsample to keep the computation fast and bounded in
-                memory.
+            Use `(0.5, 99.5)` for the nn-UNet convention. The `0` and
+            `100` percentiles are computed exactly (as the min and max).
+            For very large images, interior percentiles are estimated
+            from a deterministic strided subsample to keep the
+            computation fast and bounded in memory.
         masking_method: Which voxels to include when computing
             percentiles. `None` uses all voxels. A `str` is
             interpreted as a key to a

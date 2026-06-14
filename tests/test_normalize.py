@@ -260,16 +260,27 @@ class TestNormalizeLargeImage:
         self,
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
-        # The strided subsample must never exceed the target size, including
-        # for exact multiples of the cap.
+        # The tensor actually passed to torch.quantile must never exceed the
+        # target size, including for exact multiples of the cap. Spy on
+        # torch.quantile so the test fails if the subsampling strategy changes
+        # (or stops) without keeping the bound.
         from torchio.transforms.intensity import normalize as norm
 
         target = 1000
         monkeypatch.setattr(norm, "_QUANTILE_SUBSAMPLE_SIZE", target)
+        seen_sizes: list[int] = []
+        real_quantile = torch.quantile
+
+        def spy(values, q):  # type: ignore[no-untyped-def]
+            seen_sizes.append(values.numel())
+            return real_quantile(values, q)
+
+        monkeypatch.setattr(norm.torch, "quantile", spy)
         for numel in (target + 1, 2 * target, 3 * target, 10 * target + 7):
             values = torch.arange(numel, dtype=torch.float32)
-            step = -(-values.numel() // target)
-            assert values[::step].numel() <= target
+            norm._quantile(values, 0.5)
+        assert seen_sizes
+        assert all(size <= target for size in seen_sizes)
 
     def test_rescale_intensity_large_image(self) -> None:
         # Full integration on a tensor exceeding torch.quantile's 2**24 limit.
@@ -285,7 +296,7 @@ class TestNormalizeLargeImage:
         # Out-of-range percentiles must not be silently treated as endpoints.
         from torchio.transforms.intensity.normalize import _quantile
 
-        with pytest.raises(RuntimeError):
+        with pytest.raises((RuntimeError, ValueError)):
             _quantile(torch.linspace(0.0, 1.0, 100), -0.5)
-        with pytest.raises(RuntimeError):
+        with pytest.raises((RuntimeError, ValueError)):
             _quantile(torch.linspace(0.0, 1.0, 100), 1.5)
