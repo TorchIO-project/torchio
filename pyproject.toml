@@ -177,7 +177,12 @@ test = [
     "monai",
     "nifti-zarr",
     "zarr<3.2",  # see [project.optional-dependencies].zarr for why zarr is capped
-    "pytest<9",  # pytest-codeblocks 0.17.0 is incompatible with pytest 9 (removed the path arg from pytest_collect_file)
+    # TODO: drop the <9 cap once pytest-codeblocks supports pytest 9.
+    # The latest release (0.17.0) registers `pytest_collect_file(path, ...)`
+    # using the `py.path.local` `path` argument removed in pytest 9, so the
+    # plugin fails to register and breaks the whole test suite, not just the
+    # docs snippets. See https://github.com/nschloe/pytest-codeblocks.
+    "pytest<9",
     "pytest-codeblocks>=0.17.0",
     "pytest-cov",
     "pytest-sugar",
