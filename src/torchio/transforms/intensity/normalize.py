@@ -280,12 +280,18 @@ class _RescaleInverse(IntensityTransform):
         return batch
 
 
+#: Subsample inputs larger than this for interior quantiles. This is well
+#: under `torch.quantile`'s 2**24-element hard limit and keeps the call fast.
+_QUANTILE_SUBSAMPLE_SIZE = 1_000_000
+
+
 def _percentile_range(
     tensor: Tensor,
     mask: Tensor | None,
     pct_low: float,
     pct_high: float,
     image_name: str,
+    subsample_size: int = _QUANTILE_SUBSAMPLE_SIZE,
 ) -> tuple[float, float]:
     """Compute the input range from percentiles of (masked) data.
 
@@ -295,6 +301,8 @@ def _percentile_range(
         pct_low: Lower percentile (0-100).
         pct_high: Upper percentile (0-100).
         image_name: Used in warning messages.
+        subsample_size: Cap above which interior percentiles are
+            estimated from a strided subsample.
 
     Returns:
         `(in_min, in_max)` tuple.
@@ -310,17 +318,36 @@ def _percentile_range(
         )
         values = tensor.reshape(-1)
 
-    low = _quantile(values, pct_low / 100.0)
-    high = _quantile(values, pct_high / 100.0)
+    low = _quantile(values, pct_low / 100.0, subsample_size)
+    high = _quantile(values, pct_high / 100.0, subsample_size)
     return low, high
 
 
-#: Subsample inputs larger than this for interior quantiles. This is well
-#: under `torch.quantile`'s 2**24-element hard limit and keeps the call fast.
-_QUANTILE_SUBSAMPLE_SIZE = 1_000_000
+def _subsample_for_quantile(values: Tensor, target: int) -> Tensor:
+    """Strided subsample bounding the element count at *target*.
+
+    Uses ceiling division for the stride so the result stays as close to
+    *target* as possible while never exceeding it.
+
+    Args:
+        values: 1D tensor of values.
+        target: Maximum number of elements to keep.
+
+    Returns:
+        *values* unchanged if already within *target*, else a strided
+        view with at most *target* elements.
+    """
+    if values.numel() <= target:
+        return values
+    step = -(-values.numel() // target)
+    return values[::step]
 
 
-def _quantile(values: Tensor, q: float) -> float:
+def _quantile(
+    values: Tensor,
+    q: float,
+    subsample_size: int = _QUANTILE_SUBSAMPLE_SIZE,
+) -> float:
     """Quantile that tolerates tensors larger than `torch.quantile`'s limit.
 
     `torch.quantile` raises for inputs with more than `2**24` elements and
@@ -334,6 +361,8 @@ def _quantile(values: Tensor, q: float) -> float:
     Args:
         values: 1D tensor of values.
         q: Quantile in `[0, 1]`.
+        subsample_size: Cap above which interior quantiles are estimated
+            from a strided subsample.
 
     Returns:
         The (possibly approximate) quantile as a float.
@@ -343,12 +372,8 @@ def _quantile(values: Tensor, q: float) -> float:
     if q == 1:
         return float(values.max().item())
     # Subsample before casting so an oversized non-float32 tensor never
-    # materializes a full-size float copy. Ceiling division keeps the
-    # subsample as close to the target size as possible.
-    sample = values
-    if sample.numel() > _QUANTILE_SUBSAMPLE_SIZE:
-        step = -(-sample.numel() // _QUANTILE_SUBSAMPLE_SIZE)
-        sample = sample[::step]
+    # materializes a full-size float copy.
+    sample = _subsample_for_quantile(values, subsample_size)
     return float(torch.quantile(sample.float(), q).item())
 
 
