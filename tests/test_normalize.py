@@ -243,44 +243,44 @@ class TestNormalizeLargeImage:
         assert low == pytest.approx(-5.0, abs=1e-3)
         assert high == pytest.approx(10.0, abs=1e-3)
 
-    def test_percentile_range_interior_subsamples(
-        self,
-        monkeypatch: pytest.MonkeyPatch,
-    ) -> None:
-        # Exercise the subsample branch quickly via a small cap.
-        from torchio.transforms.intensity import normalize as norm
+    def test_percentile_range_interior_subsamples(self) -> None:
+        # Exercise the subsample branch quickly via a small cap passed
+        # through the public parameter (no monkeypatching).
+        from torchio.transforms.intensity.normalize import _percentile_range
 
-        monkeypatch.setattr(norm, "_QUANTILE_SUBSAMPLE_SIZE", 1000)
         values = torch.linspace(0.0, 100.0, 5000).reshape(1, -1, 1, 1)
-        low, high = norm._percentile_range(values, None, 25.0, 75.0, "t1")
+        low, high = _percentile_range(
+            values,
+            None,
+            25.0,
+            75.0,
+            "t1",
+            subsample_size=1000,
+        )
         assert 24.0 < low < 26.0
         assert 74.0 < high < 76.0
 
-    def test_quantile_subsample_stays_within_cap(
+    @pytest.mark.parametrize("target", [1000, 4096])
+    @pytest.mark.parametrize("extra", [1, 7, 1000, 3000])
+    def test_subsample_for_quantile_stays_within_cap(
         self,
-        monkeypatch: pytest.MonkeyPatch,
+        target: int,
+        extra: int,
     ) -> None:
-        # The tensor actually passed to torch.quantile must never exceed the
-        # target size, including for exact multiples of the cap. Spy on
-        # torch.quantile so the test fails if the subsampling strategy changes
-        # (or stops) without keeping the bound.
-        from torchio.transforms.intensity import normalize as norm
+        # The strided subsample used in production must never exceed the
+        # target size, including for exact multiples of the cap.
+        from torchio.transforms.intensity.normalize import _subsample_for_quantile
 
-        target = 1000
-        monkeypatch.setattr(norm, "_QUANTILE_SUBSAMPLE_SIZE", target)
-        seen_sizes: list[int] = []
-        real_quantile = torch.quantile
+        values = torch.arange(target + extra, dtype=torch.float32)
+        sample = _subsample_for_quantile(values, target)
+        assert sample.numel() <= target
 
-        def spy(values, q):  # type: ignore[no-untyped-def]
-            seen_sizes.append(values.numel())
-            return real_quantile(values, q)
+    def test_subsample_for_quantile_passthrough_when_small(self) -> None:
+        from torchio.transforms.intensity.normalize import _subsample_for_quantile
 
-        monkeypatch.setattr(norm.torch, "quantile", spy)
-        for numel in (target + 1, 2 * target, 3 * target, 10 * target + 7):
-            values = torch.arange(numel, dtype=torch.float32)
-            norm._quantile(values, 0.5)
-        assert seen_sizes
-        assert all(size <= target for size in seen_sizes)
+        values = torch.arange(500, dtype=torch.float32)
+        sample = _subsample_for_quantile(values, 1000)
+        assert sample is values
 
     def test_rescale_intensity_large_image(self) -> None:
         # Full integration on a tensor exceeding torch.quantile's 2**24 limit.
