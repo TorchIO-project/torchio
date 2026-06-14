@@ -52,6 +52,13 @@ class Normalize(IntensityTransform):
         percentile_low: Lower percentile for auto input range.
         percentile_high: Upper percentile for auto input range.
             Use `(0.5, 99.5)` for the nn-UNet convention.
+
+            Note:
+                The `0` and `100` percentiles are computed exactly (as
+                the min and max). For very large images, *interior*
+                percentiles are estimated from a deterministic strided
+                subsample to keep the computation fast and bounded in
+                memory.
         masking_method: Which voxels to include when computing
             percentiles. `None` uses all voxels. A `str` is
             interpreted as a key to a
@@ -321,9 +328,11 @@ def _quantile(values: Tensor, q: float) -> float:
 
     `torch.quantile` raises for inputs with more than `2**24` elements and
     is slow for many millions of values, both easily reached by
-    high-resolution volumes. The exact endpoints (`q <= 0` and `q >= 1`)
+    high-resolution volumes. The exact endpoints (`q == 0` and `q == 1`)
     use `min`/`max`, and interior quantiles of oversized tensors are
-    estimated from a deterministic strided subsample.
+    estimated from a deterministic strided subsample. Values of `q`
+    outside `[0, 1]` fall through to `torch.quantile`, which validates
+    them.
 
     Args:
         values: 1D tensor of values.
@@ -332,9 +341,9 @@ def _quantile(values: Tensor, q: float) -> float:
     Returns:
         The (possibly approximate) quantile as a float.
     """
-    if q <= 0:
+    if q == 0:
         return float(values.min().item())
-    if q >= 1:
+    if q == 1:
         return float(values.max().item())
     # Subsample before casting so an oversized non-float32 tensor never
     # materializes a full-size float copy.

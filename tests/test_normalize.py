@@ -263,3 +263,12 @@ class TestNormalizeLargeImage:
         result = tio.RescaleIntensity(out_min=0, out_max=1)(tio.ScalarImage(data))
         assert float(result.data.min()) == pytest.approx(0.0, abs=1e-4)
         assert float(result.data.max()) == pytest.approx(1.0, abs=1e-4)
+
+    def test_invalid_percentile_still_raises(self) -> None:
+        # Out-of-range percentiles must not be silently treated as endpoints.
+        from torchio.transforms.intensity.normalize import _quantile
+
+        with pytest.raises(RuntimeError):
+            _quantile(torch.linspace(0.0, 1.0, 100), -0.5)
+        with pytest.raises(RuntimeError):
+            _quantile(torch.linspace(0.0, 1.0, 100), 1.5)
