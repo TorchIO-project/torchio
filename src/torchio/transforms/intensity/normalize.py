@@ -364,18 +364,19 @@ def _percentile_range(
     return low, high
 
 
-#: `torch.quantile` raises for inputs with more than this many elements.
-_MAX_QUANTILE_ELEMENTS = 2**24
+#: Subsample inputs larger than this for interior quantiles. This is well
+#: under `torch.quantile`'s 2**24-element hard limit and keeps the call fast.
+_QUANTILE_SUBSAMPLE_SIZE = 1_000_000
 
 
 def _quantile(values: Tensor, q: float) -> float:
     """Quantile that tolerates tensors larger than `torch.quantile`'s limit.
 
-    `torch.quantile` raises for inputs with more than `2**24` elements,
-    which is easily exceeded by high-resolution volumes. The exact
-    endpoints (`q <= 0` and `q >= 1`) use `min`/`max`, and interior
-    quantiles of oversized tensors are estimated from a deterministic
-    strided subsample.
+    `torch.quantile` raises for inputs with more than `2**24` elements and
+    is slow for many millions of values, both easily reached by
+    high-resolution volumes. The exact endpoints (`q <= 0` and `q >= 1`)
+    use `min`/`max`, and interior quantiles of oversized tensors are
+    estimated from a deterministic strided subsample.
 
     Args:
         values: 1D tensor of values.
@@ -391,8 +392,8 @@ def _quantile(values: Tensor, q: float) -> float:
     # Subsample before casting so an oversized non-float32 tensor never
     # materializes a full-size float copy.
     sample = values
-    if sample.numel() > _MAX_QUANTILE_ELEMENTS:
-        step = sample.numel() // _MAX_QUANTILE_ELEMENTS + 1
+    if sample.numel() > _QUANTILE_SUBSAMPLE_SIZE:
+        step = sample.numel() // _QUANTILE_SUBSAMPLE_SIZE + 1
         sample = sample[::step]
     return float(torch.quantile(sample.float(), q).item())
 
