@@ -244,8 +244,8 @@ class TestNormalizeLargeImage:
         assert high == pytest.approx(10.0, abs=1e-3)
 
     def test_percentile_range_interior_subsamples(self) -> None:
-        # Exercise the subsample branch quickly via a small cap passed
-        # through the public parameter (no monkeypatching).
+        # Exercise the subsample branch quickly by injecting a small cap
+        # through the helper's subsample_size argument (no monkeypatching).
         from torchio.transforms.intensity.normalize import _percentile_range
 
         values = torch.linspace(0.0, 100.0, 5000).reshape(1, -1, 1, 1)
