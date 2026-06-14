@@ -236,7 +236,8 @@ def _apply_bias_per_element(
             seed=seed_per_element[index],
             device=data.device,
         )
-        outputs.append(slice_b / field if divide else slice_b * field)
+        corrected = slice_b / field if divide else slice_b * field
+        outputs.append(corrected.to(data.dtype))
     return torch.cat(outputs, dim=0)
 
 

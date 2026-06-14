@@ -129,3 +129,41 @@ class TestSpatialBatchSizeValidation:
         history = result.applied_transforms
         with pytest.raises(IndexError, match="batch of size 4"):
             _slice_history(history, 4)
+
+
+class TestPerInstanceDtypePreservation:
+    """Per-instance gating must not produce mixed-dtype batch outputs.
+
+    Float-domain intensity transforms compute in ``float32`` internally.
+    When per-element gating skips some elements, the skipped ones keep the
+    input dtype while applied ones must be cast back, so ``torch.cat`` over
+    the batch does not fail on a dtype mismatch for non-``float32`` inputs.
+    """
+
+    @staticmethod
+    def _mixed_dtype_batch(dtype: torch.dtype, batch_size: int = 8):
+        data = (torch.rand(1, 8, 8, 8) + 0.5).to(dtype)
+        subjects = [
+            tio.Subject(t1=tio.ScalarImage(data.clone())) for _ in range(batch_size)
+        ]
+        return tio.SubjectsBatch.from_subjects(subjects)
+
+    @pytest.mark.parametrize(
+        "transform",
+        [
+            tio.Ghosting(num_ghosts=4, intensity=1.0, p=0.5),
+            tio.Spike(num_spikes=2, intensity=1.0, p=0.5),
+            tio.Motion(degrees=10.0, translation=10.0, num_transforms=2, p=0.5),
+        ],
+    )
+    def test_fft_transforms_preserve_float64(self, transform) -> None:
+        torch.manual_seed(0)
+        batch = self._mixed_dtype_batch(torch.float64)
+        result = transform(batch)
+        assert result.t1.data.dtype == torch.float64
+
+    def test_bias_field_preserves_float16(self) -> None:
+        torch.manual_seed(0)
+        batch = self._mixed_dtype_batch(torch.float16)
+        result = tio.BiasField(std=0.5, p=0.5)(batch)
+        assert result.t1.data.dtype == torch.float16

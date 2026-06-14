@@ -176,7 +176,7 @@ def _apply_motion(
         reconstructed = torch.fft.ifftn(spectrum, dim=(-3, -2, -1))
         result[b] = reconstructed.real
 
-    return result
+    return result.to(data.dtype)
 
 
 def _apply_rigid_transform(

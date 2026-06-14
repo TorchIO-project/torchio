@@ -206,4 +206,4 @@ def _add_ghosting(
         torch.fft.ifftshift(corrupted, dim=(-3, -2, -1)),
         dim=(-3, -2, -1),
     ).real
-    return result
+    return result.to(data.dtype)

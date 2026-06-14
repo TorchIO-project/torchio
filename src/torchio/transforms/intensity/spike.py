@@ -166,4 +166,4 @@ def _add_spikes(
         torch.fft.ifftshift(spectrum, dim=(-3, -2, -1)),
         dim=(-3, -2, -1),
     ).real
-    return result
+    return result.to(data.dtype)
