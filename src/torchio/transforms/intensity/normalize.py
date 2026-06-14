@@ -388,11 +388,13 @@ def _quantile(values: Tensor, q: float) -> float:
         return float(values.min().item())
     if q >= 1:
         return float(values.max().item())
-    sample = values.float()
+    # Subsample before casting so an oversized non-float32 tensor never
+    # materializes a full-size float copy.
+    sample = values
     if sample.numel() > _MAX_QUANTILE_ELEMENTS:
         step = sample.numel() // _MAX_QUANTILE_ELEMENTS + 1
         sample = sample[::step]
-    return float(torch.quantile(sample, q).item())
+    return float(torch.quantile(sample.float(), q).item())
 
 
 # Backwards-compatible alias.
