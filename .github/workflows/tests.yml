@@ -78,10 +78,10 @@ jobs:
         uses: astral-sh/setup-uv@v7
 
       - name: Test transforms CLI tool
-        run: uv run -- tiotr --help
+        run: uv run -- torchio transform --help
 
       - name: Test info CLI tool
-        run: uv run -- tiohd --help
+        run: uv run -- torchio info --help
 
   docs:
     name: Documentation snippet tests
