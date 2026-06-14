@@ -346,10 +346,11 @@ def _quantile(values: Tensor, q: float) -> float:
     if q == 1:
         return float(values.max().item())
     # Subsample before casting so an oversized non-float32 tensor never
-    # materializes a full-size float copy.
+    # materializes a full-size float copy. Ceiling division keeps the
+    # subsample as close to the target size as possible.
     sample = values
     if sample.numel() > _QUANTILE_SUBSAMPLE_SIZE:
-        step = sample.numel() // _QUANTILE_SUBSAMPLE_SIZE + 1
+        step = -(-sample.numel() // _QUANTILE_SUBSAMPLE_SIZE)
         sample = sample[::step]
     return float(torch.quantile(sample.float(), q).item())
 
