@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import copy
 from collections.abc import Mapping
 from collections.abc import Sequence
@@ -11,6 +12,27 @@ from typing import cast
 import torch
 
 from .transform import Transform
+
+
+@contextlib.contextmanager
+def _disabled_copy(transforms: Sequence[Transform]):
+    """Temporarily set ``copy=False`` on each transform.
+
+    The composing transform copies the input once at the top level, so
+    the children it applies must not copy again. The original `copy`
+    flags are restored on exit.
+
+    Args:
+        transforms: The child transforms to apply without copying.
+    """
+    saved = [t.copy for t in transforms]
+    for t in transforms:
+        t.copy = False
+    try:
+        yield
+    finally:
+        for t, previous in zip(transforms, saved, strict=True):
+            t.copy = previous
 
 
 class Compose(Transform):
@@ -121,18 +143,20 @@ class OneOf(Transform):
         if self.copy:
             data = copy.deepcopy(data)
         batch, unwrap = self._wrap(data)
-        if self.per_instance and batch.batch_size > 1:
-            return unwrap(self._forward_per_element(batch))
-        if torch.rand(1).item() >= self.p:
+        # The input is copied once above, so children apply without copying.
+        with _disabled_copy(self.transforms):
+            if self.per_instance and batch.batch_size > 1:
+                return unwrap(self._forward_per_element(batch))
+            if torch.rand(1).item() >= self.p:
+                return unwrap(batch)
+            idx = int(
+                torch.multinomial(
+                    torch.tensor(self.weights),
+                    num_samples=1,
+                ).item()
+            )
+            batch = self.transforms[idx](batch)
             return unwrap(batch)
-        idx = int(
-            torch.multinomial(
-                torch.tensor(self.weights),
-                num_samples=1,
-            ).item()
-        )
-        batch = self.transforms[idx](batch)
-        return unwrap(batch)
 
     def _forward_per_element(self, batch):
         """Apply an independently chosen transform to each batch element."""
@@ -213,12 +237,14 @@ class SomeOf(Transform):
         if self.copy:
             data = copy.deepcopy(data)
         batch, unwrap = self._wrap(data)
-        if self.per_instance and batch.batch_size > 1:
-            return unwrap(self._forward_per_element(batch))
-        if torch.rand(1).item() >= self.p:
+        # The input is copied once above, so children apply without copying.
+        with _disabled_copy(self.transforms):
+            if self.per_instance and batch.batch_size > 1:
+                return unwrap(self._forward_per_element(batch))
+            if torch.rand(1).item() >= self.p:
+                return unwrap(batch)
+            batch = self._apply_subset(batch)
             return unwrap(batch)
-        batch = self._apply_subset(batch)
-        return unwrap(batch)
 
     def _apply_subset(self, batch):
         """Apply a randomly chosen subset of transforms to *batch*."""

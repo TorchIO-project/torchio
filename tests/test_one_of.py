@@ -153,3 +153,30 @@ class TestOneOfPerInstance:
         # The shared Flip history is intact and still invertible as a batch.
         restored = result.apply_inverse_transform()
         torch.testing.assert_close(restored.t1.data, original)
+
+
+class TestOneOfCopy:
+    def test_does_not_mutate_input(self) -> None:
+        subject = _make_subject()
+        snapshot = subject.t1.data.clone()
+        tio.OneOf([tio.Gamma(log_gamma=0.5)])(subject)
+        torch.testing.assert_close(subject.t1.data, snapshot)
+
+    def test_restores_child_copy_flag(self) -> None:
+        child = tio.Gamma(log_gamma=0.5)
+        assert child.copy is True
+        tio.OneOf([child])(_make_subject())
+        assert child.copy is True
+
+    def test_does_not_double_copy_children(self) -> None:
+        # The child must run with copy=False (the parent already copied),
+        # avoiding a redundant deep copy of the whole input.
+        seen: list[bool] = []
+
+        class _Spy(tio.IntensityTransform):
+            def apply_transform(self, batch, params):
+                seen.append(self.copy)
+                return batch
+
+        tio.OneOf([_Spy()])(_make_subject())
+        assert seen == [False]

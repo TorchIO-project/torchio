@@ -103,3 +103,28 @@ class TestSomeOfPerInstance:
         )
         result = transform(subject)
         assert len(result.applied_transforms) == 1
+
+
+class TestSomeOfCopy:
+    def test_does_not_mutate_input(self) -> None:
+        subject = _make_subject()
+        snapshot = subject.t1.data.clone()
+        tio.SomeOf([tio.Gamma(log_gamma=0.5)], num_transforms=1)(subject)
+        torch.testing.assert_close(subject.t1.data, snapshot)
+
+    def test_restores_child_copy_flag(self) -> None:
+        child = tio.Gamma(log_gamma=0.5)
+        assert child.copy is True
+        tio.SomeOf([child], num_transforms=1)(_make_subject())
+        assert child.copy is True
+
+    def test_children_applied_without_copy(self) -> None:
+        seen: list[bool] = []
+
+        class _Spy(tio.IntensityTransform):
+            def apply_transform(self, batch, params):
+                seen.append(self.copy)
+                return batch
+
+        tio.SomeOf([_Spy()], num_transforms=1)(_make_subject())
+        assert seen == [False]
