@@ -78,3 +78,19 @@ class TestSwapPerInstance:
         subject = tio.Subject(t1=tio.ScalarImage(torch.rand(1, 16, 16, 16)))
         result = tio.Swap(patch_size=4, num_iterations=20)(subject)
         assert "_batched_keys" not in result.applied_transforms[-1].params
+
+
+class TestSwapGatedOut:
+    def test_gated_out_elements_are_exact_no_ops(self) -> None:
+        torch.manual_seed(0)
+        data = torch.rand(1, 16, 16, 16)
+        batch = tio.SubjectsBatch.from_subjects(
+            [tio.Subject(t1=tio.ScalarImage(data.clone())) for _ in range(32)]
+        )
+        original = batch.t1.data.clone()
+        result = tio.Swap(patch_size=4, num_iterations=20, p=0.5)(batch)
+        unchanged = [
+            torch.equal(result.t1.data[i], original[i]) for i in range(batch.batch_size)
+        ]
+        assert any(unchanged)
+        assert not all(unchanged)

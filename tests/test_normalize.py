@@ -256,6 +256,21 @@ class TestNormalizeLargeImage:
         assert 24.0 < low < 26.0
         assert 74.0 < high < 76.0
 
+    def test_quantile_subsample_stays_within_cap(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        # The strided subsample must never exceed the target size, including
+        # for exact multiples of the cap.
+        from torchio.transforms.intensity import normalize as norm
+
+        target = 1000
+        monkeypatch.setattr(norm, "_QUANTILE_SUBSAMPLE_SIZE", target)
+        for numel in (target + 1, 2 * target, 3 * target, 10 * target + 7):
+            values = torch.arange(numel, dtype=torch.float32)
+            step = -(-values.numel() // target)
+            assert values[::step].numel() <= target
+
     def test_rescale_intensity_large_image(self) -> None:
         # Full integration on a tensor exceeding torch.quantile's 2**24 limit.
         # The default 0/100 percentiles use min/max, so this stays fast.

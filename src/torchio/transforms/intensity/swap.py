@@ -119,6 +119,8 @@ class Swap(IntensityTransform):
                         params["locations"][index],
                         self.patch_size,
                     )
+                    if params["locations"][index]
+                    else data[index : index + 1]
                     for index in range(data.shape[0])
                 ]
                 img_batch.data = torch.cat(outputs, dim=0)
