@@ -282,6 +282,17 @@ class TestNormalizeLargeImage:
         sample = _subsample_for_quantile(values, 1000)
         assert sample is values
 
+    @pytest.mark.parametrize("target", [0, -1])
+    def test_subsample_for_quantile_rejects_non_positive_target(
+        self,
+        target: int,
+    ) -> None:
+        from torchio.transforms.intensity.normalize import _subsample_for_quantile
+
+        values = torch.arange(10, dtype=torch.float32)
+        with pytest.raises(ValueError, match="positive integer"):
+            _subsample_for_quantile(values, target)
+
     def test_rescale_intensity_large_image(self) -> None:
         # Full integration on a tensor exceeding torch.quantile's 2**24 limit.
         # The default 0/100 percentiles use min/max, so this stays fast.

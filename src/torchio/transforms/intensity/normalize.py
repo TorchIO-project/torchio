@@ -331,12 +331,18 @@ def _subsample_for_quantile(values: Tensor, target: int) -> Tensor:
 
     Args:
         values: 1D tensor of values.
-        target: Maximum number of elements to keep.
+        target: Maximum number of elements to keep. Must be positive.
 
     Returns:
         *values* unchanged if already within *target*, else a strided
         view with at most *target* elements.
+
+    Raises:
+        ValueError: If *target* is not a positive integer.
     """
+    if target <= 0:
+        msg = f"target must be a positive integer, got {target}"
+        raise ValueError(msg)
     if values.numel() <= target:
         return values
     step = -(-values.numel() // target)
