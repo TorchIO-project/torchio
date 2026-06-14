@@ -63,7 +63,9 @@ class TestZonePlate:
 class TestDownloadUtils:
     def test_cache_dir(self):
         d = get_torchio_cache_dir()
-        assert d.name == "torchio"
+        # On Windows, platformdirs appends a "Cache" subdirectory, so the leaf
+        # name is not necessarily "torchio"; check it appears in the path parts.
+        assert "torchio" in d.parts
         assert d.is_absolute()
 
     def test_compress(self, tmp_path):
