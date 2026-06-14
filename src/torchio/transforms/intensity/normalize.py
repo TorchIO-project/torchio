@@ -306,9 +306,40 @@ def _percentile_range(
         )
         values = tensor.reshape(-1)
 
-    low = float(torch.quantile(values.float(), pct_low / 100.0).item())
-    high = float(torch.quantile(values.float(), pct_high / 100.0).item())
+    low = _quantile(values, pct_low / 100.0)
+    high = _quantile(values, pct_high / 100.0)
     return low, high
+
+
+#: `torch.quantile` raises for inputs with more than this many elements.
+_MAX_QUANTILE_ELEMENTS = 2**24
+
+
+def _quantile(values: Tensor, q: float) -> float:
+    """Quantile that tolerates tensors larger than `torch.quantile`'s limit.
+
+    `torch.quantile` raises for inputs with more than `2**24` elements,
+    which is easily exceeded by high-resolution volumes. The exact
+    endpoints (`q <= 0` and `q >= 1`) use `min`/`max`, and interior
+    quantiles of oversized tensors are estimated from a deterministic
+    strided subsample.
+
+    Args:
+        values: 1D tensor of values.
+        q: Quantile in `[0, 1]`.
+
+    Returns:
+        The (possibly approximate) quantile as a float.
+    """
+    if q <= 0:
+        return float(values.min().item())
+    if q >= 1:
+        return float(values.max().item())
+    sample = values.float()
+    if sample.numel() > _MAX_QUANTILE_ELEMENTS:
+        step = sample.numel() // _MAX_QUANTILE_ELEMENTS + 1
+        sample = sample[::step]
+    return float(torch.quantile(sample, q).item())
 
 
 # Backwards-compatible alias.

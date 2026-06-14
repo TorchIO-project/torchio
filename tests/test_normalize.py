@@ -227,3 +227,31 @@ class TestExports:
 class TestAlias:
     def test_rescale_intensity_alias(self) -> None:
         assert tio.RescaleIntensity is tio.Normalize
+
+
+class TestNormalizeLargeImage:
+    """torch.quantile rejects tensors with more than 2**24 elements."""
+
+    LIMIT = 2**24
+
+    def test_percentile_range_min_max_endpoints(self) -> None:
+        from torchio.transforms.intensity.normalize import _percentile_range
+
+        values = torch.linspace(-5.0, 10.0, self.LIMIT + 1000).reshape(1, -1, 1, 1)
+        low, high = _percentile_range(values, None, 0.0, 100.0, "t1")
+        assert low == pytest.approx(-5.0, abs=1e-3)
+        assert high == pytest.approx(10.0, abs=1e-3)
+
+    def test_percentile_range_interior_subsamples(self) -> None:
+        from torchio.transforms.intensity.normalize import _percentile_range
+
+        values = torch.linspace(0.0, 100.0, self.LIMIT + 1000).reshape(1, -1, 1, 1)
+        low, high = _percentile_range(values, None, 25.0, 75.0, "t1")
+        assert 24.0 < low < 26.0
+        assert 74.0 < high < 76.0
+
+    def test_rescale_intensity_large_image(self) -> None:
+        data = torch.linspace(0.0, 1000.0, self.LIMIT + 1000).reshape(1, -1, 1, 1)
+        result = tio.RescaleIntensity(out_min=0, out_max=1)(tio.ScalarImage(data))
+        assert float(result.data.min()) == pytest.approx(0.0, abs=1e-4)
+        assert float(result.data.max()) == pytest.approx(1.0, abs=1e-4)
