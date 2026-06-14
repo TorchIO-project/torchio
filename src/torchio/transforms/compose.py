@@ -123,7 +123,7 @@ class OneOf(Transform):
         batch, unwrap = self._wrap(data)
         if self.per_instance and batch.batch_size > 1:
             return unwrap(self._forward_per_element(batch))
-        if torch.rand(1).item() > self.p:
+        if torch.rand(1).item() >= self.p:
             return unwrap(batch)
         idx = int(
             torch.multinomial(
@@ -142,7 +142,7 @@ class OneOf(Transform):
         out_subjects = []
         any_applied = False
         for subject in batch.unbatch():
-            if torch.rand(1).item() <= self.p:
+            if torch.rand(1).item() < self.p:
                 any_applied = True
                 idx = int(torch.multinomial(weights, num_samples=1).item())
                 subject = _apply_to_element(subject, self.transforms[idx])
@@ -215,7 +215,7 @@ class SomeOf(Transform):
         batch, unwrap = self._wrap(data)
         if self.per_instance and batch.batch_size > 1:
             return unwrap(self._forward_per_element(batch))
-        if torch.rand(1).item() > self.p:
+        if torch.rand(1).item() >= self.p:
             return unwrap(batch)
         batch = self._apply_subset(batch)
         return unwrap(batch)
@@ -240,7 +240,7 @@ class SomeOf(Transform):
         out_subjects = []
         any_applied = False
         for subject in batch.unbatch():
-            if torch.rand(1).item() <= self.p:
+            if torch.rand(1).item() < self.p:
                 any_applied = True
                 subject = _apply_to_element(subject, self._apply_subset)
             out_subjects.append(subject)

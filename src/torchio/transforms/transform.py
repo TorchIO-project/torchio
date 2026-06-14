@@ -199,8 +199,9 @@ class Transform(nn.Module):
         batch, unwrap = self._wrap(data)
         # When per-element gating is active, the transform handles the
         # probability itself (masked-out elements get identity params),
-        # so skip the batch-wide coin flip here.
-        if not self._per_instance_p_active(batch) and torch.rand(1).item() > self.p:
+        # so skip the batch-wide coin flip here. Apply iff rand < p, so
+        # p=0 is always a no-op and p=1 always applies.
+        if not self._per_instance_p_active(batch) and torch.rand(1).item() >= self.p:
             return unwrap(batch)
         params = self.make_params(batch)
         batch = self.apply_transform(batch, params)
