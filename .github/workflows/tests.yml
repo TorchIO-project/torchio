@@ -46,15 +46,15 @@ jobs:
         shell: bash
 
       - name: Setup test suite
-        run: tox run -v --notest --skip-missing-interpreters false -e ${{ matrix.python }}
+        run: tox run -v --notest --skip-missing-interpreters false -e test
 
       # Run all tests on schedule, but only non-slow tests on push
       - name: Run pytest
         run: |
           if [ "${{ github.event_name }}" == "schedule" ]; then
-            tox -e pytest
+            tox -e test
           else
-            tox -e pytest -- -m "not slow"
+            tox -e test -- -m "not slow"
           fi
         shell: bash # this wouldn't work on Powershell
 
@@ -101,4 +101,4 @@ jobs:
         run: uv tool install --with tox-uv tox
 
       - name: Run doc snippet tests
-        run: tox -e docs
+        run: tox -e docs-test

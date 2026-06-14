@@ -99,7 +99,7 @@ markers = [
     "slow: marks tests as slow (deselect with '-m \"not slow\"')",
     "serial",
 ]
-minversion = "9"
+minversion = "8"
 testpaths = ["tests"]
 xfail_strict = true
 
@@ -177,7 +177,7 @@ test = [
     "monai",
     "nifti-zarr",
     "zarr<3.2",  # see [project.optional-dependencies].zarr for why zarr is capped
-    "pytest",
+    "pytest<9",  # pytest-codeblocks 0.17.0 is incompatible with pytest 9 (removed the path arg from pytest_collect_file)
     "pytest-codeblocks>=0.17.0",
     "pytest-cov",
     "pytest-sugar",
