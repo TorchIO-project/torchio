@@ -382,6 +382,14 @@ def _slice_history(history: list[Any], index: int) -> list[Any]:
         if not isinstance(params, dict) or "_batched_keys" not in params:
             sliced.append(trace)
             continue
+        expected_size = params.get("_batch_size")
+        if expected_size is not None and not 0 <= index < expected_size:
+            msg = (
+                f"Cannot extract per-instance history for element {index}:"
+                f" the transform was recorded for a batch of size"
+                f" {expected_size}"
+            )
+            raise IndexError(msg)
         keep = params.get("_keep")
         if keep is not None and not keep[index]:
             continue

@@ -117,3 +117,15 @@ class TestSpatialBatchSizeValidation:
         smaller = _identical_batch(batch_size=2)
         with pytest.raises(RuntimeError, match="Per-instance spatial parameters"):
             transform.apply_transform(smaller, params)
+
+    def test_history_slice_out_of_range_raises(self) -> None:
+        # Slicing per-instance history for an element beyond the recorded
+        # batch size must fail with a clear error rather than an opaque one.
+        from torchio.data.batch import _slice_history
+
+        torch.manual_seed(0)
+        batch = _identical_batch(batch_size=4)
+        result = tio.Noise(std=(0.1, 0.5))(batch)
+        history = result.applied_transforms
+        with pytest.raises(IndexError, match="batch of size 4"):
+            _slice_history(history, 4)
