@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import shutil
+
 import matplotlib
 import matplotlib.pyplot as plt
 import nibabel as nib
@@ -14,6 +16,11 @@ import torchio as tio
 from torchio.data.affine import AffineMatrix
 
 matplotlib.use("Agg")
+
+requires_ffmpeg = pytest.mark.skipif(
+    shutil.which("ffmpeg") is None,
+    reason="ffmpeg binary not available",
+)
 
 
 class TestEulerAngles:
@@ -341,6 +348,7 @@ class TestJupyterReturn:
 
         assert isinstance(result, IPyImage)
 
+    @requires_ffmpeg
     def test_to_video_returns_none_outside_jupyter(self, tmp_path) -> None:
         pytest.importorskip("ffmpeg")
         img = tio.ScalarImage(torch.rand(1, 8, 8, 8))
@@ -348,6 +356,7 @@ class TestJupyterReturn:
         result = img.to_video(out, direction="I")
         assert result is None
 
+    @requires_ffmpeg
     def test_to_video_returns_ipy_video_in_jupyter(self, tmp_path, monkeypatch) -> None:
         pytest.importorskip("ffmpeg")
         pytest.importorskip("IPython")
@@ -366,6 +375,7 @@ class TestJupyterReturn:
         with pytest.raises(ValueError, match="output_path is required"):
             img.to_video()
 
+    @requires_ffmpeg
     def test_to_video_no_path_in_jupyter(self, monkeypatch) -> None:
         pytest.importorskip("ffmpeg")
         pytest.importorskip("IPython")
