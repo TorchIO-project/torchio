@@ -259,10 +259,12 @@ class TestNormalizeLargeImage:
     def test_rescale_intensity_large_image(self) -> None:
         # Full integration on a tensor exceeding torch.quantile's 2**24 limit.
         # The default 0/100 percentiles use min/max, so this stays fast.
-        data = torch.linspace(0.0, 1000.0, self.LIMIT + 1000).reshape(1, -1, 1, 1)
+        # Use sentinel voxels (min 0, max 1000) instead of full reductions.
+        data = torch.zeros(self.LIMIT + 1000).reshape(1, -1, 1, 1)
+        data[0, 0, 0, 0] = 1000.0
         result = tio.RescaleIntensity(out_min=0, out_max=1)(tio.ScalarImage(data))
-        assert float(result.data.min()) == pytest.approx(0.0, abs=1e-4)
-        assert float(result.data.max()) == pytest.approx(1.0, abs=1e-4)
+        assert result.data[0, 0, 0, 0].item() == pytest.approx(1.0, abs=1e-4)
+        assert result.data[0, 1, 0, 0].item() == pytest.approx(0.0, abs=1e-4)
 
     def test_invalid_percentile_still_raises(self) -> None:
         # Out-of-range percentiles must not be silently treated as endpoints.
