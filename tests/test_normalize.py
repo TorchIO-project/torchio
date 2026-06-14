@@ -286,9 +286,11 @@ class TestNormalizeLargeImage:
         # Full integration on a tensor exceeding torch.quantile's 2**24 limit.
         # The default 0/100 percentiles use min/max, so this stays fast.
         # Use sentinel voxels (min 0, max 1000) instead of full reductions.
+        # copy=False avoids deep-copying the oversized image before transforming.
         data = torch.zeros(self.LIMIT + 1000).reshape(1, -1, 1, 1)
         data[0, 0, 0, 0] = 1000.0
-        result = tio.RescaleIntensity(out_min=0, out_max=1)(tio.ScalarImage(data))
+        transform = tio.RescaleIntensity(out_min=0, out_max=1, copy=False)
+        result = transform(tio.ScalarImage(data))
         assert result.data[0, 0, 0, 0].item() == pytest.approx(1.0, abs=1e-4)
         assert result.data[0, 1, 0, 0].item() == pytest.approx(0.0, abs=1e-4)
 
