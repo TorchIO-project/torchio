@@ -259,7 +259,10 @@ class TestQuantile:
     def test_rescale_intensity_large_image(self) -> None:
         # Exceeds torch.quantile's 2**24-element limit; uses min/max endpoints.
         data = torch.zeros(1, 2**24 + 1, 1, 1, dtype=torch.float32)
-        data[0, -1] = 4.0
+        # A single non-zero voxel becomes the input maximum; everything else
+        # is the minimum, so the output spans the full [0, 1] range.
+        input_max = 4.0
+        data[0, -1] = input_max
         image = tio.ScalarImage(data)
         transform = tio.RescaleIntensity(out_min=0.0, out_max=1.0, copy=False)
         result = transform(image)
