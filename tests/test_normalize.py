@@ -229,87 +229,39 @@ class TestAlias:
         assert tio.RescaleIntensity is tio.Normalize
 
 
-class TestNormalizeLargeImage:
-    """torch.quantile rejects tensors with more than 2**24 elements."""
+class TestQuantile:
+    """Tests for the ``torch.kthvalue``-based ``_quantile`` helper."""
 
-    LIMIT = 2**24
-
-    def test_percentile_range_min_max_endpoints(self) -> None:
-        # The 0/100 endpoints use min/max, which has no size limit.
-        from torchio.transforms.intensity.normalize import _percentile_range
-
-        values = torch.linspace(-5.0, 10.0, 10_000).reshape(1, -1, 1, 1)
-        low, high = _percentile_range(values, None, 0.0, 100.0, "t1")
-        assert low == pytest.approx(-5.0, abs=1e-3)
-        assert high == pytest.approx(10.0, abs=1e-3)
-
-    def test_percentile_range_interior_subsamples(self) -> None:
-        # Exercise the subsample branch quickly by injecting a small cap
-        # through the helper's subsample_size argument (no monkeypatching).
-        from torchio.transforms.intensity.normalize import _percentile_range
-
-        values = torch.linspace(0.0, 100.0, 5000).reshape(1, -1, 1, 1)
-        low, high = _percentile_range(
-            values,
-            None,
-            25.0,
-            75.0,
-            "t1",
-            subsample_size=1000,
-        )
-        assert 24.0 < low < 26.0
-        assert 74.0 < high < 76.0
-
-    @pytest.mark.parametrize("target", [1000, 4096])
-    @pytest.mark.parametrize("extra", [1, 7, 1000, 3000])
-    def test_subsample_for_quantile_stays_within_cap(
-        self,
-        target: int,
-        extra: int,
-    ) -> None:
-        # The strided subsample used in production must never exceed the
-        # target size, including for exact multiples of the cap.
-        from torchio.transforms.intensity.normalize import _subsample_for_quantile
-
-        values = torch.arange(target + extra, dtype=torch.float32)
-        sample = _subsample_for_quantile(values, target)
-        assert sample.numel() <= target
-
-    def test_subsample_for_quantile_passthrough_when_small(self) -> None:
-        from torchio.transforms.intensity.normalize import _subsample_for_quantile
-
-        values = torch.arange(500, dtype=torch.float32)
-        sample = _subsample_for_quantile(values, 1000)
-        assert sample is values
-
-    @pytest.mark.parametrize("target", [0, -1])
-    def test_subsample_for_quantile_rejects_non_positive_target(
-        self,
-        target: int,
-    ) -> None:
-        from torchio.transforms.intensity.normalize import _subsample_for_quantile
-
-        values = torch.arange(10, dtype=torch.float32)
-        with pytest.raises(ValueError, match="positive integer"):
-            _subsample_for_quantile(values, target)
-
-    def test_rescale_intensity_large_image(self) -> None:
-        # Full integration on a tensor exceeding torch.quantile's 2**24 limit.
-        # The default 0/100 percentiles use min/max, so this stays fast.
-        # Use sentinel voxels (min 0, max 1000) instead of full reductions.
-        # copy=False avoids deep-copying the oversized image before transforming.
-        data = torch.zeros(self.LIMIT + 1000).reshape(1, -1, 1, 1)
-        data[0, 0, 0, 0] = 1000.0
-        transform = tio.RescaleIntensity(out_min=0, out_max=1, copy=False)
-        result = transform(tio.ScalarImage(data))
-        assert result.data[0, 0, 0, 0].item() == pytest.approx(1.0, abs=1e-4)
-        assert result.data[0, 1, 0, 0].item() == pytest.approx(0.0, abs=1e-4)
-
-    def test_invalid_percentile_still_raises(self) -> None:
-        # Out-of-range percentiles must not be silently treated as endpoints.
+    @pytest.mark.parametrize("q", [0.0, 0.1, 0.25, 0.5, 0.75, 0.9, 1.0])
+    def test_matches_torch_quantile(self, q: float) -> None:
         from torchio.transforms.intensity.normalize import _quantile
 
-        with pytest.raises((RuntimeError, ValueError)):
-            _quantile(torch.linspace(0.0, 1.0, 100), -0.5)
-        with pytest.raises((RuntimeError, ValueError)):
-            _quantile(torch.linspace(0.0, 1.0, 100), 1.5)
+        values = torch.linspace(-3.0, 7.0, 101)
+        expected = torch.quantile(values, q)
+        result = _quantile(values, q)
+        assert torch.allclose(result, expected, atol=1e-5)
+
+    def test_invalid_q_raises(self) -> None:
+        from torchio.transforms.intensity.normalize import _quantile
+
+        values = torch.arange(10, dtype=torch.float32)
+        with pytest.raises(ValueError, match="0 <= q <= 1"):
+            _quantile(values, 1.5)
+
+    def test_large_tensor_interior_quantile(self) -> None:
+        from torchio.transforms.intensity.normalize import _quantile
+
+        # torch.quantile raises for more than 2**24 elements; kthvalue does not.
+        values = torch.arange(2**24 + 1, dtype=torch.float32)
+        result = _quantile(values, 0.5)
+        assert result.item() == pytest.approx(2**23)
+
+    def test_rescale_intensity_large_image(self) -> None:
+        # Exceeds torch.quantile's 2**24-element limit; uses min/max endpoints.
+        data = torch.zeros(1, 2**24 + 1, 1, 1, dtype=torch.float32)
+        data[0, -1] = 4.0
+        image = tio.ScalarImage(data)
+        transform = tio.RescaleIntensity(out_min=0.0, out_max=1.0, copy=False)
+        result = transform(image)
+        assert result.data[0, 0, 0, 0].item() == pytest.approx(0.0)
+        assert result.data[0, -1, 0, 0].item() == pytest.approx(1.0)
