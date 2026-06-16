@@ -431,26 +431,9 @@ class Spatial(SpatialTransform):
             return params
 
         keep = self._keep_mask(batch, n)
-        affine_list: list[Any] = []
-        control_points_list: list[Any] = []
-        displacement_list: list[Any] = []
-        any_geometry = False
-        for index in range(n):
-            kept = keep is None or bool(keep[index])
-            if not kept:
-                affine_list.append(None)
-                control_points_list.append(None)
-                displacement_list.append(None)
-                continue
-            forward_affine, control_points, max_displacement, has_geometry = (
-                self._sample_one(first_shape, first_affine)
-            )
-            any_geometry = any_geometry or has_geometry
-            affine_list.append(_serialize_matrix(forward_affine))
-            control_points_list.append(_serialize_control_points(control_points))
-            displacement_list.append(
-                list(max_displacement) if max_displacement else None
-            )
+        affine_list, control_points_list, displacement_list, any_geometry = (
+            self._sample_per_element_geometry(n, first_shape, first_affine, keep)
+        )
         if any_geometry:
             _check_shared_space(images, first_shape, first_affine)
         target_space = _resolve_target_space(
@@ -471,6 +454,51 @@ class Spatial(SpatialTransform):
             ["affine_matrix", "control_points", "max_displacement"],
         )
         return params
+
+    def _sample_per_element_geometry(
+        self,
+        n: int,
+        first_shape: TypeThreeInts,
+        first_affine: AffineMatrix,
+        keep: Tensor | None,
+    ) -> tuple[list[Any], list[Any], list[Any], bool]:
+        """Sample serializable geometry for each batch element.
+
+        Gated-out elements (``keep[index]`` is false) contribute ``None``
+        placeholders so the per-element lists stay aligned with the batch.
+
+        Args:
+            n: Number of batch elements.
+            first_shape: Spatial shape of the first image.
+            first_affine: Affine of the first image.
+            keep: Per-element keep mask, or ``None`` to keep all elements.
+
+        Returns:
+            The affine, control-point and max-displacement lists plus a
+            flag indicating whether any element produced a geometry
+            transform.
+        """
+        affine_list: list[Any] = []
+        control_points_list: list[Any] = []
+        displacement_list: list[Any] = []
+        any_geometry = False
+        for index in range(n):
+            kept = keep is None or bool(keep[index])
+            if not kept:
+                affine_list.append(None)
+                control_points_list.append(None)
+                displacement_list.append(None)
+                continue
+            forward_affine, control_points, max_displacement, has_geometry = (
+                self._sample_one(first_shape, first_affine)
+            )
+            any_geometry = any_geometry or has_geometry
+            affine_list.append(_serialize_matrix(forward_affine))
+            control_points_list.append(_serialize_control_points(control_points))
+            displacement_list.append(
+                list(max_displacement) if max_displacement else None
+            )
+        return affine_list, control_points_list, displacement_list, any_geometry
 
     def apply_transform(
         self,
@@ -877,6 +905,56 @@ def _resolve_spatial_params(
     )
 
 
+def _build_grid_per_sample_checked(
+    *,
+    per_sample: _PerSampleGrids,
+    first_img_batch: ImagesBatch,
+    input_shape: TypeThreeInts,
+    input_affine: AffineMatrix,
+    output_shape: TypeThreeInts,
+    output_affine: AffineMatrix,
+    affine_first: bool,
+) -> Tensor:
+    """Build per-element sampling grids after validating the batch size.
+
+    Args:
+        per_sample: The per-element geometry recorded at sampling time.
+        first_img_batch: First selected image batch (provides device and
+            batch size).
+        input_shape: Spatial shape of the input grid.
+        input_affine: Affine of the input grid.
+        output_shape: Spatial shape of the output grid.
+        output_affine: Affine of the output grid.
+        affine_first: Whether the affine is applied before the elastic
+            displacement.
+
+    Returns:
+        The stacked per-element sampling grid.
+
+    Raises:
+        RuntimeError: If the number of recorded elements does not match
+            the batch size.
+    """
+    if len(per_sample.affine_matrices) != first_img_batch.batch_size:
+        msg = (
+            "Per-instance spatial parameters were recorded for"
+            f" {len(per_sample.affine_matrices)} elements but the batch"
+            f" has {first_img_batch.batch_size}"
+        )
+        raise RuntimeError(msg)
+    return _build_per_sample_grids(
+        input_shape=input_shape,
+        input_affine=input_affine,
+        output_shape=output_shape,
+        output_affine=output_affine,
+        affine_matrices=per_sample.affine_matrices,
+        control_points_list=per_sample.control_points,
+        max_displacements=per_sample.max_displacements,
+        affine_first=affine_first,
+        device=first_img_batch.data.device,
+    )
+
+
 def _apply_spatial_to_batch(
     *,
     batch: SubjectsBatch,
@@ -923,23 +1001,14 @@ def _apply_spatial_to_batch(
             device=first_img_batch.data.device,
         )
     else:
-        if len(per_sample.affine_matrices) != first_img_batch.batch_size:
-            msg = (
-                "Per-instance spatial parameters were recorded for"
-                f" {len(per_sample.affine_matrices)} elements but the batch"
-                f" has {first_img_batch.batch_size}"
-            )
-            raise RuntimeError(msg)
-        grid = _build_per_sample_grids(
+        grid = _build_grid_per_sample_checked(
+            per_sample=per_sample,
+            first_img_batch=first_img_batch,
             input_shape=input_shape,
             input_affine=input_affine,
             output_shape=output_shape,
             output_affine=output_affine,
-            affine_matrices=per_sample.affine_matrices,
-            control_points_list=per_sample.control_points,
-            max_displacements=per_sample.max_displacements,
             affine_first=affine_first,
-            device=first_img_batch.data.device,
         )
 
     for name in image_names:
