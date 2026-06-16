@@ -227,3 +227,44 @@ class TestExports:
 class TestAlias:
     def test_rescale_intensity_alias(self) -> None:
         assert tio.RescaleIntensity is tio.Normalize
+
+
+class TestQuantile:
+    """Tests for the ``torch.kthvalue``-based ``_quantile`` helper."""
+
+    @pytest.mark.parametrize("q", [0.0, 0.1, 0.25, 0.5, 0.75, 0.9, 1.0])
+    def test_matches_torch_quantile(self, q: float) -> None:
+        from torchio.transforms.intensity.normalize import _quantile
+
+        values = torch.linspace(-3.0, 7.0, 101)
+        expected = torch.quantile(values, q)
+        result = _quantile(values, q)
+        assert torch.allclose(result, expected, atol=1e-5)
+
+    def test_invalid_q_raises(self) -> None:
+        from torchio.transforms.intensity.normalize import _quantile
+
+        values = torch.arange(10, dtype=torch.float32)
+        with pytest.raises(ValueError, match="0 <= q <= 1"):
+            _quantile(values, 1.5)
+
+    def test_large_tensor_interior_quantile(self) -> None:
+        from torchio.transforms.intensity.normalize import _quantile
+
+        # torch.quantile raises for more than 2**24 elements; kthvalue does not.
+        values = torch.arange(2**24 + 1, dtype=torch.float32)
+        result = _quantile(values, 0.5)
+        assert result.item() == pytest.approx(2**23)
+
+    def test_rescale_intensity_large_image(self) -> None:
+        # Exceeds torch.quantile's 2**24-element limit; uses min/max endpoints.
+        data = torch.zeros(1, 2**24 + 1, 1, 1, dtype=torch.float32)
+        # A single non-zero voxel becomes the input maximum; everything else
+        # is the minimum, so the output spans the full [0, 1] range.
+        input_max = 4.0
+        data[0, -1] = input_max
+        image = tio.ScalarImage(data)
+        transform = tio.RescaleIntensity(out_min=0.0, out_max=1.0, copy=False)
+        result = transform(image)
+        assert result.data[0, 0, 0, 0].item() == pytest.approx(0.0)
+        assert result.data[0, -1, 0, 0].item() == pytest.approx(1.0)
