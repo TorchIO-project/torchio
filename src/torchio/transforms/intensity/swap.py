@@ -13,6 +13,10 @@ from ...data.image import LabelMap
 from ..parameter_range import to_nonneg_range
 from ..transform import IntensityTransform
 
+Origin = tuple[int, int, int]
+SwapLocation = tuple[Origin, Origin]
+PatchIndices = tuple[Tensor, Tensor, Tensor, Tensor, Tensor]
+
 
 class Swap(IntensityTransform):
     r"""Randomly swap patches within an image.
@@ -112,18 +116,11 @@ class Swap(IntensityTransform):
         per_instance = self._is_per_instance_params(params)
         for _name, img_batch in self._get_images(batch).items():
             if per_instance:
-                data = img_batch.data
-                outputs = [
-                    _apply_swaps(
-                        data[index : index + 1],
-                        params["locations"][index],
-                        self.patch_size,
-                    )
-                    if params["locations"][index]
-                    else data[index : index + 1]
-                    for index in range(data.shape[0])
-                ]
-                img_batch.data = torch.cat(outputs, dim=0)
+                img_batch.data = _apply_swaps_per_instance(
+                    img_batch.data,
+                    params["locations"],
+                    self.patch_size,
+                )
             else:
                 img_batch.data = _apply_swaps(
                     img_batch.data,
@@ -137,7 +134,7 @@ def _sample_swap_locations(
     spatial_shape: tuple[int, ...],
     patch_size: tuple[int, int, int],
     num_iterations: int,
-) -> list[tuple[tuple[int, int, int], tuple[int, int, int]]]:
+) -> list[SwapLocation]:
     """Sample pairs of non-overlapping patch origins.
 
     Args:
@@ -148,7 +145,7 @@ def _sample_swap_locations(
     Returns:
         List of `(origin_a, origin_b)` tuples.
     """
-    locations: list[tuple[tuple[int, int, int], tuple[int, int, int]]] = []
+    locations: list[SwapLocation] = []
     max_ini = [s - p for s, p in zip(spatial_shape, patch_size, strict=True)]
     if any(m < 0 for m in max_ini):
         msg = (
@@ -171,7 +168,7 @@ def _sample_swap_locations(
 
 def _random_origin(
     max_ini: list[int],
-) -> tuple[int, int, int]:
+) -> Origin:
     """Sample a random patch origin."""
     coords = []
     for m in max_ini:
@@ -183,8 +180,8 @@ def _random_origin(
 
 
 def _patches_overlap(
-    a: tuple[int, int, int],
-    b: tuple[int, int, int],
+    a: Origin,
+    b: Origin,
     patch_size: tuple[int, int, int],
 ) -> bool:
     """Check whether two axis-aligned patches overlap."""
@@ -196,7 +193,7 @@ def _patches_overlap(
 
 def _apply_swaps(
     data: Tensor,
-    locations: list[tuple[tuple[int, int, int], tuple[int, int, int]]],
+    locations: list[SwapLocation],
     patch_size: tuple[int, int, int],
 ) -> Tensor:
     """Swap patch pairs in a 5D tensor.
@@ -219,3 +216,142 @@ def _apply_swaps(
         result[:, :, bi : bi + pi, bj : bj + pj, bk : bk + pk] = patch_a
 
     return result
+
+
+def _apply_swaps_per_instance(
+    data: Tensor,
+    locations: list[list[SwapLocation]],
+    patch_size: tuple[int, int, int],
+) -> Tensor:
+    """Swap per-element patch pairs in a 5D tensor.
+
+    Args:
+        data: `(B, C, I, J, K)` tensor.
+        locations: One list of `(origin_a, origin_b)` pairs per batch element.
+        patch_size: `(pi, pj, pk)` patch dimensions.
+
+    Returns:
+        Tensor with each element's patches swapped.
+    """
+    result = data.clone()
+    num_swaps = max(
+        (len(element_locations) for element_locations in locations), default=0
+    )
+    if num_swaps == 0:
+        return result
+
+    origins_a, origins_b = _get_batched_origins(
+        locations,
+        num_swaps,
+        data.device,
+    )
+    patch_indices = _make_patch_indices(data, patch_size)
+    for swap_index in range(num_swaps):
+        _swap_batched_patches(
+            result,
+            origins_a[:, swap_index],
+            origins_b[:, swap_index],
+            patch_indices,
+        )
+
+    return result
+
+
+def _get_batched_origins(
+    locations: list[list[SwapLocation]],
+    num_swaps: int,
+    device: torch.device,
+) -> tuple[Tensor, Tensor]:
+    """Build origin tensors for batched indexed swapping.
+
+    Args:
+        locations: One list of `(origin_a, origin_b)` pairs per batch element.
+        num_swaps: Number of sequential swap steps to encode.
+        device: Device on which the index tensors are created.
+
+    Returns:
+        Two tensors of shape `(B, num_swaps, 3)` for the first and second patch
+            origins.
+    """
+    batch_size = len(locations)
+    origins_a = torch.zeros(batch_size, num_swaps, 3, dtype=torch.long, device=device)
+    origins_b = torch.zeros_like(origins_a)
+    for batch_index, element_locations in enumerate(locations):
+        for swap_index, (origin_a, origin_b) in enumerate(element_locations):
+            origins_a[batch_index, swap_index] = torch.as_tensor(
+                origin_a,
+                dtype=torch.long,
+                device=device,
+            )
+            origins_b[batch_index, swap_index] = torch.as_tensor(
+                origin_b,
+                dtype=torch.long,
+                device=device,
+            )
+    return origins_a, origins_b
+
+
+def _make_patch_indices(
+    data: Tensor,
+    patch_size: tuple[int, int, int],
+) -> PatchIndices:
+    """Create shared batch, channel, and patch-offset index tensors.
+
+    Args:
+        data: `(B, C, I, J, K)` tensor.
+        patch_size: `(pi, pj, pk)` patch dimensions.
+
+    Returns:
+        Index tensors that broadcast to `(B, C, pi, pj, pk)`.
+    """
+    batch_size, channels = data.shape[:2]
+    pi, pj, pk = patch_size
+    device = data.device
+    batch_index = torch.arange(batch_size, device=device)[:, None, None, None, None]
+    channel_index = torch.arange(channels, device=device)[None, :, None, None, None]
+    i_offsets = torch.arange(pi, device=device)[None, None, :, None, None]
+    j_offsets = torch.arange(pj, device=device)[None, None, None, :, None]
+    k_offsets = torch.arange(pk, device=device)[None, None, None, None, :]
+    return batch_index, channel_index, i_offsets, j_offsets, k_offsets
+
+
+def _swap_batched_patches(
+    data: Tensor,
+    origins_a: Tensor,
+    origins_b: Tensor,
+    patch_indices: PatchIndices,
+) -> None:
+    """Swap one patch pair per batch element using batched indexing.
+
+    Args:
+        data: `(B, C, I, J, K)` tensor to update in place.
+        origins_a: Tensor of shape `(B, 3)` with first patch origins.
+        origins_b: Tensor of shape `(B, 3)` with second patch origins.
+        patch_indices: Broadcastable batch, channel, and offset indices.
+    """
+    indices_a = _get_patch_indices(origins_a, patch_indices)
+    indices_b = _get_patch_indices(origins_b, patch_indices)
+    patch_a = data[indices_a].clone()
+    patch_b = data[indices_b].clone()
+    data[indices_a] = patch_b
+    data[indices_b] = patch_a
+
+
+def _get_patch_indices(
+    origins: Tensor,
+    patch_indices: PatchIndices,
+) -> PatchIndices:
+    """Build full tensor indices for per-element patch origins.
+
+    Args:
+        origins: Tensor of shape `(B, 3)` with per-element patch origins.
+        patch_indices: Broadcastable batch, channel, and offset indices.
+
+    Returns:
+        Index tensors that select one patch per batch element.
+    """
+    batch_index, channel_index, i_offsets, j_offsets, k_offsets = patch_indices
+    i_index = origins[:, 0][:, None, None, None, None] + i_offsets
+    j_index = origins[:, 1][:, None, None, None, None] + j_offsets
+    k_index = origins[:, 2][:, None, None, None, None] + k_offsets
+    return batch_index, channel_index, i_index, j_index, k_index
