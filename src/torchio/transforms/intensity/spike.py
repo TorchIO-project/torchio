@@ -44,8 +44,6 @@ class Spike(IntensityTransform):
         >>> transform = tio.Spike(num_spikes=3, intensity=2.0)
     """
 
-    __name__ = "Spike"
-
     def __init__(
         self,
         *,

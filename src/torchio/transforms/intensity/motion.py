@@ -48,7 +48,9 @@ class Motion(IntensityTransform):
         degrees: Rotation range in degrees.  A scalar $d$ means
             $\theta_i \sim \mathcal{U}(-d, d)$.  A 2-tuple $(a, b)$
             means $\theta_i \sim \mathcal{U}(a, b)$.
-        translation: Translation range in mm, same convention.
+        translation: Translation range in voxels, same convention as
+            *degrees*. The translation is applied in normalized grid
+            coordinates (a voxel-space approximation), not in millimeters.
         num_transforms: Number of inter-segment motion events.
             More transforms produce more distortion.
         **kwargs: See [`Transform`][torchio.Transform].
