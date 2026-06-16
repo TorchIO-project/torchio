@@ -109,22 +109,12 @@ class Anisotropy(Transform):
             mode = "nearest" if is_label else self.image_interpolation
             if per_instance:
                 data = img_batch.data
-                outputs = []
-                for index in range(data.shape[0]):
-                    factor = params["factor"][index]
-                    slice_b = data[index : index + 1]
-                    if factor <= 1.0:
-                        outputs.append(slice_b)
-                        continue
-                    outputs.append(
-                        _simulate_anisotropy(
-                            slice_b,
-                            axis=params["axis"][index],
-                            factor=factor,
-                            mode=mode,
-                        )
-                    )
-                img_batch.data = torch.cat(outputs, dim=0)
+                img_batch.data = _simulate_anisotropy_per_instance(
+                    data,
+                    axes=params["axis"],
+                    factors=params["factor"],
+                    mode=mode,
+                )
             else:
                 factor = params["factor"]
                 if factor <= 1.0:
@@ -136,6 +126,219 @@ class Anisotropy(Transform):
                     mode=mode,
                 )
         return batch
+
+
+def _simulate_anisotropy_per_instance(
+    data: torch.Tensor,
+    *,
+    axes: list[int],
+    factors: list[float],
+    mode: str,
+) -> torch.Tensor:
+    """Downsample then upsample each batch element with its own parameters.
+
+    Args:
+        data: `(B, C, I, J, K)` tensor.
+        axes: Spatial axis per batch element.
+        factors: Downsampling factor per batch element.
+        mode: Interpolation mode for upsampling (`"nearest"` or
+            `"linear"`).
+
+    Returns:
+        Degraded `(B, C, I, J, K)` tensor with original shape.
+    """
+    axes_tensor = torch.as_tensor(axes, dtype=torch.long, device=data.device)
+    factors_tensor = torch.as_tensor(
+        factors,
+        dtype=torch.float64,
+        device=data.device,
+    )
+    active = factors_tensor > 1.0
+    if not bool(active.any()):
+        return data.to(data.dtype)
+
+    output = data.clone()
+    for axis in range(3):
+        axis_mask = active & (axes_tensor == axis)
+        if not bool(axis_mask.any()):
+            continue
+        output[axis_mask] = _simulate_anisotropy_fixed_axis(
+            data[axis_mask],
+            factors=factors_tensor[axis_mask],
+            axis=axis,
+            mode=mode,
+        )
+    return output.to(data.dtype)
+
+
+def _simulate_anisotropy_fixed_axis(
+    data: torch.Tensor,
+    *,
+    factors: torch.Tensor,
+    axis: int,
+    mode: str,
+) -> torch.Tensor:
+    """Downsample then upsample one axis with per-element factors.
+
+    Args:
+        data: `(B, C, I, J, K)` tensor whose elements share `axis`.
+        factors: Downsampling factors for the batch elements.
+        axis: Spatial axis (0, 1, or 2) to degrade.
+        mode: Interpolation mode for upsampling (`"nearest"` or
+            `"linear"`).
+
+    Returns:
+        Degraded `(B, C, I, J, K)` tensor with original shape.
+    """
+    length = data.shape[axis + 2]
+    down_sizes = _downsample_sizes(length, factors)
+    if mode == "nearest":
+        indices = _nearest_source_indices(length, down_sizes, data.device)
+        return _gather_axis(data.float(), indices, axis).to(data.dtype)
+    lower, upper, weights = _linear_source_indices(length, down_sizes, data.device)
+    lower_values = _gather_axis(data.float(), lower, axis)
+    upper_values = _gather_axis(data.float(), upper, axis)
+    weights = _broadcast_axis_weights(weights, axis)
+    degraded = lower_values * (1.0 - weights) + upper_values * weights
+    return degraded.to(data.dtype)
+
+
+def _downsample_sizes(length: int, factors: torch.Tensor) -> torch.Tensor:
+    """Return PyTorch-compatible nearest-downsampled sizes.
+
+    Args:
+        length: Original length along the degraded axis.
+        factors: Per-element downsampling factors.
+
+    Returns:
+        Downsampled sizes matching `round(length / factor)`.
+    """
+    sizes = torch.round(length / factors).clamp_min(1)
+    return sizes.to(torch.long)
+
+
+def _nearest_source_indices(
+    length: int,
+    down_sizes: torch.Tensor,
+    device: torch.device,
+) -> torch.Tensor:
+    """Return original-axis indices for nearest downsample and upsample.
+
+    Args:
+        length: Original length along the degraded axis.
+        down_sizes: Downsampled sizes per batch element.
+        device: Device where the indices should be created.
+
+    Returns:
+        A `(B, length)` tensor of source indices.
+    """
+    positions = torch.arange(length, dtype=torch.long, device=device)
+    lowres_indices = torch.div(
+        positions * down_sizes[:, None],
+        length,
+        rounding_mode="floor",
+    )
+    return _downsample_source_indices(length, down_sizes, lowres_indices)
+
+
+def _linear_source_indices(
+    length: int,
+    down_sizes: torch.Tensor,
+    device: torch.device,
+) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    """Return source indices and weights for trilinear upsampling.
+
+    Args:
+        length: Original length along the degraded axis.
+        down_sizes: Downsampled sizes per batch element.
+        device: Device where the indices should be created.
+
+    Returns:
+        Lower source indices, upper source indices and upper weights,
+            each shaped `(B, length)`.
+    """
+    positions = torch.arange(length, dtype=torch.float32, device=device)
+    if length == 1:
+        lowres_positions = torch.zeros(
+            len(down_sizes),
+            1,
+            dtype=torch.float32,
+            device=device,
+        )
+    else:
+        scale = (down_sizes.to(torch.float32) - 1.0) / (length - 1)
+        lowres_positions = positions * scale[:, None]
+    lower_lowres = lowres_positions.floor().to(torch.long)
+    upper_lowres = torch.minimum(lower_lowres + 1, down_sizes[:, None] - 1)
+    weights = lowres_positions - lower_lowres.to(torch.float32)
+    lower = _downsample_source_indices(length, down_sizes, lower_lowres)
+    upper = _downsample_source_indices(length, down_sizes, upper_lowres)
+    return lower, upper, weights
+
+
+def _downsample_source_indices(
+    length: int,
+    down_sizes: torch.Tensor,
+    lowres_indices: torch.Tensor,
+) -> torch.Tensor:
+    """Map low-resolution indices to nearest-downsampled source indices.
+
+    Args:
+        length: Original length along the degraded axis.
+        down_sizes: Downsampled sizes per batch element.
+        lowres_indices: Low-resolution indices.
+
+    Returns:
+        Original source indices.
+    """
+    source = torch.div(
+        lowres_indices * length,
+        down_sizes[:, None],
+        rounding_mode="floor",
+    )
+    return source.clamp(max=length - 1)
+
+
+def _gather_axis(
+    data: torch.Tensor,
+    source_indices: torch.Tensor,
+    axis: int,
+) -> torch.Tensor:
+    """Gather `data` along one spatial axis with per-element indices.
+
+    Args:
+        data: `(B, C, I, J, K)` tensor.
+        source_indices: `(B, N)` indices for the selected spatial axis.
+        axis: Spatial axis (0, 1, or 2) to gather.
+
+    Returns:
+        Gathered `(B, C, I, J, K)` tensor.
+    """
+    if axis == 0:
+        indices = source_indices[:, None, :, None, None]
+    elif axis == 1:
+        indices = source_indices[:, None, None, :, None]
+    else:
+        indices = source_indices[:, None, None, None, :]
+    indices = indices.expand_as(data)
+    return torch.gather(data, dim=axis + 2, index=indices)
+
+
+def _broadcast_axis_weights(weights: torch.Tensor, axis: int) -> torch.Tensor:
+    """Broadcast interpolation weights over channels and untouched axes.
+
+    Args:
+        weights: `(B, N)` interpolation weights.
+        axis: Spatial axis (0, 1, or 2) corresponding to `N`.
+
+    Returns:
+        Weights broadcast-compatible with `(B, C, I, J, K)`.
+    """
+    if axis == 0:
+        return weights[:, None, :, None, None]
+    if axis == 1:
+        return weights[:, None, None, :, None]
+    return weights[:, None, None, None, :]
 
 
 def _simulate_anisotropy(
