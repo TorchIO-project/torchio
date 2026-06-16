@@ -141,11 +141,64 @@ def _gaussian_smooth(
         Smoothed tensor.
     """
     sigmas_array = np.asarray(sigmas, dtype=np.float64)
-    if sigmas_array.ndim == 1:
-        sigmas_array = np.broadcast_to(sigmas_array, (data.shape[0], 3)).copy()
     if np.all(sigmas_array <= 0):
         return data
+    if sigmas_array.ndim == 1:
+        # Sigmas shared across the batch: build one kernel set and apply it
+        # to every element, which is much cheaper than a grouped conv.
+        return _gaussian_smooth_shared(data, sigmas_array)
+    if np.all(sigmas_array == sigmas_array[0]):
+        # Per-element sigmas that happen to be identical collapse to the
+        # shared fast path.
+        return _gaussian_smooth_shared(data, sigmas_array[0])
     return _gaussian_smooth_per_element(data, sigmas_array)
+
+
+def _gaussian_smooth_shared(
+    data: torch.Tensor,
+    sigmas: np.ndarray,
+) -> torch.Tensor:
+    """Separable Gaussian smoothing with a single shared kernel set.
+
+    Args:
+        data: `(B, C, I, J, K)` tensor.
+        sigmas: Per-axis sigma in voxels (length 3), shared by every
+            batch element.
+
+    Returns:
+        Smoothed tensor (input dtype preserved).
+    """
+    if np.all(sigmas <= 0):
+        return data
+    result = data.float()
+    b, c = result.shape[:2]
+    for axis_idx in range(3):
+        sigma = float(sigmas[axis_idx])
+        if sigma <= 0:
+            continue
+        radius = max(int(np.ceil(3 * sigma)), 1)
+        kernel_size = 2 * radius + 1
+        x = torch.arange(kernel_size, dtype=torch.float32, device=data.device) - radius
+        kernel_1d = torch.exp(-0.5 * (x / sigma) ** 2)
+        kernel_1d = kernel_1d / kernel_1d.sum()
+
+        k_shape = [1, 1, 1]
+        k_shape[axis_idx] = kernel_size
+        kernel_3d = kernel_1d.reshape(1, 1, *k_shape)
+
+        pad = [0] * 6
+        pad_idx = 2 * (2 - axis_idx)
+        pad[pad_idx] = radius
+        pad[pad_idx + 1] = radius
+
+        padded = functional.pad(result, pad, mode="replicate")
+        result = functional.conv3d(
+            rearrange(padded, "b c i j k -> (b c) 1 i j k"),
+            kernel_3d,
+            padding=0,
+        )
+        result = rearrange(result, "(b c) 1 i j k -> b c i j k", b=b, c=c)
+    return result.to(data.dtype)
 
 
 def _gaussian_smooth_per_element(

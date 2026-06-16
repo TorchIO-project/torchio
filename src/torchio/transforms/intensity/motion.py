@@ -364,7 +364,13 @@ def _apply_motion_segments(
     num_segments = len(segment_parameters) + 1
     spatial_shape = result.shape[-3:]
     segment_size = spatial_shape[0] // num_segments
-
+    if segment_size == 0:
+        msg = (
+            f"Cannot split {spatial_shape[0]} k-space slices into"
+            f" {num_segments} motion segments; reduce num_transforms or use a"
+            " larger image along the first spatial axis."
+        )
+        raise ValueError(msg)
     spectrum = torch.fft.fftn(result, dim=(-3, -2, -1))
     for segment_index, (degrees, translation) in enumerate(
         segment_parameters,
