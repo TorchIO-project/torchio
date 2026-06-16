@@ -157,6 +157,11 @@ def _simulate_anisotropy_per_instance(
     if not bool(active.any()):
         return data.to(data.dtype)
 
+    active_axes = axes_tensor[active]
+    if bool(((active_axes < 0) | (active_axes > 2)).any()):
+        msg = f"Anisotropy axis must be in {{0, 1, 2}}, got {sorted(set(axes))}"
+        raise ValueError(msg)
+
     output = data.clone()
     for axis in range(3):
         axis_mask = active & (axes_tensor == axis)

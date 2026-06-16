@@ -66,3 +66,16 @@ def test_vectorized_matches_per_element_with_gating(
 ) -> None:
     torch.manual_seed(0)
     assert_vectorized(transform, _batch(batch_size=6))
+
+
+def test_anisotropy_tie_rounding_matches_scalar(assert_vectorized) -> None:
+    # An odd spatial length with factor 2.0 makes length/factor land on a .5
+    # tie (e.g. 9/2 = 4.5). The per-instance path uses torch.round and the
+    # scalar path uses Python round; both must agree (round-half-to-even), so
+    # the vectorized per-element result must match the scalar application.
+    torch.manual_seed(0)
+    data = torch.rand(1, 9, 9, 9)
+    batch = tio.SubjectsBatch.from_subjects(
+        [tio.Subject(t1=tio.ScalarImage(data.clone() + index)) for index in range(4)]
+    )
+    assert_vectorized(tio.Anisotropy(downsampling=2.0), batch)
