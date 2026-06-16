@@ -43,6 +43,21 @@ class AppliedTransform:
 _TRANSFORM_REGISTRY: dict[str, type[Transform]] = {}
 
 
+def _all_elements_gated_out(params: dict[str, Any]) -> bool:
+    """Whether per-element gating masked out every batch element.
+
+    Args:
+        params: The parameter dict produced by `make_params`, possibly
+            carrying a `_keep` mask added by `_tag_batched`.
+
+    Returns:
+        `True` only when a `_keep` mask is present and none of its
+        elements are kept, i.e. the transform was an exact no-op.
+    """
+    keep = params.get("_keep")
+    return keep is not None and not any(keep)
+
+
 class Transform(nn.Module):
     """Abstract class for all TorchIO transforms.
 
@@ -205,11 +220,15 @@ class Transform(nn.Module):
             return unwrap(batch)
         params = self.make_params(batch)
         batch = self.apply_transform(batch, params)
-        # Record history on the batch
-        trace = AppliedTransform(name=type(self).__name__, params=params)
-        if not hasattr(batch, "applied_transforms"):
-            batch.applied_transforms = []
-        batch.applied_transforms.append(trace)
+        # Record history on the batch, unless every element was gated out by
+        # per-element probability: that is an exact no-op, and recording it
+        # would let history replay (e.g. an invertible spatial transform)
+        # trigger an unnecessary identity resample.
+        if not _all_elements_gated_out(params):
+            trace = AppliedTransform(name=type(self).__name__, params=params)
+            if not hasattr(batch, "applied_transforms"):
+                batch.applied_transforms = []
+            batch.applied_transforms.append(trace)
         result = unwrap(batch)
         # Propagate history to outputs that can carry it
         if (

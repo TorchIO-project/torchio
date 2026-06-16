@@ -167,3 +167,24 @@ class TestPerInstanceDtypePreservation:
         batch = self._mixed_dtype_batch(torch.float16)
         result = tio.BiasField(std=0.5, p=0.5)(batch)
         assert result.t1.data.dtype == torch.float16
+
+
+class TestFullyGatedNoHistory:
+    def test_fully_gated_records_no_history(self) -> None:
+        # p=0 gates out every element, an exact no-op, so no history trace
+        # is recorded (and replaying it cannot trigger a spurious resample).
+        torch.manual_seed(0)
+        batch = _identical_batch(batch_size=4)
+        result = tio.Affine(degrees=20.0, p=0.0)(batch)
+        assert result.applied_transforms == []
+
+    def test_fully_gated_inverse_preserves_float64(self) -> None:
+        torch.manual_seed(0)
+        data = torch.rand(1, 8, 8, 8, dtype=torch.float64)
+        batch = tio.SubjectsBatch.from_subjects(
+            [tio.Subject(t1=tio.ScalarImage(data.clone())) for _ in range(4)]
+        )
+        original = batch.t1.data.clone()
+        result = tio.Affine(degrees=20.0, p=0.0)(batch)
+        restored = result.apply_inverse_transform()
+        assert torch.equal(restored.t1.data, original)

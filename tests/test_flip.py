@@ -284,3 +284,18 @@ class TestFlipPerInstance:
         for index, subject in enumerate(result.unbatch()):
             restored = subject.apply_inverse_transform()
             torch.testing.assert_close(restored.t1.data, original[index])
+
+
+class TestFlipInclude:
+    def test_no_selected_images_is_noop(self) -> None:
+        # make_params must resolve orientation from the selected images and
+        # return a no-op when include matches nothing.
+        torch.manual_seed(0)
+        subjects = [
+            tio.Subject(t1=tio.ScalarImage(torch.rand(1, 8, 8, 8))) for _ in range(3)
+        ]
+        batch = tio.SubjectsBatch.from_subjects(subjects)
+        original = batch.t1.data.clone()
+        result = tio.Flip(axes=0, include=["missing"])(batch)
+        assert torch.equal(result.t1.data, original)
+        assert result.applied_transforms[-1].params["axes"] == ()

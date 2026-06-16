@@ -7,6 +7,7 @@ from typing import Any
 
 import torch
 
+from ...data.batch import ImagesBatch
 from ...data.batch import SubjectsBatch
 from ..transform import SpatialTransform
 
@@ -116,7 +117,10 @@ class Flip(SpatialTransform):
         self,
         batch: SubjectsBatch,
     ) -> dict[str, Any]:
-        first_img = next(iter(batch.images.values()))
+        images = self._get_images(batch)
+        if not images:
+            return {"axes": ()}
+        first_img = next(iter(images.values()))
 
         n = self._resolve_n(batch)
         if n is None:
@@ -129,6 +133,31 @@ class Flip(SpatialTransform):
             return {"axes": axes_to_flip}
 
         keep = self._keep_mask(batch, n)
+        axes_list = self._sample_per_element_axes(n, first_img, keep)
+        params = {"axes": axes_list}
+        self._tag_batched(params, batch, n, keep, ["axes"])
+        return params
+
+    def _sample_per_element_axes(
+        self,
+        n: int,
+        first_img: ImagesBatch,
+        keep: torch.Tensor | None,
+    ) -> list[list[int]]:
+        """Sample the flip axes for each batch element.
+
+        Gated-out elements (``keep[index]`` is false) get an empty axis
+        list so they are left unflipped.
+
+        Args:
+            n: Number of batch elements.
+            first_img: First selected image batch, used for per-element
+                orientation.
+            keep: Per-element keep mask, or ``None`` to keep all elements.
+
+        Returns:
+            One list of spatial axes (in ``{0, 1, 2}``) per element.
+        """
         axes_list: list[list[int]] = []
         for index in range(n):
             if keep is not None and not keep[index]:
@@ -139,9 +168,7 @@ class Flip(SpatialTransform):
             resolved = _resolve_axes(self.axes, first_img[index].orientation)
             flip_mask = torch.rand(3) < self.flip_probability
             axes_list.append([a for a in resolved if flip_mask[a].item()])
-        params = {"axes": axes_list}
-        self._tag_batched(params, batch, n, keep, ["axes"])
-        return params
+        return axes_list
 
     @property
     def supports_per_instance_params(self) -> bool:
