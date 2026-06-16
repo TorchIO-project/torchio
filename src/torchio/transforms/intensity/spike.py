@@ -66,11 +66,9 @@ class Spike(IntensityTransform):
             num_spikes = max(1, round(self.num_spikes.sample_1d()))
             positions = torch.rand(num_spikes, 3).tolist()
             intensity = self.intensity.sample_1d()
-            seed = int(torch.randint(0, 2**31, (1,)).item())
             return {
                 "positions": positions,
                 "intensity": intensity,
-                "seed": seed,
             }
         keep = self._keep_mask(batch, n)
         positions_list: list[list[list[float]]] = []
@@ -83,11 +81,9 @@ class Spike(IntensityTransform):
             num_spikes = max(1, round(self.num_spikes.sample_1d()))
             positions_list.append(torch.rand(num_spikes, 3).tolist())
             intensity_list.append(self.intensity.sample_1d())
-        seed = int(torch.randint(0, 2**31, (1,)).item())
         params = {
             "positions": positions_list,
             "intensity": intensity_list,
-            "seed": seed,
         }
         self._tag_batched(params, batch, n, keep, ["positions", "intensity"])
         return params

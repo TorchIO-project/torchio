@@ -72,8 +72,7 @@ class Motion(IntensityTransform):
         n = self._resolve_n(batch)
         if n is None:
             transforms = self._sample_transforms()
-            seed = int(torch.randint(0, 2**31, (1,)).item())
-            return {"transforms": transforms, "seed": seed}
+            return {"transforms": transforms}
         keep = self._keep_mask(batch, n)
         transforms_list: list[Any] = []
         for index in range(n):
@@ -81,8 +80,7 @@ class Motion(IntensityTransform):
                 transforms_list.append([])
                 continue
             transforms_list.append(self._sample_transforms())
-        seed = int(torch.randint(0, 2**31, (1,)).item())
-        params = {"transforms": transforms_list, "seed": seed}
+        params = {"transforms": transforms_list}
         self._tag_batched(params, batch, n, keep, ["transforms"])
         return params
 
