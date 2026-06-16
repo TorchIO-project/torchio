@@ -967,6 +967,55 @@ def _build_grid_per_sample_checked(
     )
 
 
+def _passthrough_indices(per_sample: _PerSampleGrids) -> list[int]:
+    """Indices of batch elements with no geometry (identity / gated out).
+
+    Args:
+        per_sample: The per-element geometry recorded at sampling time.
+
+    Returns:
+        Indices whose affine and control points are both ``None``, i.e.
+        elements that should pass through a no-target resample unchanged.
+    """
+    return [
+        index
+        for index, affine in enumerate(per_sample.affine_matrices)
+        if affine is None and per_sample.control_points[index] is None
+    ]
+
+
+def _restore_spatial_output_affines(
+    img_batch: ImagesBatch,
+    *,
+    original_data: Tensor,
+    original_affines: list[AffineMatrix],
+    output_affine: AffineMatrix,
+    passthrough: list[int],
+) -> None:
+    """Set the output affines and restore no-op (passthrough) elements.
+
+    Every resampled element adopts *output_affine*. Passthrough elements
+    (no geometry, no target) instead keep their original data and affine
+    so that per-element gating is an exact no-op for them, undoing the
+    tiny perturbation introduced by the float32 identity resample.
+
+    Args:
+        img_batch: The image batch whose data/affines are updated in place.
+        original_data: The input data, before resampling.
+        original_affines: The input affines, before resampling.
+        output_affine: The affine shared by every resampled element.
+        passthrough: Indices of elements to restore exactly.
+    """
+    new_affines = [output_affine.clone() for _ in img_batch.affines]
+    if passthrough:
+        data = img_batch.data
+        for index in passthrough:
+            data[index] = original_data[index]
+            new_affines[index] = original_affines[index]
+        img_batch.data = data
+    img_batch.affines[:] = new_affines
+
+
 def _apply_spatial_to_batch(
     *,
     batch: SubjectsBatch,
@@ -1023,41 +1072,103 @@ def _apply_spatial_to_batch(
             affine_first=affine_first,
         )
 
+    # Elements with no geometry and no target resampling must be exact
+    # no-ops, but the batched per-sample resample computes through an
+    # identity grid in float32, so restore those rows afterwards.
+    passthrough = (
+        _passthrough_indices(per_sample)
+        if per_sample is not None and target_space is None
+        else []
+    )
+
     for name in image_names:
-        img_batch = batch.images[name]
-        is_label = issubclass(img_batch._image_class, LabelMap)
-        interpolation = _interpolation_for_batch(
-            img_batch,
+        _resample_image_batch(
+            batch.images[name],
+            grid=grid,
+            per_sample=per_sample,
+            input_shape=input_shape,
+            input_affine=input_affine,
+            output_affine=output_affine,
             image_interpolation=image_interpolation,
             label_interpolation=label_interpolation,
-        )
-        fill_value = _batch_fill_value(
-            img_batch,
+            antialias=antialias,
             default_pad_value=default_pad_value,
             default_pad_label=default_pad_label,
+            passthrough=passthrough,
         )
-        data = img_batch.data
-        # Antialias: blur ScalarImages before downsampling.
-        if antialias and not is_label:
-            data = _antialias_batch(data, input_affine, output_affine)
-        if per_sample is None:
-            img_batch.data = _sample_batch(
-                data,
-                grid,
-                input_shape=input_shape,
-                interpolation=interpolation,
-                fill_value=fill_value,
-            )
-        else:
-            img_batch.data = _sample_batch_per_sample(
-                data,
-                grid,
-                input_shape=input_shape,
-                interpolation=interpolation,
-                fill_value=fill_value,
-            )
-        new_affine = output_affine.clone()
-        img_batch.affines[:] = [new_affine.clone() for _ in img_batch.affines]
+
+
+def _resample_image_batch(
+    img_batch: ImagesBatch,
+    *,
+    grid: Tensor,
+    per_sample: _PerSampleGrids | None,
+    input_shape: TypeThreeInts,
+    input_affine: AffineMatrix,
+    output_affine: AffineMatrix,
+    image_interpolation: TypeInterpolation,
+    label_interpolation: TypeInterpolation,
+    antialias: bool,
+    default_pad_value: TypePadValue | float,
+    default_pad_label: float,
+    passthrough: list[int],
+) -> None:
+    """Resample a single image batch and restore no-op elements.
+
+    Args:
+        img_batch: The image batch to resample in place.
+        grid: The shared or per-sample sampling grid.
+        per_sample: Per-element geometry, or ``None`` for the shared grid.
+        input_shape: Spatial shape of the input volume.
+        input_affine: Affine of the input volume.
+        output_affine: Affine shared by every resampled element.
+        image_interpolation: Interpolation mode for scalar images.
+        label_interpolation: Interpolation mode for label maps.
+        antialias: Whether to blur scalar images before downsampling.
+        default_pad_value: Fill value for out-of-bounds scalar samples.
+        default_pad_label: Fill value for out-of-bounds label samples.
+        passthrough: Indices of no-op elements to restore exactly.
+    """
+    original_data = img_batch.data
+    original_affines = list(img_batch.affines)
+    is_label = issubclass(img_batch._image_class, LabelMap)
+    interpolation = _interpolation_for_batch(
+        img_batch,
+        image_interpolation=image_interpolation,
+        label_interpolation=label_interpolation,
+    )
+    fill_value = _batch_fill_value(
+        img_batch,
+        default_pad_value=default_pad_value,
+        default_pad_label=default_pad_label,
+    )
+    data = img_batch.data
+    # Antialias: blur ScalarImages before downsampling.
+    if antialias and not is_label:
+        data = _antialias_batch(data, input_affine, output_affine)
+    if per_sample is None:
+        img_batch.data = _sample_batch(
+            data,
+            grid,
+            input_shape=input_shape,
+            interpolation=interpolation,
+            fill_value=fill_value,
+        )
+    else:
+        img_batch.data = _sample_batch_per_sample(
+            data,
+            grid,
+            input_shape=input_shape,
+            interpolation=interpolation,
+            fill_value=fill_value,
+        )
+    _restore_spatial_output_affines(
+        img_batch,
+        original_data=original_data,
+        original_affines=original_affines,
+        output_affine=output_affine,
+        passthrough=passthrough,
+    )
 
 
 def _resolve_target_space(

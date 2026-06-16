@@ -516,6 +516,35 @@ class TestSpatialPerInstance:
         ):
             assert np.allclose(original, new.numpy())
 
+    def test_partially_gated_elements_are_exact_noops(self) -> None:
+        # In a mixed batch (0 < p < 1), gated-out elements must be exact,
+        # bit-for-bit no-ops even for float64 inputs: the per-sample
+        # resample runs an identity grid in float32, so those rows are
+        # restored from the input afterwards.
+        torch.manual_seed(0)
+        data = torch.rand(1, 8, 8, 8, dtype=torch.float64)
+        batch = tio.SubjectsBatch.from_subjects(
+            [tio.Subject(t1=tio.ScalarImage(data.clone())) for _ in range(8)]
+        )
+        original = batch.t1.data.clone()
+        torch.manual_seed(1)
+        result = AffineTransform(degrees=30.0, p=0.5)(batch)
+        assert result.t1.data.dtype == torch.float64
+        exact = [
+            torch.equal(result.t1.data[i], original[i]) for i in range(batch.batch_size)
+        ]
+        changed = [
+            not torch.allclose(result.t1.data[i], original[i], atol=1e-6)
+            for i in range(batch.batch_size)
+        ]
+        # Every element is either an exact no-op or genuinely augmented.
+        assert all(
+            is_exact ^ is_changed
+            for is_exact, is_changed in zip(exact, changed, strict=True)
+        )
+        assert any(exact)
+        assert any(changed)
+
 
 class TestElasticDeformation:
     def test_accepts_tensor_control_points(self) -> None:
