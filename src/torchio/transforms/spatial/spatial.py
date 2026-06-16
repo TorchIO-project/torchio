@@ -519,6 +519,18 @@ class Spatial(SpatialTransform):
         affine_matrix, control_points, max_displacement, per_sample = (
             _resolve_spatial_params(params)
         )
+        is_noop = (
+            target_space is None
+            and affine_matrix is None
+            and control_points is None
+            and max_displacement is None
+            and per_sample is None
+        )
+        if is_noop:
+            # A true no-op (no resampling and no geometry, e.g. every
+            # element gated out) must leave the data and the per-sample
+            # affines untouched instead of rebuilding an identity grid.
+            return batch
         _apply_spatial_to_batch(
             batch=batch,
             image_names=selected_images,

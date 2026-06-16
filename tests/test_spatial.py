@@ -490,6 +490,32 @@ class TestSpatialPerInstance:
         assert not torch.allclose(data[0], data[1])
         assert not torch.allclose(data[1], data[2])
 
+    def test_fully_gated_noop_preserves_per_sample_affines(self) -> None:
+        # When every element is gated out (p=0) and there is no target
+        # resampling, the transform must be a true no-op: the data and the
+        # distinct per-sample affines must be left untouched rather than
+        # rebuilt from an identity grid using the first element's affine.
+        torch.manual_seed(0)
+        subjects = []
+        for index in range(4):
+            affine = np.eye(4)
+            affine[0, 3] = float(index * 10)
+            image = tio.ScalarImage(torch.rand(1, 8, 8, 8), affine=affine)
+            subjects.append(tio.Subject(t1=image))
+        batch = tio.SubjectsBatch.from_subjects(subjects)
+        original_data = batch.t1.data.clone()
+        original_affines = [affine.numpy().copy() for affine in batch.t1.affines]
+
+        result = AffineTransform(degrees=20.0, p=0.0)(batch)
+
+        assert torch.equal(result.t1.data, original_data)
+        for original, new in zip(
+            original_affines,
+            result.t1.affines,
+            strict=True,
+        ):
+            assert np.allclose(original, new.numpy())
+
 
 class TestElasticDeformation:
     def test_accepts_tensor_control_points(self) -> None:
