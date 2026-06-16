@@ -6,6 +6,7 @@ from collections.abc import Sequence
 from typing import Any
 
 import torch
+from einops import rearrange
 
 from ...data.batch import ImagesBatch
 from ...data.batch import SubjectsBatch
@@ -219,12 +220,22 @@ def _flip_per_element(
     Returns:
         The flipped `(B, C, I, J, K)` tensor.
     """
-    outputs = []
-    for index in range(data.shape[0]):
-        dims = [a - 3 for a in axes_per_element[index]]
-        slice_b = data[index : index + 1]
-        outputs.append(torch.flip(slice_b, dims) if dims else slice_b)
-    return torch.cat(outputs, dim=0)
+    batch_size = data.shape[0]
+    result = data
+    # Flip the whole batch along each spatial axis once, then select per
+    # element with a boolean mask. Flips along distinct axes commute, so
+    # composing them sequentially matches flipping an element's axes at once.
+    for spatial_axis in range(3):
+        flip_flags = torch.tensor(
+            [spatial_axis in axes_per_element[index] for index in range(batch_size)],
+            device=data.device,
+        )
+        if not bool(flip_flags.any()):
+            continue
+        flipped = torch.flip(result, [spatial_axis - 3])
+        mask = rearrange(flip_flags, "b -> b 1 1 1 1")
+        result = torch.where(mask, flipped, result)
+    return result
 
 
 class _FlipInverse(SpatialTransform):
