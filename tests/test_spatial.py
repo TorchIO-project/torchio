@@ -311,7 +311,26 @@ class TestAffine:
             subject.t1.affine.numpy(),
         )
 
-    def test_isotropic_scales(self) -> None:
+    def test_inverse_leaves_excluded_images_untouched(self) -> None:
+        # The forward pass records the images it transformed; the inverse
+        # must only resample those, so an excluded image (here the label
+        # map) is bit-for-bit identical after a forward + inverse round
+        # trip.
+        subject = _make_subject()
+        transform = AffineTransform(
+            degrees=(0.0, 0.0, 20.0),
+            translation=(1.0, -2.0, 0.5),
+            default_pad_value=0.0,
+            include=["t1"],
+        )
+        original_seg = subject.seg.data.clone()
+
+        result = transform(subject)
+        assert result.applied_transforms[-1].params["selected_images"] == ["t1"]
+        assert torch.equal(result.seg.data, original_seg)
+
+        restored = result.apply_inverse_transform()
+        assert torch.equal(restored.seg.data, original_seg)
         subject = _make_subject()
         transform = AffineTransform(
             scales=(0.9, 1.1),

@@ -581,6 +581,9 @@ class Spatial(SpatialTransform):
             "default_pad_value": params["default_pad_value"],
             "default_pad_label": float(params["default_pad_label"]),
             "copy": False,
+            # Invert only the images the forward pass actually transformed,
+            # so excluded images (e.g. label maps) are not resampled.
+            "include": params["selected_images"],
         }
 
         batched_keys = params.get("_batched_keys") or []
