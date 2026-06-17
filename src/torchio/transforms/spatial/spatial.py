@@ -285,8 +285,8 @@ class Spatial(SpatialTransform):
         max_displacement: TypeParameterValue = 0.0,
         locked_borders: int = 2,
         affine_first: bool = True,
-        image_interpolation: TypeImageInterpolation = "linear",
-        label_interpolation: TypeLabelInterpolation = "nearest",
+        image_interpolation: TypeImageInterpolation | int = "linear",
+        label_interpolation: TypeLabelInterpolation | int = "nearest",
         antialias: bool = False,
         default_pad_value: TypePadValue | float = "minimum",
         default_pad_label: int | float = 0,
@@ -584,8 +584,8 @@ class Resample(Spatial):
     def __init__(
         self,
         target: TypeTarget = 1,
-        image_interpolation: TypeImageInterpolation = "linear",
-        label_interpolation: TypeLabelInterpolation = "nearest",
+        image_interpolation: TypeImageInterpolation | int = "linear",
+        label_interpolation: TypeLabelInterpolation | int = "nearest",
         antialias: bool = False,
         **kwargs: Any,
     ) -> None:
@@ -635,8 +635,8 @@ class Affine(Spatial):
         center: TypeCenter = "image",
         default_pad_value: TypePadValue | float = "minimum",
         default_pad_label: int | float = 0,
-        image_interpolation: TypeImageInterpolation = "linear",
-        label_interpolation: TypeLabelInterpolation = "nearest",
+        image_interpolation: TypeImageInterpolation | int = "linear",
+        label_interpolation: TypeLabelInterpolation | int = "nearest",
         **kwargs: Any,
     ) -> None:
         super().__init__(
@@ -696,8 +696,8 @@ class ElasticDeformation(Spatial):
         num_control_points: int | TypeThreeInts = 7,
         max_displacement: TypeParameterValue = 7.5,
         locked_borders: int = 2,
-        image_interpolation: TypeImageInterpolation = "linear",
-        label_interpolation: TypeLabelInterpolation = "nearest",
+        image_interpolation: TypeImageInterpolation | int = "linear",
+        label_interpolation: TypeLabelInterpolation | int = "nearest",
         **kwargs: Any,
     ) -> None:
         super().__init__(
