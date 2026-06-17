@@ -827,3 +827,99 @@ class TestHighOrderInterpolation:
             image_interpolation="nearest",
         )(subject)
         assert result.t1.data.shape == subject.t1.data.shape
+
+
+def _sphere_label(
+    n: int = 64,
+    radius: float = 20.0,
+    value: float = 1.0,
+) -> torch.Tensor:
+    center = (n - 1) / 2
+    zz, yy, xx = torch.meshgrid(
+        torch.arange(n),
+        torch.arange(n),
+        torch.arange(n),
+        indexing="ij",
+    )
+    distance = ((xx - center) ** 2 + (yy - center) ** 2 + (zz - center) ** 2).sqrt()
+    sphere = (distance <= radius).float() * value
+    return sphere[None]
+
+
+def _dice(a: torch.Tensor, b: torch.Tensor) -> float:
+    mask_a = a > 0
+    mask_b = b > 0
+    intersection = (mask_a & mask_b).sum()
+    return (2 * intersection / (mask_a.sum() + mask_b.sum())).item()
+
+
+class TestLabelInterpolation:
+    def test_parse_interpolation_accepts_label(self) -> None:
+        assert _parse_interpolation("label") == "label"
+        assert _parse_interpolation("LABEL") == "label"
+
+    def test_image_interpolation_label_raises(self) -> None:
+        with pytest.raises(ValueError, match="image_interpolation"):
+            tio.Resample(2, image_interpolation="label")
+
+    def test_no_invalid_labels_when_downsampling(self) -> None:
+        data = torch.zeros(1, 32, 32, 32)
+        data[0, 8:24, 8:24, 8:24] = 2
+        data[0, 12:20, 12:20, 12:20] = 5  # non-contiguous label values
+        subject = tio.Subject(seg=tio.LabelMap(data, affine=np.eye(4)))
+        result = tio.Resample(4, label_interpolation="label")(subject)
+        unique = set(result.seg.data.unique().tolist())
+        assert unique <= {0.0, 2.0, 5.0}
+
+    def test_no_invalid_labels_when_upsampling(self) -> None:
+        data = torch.zeros(1, 16, 16, 16)
+        data[0, 4:12, 4:12, 4:12] = 3
+        subject = tio.Subject(seg=tio.LabelMap(data, affine=np.eye(4)))
+        result = tio.Resample(0.5, label_interpolation="label")(subject)
+        unique = set(result.seg.data.unique().tolist())
+        assert unique <= {0.0, 3.0}
+
+    def test_roundtrip_dice_beats_nearest(self) -> None:
+        original = _sphere_label()
+        subject = tio.Subject(seg=tio.LabelMap(original, affine=np.eye(4)))
+
+        def roundtrip(mode: str) -> torch.Tensor:
+            down = tio.Resample(4, label_interpolation=mode)(subject)
+            back = tio.Resample(subject.seg, label_interpolation=mode)(down)
+            return back.seg.data
+
+        dice_label = _dice(roundtrip("label"), original)
+        dice_nearest = _dice(roundtrip("nearest"), original)
+        assert dice_label > dice_nearest
+
+    def test_default_pad_label_fills_out_of_bounds(self) -> None:
+        data = torch.ones(1, 16, 16, 16)
+        subject = tio.Subject(seg=tio.LabelMap(data, affine=np.eye(4)))
+        # Shift the whole volume out of the field of view along one axis.
+        transformed = AffineTransform(
+            translation=(100.0, 0.0, 0.0),
+            label_interpolation="label",
+            default_pad_label=7.0,
+        )(subject)
+        assert (transformed.seg.data == 7.0).any()
+
+    def test_antialias_label_runs_and_keeps_valid_labels(self) -> None:
+        original = _sphere_label(value=4.0)
+        subject = tio.Subject(seg=tio.LabelMap(original, affine=np.eye(4)))
+        result = tio.Resample(
+            4,
+            label_interpolation="label",
+            antialias=True,
+        )(subject)
+        unique = set(result.seg.data.unique().tolist())
+        assert unique <= {0.0, 4.0}
+        assert result.seg.data.shape[1:] == (16, 16, 16)
+
+    def test_multichannel_label_resamples_without_argmax(self) -> None:
+        data = torch.zeros(2, 16, 16, 16)
+        data[0] = 1.0
+        data[0, 4:12, 4:12, 4:12] = 0.0
+        data[1, 4:12, 4:12, 4:12] = 1.0
+        subject = tio.Subject(seg=tio.LabelMap(data, affine=np.eye(4)))
+        result = tio.Resample(2, label_interpolation="label")(subject)
+        assert result.seg.data.shape[0] == 2

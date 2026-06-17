@@ -91,9 +91,15 @@ TypeInterpolation: TypeAlias = Literal[
     "fifth",
     "sixth",
     "seventh",
+    "label",
 ]
 TypeCenter: TypeAlias = Literal["image", "origin"]
 TypePadValue: TypeAlias = Literal["minimum", "mean", "otsu"]
+
+#: Partial-volume label interpolation mode. Only valid for label maps: the map
+#: is one-hot encoded, each channel is resampled linearly, and the per-voxel
+#: argmax recovers the discrete labels (see `_resample_label_partial_volume`).
+LABEL_INTERPOLATION = "label"
 
 _SUPPORTED_INTERPOLATIONS = (
     "nearest",
@@ -104,6 +110,7 @@ _SUPPORTED_INTERPOLATIONS = (
     "fifth",
     "sixth",
     "seventh",
+    LABEL_INTERPOLATION,
 )
 _INTERPOLATION_TO_ORDER: dict[str, int] = {
     "nearest": 0,
@@ -199,11 +206,22 @@ class Spatial(SpatialTransform):
             transforms.
         image_interpolation: `"linear"` (default) or `"nearest"`.
             Used for [`ScalarImage`][torchio.ScalarImage] instances.
-        label_interpolation: `"nearest"` (default) or `"linear"`.
-            Used for [`LabelMap`][torchio.LabelMap] instances.
+        label_interpolation: `"nearest"` (default), `"linear"`, or
+            `"label"`.  Used for [`LabelMap`][torchio.LabelMap] instances.
+            The `"label"` mode performs partial-volume-aware resampling:
+            the label map is one-hot encoded, each channel is resampled
+            with linear interpolation, and the per-voxel argmax recovers
+            the discrete labels.  Compared with `"nearest"`, this reduces
+            staircase artifacts and yields more accurate label volumes,
+            which is especially useful when downsampling.  It never
+            produces label values that were absent from the input, and is
+            more memory- and compute-intensive because it processes one
+            channel per label.
         antialias: If `True`, apply Gaussian smoothing before
-            downsampling intensity images.  Label maps are never
-            smoothed.  The standard deviations follow
+            downsampling intensity images.  Label maps are smoothed only
+            when `label_interpolation="label"` (the one-hot channels are
+            blurred before downsampling); otherwise they are left
+            untouched.  The standard deviations follow
             [Cardoso et al., MICCAI 2015](https://link.springer.com/chapter/10.1007/978-3-319-24571-3_81).
         default_pad_value: Fill rule for out-of-bounds intensity
             voxels.  `"minimum"` (default), `"mean"`, `"otsu"`,
@@ -283,6 +301,12 @@ class Spatial(SpatialTransform):
             raise ValueError(msg)
         self.affine_first = affine_first
         self.image_interpolation = _parse_interpolation(image_interpolation)
+        if self.image_interpolation == LABEL_INTERPOLATION:
+            msg = (
+                f'image_interpolation cannot be "{LABEL_INTERPOLATION}"; that mode'
+                " is only valid for label_interpolation"
+            )
+            raise ValueError(msg)
         self.label_interpolation = _parse_interpolation(label_interpolation)
         self.antialias = antialias
         self.default_pad_value = _parse_default_pad_value(default_pad_value)
@@ -530,6 +554,12 @@ class Resample(Spatial):
         >>> transform = tio.Resample(2)               # 2 mm isotropic
         >>> transform = tio.Resample("t1")            # match "t1" space
         >>> transform = tio.Resample((1, 1, 3))       # anisotropic
+        >>> # Partial-volume-aware label resampling
+        >>> transform = tio.Resample(
+        ...     2,
+        ...     label_interpolation="label",
+        ...     antialias=True,
+        ... )
     """
 
     def __init__(
@@ -714,24 +744,121 @@ def _apply_spatial_to_batch(
             image_interpolation=image_interpolation,
             label_interpolation=label_interpolation,
         )
-        fill_value = _batch_fill_value(
-            img_batch,
-            default_pad_value=default_pad_value,
-            default_pad_label=default_pad_label,
-        )
-        data = img_batch.data
-        # Antialias: blur ScalarImages before downsampling.
-        if antialias and not is_label:
-            data = _antialias_batch(data, input_affine, output_affine)
-        img_batch.data = _sample_batch(
-            data,
-            grid,
-            input_shape=input_shape,
-            interpolation=interpolation,
-            fill_value=fill_value,
-        )
+        if is_label and interpolation == LABEL_INTERPOLATION:
+            img_batch.data = _resample_label_partial_volume(
+                img_batch.data,
+                grid,
+                input_shape=input_shape,
+                input_affine=input_affine,
+                output_affine=output_affine,
+                antialias=antialias,
+                default_pad_label=float(default_pad_label),
+            )
+        else:
+            fill_value = _batch_fill_value(
+                img_batch,
+                default_pad_value=default_pad_value,
+                default_pad_label=default_pad_label,
+            )
+            data = img_batch.data
+            # Antialias: blur ScalarImages before downsampling.
+            if antialias and not is_label:
+                data = _antialias_batch(data, input_affine, output_affine)
+            img_batch.data = _sample_batch(
+                data,
+                grid,
+                input_shape=input_shape,
+                interpolation=interpolation,
+                fill_value=fill_value,
+            )
         new_affine = output_affine.clone()
         img_batch.affines[:] = [new_affine.clone() for _ in img_batch.affines]
+
+
+def _resample_label_partial_volume(
+    data: Tensor,
+    grid: Tensor,
+    *,
+    input_shape: TypeThreeInts,
+    input_affine: AffineMatrix,
+    output_affine: AffineMatrix,
+    antialias: bool,
+    default_pad_label: float,
+) -> Tensor:
+    r"""Resample a discrete label map in a partial-volume-aware way.
+
+    Nearest-neighbor resampling of a label map produces staircase artifacts
+    and can drop thin structures, especially when downsampling. This helper
+    instead:
+
+    1. one-hot encodes the label map using the unique label values present
+       (robust to non-contiguous labels such as $\{0, 2, 5\}$),
+    2. optionally Gaussian-smooths each channel before downsampling when
+       *antialias* is `True` (using the same sigma as
+       [`_antialias_sigmas`][] from Cardoso et al., MICCAI 2015),
+    3. resamples every channel with linear interpolation, and
+    4. takes the per-voxel argmax to recover the discrete labels.
+
+    Out-of-bounds voxels are filled with *default_pad_label*.
+
+    Args:
+        data: `(B, C, I, J, K)` label batch. When `C == 1` the full one-hot
+            pipeline is used. When `C > 1` (an already one-hot or
+            probabilistic map) the channels are resampled linearly without
+            re-encoding.
+        grid: `(I_out, J_out, K_out, 3)` sampling grid in input voxel
+            coordinates.
+        input_shape: Spatial shape of the input volume `(I, J, K)`.
+        input_affine: Affine of the input grid.
+        output_affine: Affine of the output grid.
+        antialias: Whether to Gaussian-smooth the one-hot channels before
+            downsampling.
+        default_pad_label: Value assigned to out-of-bounds voxels.
+
+    Returns:
+        Resampled `(B, 1, I_out, J_out, K_out)` label batch (or
+        `(B, C, ...)` when the input had `C > 1`) with the input dtype.
+    """
+    if data.shape[1] > 1:
+        smoothed = data.float()
+        if antialias:
+            smoothed = _antialias_batch(smoothed, input_affine, output_affine)
+        return _sample_batch(
+            smoothed,
+            grid,
+            input_shape=input_shape,
+            interpolation="linear",
+            fill_value=0.0,
+        ).to(data.dtype)
+
+    labels = torch.unique(data)
+    values = rearrange(data[:, 0], "b i j k -> b 1 i j k")
+    targets = rearrange(labels, "n -> 1 n 1 1 1")
+    one_hot = (values == targets).float()
+
+    if antialias:
+        one_hot = _antialias_batch(one_hot, input_affine, output_affine)
+
+    sampled = _sample_batch(
+        one_hot,
+        grid,
+        input_shape=input_shape,
+        interpolation="linear",
+        fill_value=0.0,
+    )
+
+    winners = sampled.argmax(dim=1)
+    resampled = labels[winners]
+    # In-bounds voxels keep partition of unity (channels sum to ~1); voxels
+    # sampled entirely from outside the input have all-zero channels.
+    in_bounds = sampled.sum(dim=1) > 0.5
+    resampled = torch.where(
+        in_bounds,
+        resampled,
+        torch.full_like(resampled, default_pad_label),
+    )
+    out = rearrange(resampled, "b i j k -> b 1 i j k")
+    return out.to(data.dtype)
 
 
 def _resolve_target_space(
