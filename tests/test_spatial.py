@@ -923,3 +923,16 @@ class TestLabelInterpolation:
         subject = tio.Subject(seg=tio.LabelMap(data, affine=np.eye(4)))
         result = tio.Resample(2, label_interpolation="label")(subject)
         assert result.seg.data.shape[0] == 2
+
+    def test_multichannel_integer_input_preserves_partial_volumes(self) -> None:
+        # An integer one-hot encoding must not be truncated back to 0/1:
+        # linear resampling should yield fractional partial volumes.
+        data = torch.zeros(2, 16, 16, 16, dtype=torch.uint8)
+        data[0] = 1
+        data[0, :8] = 0
+        data[1, :8] = 1
+        subject = tio.Subject(seg=tio.LabelMap(data, affine=np.eye(4)))
+        result = tio.Resample((1.5, 1.0, 1.0), label_interpolation="label")(subject)
+        assert result.seg.data.dtype.is_floating_point
+        fractional = (result.seg.data > 0) & (result.seg.data < 1)
+        assert fractional.any()

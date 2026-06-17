@@ -214,7 +214,9 @@ class Spatial(SpatialTransform):
             the discrete labels.  Compared with `"nearest"`, this reduces
             staircase artifacts and yields more accurate label volumes,
             which is especially useful when downsampling.  It never
-            produces label values that were absent from the input, and is
+            invents intermediate label values that were absent from the
+            input (the only new value that can appear is
+            `default_pad_label`, used for out-of-bounds voxels), and is
             more memory- and compute-intensive because it processes one
             channel per label.
         antialias: If `True`, apply Gaussian smoothing before
@@ -799,13 +801,20 @@ def _resample_label_partial_volume(
     3. resamples every channel with linear interpolation, and
     4. takes the per-voxel argmax to recover the discrete labels.
 
-    Out-of-bounds voxels are filled with *default_pad_label*.
+    This single-channel pipeline (`C == 1`) fills out-of-bounds voxels with
+    *default_pad_label*.
+
+    Multi-channel inputs (`C > 1`, an already one-hot or probabilistic map)
+    take a different path: their channels are resampled linearly **without**
+    re-encoding or an argmax, out-of-bounds voxels are filled with `0`
+    (*default_pad_label* is **not** applied), and the partial-volume result
+    is returned as floating point so the interpolated fractions are not
+    truncated.
 
     Args:
         data: `(B, C, I, J, K)` label batch. When `C == 1` the full one-hot
-            pipeline is used. When `C > 1` (an already one-hot or
-            probabilistic map) the channels are resampled linearly without
-            re-encoding.
+            pipeline is used. When `C > 1` the channels are resampled
+            linearly without re-encoding (see above).
         grid: `(I_out, J_out, K_out, 3)` sampling grid in input voxel
             coordinates.
         input_shape: Spatial shape of the input volume `(I, J, K)`.
@@ -813,23 +822,31 @@ def _resample_label_partial_volume(
         output_affine: Affine of the output grid.
         antialias: Whether to Gaussian-smooth the one-hot channels before
             downsampling.
-        default_pad_label: Value assigned to out-of-bounds voxels.
+        default_pad_label: Value assigned to out-of-bounds voxels. Only
+            applied for single-channel (`C == 1`) inputs; multi-channel
+            inputs use `0` for out-of-bounds.
 
     Returns:
-        Resampled `(B, 1, I_out, J_out, K_out)` label batch (or
-        `(B, C, ...)` when the input had `C > 1`) with the input dtype.
+        Resampled `(B, 1, I_out, J_out, K_out)` label batch with the input
+        dtype when `C == 1`. When `C > 1`, a `(B, C, ...)` partial-volume
+        batch is returned: the input dtype is preserved for floating-point
+        inputs, otherwise the output is `float32` to avoid truncating the
+        interpolated values.
     """
     if data.shape[1] > 1:
         smoothed = data.float()
         if antialias:
             smoothed = _antialias_batch(smoothed, input_affine, output_affine)
-        return _sample_batch(
+        sampled = _sample_batch(
             smoothed,
             grid,
             input_shape=input_shape,
             interpolation="linear",
             fill_value=0.0,
-        ).to(data.dtype)
+        )
+        if data.dtype.is_floating_point:
+            return sampled.to(data.dtype)
+        return sampled
 
     labels = torch.unique(data)
     values = rearrange(data[:, 0], "b i j k -> b 1 i j k")
