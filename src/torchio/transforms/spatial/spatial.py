@@ -796,8 +796,8 @@ def _resample_label_partial_volume(
     1. one-hot encodes the label map using the unique label values present
        (robust to non-contiguous labels such as $\{0, 2, 5\}$),
     2. optionally Gaussian-smooths each channel before downsampling when
-       *antialias* is `True` (using the same sigma as
-       [`_antialias_sigmas`][] from Cardoso et al., MICCAI 2015),
+       *antialias* is `True` (using the same `_antialias_sigmas` as the
+       intensity antialiasing path, from Cardoso et al., MICCAI 2015),
     3. resamples every channel with linear interpolation, and
     4. takes the per-voxel argmax to recover the discrete labels.
 
