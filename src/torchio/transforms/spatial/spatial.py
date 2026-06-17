@@ -208,19 +208,28 @@ class Spatial(SpatialTransform):
             before the elastic field.  If `False`, apply the elastic
             field first.  The difference is significant for large
             transforms.
-        image_interpolation: `"linear"` (default) or `"nearest"`.
-            Used for [`ScalarImage`][torchio.ScalarImage] instances.
-        label_interpolation: `"nearest"` (default), `"linear"`, or
-            `"label"`.  Used for [`LabelMap`][torchio.LabelMap] instances.
-            The `"label"` mode performs partial-volume-aware resampling:
-            the label map is one-hot encoded, each channel is resampled
-            with linear interpolation, and the per-voxel argmax recovers
-            the discrete labels.  Compared with `"nearest"`, this reduces
-            staircase artifacts and yields more accurate label volumes,
-            which is especially useful when downsampling.  It never
-            invents intermediate label values that were absent from the
-            input (the only new value that can appear is
-            `default_pad_label`, used for out-of-bounds voxels), and is
+        image_interpolation: Interpolation for
+            [`ScalarImage`][torchio.ScalarImage] instances.  `"linear"`
+            (default) or `"nearest"` use a fast path; higher-order
+            B-spline modes `"quadratic"`, `"cubic"`, `"fourth"`,
+            `"fifth"`, `"sixth"`, and `"seventh"` are also supported, as
+            are the equivalent integer orders `0`-`7`.
+        label_interpolation: Interpolation for
+            [`LabelMap`][torchio.LabelMap] instances.  Accepts the same
+            values as *image_interpolation* (`"nearest"` is the default),
+            plus the special `"label"` mode.  The `"label"` mode performs
+            partial-volume-aware resampling: the label map is one-hot
+            encoded, each channel is resampled with linear interpolation,
+            and the per-voxel argmax recovers the discrete labels.
+            Compared with `"nearest"`, this reduces staircase artifacts
+            and yields more accurate label volumes, which is especially
+            useful when downsampling.  For single-channel label maps it
+            never invents intermediate label values that were absent from
+            the input (the only new value that can appear is
+            `default_pad_label`, used for out-of-bounds voxels).  A
+            multi-channel (already one-hot or probabilistic) label map is
+            instead resampled linearly per channel, so its output can
+            contain fractional partial volumes.  The `"label"` mode is
             more memory- and compute-intensive because it processes one
             channel per label.
         antialias: If `True`, apply Gaussian smoothing before
@@ -874,8 +883,12 @@ def _resample_label_partial_volume(
 
     winners = sampled.argmax(dim=1)
     resampled = labels[winners]
-    # In-bounds voxels keep partition of unity (channels sum to ~1); voxels
-    # sampled entirely from outside the input have all-zero channels.
+    # In-bounds voxels keep partition of unity (channels sum to ~1). Near the
+    # border, the channel sum equals the in-bounds fraction of the sampling
+    # neighborhood. A voxel sampled mostly (>50%) from outside the input is
+    # treated as out-of-bounds and set to default_pad_label, matching the
+    # `mask > 0.5` fill convention used for intensity images in
+    # `_sample_batch_grid_sample`.
     in_bounds = sampled.sum(dim=1) > 0.5
     resampled = torch.where(
         in_bounds,
