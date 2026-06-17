@@ -82,7 +82,7 @@ TypeSpacingSpec: TypeAlias = (
 )
 TypeControlPoints: TypeAlias = Tensor | npt.ArrayLike
 TypeTargetSpace: TypeAlias = tuple[TypeThreeInts, AffineMatrix]
-TypeInterpolation: TypeAlias = Literal[
+TypeImageInterpolation: TypeAlias = Literal[
     "nearest",
     "linear",
     "quadratic",
@@ -91,8 +91,12 @@ TypeInterpolation: TypeAlias = Literal[
     "fifth",
     "sixth",
     "seventh",
-    "label",
 ]
+#: Label maps additionally accept the partial-volume-aware `"label"` mode.
+TypeLabelInterpolation: TypeAlias = TypeImageInterpolation | Literal["label"]
+#: Broad alias accepting any interpolation mode, including `"label"`. Used by
+#: internal helpers that handle both image and label interpolation.
+TypeInterpolation: TypeAlias = TypeLabelInterpolation
 TypeCenter: TypeAlias = Literal["image", "origin"]
 TypePadValue: TypeAlias = Literal["minimum", "mean", "otsu"]
 
@@ -272,8 +276,8 @@ class Spatial(SpatialTransform):
         max_displacement: TypeParameterValue = 0.0,
         locked_borders: int = 2,
         affine_first: bool = True,
-        image_interpolation: TypeInterpolation = "linear",
-        label_interpolation: TypeInterpolation = "nearest",
+        image_interpolation: TypeImageInterpolation = "linear",
+        label_interpolation: TypeLabelInterpolation = "nearest",
         antialias: bool = False,
         default_pad_value: TypePadValue | float = "minimum",
         default_pad_label: int | float = 0,
@@ -302,13 +306,14 @@ class Spatial(SpatialTransform):
             )
             raise ValueError(msg)
         self.affine_first = affine_first
-        self.image_interpolation = _parse_interpolation(image_interpolation)
-        if self.image_interpolation == LABEL_INTERPOLATION:
+        parsed_image_interpolation = _parse_interpolation(image_interpolation)
+        if parsed_image_interpolation == LABEL_INTERPOLATION:
             msg = (
                 f'image_interpolation cannot be "{LABEL_INTERPOLATION}"; that mode'
                 " is only valid for label_interpolation"
             )
             raise ValueError(msg)
+        self.image_interpolation = parsed_image_interpolation
         self.label_interpolation = _parse_interpolation(label_interpolation)
         self.antialias = antialias
         self.default_pad_value = _parse_default_pad_value(default_pad_value)
@@ -483,8 +488,8 @@ class _SpatialInverse(SpatialTransform):
         affine_matrix: npt.ArrayLike | None,
         control_points: TypeControlPoints | None,
         affine_first: bool,
-        image_interpolation: TypeInterpolation,
-        label_interpolation: TypeInterpolation,
+        image_interpolation: TypeImageInterpolation,
+        label_interpolation: TypeLabelInterpolation,
         default_pad_value: TypePadValue | float,
         default_pad_label: float,
         **kwargs: Any,
@@ -502,7 +507,10 @@ class _SpatialInverse(SpatialTransform):
             else None
         )
         self.affine_first = affine_first
-        self.image_interpolation = _parse_interpolation(image_interpolation)
+        self.image_interpolation = cast(
+            TypeImageInterpolation,
+            _parse_interpolation(image_interpolation),
+        )
         self.label_interpolation = _parse_interpolation(label_interpolation)
         self.default_pad_value = _parse_default_pad_value(default_pad_value)
         self.default_pad_label = float(default_pad_label)
@@ -567,8 +575,8 @@ class Resample(Spatial):
     def __init__(
         self,
         target: TypeTarget = 1,
-        image_interpolation: TypeInterpolation = "linear",
-        label_interpolation: TypeInterpolation = "nearest",
+        image_interpolation: TypeImageInterpolation = "linear",
+        label_interpolation: TypeLabelInterpolation = "nearest",
         antialias: bool = False,
         **kwargs: Any,
     ) -> None:
@@ -618,8 +626,8 @@ class Affine(Spatial):
         center: TypeCenter = "image",
         default_pad_value: TypePadValue | float = "minimum",
         default_pad_label: int | float = 0,
-        image_interpolation: TypeInterpolation = "linear",
-        label_interpolation: TypeInterpolation = "nearest",
+        image_interpolation: TypeImageInterpolation = "linear",
+        label_interpolation: TypeLabelInterpolation = "nearest",
         **kwargs: Any,
     ) -> None:
         super().__init__(
@@ -679,8 +687,8 @@ class ElasticDeformation(Spatial):
         num_control_points: int | TypeThreeInts = 7,
         max_displacement: TypeParameterValue = 7.5,
         locked_borders: int = 2,
-        image_interpolation: TypeInterpolation = "linear",
-        label_interpolation: TypeInterpolation = "nearest",
+        image_interpolation: TypeImageInterpolation = "linear",
+        label_interpolation: TypeLabelInterpolation = "nearest",
         **kwargs: Any,
     ) -> None:
         super().__init__(
@@ -703,8 +711,8 @@ def _apply_spatial_to_batch(
     control_points: Tensor | None,
     max_displacement: tuple[float, float, float] | None,
     affine_first: bool,
-    image_interpolation: TypeInterpolation,
-    label_interpolation: TypeInterpolation,
+    image_interpolation: TypeImageInterpolation,
+    label_interpolation: TypeLabelInterpolation,
     antialias: bool,
     default_pad_value: TypePadValue | float,
     default_pad_label: float,
@@ -1747,8 +1755,8 @@ def _get_spatial_shape(img_batch: ImagesBatch) -> TypeThreeInts:
 def _interpolation_for_batch(
     img_batch: ImagesBatch,
     *,
-    image_interpolation: TypeInterpolation,
-    label_interpolation: TypeInterpolation,
+    image_interpolation: TypeImageInterpolation,
+    label_interpolation: TypeLabelInterpolation,
 ) -> str:
     """Choose the interpolation mode based on the image class."""
     if issubclass(img_batch._image_class, LabelMap):
