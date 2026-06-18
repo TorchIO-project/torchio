@@ -597,6 +597,7 @@ class TestLazyBackends:
         path = tmp_path / "test.nii.gz"
         self._make_nii(path, shape=(20, 20, 20))
         cropped = tio.CropOrPad(target_shape=10)(tio.Subject(t1=tio.ScalarImage(path)))
+        assert not cropped.t1.is_loaded
         padded = tio.Pad(padding=2)(cropped)
         assert padded.t1.shape == (1, 14, 14, 14)
 
