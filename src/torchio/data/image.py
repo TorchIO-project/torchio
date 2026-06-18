@@ -1165,7 +1165,7 @@ class Image(Invertible):
                 new._data = self._data.clone()
                 new._affine = affine_copy
             elif self._backend is not None:
-                new._backend = copy.deepcopy(self._backend, memo)
+                new._backend = copy.copy(self._backend)
         elif self._path is not None:
             new = type(self)(
                 self._path,
@@ -1183,8 +1183,10 @@ class Image(Invertible):
                 # Preserve a derived lazy backend (e.g. the cropped/padded
                 # view installed by CropOrPad). Rebuilding from the source
                 # path alone would discard the crop/pad and revert to the
-                # full-resolution image.
-                new._backend = copy.deepcopy(self._backend, memo)
+                # full-resolution image. A shallow copy is enough: the backend
+                # is a read-only access adapter, so sharing the underlying
+                # storage object avoids deep-copying nibabel/zarr internals.
+                new._backend = copy.copy(self._backend)
         elif self._zarr_store is not None:
             new = type(self)(
                 self._zarr_store,
@@ -1198,7 +1200,7 @@ class Image(Invertible):
                 new._data = self._data.clone()
                 new._affine = affine_copy
             elif self._backend is not None:
-                new._backend = copy.deepcopy(self._backend, memo)
+                new._backend = copy.copy(self._backend)
         elif self._data is not None:
             new = type(self)(
                 self._data.clone(),

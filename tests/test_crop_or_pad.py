@@ -580,9 +580,11 @@ class TestLazyBackends:
         self._make_nii(path, shape=(8, 8, 8))
         result = tio.CropOrPad(target_shape=12)(tio.Subject(t1=tio.ScalarImage(path)))
         image = result.t1
+        assert not image.is_loaded
 
         copied = copy.deepcopy(image)
         assert copied.shape == (1, 12, 12, 12)
+        assert not copied.is_loaded
         torch.testing.assert_close(copied.data, image.data)
 
     def test_transform_after_lazy_crop_uses_cropped_shape(self, tmp_path) -> None:
