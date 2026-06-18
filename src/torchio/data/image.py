@@ -1216,6 +1216,11 @@ class Image(Invertible):
                 bounding_boxes=bboxes_copy,
                 **meta_copy,
             )
+            if self._backend is not None:
+                # Backend-only lazy image (e.g. built from a nibabel image
+                # with no path or materialized data). Preserve the backend so
+                # the copy can still report its shape and load its data.
+                new._backend = copy.copy(self._backend)
         memo[id(self)] = new
         return new
 

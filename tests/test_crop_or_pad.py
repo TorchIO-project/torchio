@@ -600,6 +600,26 @@ class TestLazyBackends:
         padded = tio.Pad(padding=2)(cropped)
         assert padded.t1.shape == (1, 14, 14, 14)
 
+    def test_deepcopy_nibabel_backed_lazy_image(self) -> None:
+        """Deep-copying a backend-only (nibabel) lazy image must work.
+
+        Such images have ``_backend`` set but no ``_path`` or ``_data``; the
+        copy used to fall through to an empty image and fail on ``shape``.
+        """
+        import copy
+
+        nii = nib.Nifti1Image(
+            np.random.rand(6, 6, 6).astype(np.float32),
+            np.eye(4),
+        )
+        image = tio.ScalarImage(nii)
+        assert not image.is_loaded
+
+        copied = copy.deepcopy(image)
+        assert copied.shape == (1, 6, 6, 6)
+        assert not copied.is_loaded
+        torch.testing.assert_close(copied.data, image.data)
+
 
 class TestLazyCropPadAffine:
     """Lazy crop/pad must keep image.affine and image.dataobj.affine consistent.
