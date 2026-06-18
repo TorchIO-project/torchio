@@ -1164,6 +1164,8 @@ class Image(Invertible):
             if self._data is not None:
                 new._data = self._data.clone()
                 new._affine = affine_copy
+            elif self._backend is not None:
+                new._backend = copy.deepcopy(self._backend, memo)
         elif self._path is not None:
             new = type(self)(
                 self._path,
@@ -1177,7 +1179,12 @@ class Image(Invertible):
             if self._data is not None:
                 new._data = self._data.clone()
                 new._affine = affine_copy
-            # Backend will be lazily recreated from path when needed
+            elif self._backend is not None:
+                # Preserve a derived lazy backend (e.g. the cropped/padded
+                # view installed by CropOrPad). Rebuilding from the source
+                # path alone would discard the crop/pad and revert to the
+                # full-resolution image.
+                new._backend = copy.deepcopy(self._backend, memo)
         elif self._zarr_store is not None:
             new = type(self)(
                 self._zarr_store,
@@ -1190,6 +1197,8 @@ class Image(Invertible):
             if self._data is not None:
                 new._data = self._data.clone()
                 new._affine = affine_copy
+            elif self._backend is not None:
+                new._backend = copy.deepcopy(self._backend, memo)
         elif self._data is not None:
             new = type(self)(
                 self._data.clone(),

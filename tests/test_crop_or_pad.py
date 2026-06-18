@@ -552,6 +552,52 @@ class TestLazyBackends:
         # Access dtype through the lazy backend.
         assert result.t1.shape == (1, 10, 10, 10)
 
+    def test_deepcopy_cropped_lazy_preserves_shape(self, tmp_path) -> None:
+        """Deep-copying a lazily cropped image must keep the cropped shape.
+
+        Regression test: ``__deepcopy__`` used to rebuild the image from its
+        source path only, discarding the ``_CroppedBackend`` and reverting to
+        the full-resolution image.
+        """
+        import copy
+
+        path = tmp_path / "test.nii.gz"
+        self._make_nii(path, shape=(20, 20, 20))
+        result = tio.CropOrPad(target_shape=10)(tio.Subject(t1=tio.ScalarImage(path)))
+        image = result.t1
+        assert not image.is_loaded
+
+        copied = copy.deepcopy(image)
+        assert copied.shape == (1, 10, 10, 10)
+        assert not copied.is_loaded
+        torch.testing.assert_close(copied.data, image.data)
+
+    def test_deepcopy_padded_lazy_preserves_shape(self, tmp_path) -> None:
+        """Deep-copying a lazily padded image must keep the padded shape."""
+        import copy
+
+        path = tmp_path / "test.nii.gz"
+        self._make_nii(path, shape=(8, 8, 8))
+        result = tio.CropOrPad(target_shape=12)(tio.Subject(t1=tio.ScalarImage(path)))
+        image = result.t1
+
+        copied = copy.deepcopy(image)
+        assert copied.shape == (1, 12, 12, 12)
+        torch.testing.assert_close(copied.data, image.data)
+
+    def test_transform_after_lazy_crop_uses_cropped_shape(self, tmp_path) -> None:
+        """A transform applied after a lazy crop must see the cropped shape.
+
+        Transforms deep-copy their input in ``forward``; before the fix this
+        reverted the crop, so the second transform operated on the original
+        full-resolution image.
+        """
+        path = tmp_path / "test.nii.gz"
+        self._make_nii(path, shape=(20, 20, 20))
+        cropped = tio.CropOrPad(target_shape=10)(tio.Subject(t1=tio.ScalarImage(path)))
+        padded = tio.Pad(padding=2)(cropped)
+        assert padded.t1.shape == (1, 14, 14, 14)
+
 
 class TestLazyCropPadAffine:
     """Lazy crop/pad must keep image.affine and image.dataobj.affine consistent.
