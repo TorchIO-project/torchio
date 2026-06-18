@@ -184,8 +184,9 @@ class Image(Invertible):
         **kwargs: Any,
     ):
         # Backward compatibility: v1 used tensor= keyword, v2 uses positional source
-        if 'tensor' in kwargs and source is None:
+        if "tensor" in kwargs and source is None:
             import warnings
+
             warnings.warn(
                 "Passing 'tensor=' as a keyword argument is deprecated. "
                 "Use the positional argument instead: "
@@ -193,7 +194,7 @@ class Image(Invertible):
                 DeprecationWarning,
                 stacklevel=2,
             )
-            source = kwargs.pop('tensor')
+            source = kwargs.pop("tensor")
 
         # Common state shared by all source types.
         self._reader = reader or default_reader

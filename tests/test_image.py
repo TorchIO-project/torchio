@@ -173,7 +173,7 @@ class TestBackwardCompatibleTensorKeyword:
             mask = LabelMap(tensor=torch.randint(0, 2, (1, 10, 10, 10)))
         subject = Subject(image=image, mask=mask)
         result = Flip()(subject)
-        assert result['image'].data.shape == (1, 10, 10, 10)
+        assert result["image"].data.shape == (1, 10, 10, 10)
 
 
 class TestImageProperties:
