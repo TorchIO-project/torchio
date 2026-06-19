@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import pytest
 import torch
 
 import torchio as tio
@@ -77,3 +78,20 @@ class TestAnisotropyPerInstance:
         subject = tio.Subject(t1=tio.ScalarImage(torch.rand(1, 12, 12, 12)))
         result = tio.Anisotropy(downsampling=(2.0, 5.0))(subject)
         assert "_batched_keys" not in result.applied_transforms[-1].params
+
+
+class TestAnisotropyAxisValidation:
+    def test_out_of_range_axis_raises(self) -> None:
+        # An active per-element axis outside {0, 1, 2} must raise, matching the
+        # scalar path, rather than silently becoming a no-op.
+        from torchio.transforms.spatial.anisotropy import (
+            _simulate_anisotropy_per_instance,
+        )
+
+        with pytest.raises(ValueError, match="axis must be in"):
+            _simulate_anisotropy_per_instance(
+                torch.rand(2, 1, 8, 8, 8),
+                axes=[0, 3],
+                factors=[2.0, 2.0],
+                mode="linear",
+            )

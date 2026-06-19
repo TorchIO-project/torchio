@@ -6,6 +6,7 @@ from collections.abc import Sequence
 from typing import Any
 
 import torch
+from einops import rearrange
 from torch import Tensor
 
 from ...data.batch import SubjectsBatch
@@ -193,15 +194,70 @@ def _generate_per_element(
     Returns:
         `(B, 1, I, J, K)` synthetic image tensor.
     """
-    outputs = [
-        _generate_from_labels(
-            label_data[index : index + 1],
-            means_per_element[index],
-            stds_per_element[index],
+    b = label_data.shape[0]
+    spatial = label_data.shape[2:]
+    result = torch.zeros(b, 1, *spatial, device=label_data.device)
+
+    for label_val in _label_values_from(means_per_element):
+        means = _broadcast_values(
+            means_per_element,
+            label_val,
+            result,
         )
-        for index in range(label_data.shape[0])
-    ]
-    return torch.cat(outputs, dim=0)
+        stds = _broadcast_values(
+            stds_per_element,
+            label_val,
+            result,
+        )
+        if _is_all_zero(means) and _is_all_zero(stds):
+            continue
+        mask = (label_data[:, 0:1] == label_val).to(dtype=result.dtype)
+        tissue = torch.randn_like(result) * stds + means
+        result += tissue * mask
+
+    return result
+
+
+def _label_values_from(values_per_element: list[dict[int, float]]) -> list[int]:
+    """Get sorted label values represented by per-element dictionaries.
+
+    Args:
+        values_per_element: One value dictionary per batch element.
+
+    Returns:
+        Sorted union of labels in the dictionaries.
+    """
+    return sorted(set().union(*(values.keys() for values in values_per_element)))
+
+
+def _broadcast_values(
+    values_per_element: list[dict[int, float]],
+    label_val: int,
+    reference: Tensor,
+) -> Tensor:
+    """Convert per-element values for one label to a broadcastable tensor.
+
+    Args:
+        values_per_element: One value dictionary per batch element.
+        label_val: Label whose values are needed.
+        reference: Tensor defining device and dtype.
+
+    Returns:
+        Tensor of shape `(B, 1, 1, 1, 1)`, on the same device and dtype as
+            `reference`, broadcastable over `(B, 1, I, J, K)`.
+    """
+    values = [values.get(label_val, 0.0) for values in values_per_element]
+    tensor = torch.as_tensor(
+        values,
+        device=reference.device,
+        dtype=reference.dtype,
+    )
+    return rearrange(tensor, "b -> b 1 1 1 1")
+
+
+def _is_all_zero(values: Tensor) -> bool:
+    """Return whether all tensor entries are zero."""
+    return torch.count_nonzero(values).item() == 0
 
 
 def _generate_from_labels(

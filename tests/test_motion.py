@@ -82,3 +82,13 @@ class TestMotionPerInstance:
         subject = tio.Subject(t1=tio.ScalarImage(torch.rand(1, 12, 12, 12)))
         result = tio.Motion(degrees=15, translation=10)(subject)
         assert "_batched_keys" not in result.applied_transforms[-1].params
+
+
+class TestMotionDegenerateSegments:
+    def test_too_many_transforms_for_first_axis_raises(self) -> None:
+        # num_transforms + 1 segments cannot exceed the first spatial axis
+        # size; the transform must raise a clear error rather than silently
+        # replacing the whole spectrum.
+        subject = tio.Subject(t1=tio.ScalarImage(torch.rand(1, 2, 8, 8)))
+        with pytest.raises(ValueError, match="motion segments"):
+            tio.Motion(degrees=5, translation=5, num_transforms=4)(subject)

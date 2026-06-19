@@ -223,22 +223,74 @@ def _apply_bias_per_element(
     Returns:
         The corrected `(B, C, I, J, K)` tensor.
     """
-    outputs = []
-    for index in range(data.shape[0]):
-        slice_b = data[index : index + 1]
-        if std_per_element[index] == 0:
-            outputs.append(slice_b)
-            continue
-        field = _generate_bias_field(
-            slice_b.shape,
-            std=std_per_element[index],
-            scale=scale,
-            seed=seed_per_element[index],
+    identity_rows = [std == 0 for std in std_per_element]
+    if all(identity_rows):
+        return data
+
+    coarse_field = _sample_coarse_bias_fields(
+        data.shape,
+        std_per_element=std_per_element,
+        seed_per_element=seed_per_element,
+        scale=scale,
+        device=data.device,
+    )
+    field = functional.interpolate(
+        coarse_field,
+        size=list(data.shape[2:]),
+        mode="trilinear",
+        align_corners=True,
+    )
+    field = torch.exp(field)
+    corrected = data / field if divide else data * field
+    corrected = corrected.to(data.dtype)
+
+    if any(identity_rows):
+        identity_mask = torch.tensor(
+            identity_rows,
+            dtype=torch.bool,
             device=data.device,
         )
-        corrected = slice_b / field if divide else slice_b * field
-        outputs.append(corrected.to(data.dtype))
-    return torch.cat(outputs, dim=0)
+        corrected[identity_mask] = data[identity_mask]
+
+    return corrected
+
+
+def _sample_coarse_bias_fields(
+    shape: tuple[int, ...],
+    *,
+    std_per_element: list[float],
+    seed_per_element: list[int],
+    scale: float,
+    device: torch.device,
+) -> Tensor:
+    """Sample per-element coarse bias fields before batched upsampling.
+
+    Args:
+        shape: `(B, C, I, J, K)` tensor shape.
+        std_per_element: Per-element standard deviations.
+        seed_per_element: Per-element random seeds.
+        scale: Ratio between the coarse field and the spatial shape.
+        device: Device to move the stacked coarse fields to.
+
+    Returns:
+        `(B, C, small_I, small_J, small_K)` tensor sampled from each
+            element's own seeded CPU generator.
+    """
+    channels = shape[1]
+    spatial = shape[2:]
+    small_shape = [max(round(s * scale), 4) for s in spatial]
+    coarse_fields = []
+    for std, seed in zip(std_per_element, seed_per_element, strict=True):
+        generator = torch.Generator(device="cpu")
+        generator.manual_seed(seed)
+        coarse_field = torch.normal(
+            mean=0.0,
+            std=std,
+            size=(1, channels, *small_shape),
+            generator=generator,
+        )
+        coarse_fields.append(coarse_field)
+    return torch.cat(coarse_fields, dim=0).to(device)
 
 
 def _generate_bias_field(

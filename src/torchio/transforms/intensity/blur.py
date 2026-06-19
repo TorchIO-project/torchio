@@ -8,6 +8,7 @@ import numpy as np
 import torch
 import torch.nn.functional as functional
 from einops import rearrange
+from einops import repeat
 
 from ...data.batch import ImagesBatch
 from ...data.batch import SubjectsBatch
@@ -111,30 +112,68 @@ def _blur_per_element(
         The blurred `(B, C, I, J, K)` tensor.
     """
     data = img_batch.data
-    outputs = []
-    for index in range(data.shape[0]):
-        spacing = np.asarray(img_batch.affines[index].spacing, dtype=np.float64)
-        sigmas_vox = _sigmas_mm_to_voxels(sigmas_mm_per_element[index], spacing)
-        outputs.append(_gaussian_smooth(data[index : index + 1], sigmas_vox))
-    return torch.cat(outputs, dim=0)
+    sigmas_mm = np.asarray(sigmas_mm_per_element, dtype=np.float64)
+    spacings = np.asarray(
+        [affine.spacing for affine in img_batch.affines],
+        dtype=np.float64,
+    )
+    sigmas_vox = np.divide(
+        sigmas_mm,
+        spacings,
+        out=np.zeros_like(sigmas_mm),
+        where=spacings > 0,
+    )
+    return _gaussian_smooth(data, sigmas_vox)
 
 
-def _gaussian_smooth(data: torch.Tensor, sigmas: list[float]) -> torch.Tensor:
+def _gaussian_smooth(
+    data: torch.Tensor,
+    sigmas: list[float] | np.ndarray,
+) -> torch.Tensor:
     """Apply separable Gaussian smoothing to a 5D tensor.
 
     Args:
         data: `(B, C, I, J, K)` tensor.
-        sigmas: Per-axis sigma in voxels.
+        sigmas: Per-axis sigma in voxels, or per-element per-axis sigmas
+            with shape `(B, 3)`. Zero means skip that axis.
 
     Returns:
         Smoothed tensor.
     """
-    if all(s <= 0 for s in sigmas):
+    sigmas_array = np.asarray(sigmas, dtype=np.float64)
+    if np.all(sigmas_array <= 0):
+        return data
+    if sigmas_array.ndim == 1:
+        # Sigmas shared across the batch: build one kernel set and apply it
+        # to every element, which is much cheaper than a grouped conv.
+        return _gaussian_smooth_shared(data, sigmas_array)
+    if np.all(sigmas_array == sigmas_array[0]):
+        # Per-element sigmas that happen to be identical collapse to the
+        # shared fast path.
+        return _gaussian_smooth_shared(data, sigmas_array[0])
+    return _gaussian_smooth_per_element(data, sigmas_array)
+
+
+def _gaussian_smooth_shared(
+    data: torch.Tensor,
+    sigmas: np.ndarray,
+) -> torch.Tensor:
+    """Separable Gaussian smoothing with a single shared kernel set.
+
+    Args:
+        data: `(B, C, I, J, K)` tensor.
+        sigmas: Per-axis sigma in voxels (length 3), shared by every
+            batch element.
+
+    Returns:
+        Smoothed tensor (input dtype preserved).
+    """
+    if np.all(sigmas <= 0):
         return data
     result = data.float()
     b, c = result.shape[:2]
     for axis_idx in range(3):
-        sigma = sigmas[axis_idx]
+        sigma = float(sigmas[axis_idx])
         if sigma <= 0:
             continue
         radius = max(int(np.ceil(3 * sigma)), 1)
@@ -143,11 +182,13 @@ def _gaussian_smooth(data: torch.Tensor, sigmas: list[float]) -> torch.Tensor:
         kernel_1d = torch.exp(-0.5 * (x / sigma) ** 2)
         kernel_1d = kernel_1d / kernel_1d.sum()
 
-        k_shape = [1, 1, 1]
-        k_shape[axis_idx] = kernel_size
-        kernel_3d = kernel_1d.reshape(1, 1, *k_shape).expand(1, 1, -1, -1, -1)
+        kernel_patterns = (
+            "k -> 1 1 k 1 1",
+            "k -> 1 1 1 k 1",
+            "k -> 1 1 1 1 k",
+        )
+        kernel_3d = rearrange(kernel_1d, kernel_patterns[axis_idx])
 
-        # Replicate-pad along the target axis.
         pad = [0] * 6
         pad_idx = 2 * (2 - axis_idx)
         pad[pad_idx] = radius
@@ -161,3 +202,127 @@ def _gaussian_smooth(data: torch.Tensor, sigmas: list[float]) -> torch.Tensor:
         )
         result = rearrange(result, "(b c) 1 i j k -> b c i j k", b=b, c=c)
     return result.to(data.dtype)
+
+
+def _gaussian_smooth_per_element(
+    data: torch.Tensor,
+    sigmas: np.ndarray,
+) -> torch.Tensor:
+    """Apply Gaussian smoothing with per-element sigmas.
+
+    Args:
+        data: `(B, C, I, J, K)` tensor.
+        sigmas: Per-element per-axis sigmas in voxels with shape `(B, 3)`.
+
+    Returns:
+        Smoothed tensor with the same dtype as `data`.
+    """
+    result = data.float()
+    b, c = result.shape[:2]
+    no_blur_rows = np.all(sigmas <= 0, axis=1)
+    for axis_idx in range(3):
+        axis_sigmas = sigmas[:, axis_idx]
+        if np.all(axis_sigmas <= 0):
+            continue
+        kernel_3d, radius = _make_grouped_axis_kernel(
+            axis_sigmas,
+            axis_idx,
+            c,
+            data.device,
+        )
+
+        # Replicate-pad along the target axis.
+        pad = [0] * 6
+        pad_idx = 2 * (2 - axis_idx)
+        pad[pad_idx] = radius
+        pad[pad_idx + 1] = radius
+
+        padded = functional.pad(result, pad, mode="replicate")
+        result = functional.conv3d(
+            rearrange(padded, "b c i j k -> 1 (b c) i j k"),
+            kernel_3d,
+            groups=b * c,
+            padding=0,
+        )
+        result = rearrange(result, "1 (b c) i j k -> b c i j k", b=b, c=c)
+    result = result.to(data.dtype)
+    if no_blur_rows.any():
+        no_blur_mask = torch.as_tensor(no_blur_rows, device=data.device)
+        result[no_blur_mask] = data[no_blur_mask]
+    return result
+
+
+def _make_grouped_axis_kernel(
+    sigmas: np.ndarray,
+    axis_idx: int,
+    channels: int,
+    device: torch.device,
+) -> tuple[torch.Tensor, int]:
+    """Build one grouped 3D convolution kernel for one spatial axis.
+
+    Args:
+        sigmas: Per-element sigma in voxels for the target axis.
+        axis_idx: Spatial axis index, from 0 to 2.
+        channels: Number of image channels per batch element.
+        device: Device on which the kernel should be allocated.
+
+    Returns:
+        The `(B * C, 1, kI, kJ, kK)` grouped convolution kernel and the
+            maximum radius used to pad the input.
+    """
+    radii = np.zeros_like(sigmas, dtype=np.int64)
+    positive = sigmas > 0
+    radii[positive] = np.maximum(np.ceil(3 * sigmas[positive]).astype(np.int64), 1)
+    max_radius = int(radii.max())
+    kernel_1d = _make_stacked_1d_kernels(sigmas, radii, max_radius, device)
+    if axis_idx == 0:
+        kernel_3d = rearrange(kernel_1d, "b i -> b 1 i 1 1")
+    elif axis_idx == 1:
+        kernel_3d = rearrange(kernel_1d, "b j -> b 1 1 j 1")
+    else:
+        kernel_3d = rearrange(kernel_1d, "b k -> b 1 1 1 k")
+    kernel_3d = repeat(
+        kernel_3d,
+        "b one i j k -> (b c) one i j k",
+        c=channels,
+    )
+    return kernel_3d, max_radius
+
+
+def _make_stacked_1d_kernels(
+    sigmas: np.ndarray,
+    radii: np.ndarray,
+    max_radius: int,
+    device: torch.device,
+) -> torch.Tensor:
+    """Build centered 1D Gaussian or identity kernels.
+
+    Args:
+        sigmas: Per-element sigma in voxels for one axis.
+        radii: Per-element kernel radii.
+        max_radius: Maximum radius across all elements for the axis.
+        device: Device on which the kernels should be allocated.
+
+    Returns:
+        A `(B, 2 * max_radius + 1)` tensor of normalized 1D kernels.
+    """
+    kernel_size = 2 * max_radius + 1
+    offsets = torch.arange(kernel_size, dtype=torch.float32, device=device) - max_radius
+    sigmas_tensor = torch.as_tensor(sigmas, dtype=torch.float32, device=device)
+    radii_tensor = torch.as_tensor(radii, device=device)
+    offsets_row = rearrange(offsets, "k -> 1 k")
+    sigmas_column = rearrange(sigmas_tensor, "b -> b 1")
+    radii_column = rearrange(radii_tensor, "b -> b 1")
+    safe_sigmas = torch.where(
+        sigmas_column > 0,
+        sigmas_column,
+        torch.ones_like(sigmas_column),
+    )
+    kernels = torch.exp(-0.5 * (offsets_row / safe_sigmas) ** 2)
+    within_radius = torch.abs(offsets_row) <= radii_column
+    kernels = torch.where(within_radius, kernels, torch.zeros_like(kernels))
+
+    delta = torch.zeros_like(kernels)
+    delta[:, max_radius] = 1.0
+    kernels = torch.where(sigmas_column > 0, kernels, delta)
+    return kernels / kernels.sum(dim=1, keepdim=True)

@@ -95,3 +95,40 @@ class TestLabelsToImagePerInstance:
         subject = _make_subject()
         result = tio.LabelsToImage(label_key="seg", default_mean=(0.2, 0.9))(subject)
         assert isinstance(result.applied_transforms[-1].params["means"], dict)
+
+
+class TestLabelsToImagePerElementVectorized:
+    def test_each_element_uses_its_own_label_stats(self) -> None:
+        # The vectorized per-element generation must give each batch element
+        # its own per-label mean (no cross-element contamination), even though
+        # the random draw order differs from the old per-element loop.
+        size = 16
+        label = torch.zeros(1, size, size, size)
+        label[0, : size // 2] = 1
+        label[0, size // 2 :] = 2
+        batch = tio.SubjectsBatch.from_subjects(
+            [tio.Subject(seg=tio.LabelMap(label.clone())) for _ in range(3)]
+        )
+        transform = tio.LabelsToImage(
+            label_key="seg",
+            image_key="img",
+            default_mean=(0.0, 100.0),
+            default_std=(0.0, 0.05),
+        )
+        torch.manual_seed(1)
+        result = transform(batch)
+        params = result.applied_transforms[-1].params
+        assert "_batched_keys" in params
+        image = result.img.data
+        for index in range(batch.batch_size):
+            region_one = image[index, 0, : size // 2]
+            region_two = image[index, 0, size // 2 :]
+            assert region_one.mean().item() == pytest.approx(
+                params["means"][index][1], abs=0.5
+            )
+            assert region_two.mean().item() == pytest.approx(
+                params["means"][index][2], abs=0.5
+            )
+        # Independent per-element sampling: means vary across the batch.
+        label_one_means = {round(params["means"][i][1], 3) for i in range(3)}
+        assert len(label_one_means) > 1
