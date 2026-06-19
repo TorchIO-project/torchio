@@ -111,3 +111,18 @@ class TestApplyInverseTransform:
         original = subject.t1.data.clone()
         restored = subject.apply_inverse_transform()
         torch.testing.assert_close(restored.t1.data, original)
+
+    def test_missing_trace_image_skips_inverse(self) -> None:
+        a = torch.arange(8.0).reshape(1, 2, 2, 2)
+        b = torch.arange(100.0, 108.0).reshape(1, 2, 2, 2)
+        subject = tio.Subject(
+            a=tio.ScalarImage(a.clone()),
+            b=tio.ScalarImage(b.clone()),
+        )
+
+        transformed = tio.Gamma(log_gamma=0.5, include=["a"])(subject)
+        current = tio.Subject(b=transformed.b)
+        current.applied_transforms = transformed.applied_transforms
+        restored = current.apply_inverse_transform()
+
+        torch.testing.assert_close(restored.b.data, b)

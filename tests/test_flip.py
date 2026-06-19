@@ -168,6 +168,20 @@ class TestFlip:
         restored = flipped.apply_inverse_transform()
         torch.testing.assert_close(restored.t1.data, tensor)
 
+    def test_inverse_respects_include_scope(self) -> None:
+        a = torch.arange(8.0).reshape(1, 2, 2, 2)
+        b = torch.arange(100.0, 108.0).reshape(1, 2, 2, 2)
+        subject = tio.Subject(
+            a=tio.ScalarImage(a.clone()),
+            b=tio.ScalarImage(b.clone()),
+        )
+
+        transformed = tio.Flip(axes=(0,), include=["a"])(subject)
+        restored = transformed.apply_inverse_transform()
+
+        torch.testing.assert_close(restored.a.data, a)
+        torch.testing.assert_close(restored.b.data, b)
+
     def test_compose_inverse(self) -> None:
         """Compose inverse via Subject.apply_inverse_transform."""
         tensor = torch.rand(1, 4, 5, 6)
@@ -184,17 +198,17 @@ class TestFlip:
         torch.testing.assert_close(restored.t1.data, tensor)
 
     def test_inverse_on_image_via_subject(self) -> None:
-        """Inverse works by copying history to a new subject."""
+        """Inverse works when copied history image names match."""
         tensor = torch.rand(1, 4, 5, 6)
         subject = tio.Subject(t1=tio.ScalarImage(tensor.clone()))
         flipped = tio.Flip(axes=0)(subject)
-        # Create a prediction subject and copy history
+        # Create a new subject and copy history
         pred_subject = tio.Subject(
-            pred=tio.ScalarImage(flipped.t1.data.clone()),
+            t1=tio.ScalarImage(flipped.t1.data.clone()),
         )
         pred_subject.applied_transforms = flipped.applied_transforms
         restored = pred_subject.apply_inverse_transform()
-        torch.testing.assert_close(restored.pred.data, tensor)
+        torch.testing.assert_close(restored.t1.data, tensor)
 
     def test_inverse_skips_non_invertible(self) -> None:
         """Non-invertible transforms are skipped with a warning."""

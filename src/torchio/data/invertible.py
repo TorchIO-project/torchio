@@ -42,6 +42,7 @@ class Invertible:
 
         return get_inverse_transform(
             self.applied_transforms,
+            data=self,
             warn=warn,
             ignore_intensity=ignore_intensity,
         )

@@ -15,6 +15,7 @@ from .transform import Transform
 def get_inverse_transform(
     history: list[AppliedTransform],
     *,
+    data: Any | None = None,
     warn: bool = True,
     ignore_intensity: bool = False,
 ) -> Compose:
@@ -26,6 +27,7 @@ def get_inverse_transform(
 
     Args:
         history: List of `AppliedTransform` records.
+        data: Data that will receive the inverse transforms.
         warn: Issue a warning for non-invertible transforms.
         ignore_intensity: Skip all intensity transforms.
 
@@ -33,6 +35,7 @@ def get_inverse_transform(
         A `Compose` of inverse transforms.
     """
     steps: list[Transform] = []
+    current_image_names = _get_image_names(data)
     for trace in reversed(history):
         cls = _TRANSFORM_REGISTRY.get(trace.name)
         if cls is None:
@@ -52,10 +55,41 @@ def get_inverse_transform(
                     stacklevel=2,
                 )
             continue
-        steps.append(instance.inverse(trace.params))
+        inverse = instance.inverse(trace.params)
+        if not _restrict_inverse_to_trace_images(
+            inverse,
+            trace,
+            current_image_names,
+        ):
+            continue
+        steps.append(inverse)
     # copy=True (the default) so applying the inverse does not mutate the
     # caller's data in place, matching every other transform.
     return Compose(steps)
+
+
+def _restrict_inverse_to_trace_images(
+    inverse: Transform,
+    trace: AppliedTransform,
+    current_image_names: set[str] | None,
+) -> bool:
+    if trace.image_names is None or current_image_names is None:
+        return True
+    matching_names = [name for name in trace.image_names if name in current_image_names]
+    if not matching_names:
+        return False
+    inverse.include = matching_names
+    inverse.exclude = None
+    return True
+
+
+def _get_image_names(data: Any | None) -> set[str] | None:
+    if data is None:
+        return None
+    images = getattr(data, "images", None)
+    if images is None:
+        return None
+    return set(images)
 
 
 def apply_inverse_transform(
@@ -88,6 +122,7 @@ def apply_inverse_transform(
         )
     inverse = get_inverse_transform(
         data.applied_transforms,
+        data=data,
         warn=warn,
         ignore_intensity=ignore_intensity,
     )

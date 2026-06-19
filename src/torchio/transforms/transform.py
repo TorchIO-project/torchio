@@ -33,10 +33,12 @@ class AppliedTransform:
     Attributes:
         name: Class name of the transform.
         params: Sampled parameters (JSON-serializable).
+        image_names: Names of images affected by the transform.
     """
 
     name: str
     params: dict[str, Any] = field(default_factory=dict)
+    image_names: list[str] | None = None
 
 
 #: Registry mapping transform class names to classes, for inverse lookup.
@@ -219,13 +221,18 @@ class Transform(nn.Module):
         if not self._per_instance_p_active(batch) and torch.rand(1).item() >= self.p:
             return unwrap(batch)
         params = self.make_params(batch)
+        image_names = list(self._get_images(batch))
         batch = self.apply_transform(batch, params)
         # Record history on the batch, unless every element was gated out by
         # per-element probability: that is an exact no-op, and recording it
         # would let history replay (e.g. an invertible spatial transform)
         # trigger an unnecessary identity resample.
         if not _all_elements_gated_out(params):
-            trace = AppliedTransform(name=type(self).__name__, params=params)
+            trace = AppliedTransform(
+                name=type(self).__name__,
+                params=params,
+                image_names=image_names,
+            )
             if not hasattr(batch, "applied_transforms"):
                 batch.applied_transforms = []
             batch.applied_transforms.append(trace)
