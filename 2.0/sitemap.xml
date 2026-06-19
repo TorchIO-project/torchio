@@ -22,6 +22,9 @@
         <loc>https://docs.torchio.org/2.0/concepts/transforms/</loc>
       </url>
       <url>
+        <loc>https://docs.torchio.org/2.0/concepts/per-instance-augmentation/</loc>
+      </url>
+      <url>
         <loc>https://docs.torchio.org/2.0/tutorials/first-pipeline/</loc>
       </url>
       <url>

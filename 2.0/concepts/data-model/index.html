@@ -854,6 +854,33 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../per-instance-augmentation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Per-instance augmentation
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -4138,8 +4165,9 @@ image entry is an <code>ImagesBatch</code> with a 5D tensor <code>(B, C, I, J, K
 </code></pre></div>
 <p>Each <code>ImagesBatch</code> stores per-sample affine matrices, so subjects
 with different spatial properties batch correctly.</p>
-<p>Transforms work directly on batches. Parameters are sampled once
-and applied to all samples:</p>
+<p>Transforms work directly on batches. By default, transforms that
+support it sample independent parameters per batch element (see
+<a href="../per-instance-augmentation/">Per-instance augmentation</a>):</p>
 <!-- pytest-codeblocks:skip -->
 <div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="n">augmented</span> <span class="o">=</span> <span class="n">tio</span><span class="o">.</span><span class="n">Flip</span><span class="p">(</span><span class="n">axes</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,))(</span><span class="n">batch</span><span class="p">)</span>
 </code></pre></div>

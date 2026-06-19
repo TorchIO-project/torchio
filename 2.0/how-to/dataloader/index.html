@@ -675,6 +675,33 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../concepts/per-instance-augmentation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Per-instance augmentation
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -1030,6 +1057,23 @@
       </span>
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="Applying transforms to batches">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#per-instance-augmentation" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Per-instance augmentation
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -3699,6 +3743,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Applying transforms to batches">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#per-instance-augmentation" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Per-instance augmentation
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -3815,31 +3876,61 @@ as the collation function:</p>
 <code>(B, C, I, J, K)</code>. Per-sample affine matrices are stored as a
 list. Metadata is collected into lists.</p>
 <h2 id="applying-transforms-to-batches">Applying transforms to batches</h2>
-<p>Transforms work directly on <code>SubjectsBatch</code>. Parameters are
-sampled once and applied identically to all samples:</p>
+<p>Transforms work directly on <code>SubjectsBatch</code>:</p>
 <!-- pytest-codeblocks:skip -->
 <div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="n">batch</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="nb">iter</span><span class="p">(</span><span class="n">loader</span><span class="p">))</span>
 <a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="n">augmented</span> <span class="o">=</span> <span class="n">tio</span><span class="o">.</span><span class="n">Flip</span><span class="p">(</span><span class="n">axes</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,),</span> <span class="n">p</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)(</span><span class="n">batch</span><span class="p">)</span>
 <a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="n">augmented</span><span class="o">.</span><span class="n">image</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">shape</span>  <span class="c1"># (4, 1, H, W, D)</span>
 </code></pre></div>
+<h3 id="per-instance-augmentation">Per-instance augmentation</h3>
+<p>By default, transforms that support it sample <strong>independent
+parameters for each element of a batch</strong>, so a single call produces
+diverse augmentations (similar to
+<a href="https://github.com/halleewong/batchaug">BatchAug</a> and
+<a href="https://github.com/kornia/kornia">Kornia</a>). For example, a batch
+passed through <code>tio.Affine(degrees=(0, 45))</code> receives a different
+rotation per element, and <code>tio.Gamma(log_gamma=(-0.3, 0.3))</code> a
+different gamma per element.</p>
+<p>When a transform opts into per-element probability and <code>p</code> is below
+1, each element is also gated independently: some elements receive
+the transform and others are left unchanged.</p>
+<p>To recover the legacy behavior, where one parameter set is sampled
+and shared across every element, pass <code>per_instance=False</code>:</p>
+<!-- pytest-codeblocks:skip -->
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="c1"># Same rotation applied to every element in the batch</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="n">augmented</span> <span class="o">=</span> <span class="n">tio</span><span class="o">.</span><span class="n">Affine</span><span class="p">(</span><span class="n">degrees</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">45</span><span class="p">),</span> <span class="n">per_instance</span><span class="o">=</span><span class="kc">False</span><span class="p">)(</span><span class="n">batch</span><span class="p">)</span>
+</code></pre></div>
+<p>Single inputs (a lone <code>Subject</code>, <code>Image</code>, or tensor) are unaffected
+by this flag, since there is only one element to augment.</p>
+<p>Per-instance parameters are recorded per element in the transform
+history, so inverting transforms and unbatching back into individual
+subjects keep each element's own parameters.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Per-instance support is rolled out per transform. Transforms that
+have not been converted yet fall back to batch-shared parameters
+even when <code>per_instance=True</code>. A transform advertises its support
+through the <code>supports_per_instance_params</code> and
+<code>supports_per_instance_p</code> properties.</p>
+</div>
 <h2 id="loading-images-without-a-subject">Loading images without a Subject</h2>
 <p>If your dataset returns individual <code>Image</code> objects (not <code>Subject</code>),
 use <code>ImagesLoader</code>:</p>
 <!-- pytest-codeblocks:skip -->
-<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">SliceDataset</span><span class="p">(</span><span class="n">Dataset</span><span class="p">):</span>
-<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">paths</span><span class="p">):</span>
-<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">images</span> <span class="o">=</span> <span class="p">[</span><span class="n">tio</span><span class="o">.</span><span class="n">ScalarImage</span><span class="p">(</span><span class="n">p</span><span class="p">)</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">paths</span><span class="p">]</span>
-<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>
-<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">images</span><span class="p">)</span>
-<a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a>
-<a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">idx</span><span class="p">):</span>
-<a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">images</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
-<a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a>
-<a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a><span class="n">loader</span> <span class="o">=</span> <span class="n">tio</span><span class="o">.</span><span class="n">ImagesLoader</span><span class="p">(</span><span class="n">SliceDataset</span><span class="p">(</span><span class="n">paths</span><span class="p">),</span> <span class="n">batch_size</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span>
-<a id="__codelineno-5-12" name="__codelineno-5-12" href="#__codelineno-5-12"></a><span class="n">batch</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="nb">iter</span><span class="p">(</span><span class="n">loader</span><span class="p">))</span>
-<a id="__codelineno-5-13" name="__codelineno-5-13" href="#__codelineno-5-13"></a><span class="n">batch</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">shape</span>     <span class="c1"># (4, 1, H, W, D)</span>
-<a id="__codelineno-5-14" name="__codelineno-5-14" href="#__codelineno-5-14"></a><span class="n">batch</span><span class="o">.</span><span class="n">affines</span>        <span class="c1"># list of 4 AffineMatrix instances</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">SliceDataset</span><span class="p">(</span><span class="n">Dataset</span><span class="p">):</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">paths</span><span class="p">):</span>
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">images</span> <span class="o">=</span> <span class="p">[</span><span class="n">tio</span><span class="o">.</span><span class="n">ScalarImage</span><span class="p">(</span><span class="n">p</span><span class="p">)</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">paths</span><span class="p">]</span>
+<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>
+<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">images</span><span class="p">)</span>
+<a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a>
+<a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">idx</span><span class="p">):</span>
+<a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">images</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
+<a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a>
+<a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a><span class="n">loader</span> <span class="o">=</span> <span class="n">tio</span><span class="o">.</span><span class="n">ImagesLoader</span><span class="p">(</span><span class="n">SliceDataset</span><span class="p">(</span><span class="n">paths</span><span class="p">),</span> <span class="n">batch_size</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span>
+<a id="__codelineno-6-12" name="__codelineno-6-12" href="#__codelineno-6-12"></a><span class="n">batch</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="nb">iter</span><span class="p">(</span><span class="n">loader</span><span class="p">))</span>
+<a id="__codelineno-6-13" name="__codelineno-6-13" href="#__codelineno-6-13"></a><span class="n">batch</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">shape</span>     <span class="c1"># (4, 1, H, W, D)</span>
+<a id="__codelineno-6-14" name="__codelineno-6-14" href="#__codelineno-6-14"></a><span class="n">batch</span><span class="o">.</span><span class="n">affines</span>        <span class="c1"># list of 4 AffineMatrix instances</span>
 </code></pre></div>
 
 

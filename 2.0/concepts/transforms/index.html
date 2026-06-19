@@ -18,7 +18,7 @@
         <link rel="prev" href="../lazy-loading/">
       
       
-        <link rel="next" href="../../tutorials/first-pipeline/">
+        <link rel="next" href="../per-instance-augmentation/">
       
       
         
@@ -838,6 +838,33 @@
   
 </nav>
       
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../per-instance-augmentation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Per-instance augmentation
+
+    
+  </span>
+  
+  
+
+      </a>
     </li>
   
 
@@ -3850,9 +3877,11 @@ works identically for single samples and batches:</p>
 works for both 5D <code>(B, C, I, J, K)</code> batch tensors and 5D
 <code>(1, C, I, J, K)</code> single-sample tensors.</p>
 <p>When a <code>SubjectsBatch</code> is passed (e.g., from <code>SubjectsLoader</code>),
-<code>make_params</code> is called <strong>once</strong> and the same parameters are
-applied to all samples, enabling vectorised batch transforms on
-GPU.</p>
+transforms that support it sample <strong>independent parameters per batch
+element</strong> by default, so a single call produces diverse augmentations
+(see <a href="../per-instance-augmentation/">Per-instance augmentation</a>). Pass
+<code>per_instance=False</code> to share one sampled parameter set across all
+elements. Single inputs are unaffected.</p>
 <h2 id="the-make_params-apply-split">The <code>make_params</code> / <code>apply</code> split</h2>
 <p>Every transform has two methods:</p>
 <ul>
@@ -4055,13 +4084,13 @@ GPU-compatible:</p>
         
         
           
-          <a href="../../tutorials/first-pipeline/" class="md-footer__link md-footer__link--next" aria-label="Next: Your first pipeline">
+          <a href="../per-instance-augmentation/" class="md-footer__link md-footer__link--next" aria-label="Next: Per-instance augmentation">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Next
               </span>
               <div class="md-ellipsis">
-                Your first pipeline
+                Per-instance augmentation
               </div>
             </div>
             <div class="md-footer__button md-icon">

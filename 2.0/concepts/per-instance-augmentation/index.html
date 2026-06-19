@@ -12,13 +12,13 @@
         <meta name="author" content="Fernando Pérez-García">
       
       
-        <link rel="canonical" href="https://docs.torchio.org/2.0/get-started/migration/">
+        <link rel="canonical" href="https://docs.torchio.org/2.0/concepts/per-instance-augmentation/">
       
       
-        <link rel="prev" href="../quickstart/">
+        <link rel="prev" href="../transforms/">
       
       
-        <link rel="next" href="../../concepts/data-model/">
+        <link rel="next" href="../../tutorials/first-pipeline/">
       
       
         
@@ -29,7 +29,7 @@
     
     
       
-        <title>Migrating from v1 to v2 - TorchIO</title>
+        <title>Per-instance augmentation - TorchIO</title>
       
     
     
@@ -85,7 +85,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#migrating-from-v1-to-v2" class="md-skip">
+        <a href="#per-instance-augmentation" class="md-skip">
           Skip to content
         </a>
       
@@ -122,7 +122,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Migrating from v1 to v2
+              Per-instance augmentation
             
           </span>
         </div>
@@ -214,15 +214,13 @@
   
   
   
-    
-  
   
     
       
     
     
     
-      <li class="md-tabs__item md-tabs__item--active">
+      <li class="md-tabs__item">
         <a href="../.." class="md-tabs__link">
           
   
@@ -238,14 +236,16 @@
   
   
   
+    
+  
   
     
       
     
     
     
-      <li class="md-tabs__item">
-        <a href="../../concepts/data-model/" class="md-tabs__link">
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../data-model/" class="md-tabs__link">
           
   
   Concepts
@@ -383,31 +383,26 @@
       
   
   
-    
   
   
-  
     
     
     
     
-      
-        
-        
       
       
         
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_1" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_1" >
         
           
-          <label class="md-nav__link" for="__nav_1" id="__nav_1_label" tabindex="">
+          <label class="md-nav__link" for="__nav_1" id="__nav_1_label" tabindex="0">
             
   
   
@@ -424,7 +419,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_1_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_1_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_1">
             <span class="md-nav__icon md-icon"></span>
             
@@ -468,7 +463,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../installation/" class="md-nav__link">
+      <a href="../../get-started/installation/" class="md-nav__link">
         
   
   
@@ -495,7 +490,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../quickstart/" class="md-nav__link">
+      <a href="../../get-started/quickstart/" class="md-nav__link">
         
   
   
@@ -503,6 +498,176 @@
     
   
   Quickstart
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../get-started/migration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Migrating from v1 to v2
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Concepts
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+  Concepts
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../data-model/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Data model
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../lazy-loading/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Lazy loading and backends
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../transforms/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Transform design
 
     
   </span>
@@ -538,7 +703,7 @@
   <span class="md-ellipsis">
     
   
-  Migrating from v1 to v2
+  Per-instance augmentation
 
     
   </span>
@@ -555,7 +720,7 @@
   <span class="md-ellipsis">
     
   
-  Migrating from v1 to v2
+  Per-instance augmentation
 
     
   </span>
@@ -581,10 +746,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#quick-checklist" class="md-nav__link">
+  <a href="#why-per-instance" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        Quick checklist
+        Why per-instance
       </span>
     </span>
   </a>
@@ -592,10 +757,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#image-construction" class="md-nav__link">
+  <a href="#how-it-works" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        Image construction
+        How it works
       </span>
     </span>
   </a>
@@ -603,55 +768,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#affine-access" class="md-nav__link">
+  <a href="#controlling-it" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        Affine access
+        Controlling it
       </span>
     </span>
   </a>
   
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#subject-construction" class="md-nav__link">
-    <span class="md-ellipsis">
-      <span class="md-typeset">
-        Subject construction
-      </span>
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#transform-naming" class="md-nav__link">
-    <span class="md-ellipsis">
-      <span class="md-typeset">
-        Transform naming
-      </span>
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#transform-parameter-changes" class="md-nav__link">
-    <span class="md-ellipsis">
-      <span class="md-typeset">
-        Transform parameter changes
-      </span>
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Transform parameter changes">
+    <nav class="md-nav" aria-label="Controlling it">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#flip" class="md-nav__link">
+  <a href="#per-element-probability" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        Flip
+        Per-element probability
       </span>
     </span>
   </a>
@@ -659,32 +791,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#affine" class="md-nav__link">
+  <a href="#choosing-a-different-transform-per-element" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        Affine
-      </span>
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#normalize-was-rescaleintensity" class="md-nav__link">
-    <span class="md-ellipsis">
-      <span class="md-typeset">
-        Normalize (was RescaleIntensity)
-      </span>
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#histogramstandardization" class="md-nav__link">
-    <span class="md-ellipsis">
-      <span class="md-typeset">
-        HistogramStandardization
+        Choosing a different transform per element
       </span>
     </span>
   </a>
@@ -697,121 +807,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#new-features" class="md-nav__link">
+  <a href="#history-and-inversion" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        New features
-      </span>
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="New features">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#choice" class="md-nav__link">
-    <span class="md-ellipsis">
-      <span class="md-typeset">
-        Choice
-      </span>
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#someof" class="md-nav__link">
-    <span class="md-ellipsis">
-      <span class="md-typeset">
-        SomeOf
-      </span>
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#operator-sugar" class="md-nav__link">
-    <span class="md-ellipsis">
-      <span class="md-typeset">
-        Operator sugar
-      </span>
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#compose-copy-control" class="md-nav__link">
-    <span class="md-ellipsis">
-      <span class="md-typeset">
-        Compose copy control
-      </span>
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#data-loading" class="md-nav__link">
-    <span class="md-ellipsis">
-      <span class="md-typeset">
-        Data loading
-      </span>
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Data loading">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#subjectsdataset-removed" class="md-nav__link">
-    <span class="md-ellipsis">
-      <span class="md-typeset">
-        SubjectsDataset removed
-      </span>
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#queue" class="md-nav__link">
-    <span class="md-ellipsis">
-      <span class="md-typeset">
-        Queue
-      </span>
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#patchaggregator-was-gridaggregator" class="md-nav__link">
-    <span class="md-ellipsis">
-      <span class="md-typeset">
-        PatchAggregator (was GridAggregator)
-      </span>
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#transform-history" class="md-nav__link">
-    <span class="md-ellipsis">
-      <span class="md-typeset">
-        Transform history
+        History and inversion
       </span>
     </span>
   </a>
@@ -819,10 +818,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#imports" class="md-nav__link">
+  <a href="#capability-and-roll-out" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        Imports
+        Capability and roll-out
       </span>
     </span>
   </a>
@@ -833,171 +832,6 @@
   
 </nav>
       
-    </li>
-  
-
-              
-            
-          </ul>
-        </nav>
-      
-    </li>
-  
-
-    
-      
-      
-  
-  
-  
-  
-    
-    
-    
-    
-      
-      
-        
-      
-    
-    
-    <li class="md-nav__item md-nav__item--nested">
-      
-        
-        
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
-        
-          
-          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
-            
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  Concepts
-
-    
-  </span>
-  
-  
-
-            <span class="md-nav__icon md-icon"></span>
-          </label>
-        
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_2">
-            <span class="md-nav__icon md-icon"></span>
-            
-  
-  Concepts
-
-          </label>
-          <ul class="md-nav__list" data-md-scrollfix>
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../concepts/data-model/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  Data model
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../concepts/lazy-loading/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  Lazy loading and backends
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../concepts/transforms/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  Transform design
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../concepts/per-instance-augmentation/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  Per-instance augmentation
-
-    
-  </span>
-  
-  
-
-      </a>
     </li>
   
 
@@ -3835,10 +3669,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#quick-checklist" class="md-nav__link">
+  <a href="#why-per-instance" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        Quick checklist
+        Why per-instance
       </span>
     </span>
   </a>
@@ -3846,10 +3680,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#image-construction" class="md-nav__link">
+  <a href="#how-it-works" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        Image construction
+        How it works
       </span>
     </span>
   </a>
@@ -3857,55 +3691,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#affine-access" class="md-nav__link">
+  <a href="#controlling-it" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        Affine access
+        Controlling it
       </span>
     </span>
   </a>
   
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#subject-construction" class="md-nav__link">
-    <span class="md-ellipsis">
-      <span class="md-typeset">
-        Subject construction
-      </span>
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#transform-naming" class="md-nav__link">
-    <span class="md-ellipsis">
-      <span class="md-typeset">
-        Transform naming
-      </span>
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#transform-parameter-changes" class="md-nav__link">
-    <span class="md-ellipsis">
-      <span class="md-typeset">
-        Transform parameter changes
-      </span>
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Transform parameter changes">
+    <nav class="md-nav" aria-label="Controlling it">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#flip" class="md-nav__link">
+  <a href="#per-element-probability" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        Flip
+        Per-element probability
       </span>
     </span>
   </a>
@@ -3913,32 +3714,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#affine" class="md-nav__link">
+  <a href="#choosing-a-different-transform-per-element" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        Affine
-      </span>
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#normalize-was-rescaleintensity" class="md-nav__link">
-    <span class="md-ellipsis">
-      <span class="md-typeset">
-        Normalize (was RescaleIntensity)
-      </span>
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#histogramstandardization" class="md-nav__link">
-    <span class="md-ellipsis">
-      <span class="md-typeset">
-        HistogramStandardization
+        Choosing a different transform per element
       </span>
     </span>
   </a>
@@ -3951,121 +3730,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#new-features" class="md-nav__link">
+  <a href="#history-and-inversion" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        New features
-      </span>
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="New features">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#choice" class="md-nav__link">
-    <span class="md-ellipsis">
-      <span class="md-typeset">
-        Choice
-      </span>
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#someof" class="md-nav__link">
-    <span class="md-ellipsis">
-      <span class="md-typeset">
-        SomeOf
-      </span>
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#operator-sugar" class="md-nav__link">
-    <span class="md-ellipsis">
-      <span class="md-typeset">
-        Operator sugar
-      </span>
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#compose-copy-control" class="md-nav__link">
-    <span class="md-ellipsis">
-      <span class="md-typeset">
-        Compose copy control
-      </span>
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#data-loading" class="md-nav__link">
-    <span class="md-ellipsis">
-      <span class="md-typeset">
-        Data loading
-      </span>
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Data loading">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#subjectsdataset-removed" class="md-nav__link">
-    <span class="md-ellipsis">
-      <span class="md-typeset">
-        SubjectsDataset removed
-      </span>
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#queue" class="md-nav__link">
-    <span class="md-ellipsis">
-      <span class="md-typeset">
-        Queue
-      </span>
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#patchaggregator-was-gridaggregator" class="md-nav__link">
-    <span class="md-ellipsis">
-      <span class="md-typeset">
-        PatchAggregator (was GridAggregator)
-      </span>
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#transform-history" class="md-nav__link">
-    <span class="md-ellipsis">
-      <span class="md-typeset">
-        Transform history
+        History and inversion
       </span>
     </span>
   </a>
@@ -4073,10 +3741,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#imports" class="md-nav__link">
+  <a href="#capability-and-roll-out" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        Imports
+        Capability and roll-out
       </span>
     </span>
   </a>
@@ -4104,7 +3772,7 @@
                 
                   
   
-    <a href="https://github.com/TorchIO-project/torchio/blob/main/docs/get-started/migration.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+    <a href="https://github.com/TorchIO-project/torchio/blob/main/docs/concepts/per-instance-augmentation.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
       
       <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-file-pen" viewBox="0 0 24 24"><path d="M12.659 22H18a2 2 0 0 0 2-2V8a2.4 2.4 0 0 0-.706-1.706l-3.588-3.588A2.4 2.4 0 0 0 14 2H6a2 2 0 0 0-2 2v9.34"/><path d="M14 2v5a1 1 0 0 0 1 1h5M10.378 12.622a1 1 0 0 1 3 3.003L8.36 20.637a2 2 0 0 1-.854.506l-2.867.837a.5.5 0 0 1-.62-.62l.836-2.869a2 2 0 0 1 .506-.853z"/></svg>
     </a>
@@ -4113,324 +3781,111 @@
     
       
     
-    <a href="https://github.com/TorchIO-project/torchio/raw/main/docs/get-started/migration.md" title="View source of this page" class="md-content__button md-icon">
+    <a href="https://github.com/TorchIO-project/torchio/raw/main/docs/concepts/per-instance-augmentation.md" title="View source of this page" class="md-content__button md-icon">
       
       <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-file-code-2" viewBox="0 0 24 24"><path d="M4 12.15V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.706.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2h-3.35"/><path d="M14 2v5a1 1 0 0 0 1 1h5M5 16l-3 3 3 3M9 22l3-3-3-3"/></svg>
     </a>
   
 
 
-<h1 id="migrating-from-v1-to-v2">Migrating from v1 to v2</h1>
-<p>This guide covers every breaking change between TorchIO v1 and v2.</p>
+<h1 id="per-instance-augmentation">Per-instance augmentation</h1>
+<p>When a transform runs on a batch, each element can receive its <strong>own</strong>
+randomly sampled augmentation. This is the default behavior and mirrors
+batched GPU augmentation libraries such as
+<a href="https://github.com/halleewong/batchaug">BatchAug</a> and
+<a href="https://github.com/kornia/kornia">Kornia</a>.</p>
+<h2 id="why-per-instance">Why per-instance</h2>
+<p>Training augmentation works best when every sample in a mini-batch sees
+a different perturbation. If a whole batch shared one rotation angle or
+one noise level, the effective augmentation diversity per step would be
+much lower. Sampling parameters independently per element restores that
+diversity while keeping a single, vectorized call.</p>
+<h2 id="how-it-works">How it works</h2>
+<p>TorchIO converts every input into a
+<code>SubjectsBatch</code> of 5D tensors
+<code>(B, C, I, J, K)</code>. A transform's
+<code>make_params</code> step samples either one
+parameter set (shared) or <code>B</code> independent sets (per-instance), and
+<code>apply_transform</code> broadcasts or
+loops over the batch dimension accordingly.</p>
+<pre class="mermaid"><code>flowchart LR
+    A["SubjectsBatch (B, C, I, J, K)"] --&gt; B{"per_instance and B &gt; 1&lt;br/&gt;and transform opts in?"}
+    B -- yes --&gt; C["sample B parameter sets"]
+    B -- no --&gt; D["sample 1 parameter set"]
+    C --&gt; E["apply per element"]
+    D --&gt; F["apply to whole batch"]
+    E --&gt; G["augmented batch"]
+    F --&gt; G</code></pre>
+<p>Per-instance sampling activates only for genuine batches
+(<code>batch_size &gt; 1</code>). A single
+<code>Subject</code>, <code>Image</code>, or tensor always uses the
+single-sample path, so existing single-subject code is unchanged.</p>
+<h2 id="controlling-it">Controlling it</h2>
+<p>Every transform inherits a <code>per_instance</code> flag (default <code>True</code>). Set it
+on the individual stochastic transform whose sampling you want to
+control:</p>
+<!-- pytest-codeblocks:skip -->
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">torchio</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">tio</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="c1"># Independent rotation per batch element (default)</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="n">augmented</span> <span class="o">=</span> <span class="n">tio</span><span class="o">.</span><span class="n">Affine</span><span class="p">(</span><span class="n">degrees</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">45</span><span class="p">))(</span><span class="n">batch</span><span class="p">)</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="c1"># One rotation applied identically to the whole batch</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="n">augmented</span> <span class="o">=</span> <span class="n">tio</span><span class="o">.</span><span class="n">Affine</span><span class="p">(</span><span class="n">degrees</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">45</span><span class="p">),</span> <span class="n">per_instance</span><span class="o">=</span><span class="kc">False</span><span class="p">)(</span><span class="n">batch</span><span class="p">)</span>
+</code></pre></div>
+<h3 id="per-element-probability">Per-element probability</h3>
+<p>When a transform opts into per-element probability and its probability
+<code>p</code> is below 1, each batch element is gated <strong>independently</strong>: some
+elements receive the transform and others are left unchanged.</p>
+<!-- pytest-codeblocks:skip -->
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1"># About half of the batch elements get noise, sampled independently</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="n">augmented</span> <span class="o">=</span> <span class="n">tio</span><span class="o">.</span><span class="n">Noise</span><span class="p">(</span><span class="n">std</span><span class="o">=</span><span class="p">(</span><span class="mf">0.05</span><span class="p">,</span> <span class="mf">0.2</span><span class="p">),</span> <span class="n">p</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)(</span><span class="n">batch</span><span class="p">)</span>
+</code></pre></div>
+<p>Shape-changing transforms (for example a resampling target), and
+transforms that have not opted into per-element probability, keep a
+single batch-wide decision: masked and unmasked elements would
+otherwise have incompatible shapes.</p>
+<h3 id="choosing-a-different-transform-per-element">Choosing a different transform per element</h3>
+<p><code>OneOf</code> and <code>SomeOf</code> also branch per
+element: each batch element independently chooses which transform (or
+subset of transforms) to apply.</p>
+<!-- pytest-codeblocks:skip -->
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="c1"># Element 0 might be flipped while element 1 is blurred</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="n">augmented</span> <span class="o">=</span> <span class="n">tio</span><span class="o">.</span><span class="n">OneOf</span><span class="p">([</span><span class="n">tio</span><span class="o">.</span><span class="n">Flip</span><span class="p">(</span><span class="n">axes</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,)),</span> <span class="n">tio</span><span class="o">.</span><span class="n">Blur</span><span class="p">(</span><span class="n">std</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">))])(</span><span class="n">batch</span><span class="p">)</span>
+</code></pre></div>
+<p>Per-element selection requires shape- and schema-preserving transforms,
+so the augmented elements can be re-stacked into one batch.</p>
+<h2 id="history-and-inversion">History and inversion</h2>
+<p>Each element keeps its own sampled parameters in the transform history.
+Calling <code>unbatch()</code> returns subjects that
+each carry only their own history, and elements gated out by per-element
+probability omit that transform entirely.</p>
+<p>Invertible transforms invert each element with its own parameters.
+After a per-element <code>OneOf</code>/<code>SomeOf</code>,
+the batch is inverted element by element:</p>
+<!-- pytest-codeblocks:skip -->
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="n">restored</span> <span class="o">=</span> <span class="n">augmented</span><span class="o">.</span><span class="n">apply_inverse_transform</span><span class="p">()</span>
+</code></pre></div>
+<h2 id="capability-and-roll-out">Capability and roll-out</h2>
+<p>Per-instance support is advertised per transform through two
+properties:</p>
+<ul>
+<li><code>supports_per_instance_params</code>: the transform samples parameters
+  independently per element.</li>
+<li><code>supports_per_instance_p</code>: the transform gates each element
+  independently with <code>p</code>.</li>
+</ul>
+<p>Transforms that do not opt in (for example purely deterministic
+preprocessing) keep batch-shared behavior even under the default
+<code>per_instance=True</code>, so mixing them in a pipeline is always safe.</p>
 <div class="admonition note">
-<p class="admonition-title">Report bugs or request features</p>
-<p>Hit a snag migrating, or have an idea to improve TorchIO? Please
-<a href="https://github.com/TorchIO-project/torchio/discussions">start a discussion</a>
-or <a href="https://github.com/TorchIO-project/torchio/issues">open an issue</a> on
-GitHub to report bugs or request features.</p>
+<p class="admonition-title">Stochastic realizations</p>
+<p>Some transforms (such as <code>Noise</code> and <code>BiasField</code>) draw a full
+random field spanning the batch dimension. For these,
+<code>per_instance=False</code> shares only the sampled <em>parameters</em> (e.g. the
+noise standard deviation); the per-voxel realization still differs
+across elements.</p>
 </div>
-<h2 id="quick-checklist">Quick checklist</h2>
-<ul>
-<li>Replace <code>Random*</code> transform names with their base names (<code>RandomFlip</code> → <code>Flip</code>)</li>
-<li>Pass explicit ranges for augmentation (renamed transforms are a no-op without arguments): <code>RandomAffine()</code> → <code>Affine(degrees=(-10, 10), scales=(0.9, 1.1))</code></li>
-<li>Replace <code>path=</code> with positional arg or <code>source=</code> in Image constructors</li>
-<li>Replace <code>.affine</code> (numpy array) with <code>.affine.data</code> where a raw array is needed</li>
-<li>Replace <code>RescaleIntensity(out_min_max=...)</code> with <code>Normalize(out_min=..., out_max=...)</code></li>
-<li>Replace <code>SubjectsDataset</code> with any <code>Dataset</code> passed to <code>SubjectsLoader</code></li>
-<li>Replace <code>GridAggregator</code> with <code>PatchAggregator</code></li>
-</ul>
-<h2 id="image-construction">Image construction</h2>
-<p><strong>v1:</strong></p>
-<!-- pytest-codeblocks:skip -->
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">image</span> <span class="o">=</span> <span class="n">tio</span><span class="o">.</span><span class="n">ScalarImage</span><span class="p">(</span><span class="n">path</span><span class="o">=</span><span class="s2">&quot;t1.nii.gz&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="n">image</span> <span class="o">=</span> <span class="n">tio</span><span class="o">.</span><span class="n">ScalarImage</span><span class="p">(</span><span class="n">tensor</span><span class="o">=</span><span class="n">tensor</span><span class="p">,</span> <span class="n">affine</span><span class="o">=</span><span class="n">affine_array</span><span class="p">)</span>
-</code></pre></div>
-<p><strong>v2:</strong></p>
-<!-- pytest-codeblocks:skip -->
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="n">image</span> <span class="o">=</span> <span class="n">tio</span><span class="o">.</span><span class="n">ScalarImage</span><span class="p">(</span><span class="s2">&quot;t1.nii.gz&quot;</span><span class="p">)</span>
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="n">image</span> <span class="o">=</span> <span class="n">tio</span><span class="o">.</span><span class="n">ScalarImage</span><span class="p">(</span><span class="n">tensor</span><span class="p">,</span> <span class="n">affine</span><span class="o">=</span><span class="n">tio</span><span class="o">.</span><span class="n">AffineMatrix</span><span class="p">(</span><span class="n">affine_array</span><span class="p">))</span>
-</code></pre></div>
-<p>Changes:</p>
-<ul>
-<li>First positional argument accepts a path, tensor, numpy array,
-  NiBabel image, SimpleITK image, or <code>bytes</code>.  The <code>path</code> and
-  <code>tensor</code> keyword names are gone: use positional or <code>source=</code>.</li>
-<li><code>type</code> parameter removed.  Use <code>ScalarImage</code> or <code>LabelMap</code> directly.</li>
-<li><code>affine</code> accepts <code>AffineMatrix</code> objects in addition to arrays.</li>
-<li>New <code>channels_last</code> parameter for tensor sources shaped
-  <code>(I, J, K, C)</code>.</li>
-</ul>
-<h2 id="affine-access">Affine access</h2>
-<p><strong>v1:</strong></p>
-<!-- pytest-codeblocks:skip -->
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="n">affine_array</span> <span class="o">=</span> <span class="n">image</span><span class="o">.</span><span class="n">affine</span>           <span class="c1"># np.ndarray (4, 4)</span>
-<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="n">spacing</span> <span class="o">=</span> <span class="n">image</span><span class="o">.</span><span class="n">spacing</span>               <span class="c1"># tuple</span>
-<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="n">direction</span> <span class="o">=</span> <span class="n">image</span><span class="o">.</span><span class="n">direction</span>            <span class="c1"># 9-tuple of floats</span>
-</code></pre></div>
-<p><strong>v2:</strong></p>
-<!-- pytest-codeblocks:skip -->
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="n">affine_obj</span> <span class="o">=</span> <span class="n">image</span><span class="o">.</span><span class="n">affine</span>             <span class="c1"># AffineMatrix object</span>
-<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="n">affine_array</span> <span class="o">=</span> <span class="n">image</span><span class="o">.</span><span class="n">affine</span><span class="o">.</span><span class="n">data</span>      <span class="c1"># np.ndarray (4, 4)</span>
-<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="n">spacing</span> <span class="o">=</span> <span class="n">image</span><span class="o">.</span><span class="n">spacing</span>               <span class="c1"># tuple (unchanged)</span>
-<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="n">orientation</span> <span class="o">=</span> <span class="n">image</span><span class="o">.</span><span class="n">affine</span><span class="o">.</span><span class="n">orientation</span> <span class="c1"># e.g. (&quot;R&quot;, &quot;A&quot;, &quot;S&quot;)</span>
-</code></pre></div>
-<p>The <code>.affine</code> property now returns an <code>AffineMatrix</code> object.  Use
-<code>.affine.data</code> when you need the raw 4×4 numpy array.</p>
-<h2 id="subject-construction">Subject construction</h2>
-<p><strong>v1:</strong></p>
-<!-- pytest-codeblocks:skip -->
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="n">subject</span> <span class="o">=</span> <span class="n">tio</span><span class="o">.</span><span class="n">Subject</span><span class="p">({</span><span class="s2">&quot;t1&quot;</span><span class="p">:</span> <span class="n">image</span><span class="p">,</span> <span class="s2">&quot;seg&quot;</span><span class="p">:</span> <span class="n">label</span><span class="p">})</span>  <span class="c1"># dict positional arg</span>
-<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="n">subject</span> <span class="o">=</span> <span class="n">tio</span><span class="o">.</span><span class="n">Subject</span><span class="p">(</span><span class="n">t1</span><span class="o">=</span><span class="n">image</span><span class="p">,</span> <span class="n">seg</span><span class="o">=</span><span class="n">label</span><span class="p">)</span>
-</code></pre></div>
-<p><strong>v2:</strong></p>
-<!-- pytest-codeblocks:skip -->
-<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="n">subject</span> <span class="o">=</span> <span class="n">tio</span><span class="o">.</span><span class="n">Subject</span><span class="p">(</span><span class="n">t1</span><span class="o">=</span><span class="n">image</span><span class="p">,</span> <span class="n">seg</span><span class="o">=</span><span class="n">label</span><span class="p">)</span>  <span class="c1"># keyword args only</span>
-</code></pre></div>
-<p>The positional dictionary form is removed.  Use keyword arguments.</p>
-<h2 id="transform-naming">Transform naming</h2>
-<p>v2 removes the <code>Random*</code> prefix.  Stochasticity is controlled by
-parameter type: a scalar is deterministic, a tuple samples uniformly,
-and a <code>Distribution</code> or <code>Choice</code> gives full control.</p>
-<div class="admonition warning">
-<p class="admonition-title">Renaming a <code>Random*</code> transform changes its default behavior</p>
-<p>In v1, <code>RandomAffine()</code> (no arguments) applied random augmentation.
-In v2, the renamed <code>Affine()</code> (no arguments) is a deterministic
-identity (no-op) that emits a warning (randomness is opt-in). Pass a
-range like <code>(a, b)</code> for random augmentation, or a scalar for a fixed
-effect. Transforms that draw a random realisation rather than
-sampling a scalar parameter (e.g. <code>Noise</code>, <code>BiasField</code>,
-<code>ElasticDeformation</code>, <code>Swap</code>) still apply with their default
-parameters.</p>
-</div>
-<table>
-<thead>
-<tr>
-<th>v1</th>
-<th>v2</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>RandomFlip</code></td>
-<td><code>Flip</code></td>
-</tr>
-<tr>
-<td><code>RandomAffine</code></td>
-<td><code>Affine</code></td>
-</tr>
-<tr>
-<td><code>RandomElasticDeformation</code></td>
-<td><code>ElasticDeformation</code></td>
-</tr>
-<tr>
-<td><code>RandomNoise</code></td>
-<td><code>Noise</code></td>
-</tr>
-<tr>
-<td><code>RandomBlur</code></td>
-<td><code>Blur</code></td>
-</tr>
-<tr>
-<td><code>RandomMotion</code></td>
-<td><code>Motion</code></td>
-</tr>
-<tr>
-<td><code>RandomGhosting</code></td>
-<td><code>Ghosting</code></td>
-</tr>
-<tr>
-<td><code>RandomBiasField</code></td>
-<td><code>BiasField</code></td>
-</tr>
-<tr>
-<td><code>RandomGamma</code></td>
-<td><code>Gamma</code></td>
-</tr>
-<tr>
-<td><code>RandomSpike</code></td>
-<td><code>Spike</code></td>
-</tr>
-<tr>
-<td><code>RandomSwap</code></td>
-<td><code>Swap</code></td>
-</tr>
-<tr>
-<td><code>RandomAnisotropy</code></td>
-<td><code>Anisotropy</code></td>
-</tr>
-<tr>
-<td><code>RandomLabelsToImage</code></td>
-<td><code>LabelsToImage</code></td>
-</tr>
-<tr>
-<td><code>RescaleIntensity</code></td>
-<td><code>Normalize</code> (alias <code>RescaleIntensity</code> available)</td>
-</tr>
-<tr>
-<td><code>ZNormalization</code></td>
-<td><code>Standardize</code> (alias <code>ZNormalization</code> available)</td>
-</tr>
-</tbody>
-</table>
-<h2 id="transform-parameter-changes">Transform parameter changes</h2>
-<h3 id="flip">Flip</h3>
-<p><code>flip_probability</code> default changed from <strong>0.5</strong> to <strong>1.0</strong>.  If you
-relied on the old default, set it explicitly:</p>
-<!-- pytest-codeblocks:skip -->
-<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="c1"># v1 (implicit 0.5)</span>
-<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="n">tio</span><span class="o">.</span><span class="n">RandomFlip</span><span class="p">(</span><span class="n">axes</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
-<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>
-<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="c1"># v2 (explicit 0.5)</span>
-<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="n">tio</span><span class="o">.</span><span class="n">Flip</span><span class="p">(</span><span class="n">axes</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span> <span class="n">flip_probability</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
-</code></pre></div>
-<h3 id="affine">Affine</h3>
-<p><code>scales</code> and <code>degrees</code> now expect explicit ranges instead of
-half-widths:</p>
-<!-- pytest-codeblocks:skip -->
-<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="c1"># v1: scales=0.1 means range (0.9, 1.1)</span>
-<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="n">tio</span><span class="o">.</span><span class="n">RandomAffine</span><span class="p">(</span><span class="n">scales</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">degrees</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
-<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>
-<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="c1"># v2: specify the range directly</span>
-<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="n">tio</span><span class="o">.</span><span class="n">Affine</span><span class="p">(</span><span class="n">scales</span><span class="o">=</span><span class="p">(</span><span class="mf">0.9</span><span class="p">,</span> <span class="mf">1.1</span><span class="p">),</span> <span class="n">degrees</span><span class="o">=</span><span class="p">(</span><span class="o">-</span><span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">))</span>
-</code></pre></div>
-<h3 id="normalize-was-rescaleintensity">Normalize (was RescaleIntensity)</h3>
-<p>Tuple parameters are split into individual keyword arguments:</p>
-<!-- pytest-codeblocks:skip -->
-<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="c1"># v1</span>
-<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="n">tio</span><span class="o">.</span><span class="n">RescaleIntensity</span><span class="p">(</span>
-<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>    <span class="n">out_min_max</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span>
-<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a>    <span class="n">percentiles</span><span class="o">=</span><span class="p">(</span><span class="mf">0.5</span><span class="p">,</span> <span class="mf">99.5</span><span class="p">),</span>
-<a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a><span class="p">)</span>
-<a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a>
-<a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a><span class="c1"># v2</span>
-<a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a><span class="n">tio</span><span class="o">.</span><span class="n">Normalize</span><span class="p">(</span>
-<a id="__codelineno-8-9" name="__codelineno-8-9" href="#__codelineno-8-9"></a>    <span class="n">out_min</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
-<a id="__codelineno-8-10" name="__codelineno-8-10" href="#__codelineno-8-10"></a>    <span class="n">out_max</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
-<a id="__codelineno-8-11" name="__codelineno-8-11" href="#__codelineno-8-11"></a>    <span class="n">percentile_low</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>
-<a id="__codelineno-8-12" name="__codelineno-8-12" href="#__codelineno-8-12"></a>    <span class="n">percentile_high</span><span class="o">=</span><span class="mf">99.5</span><span class="p">,</span>
-<a id="__codelineno-8-13" name="__codelineno-8-13" href="#__codelineno-8-13"></a><span class="p">)</span>
-</code></pre></div>
-<p>Each parameter can independently be a scalar (fixed), a tuple
-(uniform range), a <code>Distribution</code>, or a <code>Choice</code>.</p>
-<h3 id="histogramstandardization">HistogramStandardization</h3>
-<p>Landmark computation is now a standalone function instead of a
-classmethod:</p>
-<!-- pytest-codeblocks:skip -->
-<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="c1"># v1</span>
-<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="n">landmarks</span> <span class="o">=</span> <span class="n">tio</span><span class="o">.</span><span class="n">HistogramStandardization</span><span class="o">.</span><span class="n">train</span><span class="p">(</span><span class="n">paths</span><span class="p">)</span>
-<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="n">transform</span> <span class="o">=</span> <span class="n">tio</span><span class="o">.</span><span class="n">HistogramStandardization</span><span class="p">({</span><span class="s2">&quot;t1&quot;</span><span class="p">:</span> <span class="n">landmarks</span><span class="p">})</span>
-<a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a>
-<a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a><span class="c1"># v2</span>
-<a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a><span class="kn">from</span><span class="w"> </span><span class="nn">torchio.transforms.intensity.histogram_standardization</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
-<a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a>    <span class="n">compute_histogram_landmarks</span><span class="p">,</span>
-<a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a><span class="p">)</span>
-<a id="__codelineno-9-9" name="__codelineno-9-9" href="#__codelineno-9-9"></a><span class="n">landmarks</span> <span class="o">=</span> <span class="n">compute_histogram_landmarks</span><span class="p">(</span><span class="n">images</span><span class="p">)</span>
-<a id="__codelineno-9-10" name="__codelineno-9-10" href="#__codelineno-9-10"></a><span class="n">transform</span> <span class="o">=</span> <span class="n">tio</span><span class="o">.</span><span class="n">HistogramStandardization</span><span class="p">(</span><span class="n">landmarks</span><span class="p">,</span> <span class="n">include</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;t1&quot;</span><span class="p">])</span>
-</code></pre></div>
-<p>One instance per modality.  For multi-modal subjects, compose:</p>
-<!-- pytest-codeblocks:skip -->
-<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="n">tio</span><span class="o">.</span><span class="n">Compose</span><span class="p">([</span>
-<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>    <span class="n">tio</span><span class="o">.</span><span class="n">HistogramStandardization</span><span class="p">(</span><span class="n">t1_landmarks</span><span class="p">,</span> <span class="n">include</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;t1&quot;</span><span class="p">]),</span>
-<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>    <span class="n">tio</span><span class="o">.</span><span class="n">HistogramStandardization</span><span class="p">(</span><span class="n">t2_landmarks</span><span class="p">,</span> <span class="n">include</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;t2&quot;</span><span class="p">]),</span>
-<a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="p">])</span>
-</code></pre></div>
-<h2 id="new-features">New features</h2>
-<h3 id="choice">Choice</h3>
-<p>Sample from a discrete set of values:</p>
-<!-- pytest-codeblocks:skip -->
-<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="n">tio</span><span class="o">.</span><span class="n">Affine</span><span class="p">(</span><span class="n">degrees</span><span class="o">=</span><span class="n">tio</span><span class="o">.</span><span class="n">Choice</span><span class="p">([</span><span class="o">-</span><span class="mi">90</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">90</span><span class="p">,</span> <span class="mi">180</span><span class="p">]))</span>
-</code></pre></div>
-<h3 id="someof">SomeOf</h3>
-<p>Apply a random subset of transforms:</p>
-<!-- pytest-codeblocks:skip -->
-<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="n">tio</span><span class="o">.</span><span class="n">SomeOf</span><span class="p">(</span>
-<a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>    <span class="p">[</span><span class="n">tio</span><span class="o">.</span><span class="n">Flip</span><span class="p">(</span><span class="n">axes</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,)),</span> <span class="n">tio</span><span class="o">.</span><span class="n">Noise</span><span class="p">(</span><span class="n">std</span><span class="o">=</span><span class="mf">0.1</span><span class="p">),</span> <span class="n">tio</span><span class="o">.</span><span class="n">Gamma</span><span class="p">(</span><span class="n">log_gamma</span><span class="o">=</span><span class="p">(</span><span class="o">-</span><span class="mf">0.3</span><span class="p">,</span> <span class="mf">0.3</span><span class="p">))],</span>
-<a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a>    <span class="n">num_transforms</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span>
-<a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a><span class="p">)</span>
-</code></pre></div>
-<h3 id="operator-sugar">Operator sugar</h3>
-<!-- pytest-codeblocks:skip -->
-<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="n">pipeline</span> <span class="o">=</span> <span class="n">tio</span><span class="o">.</span><span class="n">Flip</span><span class="p">(</span><span class="n">axes</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,))</span> <span class="o">+</span> <span class="n">tio</span><span class="o">.</span><span class="n">Noise</span><span class="p">(</span><span class="n">std</span><span class="o">=</span><span class="mf">0.1</span><span class="p">)</span>  <span class="c1"># Compose</span>
-<a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a><span class="n">artifact</span> <span class="o">=</span> <span class="n">tio</span><span class="o">.</span><span class="n">Ghosting</span><span class="p">(</span><span class="n">intensity</span><span class="o">=</span><span class="p">(</span><span class="mf">0.5</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span> <span class="o">|</span> <span class="n">tio</span><span class="o">.</span><span class="n">Spike</span><span class="p">(</span><span class="n">intensity</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">))</span>  <span class="c1"># OneOf</span>
-</code></pre></div>
-<h3 id="compose-copy-control">Compose copy control</h3>
-<p><code>Compose</code> deep-copies the input once, then all inner transforms
-operate in-place.  Disable with <code>copy=False</code> for nested pipelines:</p>
-<!-- pytest-codeblocks:skip -->
-<div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="n">inner</span> <span class="o">=</span> <span class="n">tio</span><span class="o">.</span><span class="n">Compose</span><span class="p">([</span><span class="n">tio</span><span class="o">.</span><span class="n">Flip</span><span class="p">(</span><span class="n">axes</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,))],</span> <span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-<a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a><span class="n">outer</span> <span class="o">=</span> <span class="n">tio</span><span class="o">.</span><span class="n">Compose</span><span class="p">([</span><span class="n">inner</span><span class="p">,</span> <span class="n">tio</span><span class="o">.</span><span class="n">Noise</span><span class="p">(</span><span class="n">std</span><span class="o">=</span><span class="mf">0.1</span><span class="p">)])</span>
-</code></pre></div>
-<h2 id="data-loading">Data loading</h2>
-<h3 id="subjectsdataset-removed">SubjectsDataset removed</h3>
-<p>v1 required wrapping subjects in <code>SubjectsDataset</code>.
-v2 removes this class. Pass any <code>Dataset</code> returning <code>Subject</code> instances to
-<code>SubjectsLoader</code>:</p>
-<!-- pytest-codeblocks:skip -->
-<div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="c1"># v1</span>
-<a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a><span class="n">dataset</span> <span class="o">=</span> <span class="n">tio</span><span class="o">.</span><span class="n">SubjectsDataset</span><span class="p">(</span><span class="n">subjects</span><span class="p">,</span> <span class="n">transform</span><span class="o">=</span><span class="n">augment</span><span class="p">)</span>
-<a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a><span class="n">loader</span> <span class="o">=</span> <span class="n">DataLoader</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="n">batch_size</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span>
-<a id="__codelineno-15-4" name="__codelineno-15-4" href="#__codelineno-15-4"></a>
-<a id="__codelineno-15-5" name="__codelineno-15-5" href="#__codelineno-15-5"></a><span class="c1"># v2</span>
-<a id="__codelineno-15-6" name="__codelineno-15-6" href="#__codelineno-15-6"></a><span class="n">loader</span> <span class="o">=</span> <span class="n">tio</span><span class="o">.</span><span class="n">SubjectsLoader</span><span class="p">(</span><span class="n">subjects</span><span class="p">,</span> <span class="n">transform</span><span class="o">=</span><span class="n">augment</span><span class="p">,</span> <span class="n">batch_size</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span>
-</code></pre></div>
-<h3 id="queue">Queue</h3>
-<!-- pytest-codeblocks:skip -->
-<div class="highlight"><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="c1"># v1</span>
-<a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a><span class="n">dataset</span> <span class="o">=</span> <span class="n">tio</span><span class="o">.</span><span class="n">SubjectsDataset</span><span class="p">(</span><span class="n">subjects</span><span class="p">)</span>
-<a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a><span class="n">sampler</span> <span class="o">=</span> <span class="n">tio</span><span class="o">.</span><span class="n">UniformSampler</span><span class="p">(</span><span class="n">patch_size</span><span class="o">=</span><span class="mi">96</span><span class="p">)</span>
-<a id="__codelineno-16-4" name="__codelineno-16-4" href="#__codelineno-16-4"></a><span class="n">queue</span> <span class="o">=</span> <span class="n">tio</span><span class="o">.</span><span class="n">Queue</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="n">max_length</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span> <span class="n">samples_per_volume</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
-<a id="__codelineno-16-5" name="__codelineno-16-5" href="#__codelineno-16-5"></a>
-<a id="__codelineno-16-6" name="__codelineno-16-6" href="#__codelineno-16-6"></a><span class="c1"># v2</span>
-<a id="__codelineno-16-7" name="__codelineno-16-7" href="#__codelineno-16-7"></a><span class="n">queue</span> <span class="o">=</span> <span class="n">tio</span><span class="o">.</span><span class="n">Queue</span><span class="p">(</span>
-<a id="__codelineno-16-8" name="__codelineno-16-8" href="#__codelineno-16-8"></a>    <span class="n">subjects</span><span class="p">,</span>
-<a id="__codelineno-16-9" name="__codelineno-16-9" href="#__codelineno-16-9"></a>    <span class="n">patch_sampler</span><span class="o">=</span><span class="n">tio</span><span class="o">.</span><span class="n">UniformSampler</span><span class="p">(</span><span class="n">patch_size</span><span class="o">=</span><span class="mi">96</span><span class="p">),</span>
-<a id="__codelineno-16-10" name="__codelineno-16-10" href="#__codelineno-16-10"></a>    <span class="n">max_length</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span>
-<a id="__codelineno-16-11" name="__codelineno-16-11" href="#__codelineno-16-11"></a>    <span class="n">patches_per_volume</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
-<a id="__codelineno-16-12" name="__codelineno-16-12" href="#__codelineno-16-12"></a><span class="p">)</span>
-</code></pre></div>
-<h3 id="patchaggregator-was-gridaggregator">PatchAggregator (was GridAggregator)</h3>
-<!-- pytest-codeblocks:skip -->
-<div class="highlight"><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a><span class="c1"># v1</span>
-<a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a><span class="n">aggregator</span> <span class="o">=</span> <span class="n">tio</span><span class="o">.</span><span class="n">GridAggregator</span><span class="p">(</span><span class="n">sampler</span><span class="p">)</span>
-<a id="__codelineno-17-3" name="__codelineno-17-3" href="#__codelineno-17-3"></a>
-<a id="__codelineno-17-4" name="__codelineno-17-4" href="#__codelineno-17-4"></a><span class="c1"># v2</span>
-<a id="__codelineno-17-5" name="__codelineno-17-5" href="#__codelineno-17-5"></a><span class="n">aggregator</span> <span class="o">=</span> <span class="n">tio</span><span class="o">.</span><span class="n">PatchAggregator</span><span class="p">(</span><span class="n">sampler</span><span class="p">)</span>
-</code></pre></div>
-<h2 id="transform-history">Transform history</h2>
-<p>v2 simplifies the history API:</p>
-<!-- pytest-codeblocks:skip -->
-<div class="highlight"><pre><span></span><code><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a><span class="c1"># Both versions</span>
-<a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a><span class="n">restored</span> <span class="o">=</span> <span class="n">subject</span><span class="o">.</span><span class="n">apply_inverse_transform</span><span class="p">()</span>
-<a id="__codelineno-18-3" name="__codelineno-18-3" href="#__codelineno-18-3"></a><span class="n">inverse</span> <span class="o">=</span> <span class="n">subject</span><span class="o">.</span><span class="n">get_inverse_transform</span><span class="p">()</span>
-<a id="__codelineno-18-4" name="__codelineno-18-4" href="#__codelineno-18-4"></a>
-<a id="__codelineno-18-5" name="__codelineno-18-5" href="#__codelineno-18-5"></a><span class="c1"># v1 only (removed in v2)</span>
-<a id="__codelineno-18-6" name="__codelineno-18-6" href="#__codelineno-18-6"></a><span class="n">subject</span><span class="o">.</span><span class="n">history</span>
-<a id="__codelineno-18-7" name="__codelineno-18-7" href="#__codelineno-18-7"></a><span class="n">subject</span><span class="o">.</span><span class="n">get_applied_transforms</span><span class="p">()</span>
-<a id="__codelineno-18-8" name="__codelineno-18-8" href="#__codelineno-18-8"></a><span class="n">subject</span><span class="o">.</span><span class="n">get_composed_history</span><span class="p">()</span>
-</code></pre></div>
-<h2 id="imports">Imports</h2>
-<p>All transforms are available at the top level:</p>
-<!-- pytest-codeblocks:skip -->
-<div class="highlight"><pre><span></span><code><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a><span class="c1"># v1</span>
-<a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">torchio.transforms</span><span class="w"> </span><span class="kn">import</span> <span class="n">RandomFlip</span><span class="p">,</span> <span class="n">RandomAffine</span>
-<a id="__codelineno-19-3" name="__codelineno-19-3" href="#__codelineno-19-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">torchio.transforms.augmentation.intensity</span><span class="w"> </span><span class="kn">import</span> <span class="n">RandomNoise</span>
-<a id="__codelineno-19-4" name="__codelineno-19-4" href="#__codelineno-19-4"></a>
-<a id="__codelineno-19-5" name="__codelineno-19-5" href="#__codelineno-19-5"></a><span class="c1"># v2</span>
-<a id="__codelineno-19-6" name="__codelineno-19-6" href="#__codelineno-19-6"></a><span class="kn">import</span><span class="w"> </span><span class="nn">torchio</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">tio</span>
-<a id="__codelineno-19-7" name="__codelineno-19-7" href="#__codelineno-19-7"></a><span class="n">tio</span><span class="o">.</span><span class="n">Flip</span>
-<a id="__codelineno-19-8" name="__codelineno-19-8" href="#__codelineno-19-8"></a><span class="n">tio</span><span class="o">.</span><span class="n">Affine</span>
-<a id="__codelineno-19-9" name="__codelineno-19-9" href="#__codelineno-19-9"></a><span class="n">tio</span><span class="o">.</span><span class="n">Noise</span>
-</code></pre></div>
-<p>New exports in v2:</p>
-<ul>
-<li><code>AffineMatrix</code>: the affine matrix class</li>
-<li><code>Points</code>, <code>BoundingBoxes</code>, <code>BoundingBoxFormat</code>: annotation types</li>
-<li><code>SubjectsBatch</code>, <code>ImagesBatch</code>: batch containers</li>
-<li><code>Choice</code>: discrete parameter sampling utility</li>
-<li><code>SomeOf</code>: random subset composition</li>
-<li><code>PatchAggregator</code>: renamed from <code>GridAggregator</code></li>
-<li><code>apply_inverse_transform</code>: standalone inverse function</li>
-</ul>
 
 
 
@@ -4468,7 +3923,7 @@ v2 removes this class. Pass any <code>Dataset</code> returning <code>Subject</co
       <nav class="md-footer__inner md-grid" aria-label="Footer" >
         
           
-          <a href="../quickstart/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Quickstart">
+          <a href="../transforms/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Transform design">
             <div class="md-footer__button md-icon">
               
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-arrow-left" viewBox="0 0 24 24"><path d="m12 19-7-7 7-7M19 12H5"/></svg>
@@ -4478,20 +3933,20 @@ v2 removes this class. Pass any <code>Dataset</code> returning <code>Subject</co
                 Previous
               </span>
               <div class="md-ellipsis">
-                Quickstart
+                Transform design
               </div>
             </div>
           </a>
         
         
           
-          <a href="../../concepts/data-model/" class="md-footer__link md-footer__link--next" aria-label="Next: Data model">
+          <a href="../../tutorials/first-pipeline/" class="md-footer__link md-footer__link--next" aria-label="Next: Your first pipeline">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Next
               </span>
               <div class="md-ellipsis">
-                Data model
+                Your first pipeline
               </div>
             </div>
             <div class="md-footer__button md-icon">
