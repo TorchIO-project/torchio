@@ -53,6 +53,7 @@ from .transforms import Flip
 from .transforms import Gamma
 from .transforms import Ghosting
 from .transforms import HistogramStandardization
+from .transforms import IntensityInversion
 from .transforms import IntensityTransform
 from .transforms import KeepLargestComponent
 from .transforms import LabelsToImage
@@ -123,6 +124,7 @@ __all__ = [
     "Image",
     "ImagesBatch",
     "ImagesLoader",
+    "IntensityInversion",
     "IntensityTransform",
     "KeepLargestComponent",
     "LabelMap",

@@ -10,6 +10,7 @@ from .intensity.clamp import Clamp
 from .intensity.gamma import Gamma
 from .intensity.ghosting import Ghosting
 from .intensity.histogram_standardization import HistogramStandardization
+from .intensity.inversion import IntensityInversion
 from .intensity.labels_to_image import LabelsToImage
 from .intensity.mask import Mask
 from .intensity.motion import Motion
@@ -72,6 +73,7 @@ __all__ = [
     "Gamma",
     "Ghosting",
     "HistogramStandardization",
+    "IntensityInversion",
     "IntensityTransform",
     "KeepLargestComponent",
     "LabelsToImage",
