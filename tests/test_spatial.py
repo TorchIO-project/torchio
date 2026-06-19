@@ -939,3 +939,62 @@ class TestLabelInterpolation:
         assert result.seg.data.dtype.is_floating_point
         fractional = (result.seg.data > 0) & (result.seg.data < 1)
         assert fractional.any()
+
+    def _three_label_junction(self) -> tio.Subject:
+        # Three labels meeting at a wavy junction, where the per-channel
+        # interpolation order changes the argmax outcome.
+        n = 40
+        yy, xx, zz = torch.meshgrid(
+            torch.arange(n),
+            torch.arange(n),
+            torch.arange(n),
+            indexing="ij",
+        )
+        seg = torch.zeros(n, n, n)
+        boundary = n / 2 + 3 * torch.sin(xx.float() / 3)
+        seg[yy > boundary] = 1
+        seg[(yy <= boundary) & (zz > n / 2)] = 2
+        return tio.Subject(seg=tio.LabelMap(seg[None], affine=np.eye(4)))
+
+    def test_one_hot_label_interpolation_label_raises(self) -> None:
+        with pytest.raises(ValueError, match="one_hot_label_interpolation"):
+            tio.Resample(
+                2,
+                label_interpolation="label",
+                one_hot_label_interpolation="label",
+            )
+
+    def test_one_hot_label_interpolation_default_is_linear(self) -> None:
+        subject = self._three_label_junction()
+        default = tio.Resample(0.5, label_interpolation="label")(subject)
+        explicit = tio.Resample(
+            0.5,
+            label_interpolation="label",
+            one_hot_label_interpolation="linear",
+        )(subject)
+        torch.testing.assert_close(default.seg.data, explicit.seg.data)
+
+    def test_one_hot_label_interpolation_higher_order_differs(self) -> None:
+        subject = self._three_label_junction()
+        linear = tio.Resample(
+            0.5,
+            label_interpolation="label",
+            one_hot_label_interpolation="linear",
+        )(subject)
+        cubic = tio.Resample(
+            0.5,
+            label_interpolation="label",
+            one_hot_label_interpolation="cubic",
+        )(subject)
+        # The order changes the result, but never invents labels.
+        assert not torch.equal(linear.seg.data, cubic.seg.data)
+        assert set(cubic.seg.data.unique().tolist()) <= {0.0, 1.0, 2.0}
+
+    def test_one_hot_label_interpolation_accepts_integer_order(self) -> None:
+        subject = self._three_label_junction()
+        result = tio.Resample(
+            0.5,
+            label_interpolation="label",
+            one_hot_label_interpolation=3,
+        )(subject)
+        assert set(result.seg.data.unique().tolist()) <= {0.0, 1.0, 2.0}
