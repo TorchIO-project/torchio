@@ -268,3 +268,69 @@ class TestQuantile:
         result = transform(image)
         assert result.data[0, 0, 0, 0].item() == pytest.approx(0.0)
         assert result.data[0, -1, 0, 0].item() == pytest.approx(1.0)
+
+
+class TestNormalizePerInstance:
+    def _batch(self, batch_size: int = 6) -> tio.SubjectsBatch:
+        subjects = [
+            tio.Subject(t1=tio.ScalarImage(torch.rand(1, 8, 8, 8) * 100))
+            for _ in range(batch_size)
+        ]
+        return tio.SubjectsBatch.from_subjects(subjects)
+
+    def test_per_instance_out_range_differs(self) -> None:
+        torch.manual_seed(0)
+        batch = self._batch()
+        transform = tio.RescaleIntensity(out_min=(-1.0, 0.0), out_max=(0.5, 1.0))
+        result = transform(batch)
+        params = result.applied_transforms[-1].params
+        assert "_batched_keys" in params
+        assert len(params["out_min"]) == batch.batch_size
+        assert len(set(params["out_min"])) > 1
+        # Each element rescaled to its own output range.
+        for i in range(batch.batch_size):
+            data = result.t1.data[i]
+            assert data.min() >= params["out_min"][i] - 1e-4
+            assert data.max() <= params["out_max"][i] + 1e-4
+
+    def test_per_instance_false_shares_params(self) -> None:
+        torch.manual_seed(0)
+        batch = self._batch()
+        transform = tio.RescaleIntensity(
+            out_min=(-1.0, 0.0),
+            out_max=(0.5, 1.0),
+            per_instance=False,
+        )
+        result = transform(batch)
+        params = result.applied_transforms[-1].params
+        assert isinstance(params["out_min"], float)
+
+    def test_single_subject_keeps_scalar_params(self) -> None:
+        subject = tio.Subject(t1=tio.ScalarImage(torch.rand(1, 8, 8, 8) * 100))
+        result = tio.RescaleIntensity(out_min=(-1.0, 0.0), out_max=(0.5, 1.0))(subject)
+        assert isinstance(result.applied_transforms[-1].params["out_min"], float)
+
+    def test_per_instance_inverse_zero_range_no_nan(self) -> None:
+        # A degenerate out_min == out_max (zero output range) must not
+        # produce NaNs on the per-element inverse.
+        torch.manual_seed(0)
+        data = torch.rand(1, 8, 8, 8) * 100
+        subjects = [tio.Subject(t1=tio.ScalarImage(data.clone())) for _ in range(4)]
+        batch = tio.SubjectsBatch.from_subjects(subjects)
+        transform = tio.RescaleIntensity(out_min=0.0, out_max=0.0)
+        result = transform(batch)
+        assert "_batched_keys" in result.applied_transforms[-1].params
+        restored = result.apply_inverse_transform()
+        assert not torch.isnan(restored.t1.data).any()
+        # Identical inputs: the batch-shared input range covers every
+        # element, so only the per-element output range varies and the
+        # round-trip is exact.
+        torch.manual_seed(0)
+        data = torch.rand(1, 8, 8, 8) * 100
+        subjects = [tio.Subject(t1=tio.ScalarImage(data.clone())) for _ in range(6)]
+        batch = tio.SubjectsBatch.from_subjects(subjects)
+        original = batch.t1.data.clone()
+        transform = tio.RescaleIntensity(out_min=(-1.0, 0.0), out_max=(0.5, 1.0))
+        result = transform(batch)
+        restored = result.apply_inverse_transform()
+        torch.testing.assert_close(restored.t1.data, original, atol=1e-3, rtol=0)

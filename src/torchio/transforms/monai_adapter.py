@@ -90,7 +90,7 @@ class MonaiAdapter(Transform):
         from ..data.batch import SubjectsBatch
 
         result = SubjectsBatch.from_subjects(subjects)
-        result.applied_transforms = batch.applied_transforms
+        result.adopt_history(batch, subjects)
         return unwrap(result)
 
     def apply_transform(self, batch: Any, params: dict[str, Any]) -> Any:

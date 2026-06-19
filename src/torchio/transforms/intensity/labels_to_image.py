@@ -79,10 +79,40 @@ class LabelsToImage(Transform):
         self.ignore_background = ignore_background
 
     def make_params(self, batch: SubjectsBatch) -> dict[str, Any]:
-        """Sample per-label mean and std values."""
+        """Sample per-label mean and std values (per element when batched)."""
         label_batch = self._find_label_batch(batch)
         # Discover unique labels from the first sample.
         unique = sorted(int(v) for v in label_batch.data[0].unique().tolist())
+        n = self._resolve_n(batch)
+        if n is None:
+            means, stds = self._sample_label_values(unique)
+            return {"means": means, "stds": stds}
+        means_list: list[dict[int, float]] = []
+        stds_list: list[dict[int, float]] = []
+        for _ in range(n):
+            means, stds = self._sample_label_values(unique)
+            means_list.append(means)
+            stds_list.append(stds)
+        params = {"means": means_list, "stds": stds_list}
+        self._tag_batched(params, batch, n, None, ["means", "stds"])
+        return params
+
+    @property
+    def supports_per_instance_params(self) -> bool:
+        return True
+
+    def _sample_label_values(
+        self,
+        unique: list[int],
+    ) -> tuple[dict[int, float], dict[int, float]]:
+        """Sample one mean and std per label.
+
+        Args:
+            unique: Sorted list of unique label values.
+
+        Returns:
+            A `(means, stds)` pair of per-label dictionaries.
+        """
         means: dict[int, float] = {}
         stds: dict[int, float] = {}
         for idx, label in enumerate(unique):
@@ -98,7 +128,7 @@ class LabelsToImage(Transform):
                 stds[label] = self.std_ranges[idx].sample_1d()
             else:
                 stds[label] = abs(self.default_std.sample_1d())
-        return {"means": means, "stds": stds}
+        return means, stds
 
     def apply_transform(
         self,
@@ -107,13 +137,18 @@ class LabelsToImage(Transform):
     ) -> SubjectsBatch:
         """Generate a synthetic image and add it to the batch."""
         label_batch = self._find_label_batch(batch)
-        means = params["means"]
-        stds = params["stds"]
-        generated = _generate_from_labels(
-            label_batch.data,
-            means,
-            stds,
-        )
+        if self._is_per_instance_params(params):
+            generated = _generate_per_element(
+                label_batch.data,
+                params["means"],
+                params["stds"],
+            )
+        else:
+            generated = _generate_from_labels(
+                label_batch.data,
+                params["means"],
+                params["stds"],
+            )
         # Create a new image batch entry.
         from ...data.batch import ImagesBatch
 
@@ -141,6 +176,32 @@ class LabelsToImage(Transform):
                 return img_batch
         msg = "No LabelMap found in the subject"
         raise KeyError(msg)
+
+
+def _generate_per_element(
+    label_data: Tensor,
+    means_per_element: list[dict[int, float]],
+    stds_per_element: list[dict[int, float]],
+) -> Tensor:
+    """Generate synthetic tissue with per-element label statistics.
+
+    Args:
+        label_data: `(B, C, I, J, K)` label tensor.
+        means_per_element: One per-label mean dict per batch element.
+        stds_per_element: One per-label std dict per batch element.
+
+    Returns:
+        `(B, 1, I, J, K)` synthetic image tensor.
+    """
+    outputs = [
+        _generate_from_labels(
+            label_data[index : index + 1],
+            means_per_element[index],
+            stds_per_element[index],
+        )
+        for index in range(label_data.shape[0])
+    ]
+    return torch.cat(outputs, dim=0)
 
 
 def _generate_from_labels(

@@ -296,3 +296,41 @@ class TestSubjectsBatchEdgeCases:
         r = repr(batch)
         assert "SubjectsBatch" in r
         assert "t1" in r
+
+
+class TestPerElementHistory:
+    def _batch(self, batch_size: int = 4) -> SubjectsBatch:
+        subjects = [
+            tio.Subject(t1=tio.ScalarImage(torch.rand(1, 6, 6, 6)))
+            for _ in range(batch_size)
+        ]
+        return SubjectsBatch.from_subjects(subjects)
+
+    def test_adopt_history_preserves_per_element(self) -> None:
+        # Simulate the adapter pattern: a per-element batch is unbatched,
+        # processed, and re-stacked; history must survive.
+        torch.manual_seed(0)
+        batch = self._batch()
+        branched = tio.OneOf([tio.Flip(axes=(0,)), tio.Flip(axes=(1,))])(batch)
+        subjects = branched.unbatch()
+        rebuilt = SubjectsBatch.from_subjects(subjects)
+        rebuilt.adopt_history(branched, subjects)
+        for original, restored in zip(
+            branched.unbatch(),
+            rebuilt.unbatch(),
+            strict=True,
+        ):
+            assert [t.name for t in restored.applied_transforms] == [
+                t.name for t in original.applied_transforms
+            ]
+
+    def test_adopt_history_shared_case(self) -> None:
+        torch.manual_seed(0)
+        batch = self._batch()
+        transformed = tio.Gamma(log_gamma=0.3, per_instance=False)(batch)
+        subjects = transformed.unbatch()
+        rebuilt = SubjectsBatch.from_subjects(subjects)
+        rebuilt.adopt_history(transformed, subjects)
+        assert rebuilt._per_element_history is None
+        for subject in rebuilt.unbatch():
+            assert [t.name for t in subject.applied_transforms] == ["Gamma"]

@@ -69,18 +69,53 @@ class Ghosting(IntensityTransform):
         )
 
     def make_params(self, batch: SubjectsBatch) -> dict[str, Any]:
-        """Sample ghosting parameters."""
-        n = max(1, round(self.num_ghosts.sample_1d()))
-        axis = self.axes[int(torch.randint(len(self.axes), (1,)).item())]
-        restore = self.restore
-        if restore is None:
-            restore = 0.0
-        return {
-            "num_ghosts": n,
-            "axis": axis,
-            "intensity": self.intensity.sample_1d(),
+        """Sample ghosting parameters (per element when batched)."""
+        restore = self.restore if self.restore is not None else 0.0
+        n = self._resolve_n(batch)
+        if n is None:
+            num_ghosts = max(1, round(self.num_ghosts.sample_1d()))
+            axis = self.axes[int(torch.randint(len(self.axes), (1,)).item())]
+            return {
+                "num_ghosts": num_ghosts,
+                "axis": axis,
+                "intensity": self.intensity.sample_1d(),
+                "restore": restore,
+            }
+        keep = self._keep_mask(batch, n)
+        num_ghosts_list: list[int] = []
+        axis_list: list[int] = []
+        intensity_list: list[float] = []
+        for index in range(n):
+            if keep is not None and not keep[index]:
+                num_ghosts_list.append(0)
+                axis_list.append(self.axes[0])
+                intensity_list.append(0.0)
+                continue
+            num_ghosts_list.append(max(1, round(self.num_ghosts.sample_1d())))
+            axis_list.append(self.axes[int(torch.randint(len(self.axes), (1,)).item())])
+            intensity_list.append(self.intensity.sample_1d())
+        params = {
+            "num_ghosts": num_ghosts_list,
+            "axis": axis_list,
+            "intensity": intensity_list,
             "restore": restore,
         }
+        self._tag_batched(
+            params,
+            batch,
+            n,
+            keep,
+            ["num_ghosts", "axis", "intensity"],
+        )
+        return params
+
+    @property
+    def supports_per_instance_params(self) -> bool:
+        return True
+
+    @property
+    def supports_per_instance_p(self) -> bool:
+        return True
 
     def apply_transform(
         self,
@@ -88,14 +123,30 @@ class Ghosting(IntensityTransform):
         params: dict[str, Any],
     ) -> SubjectsBatch:
         """Add ghosting artifacts to each selected image."""
+        per_instance = self._is_per_instance_params(params)
+        restore = params["restore"]
         for _name, img_batch in self._get_images(batch).items():
-            img_batch.data = _add_ghosting(
-                img_batch.data,
-                num_ghosts=params["num_ghosts"],
-                axis=params["axis"],
-                intensity=params["intensity"],
-                restore=params["restore"],
-            )
+            if per_instance:
+                data = img_batch.data
+                outputs = [
+                    _add_ghosting(
+                        data[index : index + 1],
+                        num_ghosts=params["num_ghosts"][index],
+                        axis=params["axis"][index],
+                        intensity=params["intensity"][index],
+                        restore=restore,
+                    )
+                    for index in range(data.shape[0])
+                ]
+                img_batch.data = torch.cat(outputs, dim=0)
+            else:
+                img_batch.data = _add_ghosting(
+                    img_batch.data,
+                    num_ghosts=params["num_ghosts"],
+                    axis=params["axis"],
+                    intensity=params["intensity"],
+                    restore=restore,
+                )
         return batch
 
 
@@ -155,4 +206,4 @@ def _add_ghosting(
         torch.fft.ifftshift(corrupted, dim=(-3, -2, -1)),
         dim=(-3, -2, -1),
     ).real
-    return result
+    return result.to(data.dtype)

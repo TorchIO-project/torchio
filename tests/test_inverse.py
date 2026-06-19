@@ -22,6 +22,47 @@ class TestApplyInverseTransform:
         restored = transformed.apply_inverse_transform()
         torch.testing.assert_close(restored.t1.data, original)
 
+    def test_does_not_mutate_subject(self) -> None:
+        subject = _make_subject()
+        transformed = tio.Flip(axes=(0,))(subject)
+        snapshot = transformed.t1.data.clone()
+        restored = transformed.apply_inverse_transform()
+        # Inverting must not modify the transformed input in place.
+        torch.testing.assert_close(transformed.t1.data, snapshot)
+        assert restored is not transformed
+
+    def test_does_not_mutate_batch(self) -> None:
+        data = torch.rand(1, 16, 16, 16)
+        batch = tio.SubjectsBatch.from_subjects(
+            [tio.Subject(t1=tio.ScalarImage(data.clone())) for _ in range(3)]
+        )
+        transformed = tio.Affine(degrees=(0, 0, (10, 45)), default_pad_value=0.0)(batch)
+        snapshot = transformed.t1.data.clone()
+        restored = transformed.apply_inverse_transform()
+        torch.testing.assert_close(transformed.t1.data, snapshot)
+        assert not torch.allclose(restored.t1.data, transformed.t1.data)
+
+    def test_does_not_mutate_per_element_batch(self) -> None:
+        torch.manual_seed(0)
+        data = torch.rand(1, 16, 16, 16)
+        batch = tio.SubjectsBatch.from_subjects(
+            [tio.Subject(t1=tio.ScalarImage(data.clone())) for _ in range(8)]
+        )
+        transformed = tio.OneOf([tio.Flip(axes=(0,)), tio.Flip(axes=(1,))])(batch)
+        snapshot = transformed.t1.data.clone()
+        transformed.apply_inverse_transform()
+        torch.testing.assert_close(transformed.t1.data, snapshot)
+
+    def test_standalone_function_does_not_mutate(self) -> None:
+        data = torch.rand(1, 16, 16, 16)
+        batch = tio.SubjectsBatch.from_subjects(
+            [tio.Subject(t1=tio.ScalarImage(data.clone())) for _ in range(3)]
+        )
+        transformed = tio.Affine(degrees=(0, 0, (10, 45)), default_pad_value=0.0)(batch)
+        snapshot = transformed.t1.data.clone()
+        tio.apply_inverse_transform(transformed)
+        torch.testing.assert_close(transformed.t1.data, snapshot)
+
     def test_compose_inverse(self) -> None:
         subject = _make_subject()
         original = subject.t1.data.clone()

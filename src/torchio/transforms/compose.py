@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import copy
 from collections.abc import Mapping
 from collections.abc import Sequence
@@ -11,6 +12,27 @@ from typing import cast
 import torch
 
 from .transform import Transform
+
+
+@contextlib.contextmanager
+def _disabled_copy(transforms: Sequence[Transform]):
+    """Temporarily set ``copy=False`` on each transform.
+
+    The composing transform copies the input once at the top level, so
+    the children it applies must not copy again. The original `copy`
+    flags are restored on exit.
+
+    Args:
+        transforms: The child transforms to apply without copying.
+    """
+    saved = [t.copy for t in transforms]
+    for t in transforms:
+        t.copy = False
+    try:
+        yield
+    finally:
+        for t, previous in zip(transforms, saved, strict=True):
+            t.copy = previous
 
 
 class Compose(Transform):
@@ -79,6 +101,12 @@ class Compose(Transform):
 class OneOf(Transform):
     """Apply one of the given transforms, chosen at random.
 
+    When applied to a batch with `per_instance=True` (the default),
+    each batch element independently chooses which transform to apply.
+    This requires shape- and schema-preserving transforms so the
+    elements can be re-stacked. Pass `per_instance=False` to choose a
+    single transform for the whole batch.
+
     Args:
         transforms: Sequence of transforms, or a `dict` mapping
             transforms to their relative weights. If a sequence is
@@ -112,17 +140,40 @@ class OneOf(Transform):
             self.weights = [1.0 / n] * n
 
     def forward(self, data):
-        subject, unwrap = self._wrap(data)
-        if torch.rand(1).item() > self.p:
-            return unwrap(subject)
-        idx = int(
-            torch.multinomial(
-                torch.tensor(self.weights),
-                num_samples=1,
-            ).item()
-        )
-        subject = self.transforms[idx](subject)
-        return unwrap(subject)
+        if self.copy:
+            data = copy.deepcopy(data)
+        batch, unwrap = self._wrap(data)
+        # The input is copied once above, so children apply without copying.
+        with _disabled_copy(self.transforms):
+            if self.per_instance and batch.batch_size > 1:
+                return unwrap(self._forward_per_element(batch))
+            if torch.rand(1).item() >= self.p:
+                return unwrap(batch)
+            idx = int(
+                torch.multinomial(
+                    torch.tensor(self.weights),
+                    num_samples=1,
+                ).item()
+            )
+            batch = self.transforms[idx](batch)
+            return unwrap(batch)
+
+    def _forward_per_element(self, batch):
+        """Apply an independently chosen transform to each batch element."""
+        if self.p == 0:
+            return batch
+        weights = torch.tensor(self.weights)
+        out_subjects = []
+        any_applied = False
+        for subject in batch.unbatch():
+            if torch.rand(1).item() < self.p:
+                any_applied = True
+                idx = int(torch.multinomial(weights, num_samples=1).item())
+                subject = _apply_to_element(subject, self.transforms[idx])
+            out_subjects.append(subject)
+        if not any_applied:
+            return batch
+        return _rebatch_with_history(out_subjects, "OneOf")
 
     def to_hydra(self) -> dict[str, Any]:
         cfg = super().to_hydra()
@@ -132,6 +183,12 @@ class OneOf(Transform):
 
 class SomeOf(Transform):
     """Apply a random subset of the given transforms.
+
+    When applied to a batch with `per_instance=True` (the default),
+    each batch element independently samples its own subset. This
+    requires shape- and schema-preserving transforms so the elements
+    can be re-stacked. Pass `per_instance=False` to sample a single
+    subset for the whole batch.
 
     Args:
         transforms: Sequence of candidate transforms.
@@ -177,9 +234,20 @@ class SomeOf(Transform):
         return self.num_transforms[1]
 
     def forward(self, data):
-        subject, unwrap = self._wrap(data)
-        if torch.rand(1).item() > self.p:
-            return unwrap(subject)
+        if self.copy:
+            data = copy.deepcopy(data)
+        batch, unwrap = self._wrap(data)
+        # The input is copied once above, so children apply without copying.
+        with _disabled_copy(self.transforms):
+            if self.per_instance and batch.batch_size > 1:
+                return unwrap(self._forward_per_element(batch))
+            if torch.rand(1).item() >= self.p:
+                return unwrap(batch)
+            batch = self._apply_subset(batch)
+            return unwrap(batch)
+
+    def _apply_subset(self, batch):
+        """Apply a randomly chosen subset of transforms to *batch*."""
         n = int(torch.randint(self._min_n, self._max_n + 1, size=(1,)).item())
         n_transforms = len(self.transforms)
         if self.replace:
@@ -188,10 +256,107 @@ class SomeOf(Transform):
             n = min(n, n_transforms)
             indices = torch.randperm(n_transforms)[:n]
         for idx in indices:
-            subject = self.transforms[idx](subject)
-        return unwrap(subject)
+            batch = self.transforms[idx](batch)
+        return batch
+
+    def _forward_per_element(self, batch):
+        """Apply an independently chosen subset to each batch element."""
+        if self.p == 0:
+            return batch
+        out_subjects = []
+        any_applied = False
+        for subject in batch.unbatch():
+            if torch.rand(1).item() < self.p:
+                any_applied = True
+                subject = _apply_to_element(subject, self._apply_subset)
+            out_subjects.append(subject)
+        if not any_applied:
+            return batch
+        return _rebatch_with_history(out_subjects, "SomeOf")
 
     def to_hydra(self) -> dict[str, Any]:
         cfg = super().to_hydra()
         cfg["transforms"] = [t.to_hydra() for t in self.transforms]
         return cfg
+
+
+def _apply_to_element(subject: Any, apply_fn: Any) -> Any:
+    """Apply a transform (or callable) to one element, preserving history.
+
+    Wrapping a `Subject` directly into a batch discards its existing
+    history, so the element is wrapped into a one-element batch seeded
+    with its prior history; the transform then appends to that history.
+
+    Args:
+        subject: The single subject to transform (carrying its history).
+        apply_fn: A transform or callable taking and returning a
+            `SubjectsBatch`.
+
+    Returns:
+        The transformed subject, with its full history.
+    """
+    from ..data.batch import SubjectsBatch
+
+    element_batch = SubjectsBatch.from_subjects([subject])
+    element_batch.applied_transforms = list(subject.applied_transforms)
+    element_batch = apply_fn(element_batch)
+    return element_batch.unbatch()[0]
+
+
+def _rebatch_with_history(subjects: list[Any], transform_name: str) -> Any:
+    """Re-stack per-element subjects and freeze their distinct histories.
+
+    Args:
+        subjects: The transformed subjects, one per batch element.
+        transform_name: Name of the branching transform, used for a
+            clearer error message when shapes or schemas diverge.
+
+    Returns:
+        A `SubjectsBatch` whose `unbatch()` restores each element's own
+        transform history.
+    """
+    from ..data.batch import SubjectsBatch
+
+    _check_consistent_schema(subjects, transform_name)
+    try:
+        batch = SubjectsBatch.from_subjects(subjects)
+    except (RuntimeError, KeyError) as error:
+        msg = (
+            f"Per-instance {transform_name} produced batch elements with"
+            " different shapes or schemas, which cannot be re-stacked. Use"
+            " only shape- and schema-preserving transforms with per-instance"
+            f" {transform_name}, or pass per_instance=False."
+        )
+        raise RuntimeError(msg) from error
+    batch.set_per_element_history([s.applied_transforms for s in subjects])
+    return batch
+
+
+def _check_consistent_schema(subjects: list[Any], transform_name: str) -> None:
+    """Ensure all subjects share the same image names and classes.
+
+    Per-element branching may apply different transforms to different
+    elements; if those change the set of images (or their type), the
+    elements can no longer be re-stacked into one batch. This raises a
+    clear error instead of silently dropping data.
+
+    Args:
+        subjects: The subjects about to be re-stacked.
+        transform_name: Name of the branching transform for the message.
+
+    Raises:
+        RuntimeError: If image names or classes differ across subjects.
+    """
+    if not subjects:
+        return
+    reference = {name: type(image) for name, image in subjects[0].images.items()}
+    for subject in subjects[1:]:
+        current = {name: type(image) for name, image in subject.images.items()}
+        if current != reference:
+            msg = (
+                f"Per-instance {transform_name} produced batch elements with"
+                " different image names or types, which cannot be re-stacked."
+                " Use only schema-preserving transforms with per-instance"
+                f" {transform_name}, or pass per_instance=False."
+            )
+            raise RuntimeError(msg)

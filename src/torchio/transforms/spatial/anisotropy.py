@@ -69,10 +69,33 @@ class Anisotropy(Transform):
             raise ValueError(msg)
 
     def make_params(self, batch: SubjectsBatch) -> dict[str, Any]:
-        """Sample axis and downsampling factor."""
-        axis = self.axes[int(torch.randint(len(self.axes), (1,)).item())]
-        factor = max(1.0, self.downsampling.sample_1d())
-        return {"axis": axis, "factor": factor}
+        """Sample axis and downsampling factor (per element when batched)."""
+        n = self._resolve_n(batch)
+        if n is None:
+            axis = self.axes[int(torch.randint(len(self.axes), (1,)).item())]
+            factor = max(1.0, self.downsampling.sample_1d())
+            return {"axis": axis, "factor": factor}
+        keep = self._keep_mask(batch, n)
+        axis_list: list[int] = []
+        factor_list: list[float] = []
+        for index in range(n):
+            if keep is not None and not keep[index]:
+                axis_list.append(self.axes[0])
+                factor_list.append(1.0)
+                continue
+            axis_list.append(self.axes[int(torch.randint(len(self.axes), (1,)).item())])
+            factor_list.append(max(1.0, self.downsampling.sample_1d()))
+        params = {"axis": axis_list, "factor": factor_list}
+        self._tag_batched(params, batch, n, keep, ["axis", "factor"])
+        return params
+
+    @property
+    def supports_per_instance_params(self) -> bool:
+        return True
+
+    @property
+    def supports_per_instance_p(self) -> bool:
+        return True
 
     def apply_transform(
         self,
@@ -80,18 +103,38 @@ class Anisotropy(Transform):
         params: dict[str, Any],
     ) -> SubjectsBatch:
         """Downsample then upsample along the chosen axis."""
-        axis = params["axis"]
-        factor = params["factor"]
-        if factor <= 1.0:
-            return batch
+        per_instance = self._is_per_instance_params(params)
         for _name, img_batch in batch.images.items():
             is_label = issubclass(img_batch._image_class, LabelMap)
-            img_batch.data = _simulate_anisotropy(
-                img_batch.data,
-                axis=axis,
-                factor=factor,
-                mode="nearest" if is_label else self.image_interpolation,
-            )
+            mode = "nearest" if is_label else self.image_interpolation
+            if per_instance:
+                data = img_batch.data
+                outputs = []
+                for index in range(data.shape[0]):
+                    factor = params["factor"][index]
+                    slice_b = data[index : index + 1]
+                    if factor <= 1.0:
+                        outputs.append(slice_b)
+                        continue
+                    outputs.append(
+                        _simulate_anisotropy(
+                            slice_b,
+                            axis=params["axis"][index],
+                            factor=factor,
+                            mode=mode,
+                        )
+                    )
+                img_batch.data = torch.cat(outputs, dim=0)
+            else:
+                factor = params["factor"]
+                if factor <= 1.0:
+                    continue
+                img_batch.data = _simulate_anisotropy(
+                    img_batch.data,
+                    axis=params["axis"],
+                    factor=factor,
+                    mode=mode,
+                )
         return batch
 
 

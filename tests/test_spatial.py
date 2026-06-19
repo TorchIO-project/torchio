@@ -311,7 +311,26 @@ class TestAffine:
             subject.t1.affine.numpy(),
         )
 
-    def test_isotropic_scales(self) -> None:
+    def test_inverse_leaves_excluded_images_untouched(self) -> None:
+        # The forward pass records the images it transformed; the inverse
+        # must only resample those, so an excluded image (here the label
+        # map) is bit-for-bit identical after a forward + inverse round
+        # trip.
+        subject = _make_subject()
+        transform = AffineTransform(
+            degrees=(0.0, 0.0, 20.0),
+            translation=(1.0, -2.0, 0.5),
+            default_pad_value=0.0,
+            include=["t1"],
+        )
+        original_seg = subject.seg.data.clone()
+
+        result = transform(subject)
+        assert result.applied_transforms[-1].params["selected_images"] == ["t1"]
+        assert torch.equal(result.seg.data, original_seg)
+
+        restored = result.apply_inverse_transform()
+        assert torch.equal(restored.seg.data, original_seg)
         subject = _make_subject()
         transform = AffineTransform(
             scales=(0.9, 1.1),
@@ -369,6 +388,181 @@ class TestAffine:
         )
         transformed = transform(subject)
         assert transformed.t1.spatial_shape == subject.t1.spatial_shape
+
+
+class TestSpatialPerInstance:
+    def _identical_batch(
+        self,
+        batch_size: int = 4,
+        shape: tuple[int, int, int] = (12, 12, 12),
+    ) -> tio.SubjectsBatch:
+        data = torch.arange(
+            shape[0] * shape[1] * shape[2],
+            dtype=torch.float32,
+        ).reshape(1, *shape)
+        subjects = [
+            tio.Subject(t1=tio.ScalarImage(data.clone())) for _ in range(batch_size)
+        ]
+        return tio.SubjectsBatch.from_subjects(subjects)
+
+    def test_per_instance_rotations_differ(self) -> None:
+        torch.manual_seed(0)
+        batch = self._identical_batch()
+        transform = AffineTransform(degrees=(20.0, 80.0), default_pad_value=0.0)
+        result = transform(batch)
+        params = result.applied_transforms[-1].params
+        assert "_batched_keys" in params
+        assert len(params["affine_matrix"]) == batch.batch_size
+        data = result.t1.data
+        assert not torch.allclose(data[0], data[1])
+        assert not torch.allclose(data[1], data[2])
+
+    def test_per_instance_cubic_interpolation(self) -> None:
+        # Exercises the per-sample high-order interpolation path
+        # (interpol.grid_pull) with batched grids.
+        pytest.importorskip("interpol")
+        torch.manual_seed(0)
+        batch = self._identical_batch()
+        transform = AffineTransform(
+            degrees=(20.0, 80.0),
+            default_pad_value=0.0,
+            image_interpolation="cubic",
+        )
+        result = transform(batch)
+        assert result.t1.data.shape == batch.t1.data.shape
+        assert not torch.allclose(result.t1.data[0], result.t1.data[1])
+
+    def test_per_instance_false_is_shared(self) -> None:
+        torch.manual_seed(0)
+        batch = self._identical_batch()
+        transform = AffineTransform(
+            degrees=(20.0, 80.0),
+            default_pad_value=0.0,
+            per_instance=False,
+        )
+        result = transform(batch)
+        data = result.t1.data
+        torch.testing.assert_close(data[0], data[1])
+        torch.testing.assert_close(data[1], data[2])
+
+    def test_single_subject_keeps_scalar_params(self) -> None:
+        subject = _make_subject()
+        result = AffineTransform(degrees=(20.0, 80.0), default_pad_value=0.0)(subject)
+        params = result.applied_transforms[-1].params
+        assert "_batched_keys" not in params
+
+    def test_per_instance_inverse_restores_geometry(self) -> None:
+        torch.manual_seed(0)
+        batch = self._identical_batch()
+        transform = AffineTransform(
+            scales=(0.9, 1.1),
+            degrees=(20.0, 80.0),
+            translation=(-2.0, 2.0),
+            default_pad_value=0.0,
+        )
+        result = transform(batch)
+        restored = result.apply_inverse_transform()
+        assert restored.t1.data.shape == batch.t1.data.shape
+        for affine in restored.t1.affines:
+            np.testing.assert_allclose(
+                affine.numpy(),
+                batch.t1.affines[0].numpy(),
+                atol=1e-5,
+            )
+
+    def test_per_instance_p_gates_some_elements(self) -> None:
+        torch.manual_seed(0)
+        batch = self._identical_batch(batch_size=64)
+        original = batch.t1.data.clone()
+        transform = AffineTransform(degrees=(40.0, 80.0), default_pad_value=0.0, p=0.5)
+        result = transform(batch)
+        changed = [
+            not torch.allclose(result.t1.data[i], original[i])
+            for i in range(batch.batch_size)
+        ]
+        assert any(changed)
+        assert not all(changed)
+
+    def test_per_instance_p_masked_elements_unchanged(self) -> None:
+        torch.manual_seed(0)
+        batch = self._identical_batch(batch_size=32)
+        original = batch.t1.data.clone()
+        transform = AffineTransform(degrees=(40.0, 80.0), default_pad_value=0.0, p=0.5)
+        result = transform(batch)
+        for i, subject in enumerate(result.unbatch()):
+            changed = not torch.allclose(subject.t1.data, original[i])
+            has_history = len(subject.applied_transforms) == 1
+            assert changed == has_history
+
+    def test_per_instance_elastic_differs_across_batch(self) -> None:
+        torch.manual_seed(0)
+        batch = self._identical_batch()
+        transform = tio.ElasticDeformation(
+            num_control_points=5,
+            max_displacement=(1.0, 3.0),
+        )
+        result = transform(batch)
+        params = result.applied_transforms[-1].params
+        assert "_batched_keys" in params
+        assert len(params["control_points"]) == batch.batch_size
+        data = result.t1.data
+        assert not torch.allclose(data[0], data[1])
+        assert not torch.allclose(data[1], data[2])
+
+    def test_fully_gated_noop_preserves_per_sample_affines(self) -> None:
+        # When every element is gated out (p=0) and there is no target
+        # resampling, the transform must be a true no-op: the data and the
+        # distinct per-sample affines must be left untouched rather than
+        # rebuilt from an identity grid using the first element's affine.
+        torch.manual_seed(0)
+        subjects = []
+        for index in range(4):
+            affine = np.eye(4)
+            affine[0, 3] = float(index * 10)
+            image = tio.ScalarImage(torch.rand(1, 8, 8, 8), affine=affine)
+            subjects.append(tio.Subject(t1=image))
+        batch = tio.SubjectsBatch.from_subjects(subjects)
+        original_data = batch.t1.data.clone()
+        original_affines = [affine.numpy().copy() for affine in batch.t1.affines]
+
+        result = AffineTransform(degrees=20.0, p=0.0)(batch)
+
+        assert torch.equal(result.t1.data, original_data)
+        for original, new in zip(
+            original_affines,
+            result.t1.affines,
+            strict=True,
+        ):
+            assert np.allclose(original, new.numpy())
+
+    def test_partially_gated_elements_are_exact_noops(self) -> None:
+        # In a mixed batch (0 < p < 1), gated-out elements must be exact,
+        # bit-for-bit no-ops even for float64 inputs: the per-sample
+        # resample runs an identity grid in float32, so those rows are
+        # restored from the input afterwards.
+        torch.manual_seed(0)
+        data = torch.rand(1, 8, 8, 8, dtype=torch.float64)
+        batch = tio.SubjectsBatch.from_subjects(
+            [tio.Subject(t1=tio.ScalarImage(data.clone())) for _ in range(8)]
+        )
+        original = batch.t1.data.clone()
+        torch.manual_seed(1)
+        result = AffineTransform(degrees=30.0, p=0.5)(batch)
+        assert result.t1.data.dtype == torch.float64
+        exact = [
+            torch.equal(result.t1.data[i], original[i]) for i in range(batch.batch_size)
+        ]
+        changed = [
+            not torch.allclose(result.t1.data[i], original[i], atol=1e-6)
+            for i in range(batch.batch_size)
+        ]
+        # Every element is either an exact no-op or genuinely augmented.
+        assert all(
+            is_exact ^ is_changed
+            for is_exact, is_changed in zip(exact, changed, strict=True)
+        )
+        assert any(exact)
+        assert any(changed)
 
 
 class TestElasticDeformation:

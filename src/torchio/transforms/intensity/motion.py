@@ -68,19 +68,39 @@ class Motion(IntensityTransform):
         self.num_transforms = num_transforms
 
     def make_params(self, batch: SubjectsBatch) -> dict[str, Any]:
-        """Sample motion parameters."""
-        transforms = []
-        for _ in range(self.num_transforms):
-            transforms.append(
-                {
-                    "degrees": self.degrees.sample(),
-                    "translation": self.translation.sample(),
-                }
-            )
-        return {
-            "transforms": transforms,
-            "seed": int(torch.randint(0, 2**31, (1,)).item()),
-        }
+        """Sample motion parameters (per element when batched)."""
+        n = self._resolve_n(batch)
+        if n is None:
+            transforms = self._sample_transforms()
+            return {"transforms": transforms}
+        keep = self._keep_mask(batch, n)
+        transforms_list: list[Any] = []
+        for index in range(n):
+            if keep is not None and not keep[index]:
+                transforms_list.append([])
+                continue
+            transforms_list.append(self._sample_transforms())
+        params = {"transforms": transforms_list}
+        self._tag_batched(params, batch, n, keep, ["transforms"])
+        return params
+
+    def _sample_transforms(self) -> list[dict[str, tuple[float, float, float]]]:
+        """Sample one list of rigid sub-transforms."""
+        return [
+            {
+                "degrees": self.degrees.sample(),
+                "translation": self.translation.sample(),
+            }
+            for _ in range(self.num_transforms)
+        ]
+
+    @property
+    def supports_per_instance_params(self) -> bool:
+        return True
+
+    @property
+    def supports_per_instance_p(self) -> bool:
+        return True
 
     def apply_transform(
         self,
@@ -88,12 +108,24 @@ class Motion(IntensityTransform):
         params: dict[str, Any],
     ) -> SubjectsBatch:
         """Corrupt each selected image with simulated motion."""
-        motion_transforms = params["transforms"]
+        per_instance = self._is_per_instance_params(params)
         for _name, img_batch in self._get_images(batch).items():
-            img_batch.data = _apply_motion(
-                img_batch.data,
-                motion_transforms,
-            )
+            if per_instance:
+                data = img_batch.data
+                outputs = []
+                for index in range(data.shape[0]):
+                    element_transforms = params["transforms"][index]
+                    slice_b = data[index : index + 1]
+                    if not element_transforms:
+                        outputs.append(slice_b)
+                        continue
+                    outputs.append(_apply_motion(slice_b, element_transforms))
+                img_batch.data = torch.cat(outputs, dim=0)
+            else:
+                img_batch.data = _apply_motion(
+                    img_batch.data,
+                    params["transforms"],
+                )
         return batch
 
 
@@ -142,7 +174,7 @@ def _apply_motion(
         reconstructed = torch.fft.ifftn(spectrum, dim=(-3, -2, -1))
         result[b] = reconstructed.real
 
-    return result
+    return result.to(data.dtype)
 
 
 def _apply_rigid_transform(

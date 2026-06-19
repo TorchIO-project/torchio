@@ -55,9 +55,7 @@ class Swap(IntensityTransform):
         self.num_iterations = to_nonneg_range(num_iterations)
 
     def make_params(self, batch: SubjectsBatch) -> dict[str, Any]:
-        """Sample swap locations for each image."""
-        n = max(1, round(self.num_iterations.sample_1d()))
-
+        """Sample swap locations (per element when batched)."""
         # Warn if label maps are present.
         for _name, img_batch in batch.images.items():
             if issubclass(img_batch._image_class, LabelMap):
@@ -70,15 +68,40 @@ class Swap(IntensityTransform):
                 )
                 break
 
-        # Sample one set of locations per image (shared across batch).
         any_img = next(iter(batch.images.values()))
         spatial_shape = any_img.data.shape[2:]  # (I, J, K)
-        locations = _sample_swap_locations(
-            spatial_shape,
-            self.patch_size,
-            n,
-        )
-        return {"locations": locations}
+
+        n = self._resolve_n(batch)
+        if n is None:
+            iterations = max(1, round(self.num_iterations.sample_1d()))
+            locations = _sample_swap_locations(
+                spatial_shape,
+                self.patch_size,
+                iterations,
+            )
+            return {"locations": locations}
+
+        keep = self._keep_mask(batch, n)
+        locations_list: list[Any] = []
+        for index in range(n):
+            if keep is not None and not keep[index]:
+                locations_list.append([])
+                continue
+            iterations = max(1, round(self.num_iterations.sample_1d()))
+            locations_list.append(
+                _sample_swap_locations(spatial_shape, self.patch_size, iterations)
+            )
+        params = {"locations": locations_list}
+        self._tag_batched(params, batch, n, keep, ["locations"])
+        return params
+
+    @property
+    def supports_per_instance_params(self) -> bool:
+        return True
+
+    @property
+    def supports_per_instance_p(self) -> bool:
+        return True
 
     def apply_transform(
         self,
@@ -86,13 +109,27 @@ class Swap(IntensityTransform):
         params: dict[str, Any],
     ) -> SubjectsBatch:
         """Swap patches in each selected image."""
-        locations = params["locations"]
+        per_instance = self._is_per_instance_params(params)
         for _name, img_batch in self._get_images(batch).items():
-            img_batch.data = _apply_swaps(
-                img_batch.data,
-                locations,
-                self.patch_size,
-            )
+            if per_instance:
+                data = img_batch.data
+                outputs = [
+                    _apply_swaps(
+                        data[index : index + 1],
+                        params["locations"][index],
+                        self.patch_size,
+                    )
+                    if params["locations"][index]
+                    else data[index : index + 1]
+                    for index in range(data.shape[0])
+                ]
+                img_batch.data = torch.cat(outputs, dim=0)
+            else:
+                img_batch.data = _apply_swaps(
+                    img_batch.data,
+                    params["locations"],
+                    self.patch_size,
+                )
         return batch
 
 

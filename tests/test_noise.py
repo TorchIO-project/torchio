@@ -230,3 +230,79 @@ class TestNoise:
         result = noise(subject)
         sampled_std = result.applied_transforms[0].params["std"]
         assert sampled_std > 0  # LogNormal always positive
+
+
+class TestNoisePerInstance:
+    def _batch(self, batch_size: int = 6) -> tio.SubjectsBatch:
+        subjects = [
+            tio.Subject(t1=tio.ScalarImage(torch.zeros(1, 8, 8, 8)))
+            for _ in range(batch_size)
+        ]
+        return tio.SubjectsBatch.from_subjects(subjects)
+
+    def test_per_instance_default_differs_across_batch(self) -> None:
+        torch.manual_seed(0)
+        batch = self._batch()
+        result = tio.Noise(std=(0.5, 1.5))(batch)
+        params = result.applied_transforms[-1].params
+        assert isinstance(params["std"], list)
+        assert len(params["std"]) == batch.batch_size
+        assert len(set(params["std"])) > 1
+
+    def test_per_instance_false_is_shared(self) -> None:
+        torch.manual_seed(0)
+        batch = self._batch()
+        result = tio.Noise(std=(0.5, 1.5), per_instance=False)(batch)
+        params = result.applied_transforms[-1].params
+        assert isinstance(params["std"], float)
+
+    def test_single_subject_keeps_scalar_params(self) -> None:
+        subject = tio.Subject(t1=tio.ScalarImage(torch.zeros(1, 8, 8, 8)))
+        result = tio.Noise(std=(0.5, 1.5))(subject)
+        assert isinstance(result.applied_transforms[-1].params["std"], float)
+
+    def test_per_instance_mean_applied_per_element(self) -> None:
+        torch.manual_seed(0)
+        batch = self._batch(batch_size=5)
+        result = tio.Noise(mean=(5.0, 20.0), std=0.0)(batch)
+        means = result.applied_transforms[-1].params["mean"]
+        for i, mean in enumerate(means):
+            torch.testing.assert_close(
+                result.t1.data[i].mean(),
+                torch.tensor(float(mean)),
+                atol=0.01,
+                rtol=0,
+            )
+
+    def test_per_instance_p_gates_some_elements(self) -> None:
+        torch.manual_seed(0)
+        batch = self._batch(batch_size=64)
+        result = tio.Noise(std=1.0, p=0.5)(batch)
+        changed = [result.t1.data[i].abs().sum() > 0 for i in range(batch.batch_size)]
+        assert any(changed)
+        assert not all(changed)
+
+    def test_per_instance_p_masked_elements_have_no_history(self) -> None:
+        torch.manual_seed(0)
+        batch = self._batch(batch_size=32)
+        result = tio.Noise(std=1.0, p=0.5)(batch)
+        for subject in result.unbatch():
+            changed = subject.t1.data.abs().sum() > 0
+            has_history = len(subject.applied_transforms) == 1
+            assert bool(changed) == has_history
+
+    def test_per_instance_p_rician_masked_elements_unchanged(self) -> None:
+        """Rician is non-linear, so gated-out elements must be restored."""
+        torch.manual_seed(0)
+        data = torch.randn(1, 8, 8, 8)  # signed data
+        subjects = [tio.Subject(t1=tio.ScalarImage(data.clone())) for _ in range(32)]
+        batch = tio.SubjectsBatch.from_subjects(subjects)
+        original = batch.t1.data.clone()
+        result = tio.Noise(std=1.0, rician=True, p=0.5)(batch)
+        unchanged = [
+            torch.allclose(result.t1.data[i], original[i])
+            for i in range(batch.batch_size)
+        ]
+        # Some elements were gated out and must be exactly the input.
+        assert any(unchanged)
+        assert not all(unchanged)

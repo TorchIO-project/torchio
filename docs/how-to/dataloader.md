@@ -84,8 +84,7 @@ list. Metadata is collected into lists.
 
 ## Applying transforms to batches
 
-Transforms work directly on `SubjectsBatch`. Parameters are
-sampled once and applied identically to all samples:
+Transforms work directly on `SubjectsBatch`:
 
 <!-- pytest-codeblocks:skip -->
 ```python
@@ -93,6 +92,45 @@ batch = next(iter(loader))
 augmented = tio.Flip(axes=(0,), p=0.5)(batch)
 augmented.image.data.shape  # (4, 1, H, W, D)
 ```
+
+### Per-instance augmentation
+
+By default, transforms that support it sample **independent
+parameters for each element of a batch**, so a single call produces
+diverse augmentations (similar to
+[BatchAug](https://github.com/halleewong/batchaug) and
+[Kornia](https://github.com/kornia/kornia)). For example, a batch
+passed through `tio.Affine(degrees=(0, 45))` receives a different
+rotation per element, and `tio.Gamma(log_gamma=(-0.3, 0.3))` a
+different gamma per element.
+
+When a transform opts into per-element probability and `p` is below
+1, each element is also gated independently: some elements receive
+the transform and others are left unchanged.
+
+To recover the legacy behavior, where one parameter set is sampled
+and shared across every element, pass `per_instance=False`:
+
+<!-- pytest-codeblocks:skip -->
+```python
+# Same rotation applied to every element in the batch
+augmented = tio.Affine(degrees=(0, 45), per_instance=False)(batch)
+```
+
+Single inputs (a lone `Subject`, `Image`, or tensor) are unaffected
+by this flag, since there is only one element to augment.
+
+Per-instance parameters are recorded per element in the transform
+history, so inverting transforms and unbatching back into individual
+subjects keep each element's own parameters.
+
+!!! note
+    Per-instance support is rolled out per transform. Transforms that
+    have not been converted yet fall back to batch-shared parameters
+    even when `per_instance=True`. A transform advertises its support
+    through the `supports_per_instance_params` and
+    `supports_per_instance_p` properties.
+
 
 ## Loading images without a Subject
 
