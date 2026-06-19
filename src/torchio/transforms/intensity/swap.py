@@ -6,6 +6,7 @@ import warnings
 from typing import Any
 
 import torch
+from einops import rearrange
 from torch import Tensor
 
 from ...data.batch import SubjectsBatch
@@ -307,11 +308,17 @@ def _make_patch_indices(
     batch_size, channels = data.shape[:2]
     pi, pj, pk = patch_size
     device = data.device
-    batch_index = torch.arange(batch_size, device=device)[:, None, None, None, None]
-    channel_index = torch.arange(channels, device=device)[None, :, None, None, None]
-    i_offsets = torch.arange(pi, device=device)[None, None, :, None, None]
-    j_offsets = torch.arange(pj, device=device)[None, None, None, :, None]
-    k_offsets = torch.arange(pk, device=device)[None, None, None, None, :]
+    batch_index = rearrange(
+        torch.arange(batch_size, device=device),
+        "b -> b 1 1 1 1",
+    )
+    channel_index = rearrange(
+        torch.arange(channels, device=device),
+        "c -> 1 c 1 1 1",
+    )
+    i_offsets = rearrange(torch.arange(pi, device=device), "i -> 1 1 i 1 1")
+    j_offsets = rearrange(torch.arange(pj, device=device), "j -> 1 1 1 j 1")
+    k_offsets = rearrange(torch.arange(pk, device=device), "k -> 1 1 1 1 k")
     return batch_index, channel_index, i_offsets, j_offsets, k_offsets
 
 
@@ -351,7 +358,7 @@ def _get_patch_indices(
         Index tensors that select one patch per batch element.
     """
     batch_index, channel_index, i_offsets, j_offsets, k_offsets = patch_indices
-    i_index = origins[:, 0][:, None, None, None, None] + i_offsets
-    j_index = origins[:, 1][:, None, None, None, None] + j_offsets
-    k_index = origins[:, 2][:, None, None, None, None] + k_offsets
+    i_index = rearrange(origins[:, 0], "b -> b 1 1 1 1") + i_offsets
+    j_index = rearrange(origins[:, 1], "b -> b 1 1 1 1") + j_offsets
+    k_index = rearrange(origins[:, 2], "b -> b 1 1 1 1") + k_offsets
     return batch_index, channel_index, i_index, j_index, k_index

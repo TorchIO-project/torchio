@@ -6,6 +6,7 @@ from typing import Any
 
 import torch
 import torch.nn.functional as functional
+from einops import rearrange
 
 from ...data.batch import SubjectsBatch
 from ...data.image import LabelMap
@@ -239,7 +240,7 @@ def _nearest_source_indices(
     """
     positions = torch.arange(length, dtype=torch.long, device=device)
     lowres_indices = torch.div(
-        positions * down_sizes[:, None],
+        positions * rearrange(down_sizes, "b -> b 1"),
         length,
         rounding_mode="floor",
     )
@@ -272,9 +273,12 @@ def _linear_source_indices(
         )
     else:
         scale = (down_sizes.to(torch.float32) - 1.0) / (length - 1)
-        lowres_positions = positions * scale[:, None]
+        lowres_positions = positions * rearrange(scale, "b -> b 1")
     lower_lowres = lowres_positions.floor().to(torch.long)
-    upper_lowres = torch.minimum(lower_lowres + 1, down_sizes[:, None] - 1)
+    upper_lowres = torch.minimum(
+        lower_lowres + 1,
+        rearrange(down_sizes, "b -> b 1") - 1,
+    )
     weights = lowres_positions - lower_lowres.to(torch.float32)
     lower = _downsample_source_indices(length, down_sizes, lower_lowres)
     upper = _downsample_source_indices(length, down_sizes, upper_lowres)
@@ -298,7 +302,7 @@ def _downsample_source_indices(
     """
     source = torch.div(
         lowres_indices * length,
-        down_sizes[:, None],
+        rearrange(down_sizes, "b -> b 1"),
         rounding_mode="floor",
     )
     return source.clamp(max=length - 1)
@@ -320,11 +324,11 @@ def _gather_axis(
         Gathered `(B, C, I, J, K)` tensor.
     """
     if axis == 0:
-        indices = source_indices[:, None, :, None, None]
+        indices = rearrange(source_indices, "b n -> b 1 n 1 1")
     elif axis == 1:
-        indices = source_indices[:, None, None, :, None]
+        indices = rearrange(source_indices, "b n -> b 1 1 n 1")
     else:
-        indices = source_indices[:, None, None, None, :]
+        indices = rearrange(source_indices, "b n -> b 1 1 1 n")
     indices = indices.expand_as(data)
     return torch.gather(data, dim=axis + 2, index=indices)
 
@@ -340,10 +344,10 @@ def _broadcast_axis_weights(weights: torch.Tensor, axis: int) -> torch.Tensor:
         Weights broadcast-compatible with `(B, C, I, J, K)`.
     """
     if axis == 0:
-        return weights[:, None, :, None, None]
+        return rearrange(weights, "b n -> b 1 n 1 1")
     if axis == 1:
-        return weights[:, None, None, :, None]
-    return weights[:, None, None, None, :]
+        return rearrange(weights, "b n -> b 1 1 n 1")
+    return rearrange(weights, "b n -> b 1 1 1 n")
 
 
 def _simulate_anisotropy(

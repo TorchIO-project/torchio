@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 import torch
+from einops import rearrange
 from torch import Tensor
 
 from ...data.batch import SubjectsBatch
@@ -194,9 +195,15 @@ def _add_ghosting_per_element(
             half_restore = max(int(size * restore / 2), 1)
             lo, hi = mid - half_restore, mid + half_restore
             line_mask[lo:hi] = 1
-        shape = [1] * 5
-        shape[fft_dim] = size
-        mask[batch_index : batch_index + 1] = line_mask.reshape(*shape)
+        line_patterns = {
+            2: "s -> 1 1 s 1 1",
+            3: "s -> 1 1 1 s 1",
+            4: "s -> 1 1 1 1 s",
+        }
+        mask[batch_index : batch_index + 1] = rearrange(
+            line_mask,
+            line_patterns[fft_dim],
+        )
 
     corrupted = spectrum * mask
     result = torch.fft.ifftn(
@@ -204,7 +211,7 @@ def _add_ghosting_per_element(
         dim=(-3, -2, -1),
     ).real
     result = result.to(data.dtype)
-    active = active.reshape(-1, 1, 1, 1, 1)
+    active = rearrange(active, "b -> b 1 1 1 1")
     return torch.where(active, result, data)
 
 
@@ -246,9 +253,12 @@ def _add_ghosting(
     mask[::step] = 1 - intensity
 
     # Reshape mask for broadcasting: (1, 1, 1, 1, 1) with size at fft_dim.
-    shape = [1] * 5
-    shape[fft_dim] = size
-    mask = mask.reshape(*shape)
+    mask_patterns = {
+        2: "s -> 1 1 s 1 1",
+        3: "s -> 1 1 1 s 1",
+        4: "s -> 1 1 1 1 s",
+    }
+    mask = rearrange(mask, mask_patterns[fft_dim])
     corrupted = spectrum * mask
 
     # Restore the center of k-space.

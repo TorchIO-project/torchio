@@ -182,9 +182,12 @@ def _gaussian_smooth_shared(
         kernel_1d = torch.exp(-0.5 * (x / sigma) ** 2)
         kernel_1d = kernel_1d / kernel_1d.sum()
 
-        k_shape = [1, 1, 1]
-        k_shape[axis_idx] = kernel_size
-        kernel_3d = kernel_1d.reshape(1, 1, *k_shape)
+        kernel_patterns = (
+            "k -> 1 1 k 1 1",
+            "k -> 1 1 1 k 1",
+            "k -> 1 1 1 1 k",
+        )
+        kernel_3d = rearrange(kernel_1d, kernel_patterns[axis_idx])
 
         pad = [0] * 6
         pad_idx = 2 * (2 - axis_idx)

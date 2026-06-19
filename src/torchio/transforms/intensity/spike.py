@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 import torch
+from einops import rearrange
 from torch import Tensor
 
 from ...data.batch import SubjectsBatch
@@ -218,5 +219,5 @@ def _add_spikes_per_instance(
         torch.fft.ifftshift(spectrum, dim=(-3, -2, -1)),
         dim=(-3, -2, -1),
     ).real.to(data.dtype)
-    active = active.reshape(-1, 1, 1, 1, 1)
+    active = rearrange(active, "b -> b 1 1 1 1")
     return torch.where(active, transformed, data)
