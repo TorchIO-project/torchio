@@ -1150,78 +1150,88 @@ class Image(Invertible):
         affine_copy = copy.deepcopy(self._affine) if self._affine is not None else None
         meta_copy = dict(self._metadata)
         points_copy, bboxes_copy = self._deep_copy_annotations()
+        common_kwargs: dict[str, Any] = {
+            "affine": affine_copy,
+            "points": points_copy,
+            "bounding_boxes": bboxes_copy,
+            **meta_copy,
+        }
 
         if self._remote_zarr_uri is not None:
-            new = type(self)(
+            new = self._deepcopy_from_source(
                 self._remote_zarr_uri,
-                reader=self._reader,
-                reader_kwargs=dict(self._reader_kwargs),
-                affine=affine_copy,
-                points=points_copy,
-                bounding_boxes=bboxes_copy,
-                **meta_copy,
+                affine_copy,
+                common_kwargs,
+                with_reader=True,
             )
-            if self._data is not None:
-                new._data = self._data.clone()
-                new._affine = affine_copy
-            elif self._backend is not None:
-                new._backend = copy.copy(self._backend)
         elif self._path is not None:
-            new = type(self)(
+            new = self._deepcopy_from_source(
                 self._path,
-                reader=self._reader,
-                reader_kwargs=dict(self._reader_kwargs),
-                affine=affine_copy,
-                points=points_copy,
-                bounding_boxes=bboxes_copy,
-                **meta_copy,
+                affine_copy,
+                common_kwargs,
+                with_reader=True,
             )
-            if self._data is not None:
-                new._data = self._data.clone()
-                new._affine = affine_copy
-            elif self._backend is not None:
-                # Preserve a derived lazy backend (e.g. the cropped/padded
-                # view installed by CropOrPad). Rebuilding from the source
-                # path alone would discard the crop/pad and revert to the
-                # full-resolution image. A shallow copy is enough: the backend
-                # is a read-only access adapter, so sharing the underlying
-                # storage object avoids deep-copying nibabel/zarr internals.
-                new._backend = copy.copy(self._backend)
         elif self._zarr_store is not None:
-            new = type(self)(
+            new = self._deepcopy_from_source(
                 self._zarr_store,
-                reader_kwargs=dict(self._reader_kwargs),
-                affine=affine_copy,
-                points=points_copy,
-                bounding_boxes=bboxes_copy,
-                **meta_copy,
+                affine_copy,
+                common_kwargs,
+                with_reader=False,
             )
-            if self._data is not None:
-                new._data = self._data.clone()
-                new._affine = affine_copy
-            elif self._backend is not None:
-                new._backend = copy.copy(self._backend)
         elif self._data is not None:
-            new = type(self)(
-                self._data.clone(),
-                affine=affine_copy,
-                points=points_copy,
-                bounding_boxes=bboxes_copy,
-                **meta_copy,
-            )
+            new = type(self)(self._data.clone(), **common_kwargs)
         else:
-            new = type(self)(
-                affine=affine_copy,
-                points=points_copy,
-                bounding_boxes=bboxes_copy,
-                **meta_copy,
-            )
+            new = type(self)(**common_kwargs)
             if self._backend is not None:
                 # Backend-only lazy image (e.g. built from a nibabel image
                 # with no path or materialized data). Preserve the backend so
                 # the copy can still report its shape and load its data.
                 new._backend = copy.copy(self._backend)
         memo[id(self)] = new
+        return new
+
+    def _deepcopy_from_source(
+        self,
+        source: Any,
+        affine_copy: AffineMatrix | None,
+        common_kwargs: dict[str, Any],
+        *,
+        with_reader: bool,
+    ) -> Self:
+        """Build a deep copy from a path/store source, re-attaching payload.
+
+        Args:
+            source: The path, remote URI, or store to construct from.
+            affine_copy: Deep-copied affine to assign when materialized data
+                is carried over.
+            common_kwargs: Constructor keyword arguments shared by every
+                deep-copy branch (affine, annotations, metadata).
+            with_reader: Whether to forward the custom reader (paths and
+                remote URIs) or omit it (Zarr stores).
+
+        Returns:
+            The reconstructed image. Materialized data is cloned when present;
+            otherwise a derived lazy backend (e.g. the cropped/padded view
+            installed by ``CropOrPad``) is shallow-copied so the crop/pad
+            survives instead of reverting to the full-resolution source. A
+            shallow copy is enough because the backend is a read-only access
+            adapter, avoiding deep copies of nibabel/zarr internals.
+        """
+        reader_kwargs = dict(self._reader_kwargs)
+        if with_reader:
+            new = type(self)(
+                source,
+                reader=self._reader,
+                reader_kwargs=reader_kwargs,
+                **common_kwargs,
+            )
+        else:
+            new = type(self)(source, reader_kwargs=reader_kwargs, **common_kwargs)
+        if self._data is not None:
+            new._data = self._data.clone()
+            new._affine = affine_copy
+        elif self._backend is not None:
+            new._backend = copy.copy(self._backend)
         return new
 
 
