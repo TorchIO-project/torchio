@@ -28,9 +28,11 @@ works for both 5D `(B, C, I, J, K)` batch tensors and 5D
 `(1, C, I, J, K)` single-sample tensors.
 
 When a `SubjectsBatch` is passed (e.g., from `SubjectsLoader`),
-`make_params` is called **once** and the same parameters are
-applied to all samples, enabling vectorised batch transforms on
-GPU.
+transforms that support it sample **independent parameters per batch
+element** by default, so a single call produces diverse augmentations
+(see [Per-instance augmentation](per-instance-augmentation.md)). Pass
+`per_instance=False` to share one sampled parameter set across all
+elements. Single inputs are unaffected.
 
 ## The `make_params` / `apply` split
 

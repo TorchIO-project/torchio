@@ -6,7 +6,9 @@ from collections.abc import Sequence
 from typing import Any
 
 import torch
+from einops import rearrange
 
+from ...data.batch import ImagesBatch
 from ...data.batch import SubjectsBatch
 from ..transform import SpatialTransform
 
@@ -116,18 +118,66 @@ class Flip(SpatialTransform):
         self,
         batch: SubjectsBatch,
     ) -> dict[str, Any]:
-        # Resolve string axes using the first image's orientation
-        orientation = None
-        first_img = next(iter(batch.images.values()))
-        if first_img.batch_size > 0:
-            img = first_img[0]
-            orientation = img.orientation
-        resolved = _resolve_axes(self.axes, orientation)
+        images = self._get_images(batch)
+        if not images:
+            return {"axes": ()}
+        first_img = next(iter(images.values()))
 
-        # Per-axis coin flip
-        flip_mask = torch.rand(3) < self.flip_probability
-        axes_to_flip = tuple(a for a in resolved if flip_mask[a].item())
-        return {"axes": axes_to_flip}
+        n = self._resolve_n(batch)
+        if n is None:
+            orientation = None
+            if first_img.batch_size > 0:
+                orientation = first_img[0].orientation
+            resolved = _resolve_axes(self.axes, orientation)
+            flip_mask = torch.rand(3) < self.flip_probability
+            axes_to_flip = tuple(a for a in resolved if flip_mask[a].item())
+            return {"axes": axes_to_flip}
+
+        keep = self._keep_mask(batch, n)
+        axes_list = self._sample_per_element_axes(n, first_img, keep)
+        params = {"axes": axes_list}
+        self._tag_batched(params, batch, n, keep, ["axes"])
+        return params
+
+    def _sample_per_element_axes(
+        self,
+        n: int,
+        first_img: ImagesBatch,
+        keep: torch.Tensor | None,
+    ) -> list[list[int]]:
+        """Sample the flip axes for each batch element.
+
+        Gated-out elements (``keep[index]`` is false) get an empty axis
+        list so they are left unflipped.
+
+        Args:
+            n: Number of batch elements.
+            first_img: First selected image batch, used for per-element
+                orientation.
+            keep: Per-element keep mask, or ``None`` to keep all elements.
+
+        Returns:
+            One list of spatial axes (in ``{0, 1, 2}``) per element.
+        """
+        axes_list: list[list[int]] = []
+        for index in range(n):
+            if keep is not None and not keep[index]:
+                axes_list.append([])
+                continue
+            # Resolve anatomical axes per element: each sample may have its
+            # own orientation in a batch with per-sample affines.
+            resolved = _resolve_axes(self.axes, first_img[index].orientation)
+            flip_mask = torch.rand(3) < self.flip_probability
+            axes_list.append([a for a in resolved if flip_mask[a].item()])
+        return axes_list
+
+    @property
+    def supports_per_instance_params(self) -> bool:
+        return True
+
+    @property
+    def supports_per_instance_p(self) -> bool:
+        return True
 
     def apply_transform(
         self,
@@ -135,6 +185,10 @@ class Flip(SpatialTransform):
         params: dict[str, Any],
     ) -> SubjectsBatch:
         axes = params["axes"]
+        if self._is_per_instance_params(params):
+            for _name, img_batch in self._get_images(batch).items():
+                img_batch.data = _flip_per_element(img_batch.data, axes)
+            return batch
         if not axes:
             return batch
         dims = [a - 3 for a in axes]
@@ -146,6 +200,64 @@ class Flip(SpatialTransform):
     def invertible(self) -> bool:
         return True
 
-    def inverse(self, params: dict[str, Any]) -> Flip:
+    def inverse(self, params: dict[str, Any]) -> Flip | _FlipInverse:
         """Flip is its own inverse."""
+        if self._is_per_instance_params(params):
+            return _FlipInverse(axes_per_element=params["axes"], copy=False)
         return Flip(axes=params["axes"], copy=False)
+
+
+def _flip_per_element(
+    data: torch.Tensor, axes_per_element: list[list[int]]
+) -> torch.Tensor:
+    """Flip each batch element along its own axes.
+
+    Args:
+        data: `(B, C, I, J, K)` tensor.
+        axes_per_element: One list of spatial axes (in `{0, 1, 2}`) per
+            element.
+
+    Returns:
+        The flipped `(B, C, I, J, K)` tensor.
+    """
+    batch_size = data.shape[0]
+    result = data
+    # Flip the whole batch along each spatial axis once, then select per
+    # element with a boolean mask. Flips along distinct axes commute, so
+    # composing them sequentially matches flipping an element's axes at once.
+    for spatial_axis in range(3):
+        flip_flags = torch.tensor(
+            [spatial_axis in axes_per_element[index] for index in range(batch_size)],
+            device=data.device,
+        )
+        if not bool(flip_flags.any()):
+            continue
+        flipped = torch.flip(result, [spatial_axis - 3])
+        mask = rearrange(flip_flags, "b -> b 1 1 1 1")
+        result = torch.where(mask, flipped, result)
+    return result
+
+
+class _FlipInverse(SpatialTransform):
+    """Inverse of a per-instance [`Flip`][torchio.Flip] for history replay."""
+
+    def __init__(
+        self,
+        *,
+        axes_per_element: list[list[int]],
+        **kwargs: Any,
+    ) -> None:
+        super().__init__(**kwargs)
+        self._axes_per_element = axes_per_element
+
+    def make_params(self, batch: SubjectsBatch) -> dict[str, Any]:
+        return {}
+
+    def apply_transform(
+        self,
+        batch: SubjectsBatch,
+        params: dict[str, Any],
+    ) -> SubjectsBatch:
+        for _name, img_batch in self._get_images(batch).items():
+            img_batch.data = _flip_per_element(img_batch.data, self._axes_per_element)
+        return batch

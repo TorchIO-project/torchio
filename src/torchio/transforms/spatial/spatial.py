@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import warnings
 from collections.abc import Sequence
+from dataclasses import dataclass
 from numbers import Number
 from pathlib import Path
 from typing import Any
@@ -43,6 +44,26 @@ from ...types import TypeThreeInts
 from ..parameter_range import Choice
 from ..parameter_range import _ParameterRange
 from ..transform import SpatialTransform
+
+
+@dataclass
+class _PerSampleGrids:
+    """Per-element spatial parameters for per-instance augmentation.
+
+    Each list has one entry per batch element. A `None` affine matrix
+    and `None` control-point field produce an identity grid for that
+    element (used for elements gated out by per-element probability).
+
+    Attributes:
+        affine_matrices: Per-element world-space affine matrices.
+        control_points: Per-element elastic control-point fields.
+        max_displacements: Per-element maximum displacements.
+    """
+
+    affine_matrices: list[np.ndarray | None]
+    control_points: list[Tensor | None]
+    max_displacements: list[tuple[float, float, float] | None]
+
 
 TypeParameterValue: TypeAlias = (
     int
@@ -347,25 +368,39 @@ class Spatial(SpatialTransform):
             raise TypeError(msg)
         self.default_pad_label = float(default_pad_label)
 
-    def make_params(self, batch: SubjectsBatch) -> dict[str, Any]:
-        """Sample random parameters and resolve the output space.
+    @property
+    def supports_per_instance_params(self) -> bool:
+        return True
 
-        Scales, degrees, translation, and control-point displacements are
-        sampled once and applied identically to every sample and every
-        image in the batch.
+    @property
+    def supports_per_instance_p(self) -> bool:
+        # Per-element gating requires a shape-preserving transform so the
+        # gated-out element is a true no-op. A resampling target changes
+        # the grid, so keep batch-wide gating in that case.
+        return self.target is None
+
+    def _sample_one(
+        self,
+        shape: TypeThreeInts,
+        affine: AffineMatrix,
+    ) -> tuple[
+        np.ndarray | None,
+        Tensor | None,
+        tuple[float, float, float] | None,
+        bool,
+    ]:
+        """Sample one set of affine and elastic parameters.
+
+        Args:
+            shape: Spatial shape used to build the affine and to suppress
+                out-of-plane components for 2D inputs.
+            affine: Affine of the reference image.
 
         Returns:
-            Dict of serializable parameters for `apply_transform` and
-            history replay.
+            A tuple `(forward_affine, control_points, max_displacement,
+            has_geometry)` where `has_geometry` is `True` when either an
+            affine or an elastic component is present.
         """
-        images = self._get_images(batch)
-        if not images:
-            return {"selected_images": []}
-
-        _, first_batch = next(iter(images.items()))
-        first_shape = _get_spatial_shape(first_batch)
-        first_affine = first_batch.affines[0]
-
         sampled_scales = _sample_scales(self.scales, self.isotropic)
         sampled_degrees = self.degrees.sample()
         sampled_translation = self.translation.sample()
@@ -381,16 +416,6 @@ class Spatial(SpatialTransform):
             self.locked_borders,
         )
         has_elastic = control_points is not None
-
-        if has_affine or has_elastic:
-            _check_shared_space(images, first_shape, first_affine)
-
-        target_space = _resolve_target_space(
-            self.target,
-            batch,
-            first_shape,
-            first_affine,
-        )
         forward_affine = None
         if has_affine:
             forward_affine = _build_forward_affine(
@@ -398,17 +423,38 @@ class Spatial(SpatialTransform):
                 degrees=sampled_degrees,
                 translation=sampled_translation,
                 center=self.center,
-                shape=first_shape,
-                affine=first_affine,
+                shape=shape,
+                affine=affine,
             )
+        return (
+            forward_affine,
+            control_points,
+            max_displacement,
+            (has_affine or has_elastic),
+        )
 
-        return {
+    def make_params(self, batch: SubjectsBatch) -> dict[str, Any]:
+        """Sample random parameters and resolve the output space.
+
+        Scales, degrees, translation, and control-point displacements are
+        sampled per batch element when per-instance augmentation is
+        active (the default for batches), and once otherwise.
+
+        Returns:
+            Dict of serializable parameters for `apply_transform` and
+            history replay.
+        """
+        images = self._get_images(batch)
+        if not images:
+            return {"selected_images": []}
+
+        _, first_batch = next(iter(images.items()))
+        first_shape = _get_spatial_shape(first_batch)
+        first_affine = first_batch.affines[0]
+
+        params: dict[str, Any] = {
             "selected_images": list(images.keys()),
-            "target": _serialize_space(target_space),
             "original": _serialize_space((first_shape, first_affine)),
-            "affine_matrix": _serialize_matrix(forward_affine),
-            "control_points": _serialize_control_points(control_points),
-            "max_displacement": list(max_displacement) if max_displacement else None,
             "affine_first": self.affine_first,
             "image_interpolation": self.image_interpolation,
             "label_interpolation": self.label_interpolation,
@@ -418,6 +464,99 @@ class Spatial(SpatialTransform):
             "default_pad_label": self.default_pad_label,
         }
 
+        n = self._resolve_n(batch)
+        if n is None:
+            forward_affine, control_points, max_displacement, has_geometry = (
+                self._sample_one(first_shape, first_affine)
+            )
+            if has_geometry:
+                _check_shared_space(images, first_shape, first_affine)
+            # Resolve the (possibly random) target after sampling the
+            # geometry so the RNG stream matches the batch-shared path.
+            target_space = _resolve_target_space(
+                self.target,
+                batch,
+                first_shape,
+                first_affine,
+            )
+            params["target"] = _serialize_space(target_space)
+            params["affine_matrix"] = _serialize_matrix(forward_affine)
+            params["control_points"] = _serialize_control_points(control_points)
+            params["max_displacement"] = (
+                list(max_displacement) if max_displacement else None
+            )
+            return params
+
+        keep = self._keep_mask(batch, n)
+        affine_list, control_points_list, displacement_list, any_geometry = (
+            self._sample_per_element_geometry(n, first_shape, first_affine, keep)
+        )
+        if any_geometry:
+            _check_shared_space(images, first_shape, first_affine)
+        target_space = _resolve_target_space(
+            self.target,
+            batch,
+            first_shape,
+            first_affine,
+        )
+        params["target"] = _serialize_space(target_space)
+        params["affine_matrix"] = affine_list
+        params["control_points"] = control_points_list
+        params["max_displacement"] = displacement_list
+        self._tag_batched(
+            params,
+            batch,
+            n,
+            keep,
+            ["affine_matrix", "control_points", "max_displacement"],
+        )
+        return params
+
+    def _sample_per_element_geometry(
+        self,
+        n: int,
+        first_shape: TypeThreeInts,
+        first_affine: AffineMatrix,
+        keep: Tensor | None,
+    ) -> tuple[list[Any], list[Any], list[Any], bool]:
+        """Sample serializable geometry for each batch element.
+
+        Gated-out elements (``keep[index]`` is false) contribute ``None``
+        placeholders so the per-element lists stay aligned with the batch.
+
+        Args:
+            n: Number of batch elements.
+            first_shape: Spatial shape of the first image.
+            first_affine: Affine of the first image.
+            keep: Per-element keep mask, or ``None`` to keep all elements.
+
+        Returns:
+            The affine, control-point and max-displacement lists plus a
+            flag indicating whether any element produced a geometry
+            transform.
+        """
+        affine_list: list[Any] = []
+        control_points_list: list[Any] = []
+        displacement_list: list[Any] = []
+        any_geometry = False
+        for index in range(n):
+            kept = keep is None or bool(keep[index])
+            if not kept:
+                affine_list.append(None)
+                control_points_list.append(None)
+                displacement_list.append(None)
+                continue
+            forward_affine, control_points, max_displacement, has_geometry = (
+                self._sample_one(first_shape, first_affine)
+            )
+            any_geometry = any_geometry or has_geometry
+            affine_list.append(_serialize_matrix(forward_affine))
+            control_points_list.append(_serialize_control_points(control_points))
+            displacement_list.append(
+                list(max_displacement) if max_displacement else None
+            )
+        return affine_list, control_points_list, displacement_list, any_geometry
+
     def apply_transform(
         self,
         batch: SubjectsBatch,
@@ -425,18 +564,30 @@ class Spatial(SpatialTransform):
     ) -> SubjectsBatch:
         """Apply the spatial mapping to every selected image in *batch*.
 
-        The sampling grid is built once from the parameters produced by
-        `make_params` and reused for all images and all batch samples.
+        One sampling grid is built per batch element when per-instance
+        parameters are present, and a single shared grid otherwise.
         """
         selected_images = params.get("selected_images", [])
         if not selected_images:
             return batch
 
         target_space = _deserialize_space(params["target"])
-        affine_matrix = _deserialize_matrix(params["affine_matrix"])
-        control_points = _deserialize_control_points(params["control_points"])
-        max_displacement = _deserialize_max_displacement(params["max_displacement"])
 
+        affine_matrix, control_points, max_displacement, per_sample = (
+            _resolve_spatial_params(params)
+        )
+        is_noop = (
+            target_space is None
+            and affine_matrix is None
+            and control_points is None
+            and max_displacement is None
+            and per_sample is None
+        )
+        if is_noop:
+            # A true no-op (no resampling and no geometry, e.g. every
+            # element gated out) must leave the data and the per-sample
+            # affines untouched instead of rebuilding an identity grid.
+            return batch
         _apply_spatial_to_batch(
             batch=batch,
             image_names=selected_images,
@@ -454,6 +605,7 @@ class Spatial(SpatialTransform):
             antialias=params.get("antialias", False),
             default_pad_value=params["default_pad_value"],
             default_pad_label=float(params["default_pad_label"]),
+            per_sample=per_sample,
         )
         return batch
 
@@ -468,7 +620,8 @@ class Spatial(SpatialTransform):
         The affine component is inverted exactly.  The elastic component
         is approximated by negating the sampled displacement field.  The
         `affine_first` flag is flipped so that the inverse operations
-        run in the opposite order.
+        run in the opposite order. Per-instance parameters are inverted
+        element by element.
 
         Args:
             params: The parameter dict produced by `make_params`.
@@ -476,34 +629,50 @@ class Spatial(SpatialTransform):
         Returns:
             A `_SpatialInverse` that resamples back to the original grid.
         """
-        affine_matrix = _deserialize_matrix(params["affine_matrix"])
-        inverse_affine = None
-        if affine_matrix is not None:
-            inverse_affine = np.linalg.inv(affine_matrix)
-
-        control_points = _deserialize_control_points(params["control_points"])
-        inverse_control_points = None
-        if control_points is not None:
-            inverse_control_points = -control_points
         original_space = _deserialize_space(params["original"])
         if original_space is None:
             msg = "Spatial inverse needs the original output space"
             raise RuntimeError(msg)
 
-        return _SpatialInverse(
-            target=original_space,
-            affine_matrix=inverse_affine,
-            control_points=inverse_control_points,
-            affine_first=not params["affine_first"],
-            image_interpolation=params["image_interpolation"],
-            label_interpolation=params["label_interpolation"],
-            one_hot_label_interpolation=params.get(
+        common: dict[str, Any] = {
+            "target": original_space,
+            "affine_first": not params["affine_first"],
+            "image_interpolation": params["image_interpolation"],
+            "label_interpolation": params["label_interpolation"],
+            "one_hot_label_interpolation": params.get(
                 "one_hot_label_interpolation",
                 "linear",
             ),
-            default_pad_value=params["default_pad_value"],
-            default_pad_label=float(params["default_pad_label"]),
-            copy=False,
+            "default_pad_value": params["default_pad_value"],
+            "default_pad_label": float(params["default_pad_label"]),
+            "copy": False,
+            # Invert only the images the forward pass actually transformed,
+            # so excluded images (e.g. label maps) are not resampled.
+            "include": params["selected_images"],
+        }
+
+        batched_keys = params.get("_batched_keys") or []
+        if "affine_matrix" in batched_keys:
+            per_sample = _invert_per_sample(params)
+            return _SpatialInverse(
+                affine_matrix=None,
+                control_points=None,
+                per_sample=per_sample,
+                **common,
+            )
+
+        affine_matrix = _deserialize_matrix(params["affine_matrix"])
+        inverse_affine = None
+        if affine_matrix is not None:
+            inverse_affine = np.linalg.inv(affine_matrix)
+        control_points = _deserialize_control_points(params["control_points"])
+        inverse_control_points = None
+        if control_points is not None:
+            inverse_control_points = -control_points
+        return _SpatialInverse(
+            affine_matrix=inverse_affine,
+            control_points=inverse_control_points,
+            **common,
         )
 
 
@@ -527,6 +696,7 @@ class _SpatialInverse(SpatialTransform):
         one_hot_label_interpolation: TypeImageInterpolation = "linear",
         default_pad_value: TypePadValue | float,
         default_pad_label: float,
+        per_sample: _PerSampleGrids | None = None,
         **kwargs: Any,
     ) -> None:
         super().__init__(**kwargs)
@@ -541,6 +711,7 @@ class _SpatialInverse(SpatialTransform):
             if control_points is not None
             else None
         )
+        self.per_sample = per_sample
         self.affine_first = affine_first
         self.image_interpolation = cast(
             TypeImageInterpolation,
@@ -564,7 +735,7 @@ class _SpatialInverse(SpatialTransform):
     ) -> SubjectsBatch:
         """Resample back to the recorded original space."""
         max_displacement = None
-        if self.control_points is not None:
+        if self.per_sample is None and self.control_points is not None:
             max_displacement = _max_abs_displacement(self.control_points)
         _apply_spatial_to_batch(
             batch=batch,
@@ -580,6 +751,7 @@ class _SpatialInverse(SpatialTransform):
             antialias=False,
             default_pad_value=self.default_pad_value,
             default_pad_label=self.default_pad_label,
+            per_sample=self.per_sample,
         )
         return batch
 
@@ -750,6 +922,191 @@ class ElasticDeformation(Spatial):
         )
 
 
+def _invert_per_sample(params: dict[str, Any]) -> _PerSampleGrids:
+    """Build per-element inverse grid inputs from per-instance params.
+
+    Affine matrices are inverted exactly and elastic fields are negated,
+    matching the batch-shared inverse. Identity (`None`) elements stay
+    identity.
+
+    Args:
+        params: The per-instance parameter dict from `make_params`.
+
+    Returns:
+        A `_PerSampleGrids` with inverted per-element parameters.
+    """
+    inverse_affines: list[np.ndarray | None] = []
+    inverse_control_points: list[Tensor | None] = []
+    inverse_displacements: list[tuple[float, float, float] | None] = []
+    for matrix, field in zip(
+        params["affine_matrix"],
+        params["control_points"],
+        strict=True,
+    ):
+        affine = _deserialize_matrix(matrix)
+        inverse_affines.append(np.linalg.inv(affine) if affine is not None else None)
+        control_points = _deserialize_control_points(field)
+        if control_points is not None:
+            control_points = -control_points
+            inverse_displacements.append(_max_abs_displacement(control_points))
+        else:
+            inverse_displacements.append(None)
+        inverse_control_points.append(control_points)
+    return _PerSampleGrids(
+        inverse_affines,
+        inverse_control_points,
+        inverse_displacements,
+    )
+
+
+def _resolve_spatial_params(
+    params: dict[str, Any],
+) -> tuple[
+    np.ndarray | None,
+    Tensor | None,
+    tuple[float, float, float] | None,
+    _PerSampleGrids | None,
+]:
+    """Deserialize spatial params into shared or per-sample grid inputs.
+
+    Returns:
+        A tuple `(affine_matrix, control_points, max_displacement,
+        per_sample)`. For batch-shared params the first three are
+        populated and `per_sample` is `None`. For per-instance params
+        with at least one geometric element, only `per_sample` is
+        populated. Per-instance params with no geometry collapse to the
+        shared no-op path (all `None`).
+    """
+    batched_keys = params.get("_batched_keys") or []
+    if "affine_matrix" not in batched_keys:
+        affine_matrix = _deserialize_matrix(params["affine_matrix"])
+        control_points = _deserialize_control_points(params["control_points"])
+        max_displacement = _deserialize_max_displacement(params["max_displacement"])
+        return affine_matrix, control_points, max_displacement, None
+
+    affine_matrices = [_deserialize_matrix(m) for m in params["affine_matrix"]]
+    control_points_list = [
+        _deserialize_control_points(c) for c in params["control_points"]
+    ]
+    displacements = [
+        _deserialize_max_displacement(d) for d in params["max_displacement"]
+    ]
+    has_geometry = any(m is not None for m in affine_matrices) or any(
+        c is not None for c in control_points_list
+    )
+    if not has_geometry:
+        return None, None, None, None
+    return (
+        None,
+        None,
+        None,
+        _PerSampleGrids(
+            affine_matrices,
+            control_points_list,
+            displacements,
+        ),
+    )
+
+
+def _build_grid_per_sample_checked(
+    *,
+    per_sample: _PerSampleGrids,
+    first_img_batch: ImagesBatch,
+    input_shape: TypeThreeInts,
+    input_affine: AffineMatrix,
+    output_shape: TypeThreeInts,
+    output_affine: AffineMatrix,
+    affine_first: bool,
+) -> Tensor:
+    """Build per-element sampling grids after validating the batch size.
+
+    Args:
+        per_sample: The per-element geometry recorded at sampling time.
+        first_img_batch: First selected image batch (provides device and
+            batch size).
+        input_shape: Spatial shape of the input grid.
+        input_affine: Affine of the input grid.
+        output_shape: Spatial shape of the output grid.
+        output_affine: Affine of the output grid.
+        affine_first: Whether the affine is applied before the elastic
+            displacement.
+
+    Returns:
+        The stacked per-element sampling grid.
+
+    Raises:
+        RuntimeError: If the number of recorded elements does not match
+            the batch size.
+    """
+    if len(per_sample.affine_matrices) != first_img_batch.batch_size:
+        msg = (
+            "Per-instance spatial parameters were recorded for"
+            f" {len(per_sample.affine_matrices)} elements but the batch"
+            f" has {first_img_batch.batch_size}"
+        )
+        raise RuntimeError(msg)
+    return _build_per_sample_grids(
+        input_shape=input_shape,
+        input_affine=input_affine,
+        output_shape=output_shape,
+        output_affine=output_affine,
+        affine_matrices=per_sample.affine_matrices,
+        control_points_list=per_sample.control_points,
+        max_displacements=per_sample.max_displacements,
+        affine_first=affine_first,
+        device=first_img_batch.data.device,
+    )
+
+
+def _passthrough_indices(per_sample: _PerSampleGrids) -> list[int]:
+    """Indices of batch elements with no geometry (identity / gated out).
+
+    Args:
+        per_sample: The per-element geometry recorded at sampling time.
+
+    Returns:
+        Indices whose affine and control points are both ``None``, i.e.
+        elements that should pass through a no-target resample unchanged.
+    """
+    return [
+        index
+        for index, affine in enumerate(per_sample.affine_matrices)
+        if affine is None and per_sample.control_points[index] is None
+    ]
+
+
+def _restore_spatial_output_affines(
+    img_batch: ImagesBatch,
+    *,
+    original_data: Tensor,
+    original_affines: list[AffineMatrix],
+    output_affine: AffineMatrix,
+    passthrough: list[int],
+) -> None:
+    """Set the output affines and restore no-op (passthrough) elements.
+
+    Every resampled element adopts *output_affine*. Passthrough elements
+    (no geometry, no target) instead keep their original data and affine
+    so that per-element gating is an exact no-op for them, undoing the
+    tiny perturbation introduced by the float32 identity resample.
+
+    Args:
+        img_batch: The image batch whose data/affines are updated in place.
+        original_data: The input data, before resampling.
+        original_affines: The input affines, before resampling.
+        output_affine: The affine shared by every resampled element.
+        passthrough: Indices of elements to restore exactly.
+    """
+    new_affines = [output_affine.clone() for _ in img_batch.affines]
+    if passthrough:
+        data = img_batch.data
+        for index in passthrough:
+            data[index] = original_data[index]
+            new_affines[index] = original_affines[index]
+        img_batch.data = data
+    img_batch.affines[:] = new_affines
+
+
 def _apply_spatial_to_batch(
     *,
     batch: SubjectsBatch,
@@ -765,12 +1122,15 @@ def _apply_spatial_to_batch(
     antialias: bool,
     default_pad_value: TypePadValue | float,
     default_pad_label: float,
+    per_sample: _PerSampleGrids | None = None,
 ) -> None:
     """Apply the spatial mapping to all selected images in *batch*.
 
-    A single sampling grid is built from the first image's geometry and
-    reused for every image and every sample in the batch.  Only the
-    interpolation mode and fill value change per image type.
+    By default a single sampling grid is built from the first image's
+    geometry and reused for every image and every sample in the batch.
+    When *per_sample* is given, one grid is built per batch element so
+    each element is augmented independently. Only the interpolation mode
+    and fill value change per image type.
     """
     if not image_names:
         return
@@ -781,58 +1141,135 @@ def _apply_spatial_to_batch(
     output_shape = target_space[0] if target_space is not None else input_shape
     output_affine = target_space[1] if target_space is not None else input_affine
 
-    # Build the sampling grid once; it is shared across all images
-    # and all samples in the batch.
-    grid = _build_sampling_grid(
-        input_shape=input_shape,
-        input_affine=input_affine,
-        output_shape=output_shape,
-        output_affine=output_affine,
-        affine_matrix=affine_matrix,
-        control_points=control_points,
-        max_displacement=max_displacement,
-        affine_first=affine_first,
-        device=first_img_batch.data.device,
+    if per_sample is None:
+        grid = _build_sampling_grid(
+            input_shape=input_shape,
+            input_affine=input_affine,
+            output_shape=output_shape,
+            output_affine=output_affine,
+            affine_matrix=affine_matrix,
+            control_points=control_points,
+            max_displacement=max_displacement,
+            affine_first=affine_first,
+            device=first_img_batch.data.device,
+        )
+    else:
+        grid = _build_grid_per_sample_checked(
+            per_sample=per_sample,
+            first_img_batch=first_img_batch,
+            input_shape=input_shape,
+            input_affine=input_affine,
+            output_shape=output_shape,
+            output_affine=output_affine,
+            affine_first=affine_first,
+        )
+
+    # Elements with no geometry and no target resampling must be exact
+    # no-ops, but the batched per-sample resample computes through an
+    # identity grid in float32, so restore those rows afterwards.
+    passthrough = (
+        _passthrough_indices(per_sample)
+        if per_sample is not None and target_space is None
+        else []
     )
 
     for name in image_names:
-        img_batch = batch.images[name]
-        is_label = issubclass(img_batch._image_class, LabelMap)
-        interpolation = _interpolation_for_batch(
-            img_batch,
+        _resample_image_batch(
+            batch.images[name],
+            grid=grid,
+            per_sample=per_sample,
+            input_shape=input_shape,
+            input_affine=input_affine,
+            output_affine=output_affine,
             image_interpolation=image_interpolation,
             label_interpolation=label_interpolation,
+            one_hot_label_interpolation=one_hot_label_interpolation,
+            antialias=antialias,
+            default_pad_value=default_pad_value,
+            default_pad_label=default_pad_label,
+            passthrough=passthrough,
         )
-        if is_label and interpolation == LABEL_INTERPOLATION:
-            img_batch.data = _resample_label_partial_volume(
-                img_batch.data,
-                grid,
-                input_shape=input_shape,
-                input_affine=input_affine,
-                output_affine=output_affine,
-                antialias=antialias,
-                one_hot_label_interpolation=one_hot_label_interpolation,
-                default_pad_label=float(default_pad_label),
-            )
-        else:
-            fill_value = _batch_fill_value(
-                img_batch,
-                default_pad_value=default_pad_value,
-                default_pad_label=default_pad_label,
-            )
-            data = img_batch.data
-            # Antialias: blur ScalarImages before downsampling.
-            if antialias and not is_label:
-                data = _antialias_batch(data, input_affine, output_affine)
-            img_batch.data = _sample_batch(
-                data,
-                grid,
-                input_shape=input_shape,
-                interpolation=interpolation,
-                fill_value=fill_value,
-            )
-        new_affine = output_affine.clone()
-        img_batch.affines[:] = [new_affine.clone() for _ in img_batch.affines]
+
+
+def _resample_image_batch(
+    img_batch: ImagesBatch,
+    *,
+    grid: Tensor,
+    per_sample: _PerSampleGrids | None,
+    input_shape: TypeThreeInts,
+    input_affine: AffineMatrix,
+    output_affine: AffineMatrix,
+    image_interpolation: TypeImageInterpolation,
+    label_interpolation: TypeLabelInterpolation,
+    one_hot_label_interpolation: TypeImageInterpolation = "linear",
+    antialias: bool,
+    default_pad_value: TypePadValue | float,
+    default_pad_label: float,
+    passthrough: list[int],
+) -> None:
+    """Resample a single image batch and restore no-op elements.
+
+    Args:
+        img_batch: The image batch to resample in place.
+        grid: The shared or per-sample sampling grid.
+        per_sample: Per-element geometry, or ``None`` for the shared grid.
+        input_shape: Spatial shape of the input volume.
+        input_affine: Affine of the input volume.
+        output_affine: Affine shared by every resampled element.
+        image_interpolation: Interpolation mode for scalar images.
+        label_interpolation: Interpolation mode for label maps.
+        one_hot_label_interpolation: Per-channel interpolation used by the
+            ``"label"`` partial-volume mode.
+        antialias: Whether to blur scalar images before downsampling.
+        default_pad_value: Fill value for out-of-bounds scalar samples.
+        default_pad_label: Fill value for out-of-bounds label samples.
+        passthrough: Indices of no-op elements to restore exactly.
+    """
+    original_data = img_batch.data
+    original_affines = list(img_batch.affines)
+    is_label = issubclass(img_batch._image_class, LabelMap)
+    interpolation = _interpolation_for_batch(
+        img_batch,
+        image_interpolation=image_interpolation,
+        label_interpolation=label_interpolation,
+    )
+    if is_label and interpolation == LABEL_INTERPOLATION:
+        img_batch.data = _resample_label_partial_volume(
+            img_batch.data,
+            grid,
+            input_shape=input_shape,
+            input_affine=input_affine,
+            output_affine=output_affine,
+            antialias=antialias,
+            one_hot_label_interpolation=one_hot_label_interpolation,
+            per_sample=per_sample is not None,
+            default_pad_label=float(default_pad_label),
+        )
+    else:
+        fill_value = _batch_fill_value(
+            img_batch,
+            default_pad_value=default_pad_value,
+            default_pad_label=default_pad_label,
+        )
+        data = img_batch.data
+        # Antialias: blur ScalarImages before downsampling.
+        if antialias and not is_label:
+            data = _antialias_batch(data, input_affine, output_affine)
+        sampler = _sample_batch if per_sample is None else _sample_batch_per_sample
+        img_batch.data = sampler(
+            data,
+            grid,
+            input_shape=input_shape,
+            interpolation=interpolation,
+            fill_value=fill_value,
+        )
+    _restore_spatial_output_affines(
+        img_batch,
+        original_data=original_data,
+        original_affines=original_affines,
+        output_affine=output_affine,
+        passthrough=passthrough,
+    )
 
 
 def _resample_label_partial_volume(
@@ -844,6 +1281,7 @@ def _resample_label_partial_volume(
     output_affine: AffineMatrix,
     antialias: bool,
     one_hot_label_interpolation: TypeImageInterpolation = "linear",
+    per_sample: bool = False,
     default_pad_label: float,
 ) -> Tensor:
     r"""Resample a discrete label map in a partial-volume-aware way.
@@ -886,6 +1324,10 @@ def _resample_label_partial_volume(
         one_hot_label_interpolation: Interpolation used to resample the
             one-hot channels (`"nearest"`, `"linear"`, or a higher-order
             B-spline mode). Defaults to `"linear"`.
+        per_sample: If `True`, *grid* carries a batch dimension
+            `(B, I_out, J_out, K_out, 3)` and each element is resampled with
+            its own coordinates (per-instance augmentation); otherwise a
+            single shared grid is used.
         default_pad_label: Value assigned to out-of-bounds voxels. Only
             applied for single-channel (`C == 1`) inputs; multi-channel
             inputs use `0` for out-of-bounds.
@@ -897,11 +1339,12 @@ def _resample_label_partial_volume(
         inputs, otherwise the output is `float32` to avoid truncating the
         interpolated values.
     """
+    sampler = _sample_batch_per_sample if per_sample else _sample_batch
     if data.shape[1] > 1:
         smoothed = data.float()
         if antialias:
             smoothed = _antialias_batch(smoothed, input_affine, output_affine)
-        sampled = _sample_batch(
+        sampled = sampler(
             smoothed,
             grid,
             input_shape=input_shape,
@@ -920,7 +1363,7 @@ def _resample_label_partial_volume(
     if antialias:
         one_hot = _antialias_batch(one_hot, input_affine, output_affine)
 
-    sampled = _sample_batch(
+    sampled = sampler(
         one_hot,
         grid,
         input_shape=input_shape,
@@ -1316,6 +1759,163 @@ def _sample_batch_interpol(
         prefilter=True,
     )
     return sampled.to(data.dtype)
+
+
+def _sample_batch_per_sample(
+    data: Tensor,
+    voxel_grid: Tensor,
+    *,
+    input_shape: TypeThreeInts,
+    interpolation: str,
+    fill_value: float | Tensor,
+) -> Tensor:
+    """Resample a 5D batch using a per-sample sampling grid.
+
+    Unlike [`_sample_batch`][], the grid carries its own batch dimension
+    so each element of the batch is resampled with independent
+    coordinates (per-instance augmentation).
+
+    Args:
+        data: `(B, C, I, J, K)` image batch.
+        voxel_grid: `(B, I_out, J_out, K_out, 3)` per-sample sampling
+            grid in input voxel coordinates.
+        input_shape: Spatial shape of the input volume `(I, J, K)`.
+        interpolation: Interpolation mode name.
+        fill_value: Scalar or per-channel fill for out-of-bounds samples.
+
+    Returns:
+        Resampled `(B, C, I_out, J_out, K_out)` tensor.
+    """
+    order = _INTERPOLATION_TO_ORDER[interpolation]
+    if order <= 1:
+        return _sample_batch_grid_sample_per_sample(
+            data,
+            voxel_grid,
+            input_shape=input_shape,
+            mode=_TORCH_INTERPOLATION_MODE[interpolation],
+            fill_value=fill_value,
+        )
+    return _sample_batch_interpol_per_sample(
+        data,
+        voxel_grid,
+        order=order,
+        fill_value=fill_value,
+    )
+
+
+def _voxel_coordinates_to_grid_batched(
+    coords: Tensor,
+    input_shape: TypeThreeInts,
+) -> Tensor:
+    """Normalize `(B, I, J, K, 3)` voxel coords to the `[-1, 1]` grid.
+
+    Like [`_voxel_coordinates_to_grid`][] but keeps a leading batch
+    dimension, producing `(B, K, J, I, 3)` for `F.grid_sample`.
+    """
+    size_i = max(input_shape[0] - 1, 1)
+    size_j = max(input_shape[1] - 1, 1)
+    size_k = max(input_shape[2] - 1, 1)
+    sizes = torch.tensor(
+        [size_i, size_j, size_k],
+        dtype=torch.float32,
+        device=coords.device,
+    )
+    grid = 2.0 * coords / sizes - 1.0
+    return rearrange(grid, "b i j k d -> b k j i d")
+
+
+def _sample_batch_grid_sample_per_sample(
+    data: Tensor,
+    voxel_grid: Tensor,
+    *,
+    input_shape: TypeThreeInts,
+    mode: str,
+    fill_value: float | Tensor,
+) -> Tensor:
+    """Per-sample fast path: resample with F.grid_sample (orders 0-1)."""
+    grid = _voxel_coordinates_to_grid_batched(voxel_grid, input_shape)
+    input_5d = rearrange(data, "b c i j k -> b c k j i").float()
+    sampled = functional.grid_sample(
+        input_5d,
+        grid,
+        mode=mode,
+        padding_mode="zeros",
+        align_corners=True,
+    )
+
+    fill_tensor = _prepare_fill_value(fill_value, input_5d)
+    if fill_tensor is not None:
+        ones = torch.ones_like(input_5d)
+        mask = functional.grid_sample(
+            ones,
+            grid,
+            padding_mode="zeros",
+            align_corners=True,
+        )
+        sampled = torch.where(mask > 0.5, sampled, fill_tensor)
+
+    return rearrange(sampled, "b c k j i -> b c i j k").to(data.dtype)
+
+
+def _sample_batch_interpol_per_sample(
+    data: Tensor,
+    voxel_grid: Tensor,
+    *,
+    order: int,
+    fill_value: float | Tensor,
+) -> Tensor:
+    """Per-sample high-quality path: resample with interpol.grid_pull (orders 2+)."""
+    import interpol
+
+    sampled = interpol.grid_pull(
+        data.float(),
+        voxel_grid,
+        interpolation=order,
+        bound="dct2",
+        extrapolate=False,
+        prefilter=True,
+    )
+    return sampled.to(data.dtype)
+
+
+def _build_per_sample_grids(
+    *,
+    input_shape: TypeThreeInts,
+    input_affine: AffineMatrix,
+    output_shape: TypeThreeInts,
+    output_affine: AffineMatrix,
+    affine_matrices: list[np.ndarray | None],
+    control_points_list: list[Tensor | None],
+    max_displacements: list[tuple[float, float, float] | None],
+    affine_first: bool,
+    device: torch.device,
+) -> Tensor:
+    """Build one sampling grid per batch element and stack them.
+
+    Each element reuses the shared single-grid builder with its own
+    affine matrix and elastic field, so the per-instance path inherits
+    the exact geometry of the batch-shared path. A `None` affine and
+    `None` field yield an identity grid (used for gated-out elements).
+
+    Returns:
+        A `(B, I_out, J_out, K_out, 3)` tensor of input voxel
+        coordinates.
+    """
+    grids = [
+        _build_sampling_grid(
+            input_shape=input_shape,
+            input_affine=input_affine,
+            output_shape=output_shape,
+            output_affine=output_affine,
+            affine_matrix=affine_matrices[index],
+            control_points=control_points_list[index],
+            max_displacement=max_displacements[index],
+            affine_first=affine_first,
+            device=device,
+        )
+        for index in range(len(affine_matrices))
+    ]
+    return torch.stack(grids, dim=0)
 
 
 def _antialias_batch(

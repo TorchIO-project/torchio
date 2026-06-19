@@ -43,6 +43,21 @@ class AppliedTransform:
 _TRANSFORM_REGISTRY: dict[str, type[Transform]] = {}
 
 
+def _all_elements_gated_out(params: dict[str, Any]) -> bool:
+    """Whether per-element gating masked out every batch element.
+
+    Args:
+        params: The parameter dict produced by `make_params`, possibly
+            carrying a `_keep` mask added by `_tag_batched`.
+
+    Returns:
+        `True` only when a `_keep` mask is present and none of its
+        elements are kept, i.e. the transform was an exact no-op.
+    """
+    keep = params.get("_keep")
+    return keep is not None and not any(keep)
+
+
 class Transform(nn.Module):
     """Abstract class for all TorchIO transforms.
 
@@ -64,12 +79,23 @@ class Transform(nn.Module):
     returns the transformed batch.
 
     Args:
-        p: Probability that this transform will be applied.
+        p: Probability that this transform will be applied. When
+            per-instance probability is active (see `per_instance`),
+            this is instead the per-element probability and each batch
+            element is gated independently.
         copy: Make a deep copy of the input before applying the
             transform. When transforms are composed with
             [`Compose`][torchio.Compose], the outer `Compose`
             copies once and sets `copy=False` on inner transforms
             to avoid redundant copies.
+        per_instance: If `True` (default), transforms that support it
+            sample independent parameters for each element of a batch
+            (and gate each element independently with `p`). If
+            `False`, a single parameter set is sampled and applied
+            identically to every element, reproducing the legacy
+            batch-shared behavior. Single-element inputs (including a
+            single [`Subject`][torchio.Subject]) are unaffected by this
+            flag.
         include: Sequence of strings with the names of the only images
             to which the transform will be applied.
         exclude: Sequence of strings with the names of the images to
@@ -81,6 +107,7 @@ class Transform(nn.Module):
         *,
         p: float = 1.0,
         copy: bool = True,
+        per_instance: bool = True,
         include: list[str] | None = None,
         exclude: list[str] | None = None,
     ) -> None:
@@ -90,6 +117,7 @@ class Transform(nn.Module):
             raise ValueError(msg)
         self.p = p
         self.copy = copy
+        self.per_instance = per_instance
         self.include = include
         self.exclude = exclude
 
@@ -184,15 +212,23 @@ class Transform(nn.Module):
         if self.copy:
             data = _copy.deepcopy(data)
         batch, unwrap = self._wrap(data)
-        if torch.rand(1).item() > self.p:
+        # When per-element gating is active, the transform handles the
+        # probability itself (masked-out elements get identity params),
+        # so skip the batch-wide coin flip here. Apply iff rand < p, so
+        # p=0 is always a no-op and p=1 always applies.
+        if not self._per_instance_p_active(batch) and torch.rand(1).item() >= self.p:
             return unwrap(batch)
         params = self.make_params(batch)
         batch = self.apply_transform(batch, params)
-        # Record history on the batch
-        trace = AppliedTransform(name=type(self).__name__, params=params)
-        if not hasattr(batch, "applied_transforms"):
-            batch.applied_transforms = []
-        batch.applied_transforms.append(trace)
+        # Record history on the batch, unless every element was gated out by
+        # per-element probability: that is an exact no-op, and recording it
+        # would let history replay (e.g. an invertible spatial transform)
+        # trigger an unnecessary identity resample.
+        if not _all_elements_gated_out(params):
+            trace = AppliedTransform(name=type(self).__name__, params=params)
+            if not hasattr(batch, "applied_transforms"):
+                batch.applied_transforms = []
+            batch.applied_transforms.append(trace)
         result = unwrap(batch)
         # Propagate history to outputs that can carry it
         if (
@@ -203,6 +239,145 @@ class Transform(nn.Module):
             with contextlib.suppress(AttributeError):
                 result.applied_transforms = list(batch.applied_transforms)
         return result
+
+    @property
+    def supports_per_instance_params(self) -> bool:
+        """Whether this transform can sample parameters per batch element.
+
+        Defaults to `False`. Transforms that implement per-instance
+        parameter sampling override this to return `True`. When `False`,
+        the transform always uses batch-shared parameters regardless of
+        the `per_instance` flag, preserving the legacy behavior.
+        """
+        return False
+
+    @property
+    def supports_per_instance_p(self) -> bool:
+        """Whether this transform can gate each batch element independently.
+
+        Defaults to `False`. Shape-preserving transforms that implement
+        per-element probability override this to return `True`.
+        Shape-changing transforms must leave it `False` because masked
+        and unmasked elements would have incompatible shapes.
+        """
+        return False
+
+    def _per_instance_active(self, batch: SubjectsBatch) -> bool:
+        """Whether per-instance parameter sampling applies to *batch*.
+
+        Per-instance sampling only kicks in for genuine batches
+        (`batch_size > 1`); single-element inputs always use the legacy
+        scalar path.
+        """
+        return (
+            self.per_instance
+            and self.supports_per_instance_params
+            and batch.batch_size > 1
+        )
+
+    def _per_instance_p_active(self, batch: SubjectsBatch) -> bool:
+        """Whether per-element probability gating applies to *batch*."""
+        return (
+            self.per_instance
+            and self.supports_per_instance_p
+            and batch.batch_size > 1
+            and 0.0 < self.p < 1.0
+        )
+
+    def _resolve_n(self, batch: SubjectsBatch) -> int | None:
+        """Return the number of parameter sets to sample.
+
+        Returns:
+            The batch size when per-instance sampling is active,
+            otherwise `None` (the legacy single-sample path).
+        """
+        return batch.batch_size if self._per_instance_active(batch) else None
+
+    def _keep_mask(
+        self,
+        batch: SubjectsBatch,
+        n: int | None,
+    ) -> Tensor | None:
+        """Sample a per-element keep mask for per-instance probability.
+
+        Args:
+            batch: The batch being transformed.
+            n: The resolved number of parameter sets (from
+                `_resolve_n`).
+
+        Returns:
+            A boolean tensor of shape `(n,)` where `True` marks
+            elements that receive the transform, or `None` when
+            per-element gating is not active (all elements are kept).
+        """
+        if n is None or not self._per_instance_p_active(batch):
+            return None
+        return torch.rand(n) < self.p
+
+    @staticmethod
+    def _mask_identity(
+        value: Tensor | float,
+        keep: Tensor | None,
+        *,
+        identity: float,
+    ) -> Tensor | float:
+        """Replace masked-out elements of *value* with an identity value.
+
+        Args:
+            value: Sampled parameter, either a scalar (legacy path) or a
+                `(B,)` tensor (per-instance path).
+            keep: Per-element keep mask, or `None` for no masking.
+            identity: The value that makes the transform a no-op for an
+                element (for example `0.0` for additive or log-space
+                parameters).
+
+        Returns:
+            The masked parameter.
+        """
+        if keep is None or not isinstance(value, Tensor):
+            return value
+        return torch.where(keep, value, torch.full_like(value, identity))
+
+    @staticmethod
+    def _serialize_param(value: Tensor | Any) -> Any:
+        """Convert a possibly-tensor parameter to a JSON-serializable form."""
+        if isinstance(value, Tensor):
+            return value.tolist()
+        return value
+
+    @staticmethod
+    def _is_per_instance_params(params: dict[str, Any]) -> bool:
+        """Whether *params* holds per-element (batched) values."""
+        return "_batched_keys" in params
+
+    def _tag_batched(
+        self,
+        params: dict[str, Any],
+        batch: SubjectsBatch,
+        n: int | None,
+        keep: Tensor | None,
+        batched_keys: list[str],
+    ) -> None:
+        """Annotate *params* with per-instance bookkeeping for history.
+
+        Adds the batch size, the names of the per-element keys, and the
+        keep mask so that [`SubjectsBatch.unbatch`][torchio.SubjectsBatch.unbatch]
+        can split the history per subject.
+
+        Args:
+            params: The parameter dict to annotate in place.
+            batch: The batch being transformed.
+            n: The resolved number of parameter sets.
+            keep: The per-element keep mask, or `None`.
+            batched_keys: Names of the params that hold one value per
+                element.
+        """
+        if n is None:
+            return
+        params["_batch_size"] = batch.batch_size
+        params["_batched_keys"] = list(batched_keys)
+        if keep is not None:
+            params["_keep"] = keep.tolist()
 
     def make_params(self, batch: SubjectsBatch) -> dict[str, Any]:
         """Sample random parameters for this transform.

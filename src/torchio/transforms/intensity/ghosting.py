@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 import torch
+from einops import rearrange
 from torch import Tensor
 
 from ...data.batch import SubjectsBatch
@@ -69,18 +70,53 @@ class Ghosting(IntensityTransform):
         )
 
     def make_params(self, batch: SubjectsBatch) -> dict[str, Any]:
-        """Sample ghosting parameters."""
-        n = max(1, round(self.num_ghosts.sample_1d()))
-        axis = self.axes[int(torch.randint(len(self.axes), (1,)).item())]
-        restore = self.restore
-        if restore is None:
-            restore = 0.0
-        return {
-            "num_ghosts": n,
-            "axis": axis,
-            "intensity": self.intensity.sample_1d(),
+        """Sample ghosting parameters (per element when batched)."""
+        restore = self.restore if self.restore is not None else 0.0
+        n = self._resolve_n(batch)
+        if n is None:
+            num_ghosts = max(1, round(self.num_ghosts.sample_1d()))
+            axis = self.axes[int(torch.randint(len(self.axes), (1,)).item())]
+            return {
+                "num_ghosts": num_ghosts,
+                "axis": axis,
+                "intensity": self.intensity.sample_1d(),
+                "restore": restore,
+            }
+        keep = self._keep_mask(batch, n)
+        num_ghosts_list: list[int] = []
+        axis_list: list[int] = []
+        intensity_list: list[float] = []
+        for batch_index in range(n):
+            if keep is not None and not keep[batch_index]:
+                num_ghosts_list.append(0)
+                axis_list.append(self.axes[0])
+                intensity_list.append(0.0)
+                continue
+            num_ghosts_list.append(max(1, round(self.num_ghosts.sample_1d())))
+            axis_list.append(self.axes[int(torch.randint(len(self.axes), (1,)).item())])
+            intensity_list.append(self.intensity.sample_1d())
+        params = {
+            "num_ghosts": num_ghosts_list,
+            "axis": axis_list,
+            "intensity": intensity_list,
             "restore": restore,
         }
+        self._tag_batched(
+            params,
+            batch,
+            n,
+            keep,
+            ["num_ghosts", "axis", "intensity"],
+        )
+        return params
+
+    @property
+    def supports_per_instance_params(self) -> bool:
+        return True
+
+    @property
+    def supports_per_instance_p(self) -> bool:
+        return True
 
     def apply_transform(
         self,
@@ -88,15 +124,95 @@ class Ghosting(IntensityTransform):
         params: dict[str, Any],
     ) -> SubjectsBatch:
         """Add ghosting artifacts to each selected image."""
+        per_instance = self._is_per_instance_params(params)
+        restore = params["restore"]
         for _name, img_batch in self._get_images(batch).items():
-            img_batch.data = _add_ghosting(
-                img_batch.data,
-                num_ghosts=params["num_ghosts"],
-                axis=params["axis"],
-                intensity=params["intensity"],
-                restore=params["restore"],
-            )
+            if per_instance:
+                img_batch.data = _add_ghosting_per_element(
+                    img_batch.data,
+                    num_ghosts=params["num_ghosts"],
+                    axis=params["axis"],
+                    intensity=params["intensity"],
+                    restore=restore,
+                )
+            else:
+                img_batch.data = _add_ghosting(
+                    img_batch.data,
+                    num_ghosts=params["num_ghosts"],
+                    axis=params["axis"],
+                    intensity=params["intensity"],
+                    restore=restore,
+                )
         return batch
+
+
+def _add_ghosting_per_element(
+    data: Tensor,
+    *,
+    num_ghosts: list[int],
+    axis: list[int],
+    intensity: list[float],
+    restore: float,
+) -> Tensor:
+    """Add ghosting with independent parameters for each batch element.
+
+    Args:
+        data: `(B, C, I, J, K)` image tensor.
+        num_ghosts: Number of ghost replicas per batch element.
+        axis: Spatial axis per batch element.
+        intensity: Artifact strength per batch element.
+        restore: Fraction of central k-space to restore.
+
+    Returns:
+        Corrupted `(B, C, I, J, K)` tensor.
+    """
+    result = data.float()
+    spectrum = torch.fft.fftshift(
+        torch.fft.fftn(result, dim=(-3, -2, -1)),
+        dim=(-3, -2, -1),
+    )
+    mask = torch.ones(
+        data.shape[0],
+        1,
+        *data.shape[2:],
+        dtype=result.dtype,
+        device=data.device,
+    )
+    active = torch.zeros(data.shape[0], dtype=torch.bool, device=data.device)
+    for batch_index, (ghosts, phase_axis, strength) in enumerate(
+        zip(num_ghosts, axis, intensity, strict=True)
+    ):
+        if not ghosts or strength == 0:
+            continue
+        active[batch_index] = True
+        fft_dim = phase_axis + 2
+        size = result.shape[fft_dim]
+        line_mask = torch.ones(size, dtype=result.dtype, device=data.device)
+        step = max(size // ghosts, 1)
+        line_mask[::step] = 1 - strength
+        if restore > 0:
+            mid = size // 2
+            half_restore = max(int(size * restore / 2), 1)
+            lo, hi = mid - half_restore, mid + half_restore
+            line_mask[lo:hi] = 1
+        line_patterns = {
+            2: "s -> 1 1 s 1 1",
+            3: "s -> 1 1 1 s 1",
+            4: "s -> 1 1 1 1 s",
+        }
+        mask[batch_index : batch_index + 1] = rearrange(
+            line_mask,
+            line_patterns[fft_dim],
+        )
+
+    corrupted = spectrum * mask
+    result = torch.fft.ifftn(
+        torch.fft.ifftshift(corrupted, dim=(-3, -2, -1)),
+        dim=(-3, -2, -1),
+    ).real
+    result = result.to(data.dtype)
+    active = rearrange(active, "b -> b 1 1 1 1")
+    return torch.where(active, result, data)
 
 
 def _add_ghosting(
@@ -137,9 +253,12 @@ def _add_ghosting(
     mask[::step] = 1 - intensity
 
     # Reshape mask for broadcasting: (1, 1, 1, 1, 1) with size at fft_dim.
-    shape = [1] * 5
-    shape[fft_dim] = size
-    mask = mask.reshape(*shape)
+    mask_patterns = {
+        2: "s -> 1 1 s 1 1",
+        3: "s -> 1 1 1 s 1",
+        4: "s -> 1 1 1 1 s",
+    }
+    mask = rearrange(mask, mask_patterns[fft_dim])
     corrupted = spectrum * mask
 
     # Restore the center of k-space.
@@ -155,4 +274,4 @@ def _add_ghosting(
         torch.fft.ifftshift(corrupted, dim=(-3, -2, -1)),
         dim=(-3, -2, -1),
     ).real
-    return result
+    return result.to(data.dtype)

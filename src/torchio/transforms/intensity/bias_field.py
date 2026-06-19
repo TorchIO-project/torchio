@@ -8,6 +8,7 @@ PyTorch, GPU-native, and differentiable.
 from __future__ import annotations
 
 from typing import Any
+from typing import cast
 
 import torch
 import torch.nn.functional as functional
@@ -64,12 +65,36 @@ class BiasField(IntensityTransform):
         self.scale = scale
 
     def make_params(self, batch: SubjectsBatch) -> dict[str, Any]:
-        """Sample the bias field standard deviation and a random seed."""
-        return {
-            "std": self.std.sample_1d(),
-            "seed": int(torch.randint(0, 2**31, (1,)).item()),
+        """Sample the bias field standard deviation (per element when batched)."""
+        n = self._resolve_n(batch)
+        if n is None:
+            std = self.std.sample_1d()
+            seed = int(torch.randint(0, 2**31, (1,)).item())
+            return {
+                "std": std,
+                "seed": seed,
+                "scale": self.scale,
+            }
+        keep = self._keep_mask(batch, n)
+        std = self._mask_identity(self.std.sample_1d(n), keep, identity=0.0)
+        # A per-element seed makes each element's field reproducible from its
+        # own recorded parameters, so it inverts correctly after unbatching.
+        seeds = [int(torch.randint(0, 2**31, (1,)).item()) for _ in range(n)]
+        params = {
+            "std": self._serialize_param(std),
+            "seed": seeds,
             "scale": self.scale,
         }
+        self._tag_batched(params, batch, n, keep, ["std", "seed"])
+        return params
+
+    @property
+    def supports_per_instance_params(self) -> bool:
+        return True
+
+    @property
+    def supports_per_instance_p(self) -> bool:
+        return True
 
     def apply_transform(
         self,
@@ -81,18 +106,28 @@ class BiasField(IntensityTransform):
         seed = params["seed"]
         scale = params["scale"]
 
-        if std == 0:
+        per_instance = self._is_per_instance_params(params)
+        if not per_instance and std == 0:
             return batch
 
         for _name, img_batch in self._get_images(batch).items():
-            field = _generate_bias_field(
-                img_batch.data.shape,
-                std=std,
-                scale=scale,
-                seed=seed,
-                device=img_batch.data.device,
-            )
-            img_batch.data = img_batch.data * field
+            if per_instance:
+                img_batch.data = _apply_bias_per_element(
+                    img_batch.data,
+                    std,
+                    seed,
+                    scale,
+                    divide=False,
+                )
+            else:
+                field = _generate_bias_field(
+                    img_batch.data.shape,
+                    std=std,
+                    scale=scale,
+                    seed=seed,
+                    device=img_batch.data.device,
+                )
+                img_batch.data = img_batch.data * field
 
         return batch
 
@@ -117,8 +152,8 @@ class _BiasFieldInverse(IntensityTransform):
     def __init__(
         self,
         *,
-        std: float,
-        seed: int,
+        std: float | list[float],
+        seed: int | list[int],
         scale: float,
         **kwargs: Any,
     ) -> None:
@@ -137,20 +172,125 @@ class _BiasFieldInverse(IntensityTransform):
         params: dict[str, Any],
     ) -> SubjectsBatch:
         """Divide by the regenerated bias field."""
-        if self._std == 0:
+        per_element = isinstance(self._std, list)
+        if not per_element and self._std == 0:
             return batch
 
         for _name, img_batch in self._get_images(batch).items():
-            field = _generate_bias_field(
-                img_batch.data.shape,
-                std=self._std,
-                scale=self._scale,
-                seed=self._seed,
-                device=img_batch.data.device,
-            )
-            img_batch.data = img_batch.data / field
+            if per_element:
+                img_batch.data = _apply_bias_per_element(
+                    img_batch.data,
+                    cast("list[float]", self._std),
+                    cast("list[int]", self._seed),
+                    self._scale,
+                    divide=True,
+                )
+            else:
+                field = _generate_bias_field(
+                    img_batch.data.shape,
+                    std=cast("float", self._std),
+                    scale=self._scale,
+                    seed=cast("int", self._seed),
+                    device=img_batch.data.device,
+                )
+                img_batch.data = img_batch.data / field
 
         return batch
+
+
+def _apply_bias_per_element(
+    data: Tensor,
+    std_per_element: list[float],
+    seed_per_element: list[int],
+    scale: float,
+    *,
+    divide: bool,
+) -> Tensor:
+    """Multiply (or divide) each batch element by its own bias field.
+
+    Each element's field is regenerated from its own `(std, seed)`, so
+    the result is reproducible from per-element parameters alone (and
+    therefore invertible after unbatching).
+
+    Args:
+        data: `(B, C, I, J, K)` tensor.
+        std_per_element: Per-element standard deviations.
+        seed_per_element: Per-element random seeds.
+        scale: Ratio between the coarse field and the spatial shape.
+        divide: If `True`, divide by the field (inverse); otherwise
+            multiply.
+
+    Returns:
+        The corrected `(B, C, I, J, K)` tensor.
+    """
+    identity_rows = [std == 0 for std in std_per_element]
+    if all(identity_rows):
+        return data
+
+    coarse_field = _sample_coarse_bias_fields(
+        data.shape,
+        std_per_element=std_per_element,
+        seed_per_element=seed_per_element,
+        scale=scale,
+        device=data.device,
+    )
+    field = functional.interpolate(
+        coarse_field,
+        size=list(data.shape[2:]),
+        mode="trilinear",
+        align_corners=True,
+    )
+    field = torch.exp(field)
+    corrected = data / field if divide else data * field
+    corrected = corrected.to(data.dtype)
+
+    if any(identity_rows):
+        identity_mask = torch.tensor(
+            identity_rows,
+            dtype=torch.bool,
+            device=data.device,
+        )
+        corrected[identity_mask] = data[identity_mask]
+
+    return corrected
+
+
+def _sample_coarse_bias_fields(
+    shape: tuple[int, ...],
+    *,
+    std_per_element: list[float],
+    seed_per_element: list[int],
+    scale: float,
+    device: torch.device,
+) -> Tensor:
+    """Sample per-element coarse bias fields before batched upsampling.
+
+    Args:
+        shape: `(B, C, I, J, K)` tensor shape.
+        std_per_element: Per-element standard deviations.
+        seed_per_element: Per-element random seeds.
+        scale: Ratio between the coarse field and the spatial shape.
+        device: Device to move the stacked coarse fields to.
+
+    Returns:
+        `(B, C, small_I, small_J, small_K)` tensor sampled from each
+            element's own seeded CPU generator.
+    """
+    channels = shape[1]
+    spatial = shape[2:]
+    small_shape = [max(round(s * scale), 4) for s in spatial]
+    coarse_fields = []
+    for std, seed in zip(std_per_element, seed_per_element, strict=True):
+        generator = torch.Generator(device="cpu")
+        generator.manual_seed(seed)
+        coarse_field = torch.normal(
+            mean=0.0,
+            std=std,
+            size=(1, channels, *small_shape),
+            generator=generator,
+        )
+        coarse_fields.append(coarse_field)
+    return torch.cat(coarse_fields, dim=0).to(device)
 
 
 def _generate_bias_field(

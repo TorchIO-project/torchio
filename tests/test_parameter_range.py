@@ -83,6 +83,91 @@ class TestParameterRangeSampling:
         assert pr.sample_1d() == 3.14
 
 
+class TestParameterRangeBatchedSampling:
+    """Batched (per-instance) sampling via the ``n`` argument."""
+
+    def test_sample_1d_none_returns_float(self) -> None:
+        """``n=None`` keeps the legacy float return type."""
+        pr = _ParameterRange((0.0, 10.0))
+        value = pr.sample_1d()
+        assert isinstance(value, float)
+
+    def test_sample_none_returns_tuple(self) -> None:
+        """``n=None`` keeps the legacy 3-tuple return type."""
+        pr = _ParameterRange((0.0, 10.0))
+        value = pr.sample()
+        assert isinstance(value, tuple)
+        assert len(value) == 3
+
+    def test_sample_1d_batched_shape(self) -> None:
+        pr = _ParameterRange((0.0, 10.0))
+        values = pr.sample_1d(n=5)
+        assert isinstance(values, torch.Tensor)
+        assert values.shape == (5,)
+        assert ((values >= 0.0) & (values <= 10.0)).all()
+
+    def test_sample_batched_shape(self) -> None:
+        pr = _ParameterRange((0.0, 10.0))
+        values = pr.sample(n=4)
+        assert isinstance(values, torch.Tensor)
+        assert values.shape == (4, 3)
+
+    def test_batched_uniform_values_differ(self) -> None:
+        """Independent draws across the batch are (almost surely) distinct."""
+        pr = _ParameterRange((0.0, 100.0))
+        values = pr.sample_1d(n=8)
+        assert values.unique().numel() > 1
+
+    def test_batched_deterministic_is_constant(self) -> None:
+        pr = _ParameterRange(2.5)
+        values = pr.sample_1d(n=6)
+        assert values.shape == (6,)
+        torch.testing.assert_close(values, torch.full((6,), 2.5))
+
+    def test_batched_deterministic_per_axis(self) -> None:
+        pr = _ParameterRange((1.0, 2.0, 3.0))
+        values = pr.sample(n=4)
+        expected = torch.tensor([1.0, 2.0, 3.0]).expand(4, 3)
+        torch.testing.assert_close(values, expected)
+
+    def test_batched_six_tuple_per_axis_ranges(self) -> None:
+        pr = _ParameterRange((0.0, 1.0, 10.0, 20.0, 100.0, 200.0))
+        values = pr.sample(n=16)
+        assert values.shape == (16, 3)
+        assert ((values[:, 0] >= 0.0) & (values[:, 0] <= 1.0)).all()
+        assert ((values[:, 1] >= 10.0) & (values[:, 1] <= 20.0)).all()
+        assert ((values[:, 2] >= 100.0) & (values[:, 2] <= 200.0)).all()
+
+    def test_batched_choice(self) -> None:
+        pr = _ParameterRange(tio.Choice([-10.0, 0.0, 10.0]))
+        values = pr.sample_1d(n=32)
+        assert values.shape == (32,)
+        allowed = torch.tensor([-10.0, 0.0, 10.0])
+        assert torch.isin(values, allowed).all()
+
+    def test_batched_distribution(self) -> None:
+        from torch.distributions import Uniform
+
+        pr = _ParameterRange(Uniform(5.0, 10.0))
+        values = pr.sample_1d(n=10)
+        assert values.shape == (10,)
+        assert ((values >= 5.0) & (values <= 10.0)).all()
+
+    def test_batched_reproducible_with_generator(self) -> None:
+        pr = _ParameterRange((0.0, 100.0))
+        g1 = torch.Generator().manual_seed(42)
+        g2 = torch.Generator().manual_seed(42)
+        torch.testing.assert_close(
+            pr.sample_1d(n=7, generator=g1), pr.sample_1d(n=7, generator=g2)
+        )
+
+    def test_batched_n_one_returns_length_one_tensor(self) -> None:
+        pr = _ParameterRange((0.0, 10.0))
+        values = pr.sample_1d(n=1)
+        assert isinstance(values, torch.Tensor)
+        assert values.shape == (1,)
+
+
 class TestParameterRangeRepr:
     def test_scalar_repr(self) -> None:
         pr = _ParameterRange(0.5)

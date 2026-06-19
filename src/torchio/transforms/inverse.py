@@ -53,7 +53,9 @@ def get_inverse_transform(
                 )
             continue
         steps.append(instance.inverse(trace.params))
-    return Compose(steps, copy=False)
+    # copy=True (the default) so applying the inverse does not mutate the
+    # caller's data in place, matching every other transform.
+    return Compose(steps)
 
 
 def apply_inverse_transform(
@@ -77,6 +79,13 @@ def apply_inverse_transform(
     """
     if not hasattr(data, "applied_transforms"):
         return data
+    # Batches with per-element histories (from per-instance OneOf/SomeOf)
+    # know how to invert each element; delegate to their own method.
+    if getattr(data, "_per_element_history", None) is not None:
+        return data.apply_inverse_transform(
+            warn=warn,
+            ignore_intensity=ignore_intensity,
+        )
     inverse = get_inverse_transform(
         data.applied_transforms,
         warn=warn,
