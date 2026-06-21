@@ -142,6 +142,17 @@ class TestTransformBase:
         result = _DoubleIntensity(p=0.0)(subject)
         torch.testing.assert_close(result.t1.data, original_data)
 
+    def test_probability_zero_skips_when_rand_is_zero(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """p=0 must be a no-op even if torch.rand returns exactly 0."""
+        subject = _make_subject()
+        original_data = subject.t1.data.clone()
+        monkeypatch.setattr(torch, "rand", lambda *a, **k: torch.zeros(1))
+        result = _DoubleIntensity(p=0.0)(subject)
+        torch.testing.assert_close(result.t1.data, original_data)
+
     def test_probability_one_applies(self) -> None:
         subject = _make_subject()
         original_data = subject.t1.data.clone()

@@ -80,3 +80,59 @@ class TestInverse:
 class TestExports:
     def test_available_at_top_level(self) -> None:
         assert hasattr(tio, "BiasField")
+
+
+class TestBiasFieldPerInstance:
+    def _batch(self, batch_size: int = 5) -> tio.SubjectsBatch:
+        data = torch.rand(1, 12, 12, 12) + 0.5
+        subjects = [
+            tio.Subject(t1=tio.ScalarImage(data.clone())) for _ in range(batch_size)
+        ]
+        return tio.SubjectsBatch.from_subjects(subjects)
+
+    def test_per_instance_differs_across_batch(self) -> None:
+        torch.manual_seed(0)
+        batch = self._batch()
+        result = tio.BiasField(std=(0.3, 0.6))(batch)
+        params = result.applied_transforms[-1].params
+        assert "_batched_keys" in params
+        assert len(params["std"]) == batch.batch_size
+        assert not torch.allclose(result.t1.data[0], result.t1.data[1])
+
+    def test_per_instance_false_shares_std(self) -> None:
+        # The bias field is sampled at full batch shape, so the spatial
+        # realization still varies per element; only the std is shared.
+        torch.manual_seed(0)
+        batch = self._batch()
+        result = tio.BiasField(std=(0.3, 0.6), per_instance=False)(batch)
+        params = result.applied_transforms[-1].params
+        assert isinstance(params["std"], float)
+        assert "_batched_keys" not in params
+
+    def test_single_subject_keeps_scalar_params(self) -> None:
+        subject = tio.Subject(t1=tio.ScalarImage(torch.rand(1, 12, 12, 12) + 0.5))
+        result = tio.BiasField(std=(0.3, 0.6))(subject)
+        assert "_batched_keys" not in result.applied_transforms[-1].params
+
+    def test_per_instance_inverse_round_trip(self) -> None:
+        torch.manual_seed(0)
+        batch = self._batch()
+        original = batch.t1.data.clone()
+        result = tio.BiasField(std=(0.3, 0.6))(batch)
+        restored = result.apply_inverse_transform()
+        torch.testing.assert_close(restored.t1.data, original, atol=1e-4, rtol=0)
+
+    def test_per_instance_inverse_after_unbatch(self) -> None:
+        """Each unbatched subject must invert using its own field."""
+        torch.manual_seed(0)
+        batch = self._batch()
+        original = batch.t1.data.clone()
+        result = tio.BiasField(std=(0.3, 0.6))(batch)
+        for index, subject in enumerate(result.unbatch()):
+            restored = subject.apply_inverse_transform()
+            torch.testing.assert_close(
+                restored.t1.data,
+                original[index],
+                atol=1e-4,
+                rtol=0,
+            )

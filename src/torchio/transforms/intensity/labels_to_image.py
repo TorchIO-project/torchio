@@ -6,6 +6,7 @@ from collections.abc import Sequence
 from typing import Any
 
 import torch
+from einops import rearrange
 from torch import Tensor
 
 from ...data.batch import SubjectsBatch
@@ -79,10 +80,40 @@ class LabelsToImage(Transform):
         self.ignore_background = ignore_background
 
     def make_params(self, batch: SubjectsBatch) -> dict[str, Any]:
-        """Sample per-label mean and std values."""
+        """Sample per-label mean and std values (per element when batched)."""
         label_batch = self._find_label_batch(batch)
         # Discover unique labels from the first sample.
         unique = sorted(int(v) for v in label_batch.data[0].unique().tolist())
+        n = self._resolve_n(batch)
+        if n is None:
+            means, stds = self._sample_label_values(unique)
+            return {"means": means, "stds": stds}
+        means_list: list[dict[int, float]] = []
+        stds_list: list[dict[int, float]] = []
+        for _ in range(n):
+            means, stds = self._sample_label_values(unique)
+            means_list.append(means)
+            stds_list.append(stds)
+        params = {"means": means_list, "stds": stds_list}
+        self._tag_batched(params, batch, n, None, ["means", "stds"])
+        return params
+
+    @property
+    def supports_per_instance_params(self) -> bool:
+        return True
+
+    def _sample_label_values(
+        self,
+        unique: list[int],
+    ) -> tuple[dict[int, float], dict[int, float]]:
+        """Sample one mean and std per label.
+
+        Args:
+            unique: Sorted list of unique label values.
+
+        Returns:
+            A `(means, stds)` pair of per-label dictionaries.
+        """
         means: dict[int, float] = {}
         stds: dict[int, float] = {}
         for idx, label in enumerate(unique):
@@ -98,7 +129,7 @@ class LabelsToImage(Transform):
                 stds[label] = self.std_ranges[idx].sample_1d()
             else:
                 stds[label] = abs(self.default_std.sample_1d())
-        return {"means": means, "stds": stds}
+        return means, stds
 
     def apply_transform(
         self,
@@ -107,13 +138,18 @@ class LabelsToImage(Transform):
     ) -> SubjectsBatch:
         """Generate a synthetic image and add it to the batch."""
         label_batch = self._find_label_batch(batch)
-        means = params["means"]
-        stds = params["stds"]
-        generated = _generate_from_labels(
-            label_batch.data,
-            means,
-            stds,
-        )
+        if self._is_per_instance_params(params):
+            generated = _generate_per_element(
+                label_batch.data,
+                params["means"],
+                params["stds"],
+            )
+        else:
+            generated = _generate_from_labels(
+                label_batch.data,
+                params["means"],
+                params["stds"],
+            )
         # Create a new image batch entry.
         from ...data.batch import ImagesBatch
 
@@ -141,6 +177,87 @@ class LabelsToImage(Transform):
                 return img_batch
         msg = "No LabelMap found in the subject"
         raise KeyError(msg)
+
+
+def _generate_per_element(
+    label_data: Tensor,
+    means_per_element: list[dict[int, float]],
+    stds_per_element: list[dict[int, float]],
+) -> Tensor:
+    """Generate synthetic tissue with per-element label statistics.
+
+    Args:
+        label_data: `(B, C, I, J, K)` label tensor.
+        means_per_element: One per-label mean dict per batch element.
+        stds_per_element: One per-label std dict per batch element.
+
+    Returns:
+        `(B, 1, I, J, K)` synthetic image tensor.
+    """
+    b = label_data.shape[0]
+    spatial = label_data.shape[2:]
+    result = torch.zeros(b, 1, *spatial, device=label_data.device)
+
+    for label_val in _label_values_from(means_per_element):
+        means = _broadcast_values(
+            means_per_element,
+            label_val,
+            result,
+        )
+        stds = _broadcast_values(
+            stds_per_element,
+            label_val,
+            result,
+        )
+        if _is_all_zero(means) and _is_all_zero(stds):
+            continue
+        mask = (label_data[:, 0:1] == label_val).to(dtype=result.dtype)
+        tissue = torch.randn_like(result) * stds + means
+        result += tissue * mask
+
+    return result
+
+
+def _label_values_from(values_per_element: list[dict[int, float]]) -> list[int]:
+    """Get sorted label values represented by per-element dictionaries.
+
+    Args:
+        values_per_element: One value dictionary per batch element.
+
+    Returns:
+        Sorted union of labels in the dictionaries.
+    """
+    return sorted(set().union(*(values.keys() for values in values_per_element)))
+
+
+def _broadcast_values(
+    values_per_element: list[dict[int, float]],
+    label_val: int,
+    reference: Tensor,
+) -> Tensor:
+    """Convert per-element values for one label to a broadcastable tensor.
+
+    Args:
+        values_per_element: One value dictionary per batch element.
+        label_val: Label whose values are needed.
+        reference: Tensor defining device and dtype.
+
+    Returns:
+        Tensor of shape `(B, 1, 1, 1, 1)`, on the same device and dtype as
+            `reference`, broadcastable over `(B, 1, I, J, K)`.
+    """
+    values = [values.get(label_val, 0.0) for values in values_per_element]
+    tensor = torch.as_tensor(
+        values,
+        device=reference.device,
+        dtype=reference.dtype,
+    )
+    return rearrange(tensor, "b -> b 1 1 1 1")
+
+
+def _is_all_zero(values: Tensor) -> bool:
+    """Return whether all tensor entries are zero."""
+    return torch.count_nonzero(values).item() == 0
 
 
 def _generate_from_labels(

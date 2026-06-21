@@ -311,7 +311,26 @@ class TestAffine:
             subject.t1.affine.numpy(),
         )
 
-    def test_isotropic_scales(self) -> None:
+    def test_inverse_leaves_excluded_images_untouched(self) -> None:
+        # The forward pass records the images it transformed; the inverse
+        # must only resample those, so an excluded image (here the label
+        # map) is bit-for-bit identical after a forward + inverse round
+        # trip.
+        subject = _make_subject()
+        transform = AffineTransform(
+            degrees=(0.0, 0.0, 20.0),
+            translation=(1.0, -2.0, 0.5),
+            default_pad_value=0.0,
+            include=["t1"],
+        )
+        original_seg = subject.seg.data.clone()
+
+        result = transform(subject)
+        assert result.applied_transforms[-1].params["selected_images"] == ["t1"]
+        assert torch.equal(result.seg.data, original_seg)
+
+        restored = result.apply_inverse_transform()
+        assert torch.equal(restored.seg.data, original_seg)
         subject = _make_subject()
         transform = AffineTransform(
             scales=(0.9, 1.1),
@@ -369,6 +388,181 @@ class TestAffine:
         )
         transformed = transform(subject)
         assert transformed.t1.spatial_shape == subject.t1.spatial_shape
+
+
+class TestSpatialPerInstance:
+    def _identical_batch(
+        self,
+        batch_size: int = 4,
+        shape: tuple[int, int, int] = (12, 12, 12),
+    ) -> tio.SubjectsBatch:
+        data = torch.arange(
+            shape[0] * shape[1] * shape[2],
+            dtype=torch.float32,
+        ).reshape(1, *shape)
+        subjects = [
+            tio.Subject(t1=tio.ScalarImage(data.clone())) for _ in range(batch_size)
+        ]
+        return tio.SubjectsBatch.from_subjects(subjects)
+
+    def test_per_instance_rotations_differ(self) -> None:
+        torch.manual_seed(0)
+        batch = self._identical_batch()
+        transform = AffineTransform(degrees=(20.0, 80.0), default_pad_value=0.0)
+        result = transform(batch)
+        params = result.applied_transforms[-1].params
+        assert "_batched_keys" in params
+        assert len(params["affine_matrix"]) == batch.batch_size
+        data = result.t1.data
+        assert not torch.allclose(data[0], data[1])
+        assert not torch.allclose(data[1], data[2])
+
+    def test_per_instance_cubic_interpolation(self) -> None:
+        # Exercises the per-sample high-order interpolation path
+        # (interpol.grid_pull) with batched grids.
+        pytest.importorskip("interpol")
+        torch.manual_seed(0)
+        batch = self._identical_batch()
+        transform = AffineTransform(
+            degrees=(20.0, 80.0),
+            default_pad_value=0.0,
+            image_interpolation="cubic",
+        )
+        result = transform(batch)
+        assert result.t1.data.shape == batch.t1.data.shape
+        assert not torch.allclose(result.t1.data[0], result.t1.data[1])
+
+    def test_per_instance_false_is_shared(self) -> None:
+        torch.manual_seed(0)
+        batch = self._identical_batch()
+        transform = AffineTransform(
+            degrees=(20.0, 80.0),
+            default_pad_value=0.0,
+            per_instance=False,
+        )
+        result = transform(batch)
+        data = result.t1.data
+        torch.testing.assert_close(data[0], data[1])
+        torch.testing.assert_close(data[1], data[2])
+
+    def test_single_subject_keeps_scalar_params(self) -> None:
+        subject = _make_subject()
+        result = AffineTransform(degrees=(20.0, 80.0), default_pad_value=0.0)(subject)
+        params = result.applied_transforms[-1].params
+        assert "_batched_keys" not in params
+
+    def test_per_instance_inverse_restores_geometry(self) -> None:
+        torch.manual_seed(0)
+        batch = self._identical_batch()
+        transform = AffineTransform(
+            scales=(0.9, 1.1),
+            degrees=(20.0, 80.0),
+            translation=(-2.0, 2.0),
+            default_pad_value=0.0,
+        )
+        result = transform(batch)
+        restored = result.apply_inverse_transform()
+        assert restored.t1.data.shape == batch.t1.data.shape
+        for affine in restored.t1.affines:
+            np.testing.assert_allclose(
+                affine.numpy(),
+                batch.t1.affines[0].numpy(),
+                atol=1e-5,
+            )
+
+    def test_per_instance_p_gates_some_elements(self) -> None:
+        torch.manual_seed(0)
+        batch = self._identical_batch(batch_size=64)
+        original = batch.t1.data.clone()
+        transform = AffineTransform(degrees=(40.0, 80.0), default_pad_value=0.0, p=0.5)
+        result = transform(batch)
+        changed = [
+            not torch.allclose(result.t1.data[i], original[i])
+            for i in range(batch.batch_size)
+        ]
+        assert any(changed)
+        assert not all(changed)
+
+    def test_per_instance_p_masked_elements_unchanged(self) -> None:
+        torch.manual_seed(0)
+        batch = self._identical_batch(batch_size=32)
+        original = batch.t1.data.clone()
+        transform = AffineTransform(degrees=(40.0, 80.0), default_pad_value=0.0, p=0.5)
+        result = transform(batch)
+        for i, subject in enumerate(result.unbatch()):
+            changed = not torch.allclose(subject.t1.data, original[i])
+            has_history = len(subject.applied_transforms) == 1
+            assert changed == has_history
+
+    def test_per_instance_elastic_differs_across_batch(self) -> None:
+        torch.manual_seed(0)
+        batch = self._identical_batch()
+        transform = tio.ElasticDeformation(
+            num_control_points=5,
+            max_displacement=(1.0, 3.0),
+        )
+        result = transform(batch)
+        params = result.applied_transforms[-1].params
+        assert "_batched_keys" in params
+        assert len(params["control_points"]) == batch.batch_size
+        data = result.t1.data
+        assert not torch.allclose(data[0], data[1])
+        assert not torch.allclose(data[1], data[2])
+
+    def test_fully_gated_noop_preserves_per_sample_affines(self) -> None:
+        # When every element is gated out (p=0) and there is no target
+        # resampling, the transform must be a true no-op: the data and the
+        # distinct per-sample affines must be left untouched rather than
+        # rebuilt from an identity grid using the first element's affine.
+        torch.manual_seed(0)
+        subjects = []
+        for index in range(4):
+            affine = np.eye(4)
+            affine[0, 3] = float(index * 10)
+            image = tio.ScalarImage(torch.rand(1, 8, 8, 8), affine=affine)
+            subjects.append(tio.Subject(t1=image))
+        batch = tio.SubjectsBatch.from_subjects(subjects)
+        original_data = batch.t1.data.clone()
+        original_affines = [affine.numpy().copy() for affine in batch.t1.affines]
+
+        result = AffineTransform(degrees=20.0, p=0.0)(batch)
+
+        assert torch.equal(result.t1.data, original_data)
+        for original, new in zip(
+            original_affines,
+            result.t1.affines,
+            strict=True,
+        ):
+            assert np.allclose(original, new.numpy())
+
+    def test_partially_gated_elements_are_exact_noops(self) -> None:
+        # In a mixed batch (0 < p < 1), gated-out elements must be exact,
+        # bit-for-bit no-ops even for float64 inputs: the per-sample
+        # resample runs an identity grid in float32, so those rows are
+        # restored from the input afterwards.
+        torch.manual_seed(0)
+        data = torch.rand(1, 8, 8, 8, dtype=torch.float64)
+        batch = tio.SubjectsBatch.from_subjects(
+            [tio.Subject(t1=tio.ScalarImage(data.clone())) for _ in range(8)]
+        )
+        original = batch.t1.data.clone()
+        torch.manual_seed(1)
+        result = AffineTransform(degrees=30.0, p=0.5)(batch)
+        assert result.t1.data.dtype == torch.float64
+        exact = [
+            torch.equal(result.t1.data[i], original[i]) for i in range(batch.batch_size)
+        ]
+        changed = [
+            not torch.allclose(result.t1.data[i], original[i], atol=1e-6)
+            for i in range(batch.batch_size)
+        ]
+        # Every element is either an exact no-op or genuinely augmented.
+        assert all(
+            is_exact ^ is_changed
+            for is_exact, is_changed in zip(exact, changed, strict=True)
+        )
+        assert any(exact)
+        assert any(changed)
 
 
 class TestElasticDeformation:
@@ -827,3 +1021,197 @@ class TestHighOrderInterpolation:
             image_interpolation="nearest",
         )(subject)
         assert result.t1.data.shape == subject.t1.data.shape
+
+
+def _sphere_label(
+    n: int = 64,
+    radius: float = 20.0,
+    value: float = 1.0,
+) -> torch.Tensor:
+    center = (n - 1) / 2
+    zz, yy, xx = torch.meshgrid(
+        torch.arange(n),
+        torch.arange(n),
+        torch.arange(n),
+        indexing="ij",
+    )
+    distance = ((xx - center) ** 2 + (yy - center) ** 2 + (zz - center) ** 2).sqrt()
+    sphere = (distance <= radius).float() * value
+    return sphere[None]
+
+
+def _dice(a: torch.Tensor, b: torch.Tensor) -> float:
+    mask_a = a > 0
+    mask_b = b > 0
+    intersection = (mask_a & mask_b).sum()
+    return (2 * intersection / (mask_a.sum() + mask_b.sum())).item()
+
+
+class TestLabelInterpolation:
+    def test_parse_interpolation_accepts_label(self) -> None:
+        assert _parse_interpolation("label") == "label"
+        assert _parse_interpolation("LABEL") == "label"
+
+    def test_image_interpolation_label_raises(self) -> None:
+        with pytest.raises(ValueError, match="image_interpolation"):
+            tio.Resample(2, image_interpolation="label")
+
+    def test_no_invalid_labels_when_downsampling(self) -> None:
+        data = torch.zeros(1, 32, 32, 32)
+        data[0, 8:24, 8:24, 8:24] = 2
+        data[0, 12:20, 12:20, 12:20] = 5  # non-contiguous label values
+        subject = tio.Subject(seg=tio.LabelMap(data, affine=np.eye(4)))
+        result = tio.Resample(4, label_interpolation="label")(subject)
+        unique = set(result.seg.data.unique().tolist())
+        assert unique <= {0.0, 2.0, 5.0}
+
+    def test_no_invalid_labels_when_upsampling(self) -> None:
+        data = torch.zeros(1, 16, 16, 16)
+        data[0, 4:12, 4:12, 4:12] = 3
+        subject = tio.Subject(seg=tio.LabelMap(data, affine=np.eye(4)))
+        result = tio.Resample(0.5, label_interpolation="label")(subject)
+        unique = set(result.seg.data.unique().tolist())
+        assert unique <= {0.0, 3.0}
+
+    def test_roundtrip_dice_beats_nearest(self) -> None:
+        original = _sphere_label()
+        subject = tio.Subject(seg=tio.LabelMap(original, affine=np.eye(4)))
+
+        def roundtrip(mode: str) -> torch.Tensor:
+            down = tio.Resample(4, label_interpolation=mode)(subject)
+            back = tio.Resample(subject.seg, label_interpolation=mode)(down)
+            return back.seg.data
+
+        dice_label = _dice(roundtrip("label"), original)
+        dice_nearest = _dice(roundtrip("nearest"), original)
+        # "label" is reliably better for a compact sphere, but assert only
+        # "not worse" to stay robust across grid alignment and library
+        # versions (a tie should not fail the test).
+        assert dice_label >= dice_nearest
+
+    def test_default_pad_label_fills_out_of_bounds(self) -> None:
+        data = torch.ones(1, 16, 16, 16)
+        subject = tio.Subject(seg=tio.LabelMap(data, affine=np.eye(4)))
+        # Shift the whole volume out of the field of view along one axis.
+        transformed = AffineTransform(
+            translation=(100.0, 0.0, 0.0),
+            label_interpolation="label",
+            default_pad_label=7.0,
+        )(subject)
+        assert (transformed.seg.data == 7.0).any()
+
+    def test_antialias_label_runs_and_keeps_valid_labels(self) -> None:
+        original = _sphere_label(value=4.0)
+        subject = tio.Subject(seg=tio.LabelMap(original, affine=np.eye(4)))
+        result = tio.Resample(
+            4,
+            label_interpolation="label",
+            antialias=True,
+        )(subject)
+        unique = set(result.seg.data.unique().tolist())
+        assert unique <= {0.0, 4.0}
+        assert result.seg.data.shape[1:] == (16, 16, 16)
+
+    def test_multichannel_label_resamples_without_argmax(self) -> None:
+        data = torch.zeros(2, 16, 16, 16)
+        data[0] = 1.0
+        data[0, 4:12, 4:12, 4:12] = 0.0
+        data[1, 4:12, 4:12, 4:12] = 1.0
+        subject = tio.Subject(seg=tio.LabelMap(data, affine=np.eye(4)))
+        result = tio.Resample(2, label_interpolation="label")(subject)
+        assert result.seg.data.shape[0] == 2
+
+    def test_multichannel_integer_input_preserves_partial_volumes(self) -> None:
+        # An integer one-hot encoding must not be truncated back to 0/1:
+        # linear resampling should yield fractional partial volumes.
+        data = torch.zeros(2, 16, 16, 16, dtype=torch.uint8)
+        data[0] = 1
+        data[0, :8] = 0
+        data[1, :8] = 1
+        subject = tio.Subject(seg=tio.LabelMap(data, affine=np.eye(4)))
+        result = tio.Resample((1.5, 1.0, 1.0), label_interpolation="label")(subject)
+        assert result.seg.data.dtype.is_floating_point
+        fractional = (result.seg.data > 0) & (result.seg.data < 1)
+        assert fractional.any()
+
+    def _three_label_junction(self) -> tio.Subject:
+        # Three labels meeting at a wavy junction, where the per-channel
+        # interpolation order changes the argmax outcome.
+        n = 40
+        yy, xx, zz = torch.meshgrid(
+            torch.arange(n),
+            torch.arange(n),
+            torch.arange(n),
+            indexing="ij",
+        )
+        seg = torch.zeros(n, n, n)
+        boundary = n / 2 + 3 * torch.sin(xx.float() / 3)
+        seg[yy > boundary] = 1
+        seg[(yy <= boundary) & (zz > n / 2)] = 2
+        return tio.Subject(seg=tio.LabelMap(seg[None], affine=np.eye(4)))
+
+    def test_one_hot_label_interpolation_label_raises(self) -> None:
+        with pytest.raises(ValueError, match="one_hot_label_interpolation"):
+            tio.Resample(
+                2,
+                label_interpolation="label",
+                one_hot_label_interpolation="label",
+            )
+
+    def test_one_hot_label_interpolation_default_is_linear(self) -> None:
+        subject = self._three_label_junction()
+        default = tio.Resample(0.5, label_interpolation="label")(subject)
+        explicit = tio.Resample(
+            0.5,
+            label_interpolation="label",
+            one_hot_label_interpolation="linear",
+        )(subject)
+        torch.testing.assert_close(default.seg.data, explicit.seg.data)
+
+    def test_one_hot_label_interpolation_higher_order_differs(self) -> None:
+        subject = self._three_label_junction()
+        linear = tio.Resample(
+            0.5,
+            label_interpolation="label",
+            one_hot_label_interpolation="linear",
+        )(subject)
+        cubic = tio.Resample(
+            0.5,
+            label_interpolation="label",
+            one_hot_label_interpolation="cubic",
+        )(subject)
+        # The order changes the result, but never invents labels.
+        assert not torch.equal(linear.seg.data, cubic.seg.data)
+        assert set(cubic.seg.data.unique().tolist()) <= {0.0, 1.0, 2.0}
+
+    def test_one_hot_label_interpolation_accepts_integer_order(self) -> None:
+        subject = self._three_label_junction()
+        result = tio.Resample(
+            0.5,
+            label_interpolation="label",
+            one_hot_label_interpolation=3,
+        )(subject)
+        assert set(result.seg.data.unique().tolist()) <= {0.0, 1.0, 2.0}
+
+    def test_label_mode_per_instance_batch(self) -> None:
+        # Per-instance Affine on a batch must run the label partial-volume
+        # mode through the per-sample sampling grid, one geometry per element.
+        seg = torch.zeros(1, 24, 24, 24)
+        seg[0, 6:18, 6:18, 6:18] = 1
+        seg[0, 10:14, 10:14, 10:14] = 2
+        subjects = [
+            tio.Subject(seg=tio.LabelMap(seg.clone(), affine=np.eye(4)))
+            for _ in range(4)
+        ]
+        batch = tio.SubjectsBatch.from_subjects(subjects)
+        torch.manual_seed(0)
+        transform = AffineTransform(
+            degrees=(-25, 25),
+            scales=(0.8, 1.2),
+            label_interpolation="label",
+        )
+        data = transform(batch).images["seg"].data
+        assert data.shape[0] == 4
+        assert set(data.unique().tolist()) <= {0.0, 1.0, 2.0}
+        # Per-instance sampling: elements receive different geometry.
+        assert not torch.equal(data[0], data[1])

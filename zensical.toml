@@ -25,6 +25,7 @@ nav = [
     "concepts/data-model.md",
     "concepts/lazy-loading.md",
     "concepts/transforms.md",
+    "concepts/per-instance-augmentation.md",
   ] },
   { Tutorials = [
     "tutorials/first-pipeline.md",

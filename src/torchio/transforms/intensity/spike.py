@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 import torch
+from einops import rearrange
 from torch import Tensor
 
 from ...data.batch import SubjectsBatch
@@ -60,14 +61,42 @@ class Spike(IntensityTransform):
         )
 
     def make_params(self, batch: SubjectsBatch) -> dict[str, Any]:
-        """Sample the number and positions of spikes."""
-        n = max(1, round(self.num_spikes.sample_1d()))
-        positions = torch.rand(n, 3).tolist()
-        return {
-            "positions": positions,
-            "intensity": self.intensity.sample_1d(),
-            "seed": int(torch.randint(0, 2**31, (1,)).item()),
+        """Sample the number and positions of spikes (per element when batched)."""
+        n = self._resolve_n(batch)
+        if n is None:
+            num_spikes = max(1, round(self.num_spikes.sample_1d()))
+            positions = torch.rand(num_spikes, 3).tolist()
+            intensity = self.intensity.sample_1d()
+            return {
+                "positions": positions,
+                "intensity": intensity,
+            }
+        keep = self._keep_mask(batch, n)
+        positions_list: list[list[list[float]]] = []
+        intensity_list: list[float] = []
+        keep_values = [True] * n if keep is None else keep.tolist()
+        for should_keep in keep_values:
+            if not should_keep:
+                positions_list.append([])
+                intensity_list.append(0.0)
+                continue
+            num_spikes = max(1, round(self.num_spikes.sample_1d()))
+            positions_list.append(torch.rand(num_spikes, 3).tolist())
+            intensity_list.append(self.intensity.sample_1d())
+        params = {
+            "positions": positions_list,
+            "intensity": intensity_list,
         }
+        self._tag_batched(params, batch, n, keep, ["positions", "intensity"])
+        return params
+
+    @property
+    def supports_per_instance_params(self) -> bool:
+        return True
+
+    @property
+    def supports_per_instance_p(self) -> bool:
+        return True
 
     def apply_transform(
         self,
@@ -75,14 +104,20 @@ class Spike(IntensityTransform):
         params: dict[str, Any],
     ) -> SubjectsBatch:
         """Add spike artifacts to each selected image."""
-        positions = params["positions"]
-        intensity = params["intensity"]
+        per_instance = self._is_per_instance_params(params)
         for _name, img_batch in self._get_images(batch).items():
-            img_batch.data = _add_spikes(
-                img_batch.data,
-                positions,
-                intensity,
-            )
+            if per_instance:
+                img_batch.data = _add_spikes_per_instance(
+                    img_batch.data,
+                    params["positions"],
+                    params["intensity"],
+                )
+            else:
+                img_batch.data = _add_spikes(
+                    img_batch.data,
+                    params["positions"],
+                    params["intensity"],
+                )
         return batch
 
 
@@ -118,10 +153,71 @@ def _add_spikes(
 
     for pos in positions:
         idx = [int(p * s) % s for p, s in zip(pos, shape, strict=True)]
-        spectrum[:, :, idx[0], idx[1], idx[2]] += peak.squeeze() * intensity
+        spectrum[:, :, idx[0], idx[1], idx[2]] += peak[..., 0, 0, 0] * intensity
 
     result = torch.fft.ifftn(
         torch.fft.ifftshift(spectrum, dim=(-3, -2, -1)),
         dim=(-3, -2, -1),
     ).real
-    return result
+    return result.to(data.dtype)
+
+
+def _add_spikes_per_instance(
+    data: Tensor,
+    positions: list[list[list[float]]],
+    intensities: list[float],
+) -> Tensor:
+    """Add independently sampled point spikes to a batched 5D tensor.
+
+    Args:
+        data: `(B, C, I, J, K)` image tensor.
+        positions: Per-element lists of `[pi, pj, pk]` positions in `[0, 1)`.
+        intensities: Per-element spike amplitude ratios.
+
+    Returns:
+        Corrupted `(B, C, I, J, K)` tensor, with inactive elements unchanged.
+    """
+    active = torch.as_tensor(
+        [
+            bool(batch_positions) and batch_intensity != 0
+            for batch_positions, batch_intensity in zip(
+                positions,
+                intensities,
+                strict=True,
+            )
+        ],
+        device=data.device,
+    )
+    if not active.any().item():
+        return data
+
+    result = data.float()
+    shape = result.shape[2:]  # (I, J, K)
+
+    spectrum = torch.fft.fftshift(
+        torch.fft.fftn(result, dim=(-3, -2, -1)),
+        dim=(-3, -2, -1),
+    )
+    peak = spectrum.abs().amax(dim=(-3, -2, -1), keepdim=True)
+
+    for batch_index, (batch_positions, batch_intensity) in enumerate(
+        zip(
+            positions,
+            intensities,
+            strict=True,
+        )
+    ):
+        if not batch_positions or batch_intensity == 0:
+            continue
+        for pos in batch_positions:
+            idx = [int(p * s) % s for p, s in zip(pos, shape, strict=True)]
+            spectrum[batch_index, :, idx[0], idx[1], idx[2]] += (
+                peak[batch_index, :, 0, 0, 0] * batch_intensity
+            )
+
+    transformed = torch.fft.ifftn(
+        torch.fft.ifftshift(spectrum, dim=(-3, -2, -1)),
+        dim=(-3, -2, -1),
+    ).real.to(data.dtype)
+    active = rearrange(active, "b -> b 1 1 1 1")
+    return torch.where(active, transformed, data)
