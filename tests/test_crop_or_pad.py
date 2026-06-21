@@ -552,6 +552,75 @@ class TestLazyBackends:
         # Access dtype through the lazy backend.
         assert result.t1.shape == (1, 10, 10, 10)
 
+    def test_deepcopy_cropped_lazy_preserves_shape(self, tmp_path) -> None:
+        """Deep-copying a lazily cropped image must keep the cropped shape.
+
+        Regression test: ``__deepcopy__`` used to rebuild the image from its
+        source path only, discarding the ``_CroppedBackend`` and reverting to
+        the full-resolution image.
+        """
+        import copy
+
+        path = tmp_path / "test.nii.gz"
+        self._make_nii(path, shape=(20, 20, 20))
+        result = tio.CropOrPad(target_shape=10)(tio.Subject(t1=tio.ScalarImage(path)))
+        image = result.t1
+        assert not image.is_loaded
+
+        copied = copy.deepcopy(image)
+        assert copied.shape == (1, 10, 10, 10)
+        assert not copied.is_loaded
+        torch.testing.assert_close(copied.data, image.data)
+
+    def test_deepcopy_padded_lazy_preserves_shape(self, tmp_path) -> None:
+        """Deep-copying a lazily padded image must keep the padded shape."""
+        import copy
+
+        path = tmp_path / "test.nii.gz"
+        self._make_nii(path, shape=(8, 8, 8))
+        result = tio.CropOrPad(target_shape=12)(tio.Subject(t1=tio.ScalarImage(path)))
+        image = result.t1
+        assert not image.is_loaded
+
+        copied = copy.deepcopy(image)
+        assert copied.shape == (1, 12, 12, 12)
+        assert not copied.is_loaded
+        torch.testing.assert_close(copied.data, image.data)
+
+    def test_transform_after_lazy_crop_uses_cropped_shape(self, tmp_path) -> None:
+        """A transform applied after a lazy crop must see the cropped shape.
+
+        Transforms deep-copy their input in ``forward``; before the fix this
+        reverted the crop, so the second transform operated on the original
+        full-resolution image.
+        """
+        path = tmp_path / "test.nii.gz"
+        self._make_nii(path, shape=(20, 20, 20))
+        cropped = tio.CropOrPad(target_shape=10)(tio.Subject(t1=tio.ScalarImage(path)))
+        assert not cropped.t1.is_loaded
+        padded = tio.Pad(padding=2)(cropped)
+        assert padded.t1.shape == (1, 14, 14, 14)
+
+    def test_deepcopy_nibabel_backed_lazy_image(self) -> None:
+        """Deep-copying a backend-only (nibabel) lazy image must work.
+
+        Such images have ``_backend`` set but no ``_path`` or ``_data``; the
+        copy used to fall through to an empty image and fail on ``shape``.
+        """
+        import copy
+
+        nii = nib.Nifti1Image(
+            np.random.rand(6, 6, 6).astype(np.float32),
+            np.eye(4),
+        )
+        image = tio.ScalarImage(nii)
+        assert not image.is_loaded
+
+        copied = copy.deepcopy(image)
+        assert copied.shape == (1, 6, 6, 6)
+        assert not copied.is_loaded
+        torch.testing.assert_close(copied.data, image.data)
+
 
 class TestLazyCropPadAffine:
     """Lazy crop/pad must keep image.affine and image.dataobj.affine consistent.
