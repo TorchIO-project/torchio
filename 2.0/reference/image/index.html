@@ -5831,27 +5831,27 @@ images for operations like normalization or augmentation.</p>
 
               <details class="mkdocstrings-source">
                 <summary>Source code in <code>src/torchio/data/image.py</code></summary>
-                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-1212">1212</a></span>
-<span class="normal"><a href="#__codelineno-0-1213">1213</a></span>
-<span class="normal"><a href="#__codelineno-0-1214">1214</a></span>
-<span class="normal"><a href="#__codelineno-0-1215">1215</a></span>
-<span class="normal"><a href="#__codelineno-0-1216">1216</a></span>
-<span class="normal"><a href="#__codelineno-0-1217">1217</a></span>
-<span class="normal"><a href="#__codelineno-0-1218">1218</a></span>
-<span class="normal"><a href="#__codelineno-0-1219">1219</a></span>
-<span class="normal"><a href="#__codelineno-0-1220">1220</a></span>
-<span class="normal"><a href="#__codelineno-0-1221">1221</a></span>
-<span class="normal"><a href="#__codelineno-0-1222">1222</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-1212" name="__codelineno-0-1212"></a><span class="k">class</span><span class="w"> </span><span class="nc">ScalarImage</span><span class="p">(</span><span class="n">Image</span><span class="p">):</span>
-<a id="__codelineno-0-1213" name="__codelineno-0-1213"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Image with scalar (intensity) data.</span>
-<a id="__codelineno-0-1214" name="__codelineno-0-1214"></a>
-<a id="__codelineno-0-1215" name="__codelineno-0-1215"></a><span class="sd">    Transforms use `isinstance(image, ScalarImage)` to identify intensity</span>
-<a id="__codelineno-0-1216" name="__codelineno-0-1216"></a><span class="sd">    images for operations like normalization or augmentation.</span>
-<a id="__codelineno-0-1217" name="__codelineno-0-1217"></a>
-<a id="__codelineno-0-1218" name="__codelineno-0-1218"></a><span class="sd">    Examples:</span>
-<a id="__codelineno-0-1219" name="__codelineno-0-1219"></a><span class="sd">        &gt;&gt;&gt; import torchio as tio</span>
-<a id="__codelineno-0-1220" name="__codelineno-0-1220"></a><span class="sd">        &gt;&gt;&gt; image = tio.ScalarImage(&quot;t1.nii.gz&quot;)</span>
-<a id="__codelineno-0-1221" name="__codelineno-0-1221"></a><span class="sd">        &gt;&gt;&gt; image = tio.ScalarImage(torch.randn(1, 256, 256, 176))</span>
-<a id="__codelineno-0-1222" name="__codelineno-0-1222"></a><span class="sd">    &quot;&quot;&quot;</span>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-1238">1238</a></span>
+<span class="normal"><a href="#__codelineno-0-1239">1239</a></span>
+<span class="normal"><a href="#__codelineno-0-1240">1240</a></span>
+<span class="normal"><a href="#__codelineno-0-1241">1241</a></span>
+<span class="normal"><a href="#__codelineno-0-1242">1242</a></span>
+<span class="normal"><a href="#__codelineno-0-1243">1243</a></span>
+<span class="normal"><a href="#__codelineno-0-1244">1244</a></span>
+<span class="normal"><a href="#__codelineno-0-1245">1245</a></span>
+<span class="normal"><a href="#__codelineno-0-1246">1246</a></span>
+<span class="normal"><a href="#__codelineno-0-1247">1247</a></span>
+<span class="normal"><a href="#__codelineno-0-1248">1248</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-1238" name="__codelineno-0-1238"></a><span class="k">class</span><span class="w"> </span><span class="nc">ScalarImage</span><span class="p">(</span><span class="n">Image</span><span class="p">):</span>
+<a id="__codelineno-0-1239" name="__codelineno-0-1239"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Image with scalar (intensity) data.</span>
+<a id="__codelineno-0-1240" name="__codelineno-0-1240"></a>
+<a id="__codelineno-0-1241" name="__codelineno-0-1241"></a><span class="sd">    Transforms use `isinstance(image, ScalarImage)` to identify intensity</span>
+<a id="__codelineno-0-1242" name="__codelineno-0-1242"></a><span class="sd">    images for operations like normalization or augmentation.</span>
+<a id="__codelineno-0-1243" name="__codelineno-0-1243"></a>
+<a id="__codelineno-0-1244" name="__codelineno-0-1244"></a><span class="sd">    Examples:</span>
+<a id="__codelineno-0-1245" name="__codelineno-0-1245"></a><span class="sd">        &gt;&gt;&gt; import torchio as tio</span>
+<a id="__codelineno-0-1246" name="__codelineno-0-1246"></a><span class="sd">        &gt;&gt;&gt; image = tio.ScalarImage(&quot;t1.nii.gz&quot;)</span>
+<a id="__codelineno-0-1247" name="__codelineno-0-1247"></a><span class="sd">        &gt;&gt;&gt; image = tio.ScalarImage(torch.randn(1, 256, 256, 176))</span>
+<a id="__codelineno-0-1248" name="__codelineno-0-1248"></a><span class="sd">    &quot;&quot;&quot;</span>
 </code></pre></div></td></tr></table></div>
               </details>
 
@@ -7938,27 +7938,27 @@ interpolation during spatial transforms.</p>
 
               <details class="mkdocstrings-source">
                 <summary>Source code in <code>src/torchio/data/image.py</code></summary>
-                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-1225">1225</a></span>
-<span class="normal"><a href="#__codelineno-0-1226">1226</a></span>
-<span class="normal"><a href="#__codelineno-0-1227">1227</a></span>
-<span class="normal"><a href="#__codelineno-0-1228">1228</a></span>
-<span class="normal"><a href="#__codelineno-0-1229">1229</a></span>
-<span class="normal"><a href="#__codelineno-0-1230">1230</a></span>
-<span class="normal"><a href="#__codelineno-0-1231">1231</a></span>
-<span class="normal"><a href="#__codelineno-0-1232">1232</a></span>
-<span class="normal"><a href="#__codelineno-0-1233">1233</a></span>
-<span class="normal"><a href="#__codelineno-0-1234">1234</a></span>
-<span class="normal"><a href="#__codelineno-0-1235">1235</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-1225" name="__codelineno-0-1225"></a><span class="k">class</span><span class="w"> </span><span class="nc">LabelMap</span><span class="p">(</span><span class="n">Image</span><span class="p">):</span>
-<a id="__codelineno-0-1226" name="__codelineno-0-1226"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Image with label (segmentation) data.</span>
-<a id="__codelineno-0-1227" name="__codelineno-0-1227"></a>
-<a id="__codelineno-0-1228" name="__codelineno-0-1228"></a><span class="sd">    Transforms use `isinstance(image, LabelMap)` to apply nearest-neighbor</span>
-<a id="__codelineno-0-1229" name="__codelineno-0-1229"></a><span class="sd">    interpolation during spatial transforms.</span>
-<a id="__codelineno-0-1230" name="__codelineno-0-1230"></a>
-<a id="__codelineno-0-1231" name="__codelineno-0-1231"></a><span class="sd">    Examples:</span>
-<a id="__codelineno-0-1232" name="__codelineno-0-1232"></a><span class="sd">        &gt;&gt;&gt; import torchio as tio</span>
-<a id="__codelineno-0-1233" name="__codelineno-0-1233"></a><span class="sd">        &gt;&gt;&gt; label = tio.LabelMap(&quot;seg.nii.gz&quot;)</span>
-<a id="__codelineno-0-1234" name="__codelineno-0-1234"></a><span class="sd">        &gt;&gt;&gt; label = tio.LabelMap(torch.randint(0, 5, (1, 256, 256, 176)))</span>
-<a id="__codelineno-0-1235" name="__codelineno-0-1235"></a><span class="sd">    &quot;&quot;&quot;</span>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-1251">1251</a></span>
+<span class="normal"><a href="#__codelineno-0-1252">1252</a></span>
+<span class="normal"><a href="#__codelineno-0-1253">1253</a></span>
+<span class="normal"><a href="#__codelineno-0-1254">1254</a></span>
+<span class="normal"><a href="#__codelineno-0-1255">1255</a></span>
+<span class="normal"><a href="#__codelineno-0-1256">1256</a></span>
+<span class="normal"><a href="#__codelineno-0-1257">1257</a></span>
+<span class="normal"><a href="#__codelineno-0-1258">1258</a></span>
+<span class="normal"><a href="#__codelineno-0-1259">1259</a></span>
+<span class="normal"><a href="#__codelineno-0-1260">1260</a></span>
+<span class="normal"><a href="#__codelineno-0-1261">1261</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-1251" name="__codelineno-0-1251"></a><span class="k">class</span><span class="w"> </span><span class="nc">LabelMap</span><span class="p">(</span><span class="n">Image</span><span class="p">):</span>
+<a id="__codelineno-0-1252" name="__codelineno-0-1252"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Image with label (segmentation) data.</span>
+<a id="__codelineno-0-1253" name="__codelineno-0-1253"></a>
+<a id="__codelineno-0-1254" name="__codelineno-0-1254"></a><span class="sd">    Transforms use `isinstance(image, LabelMap)` to apply nearest-neighbor</span>
+<a id="__codelineno-0-1255" name="__codelineno-0-1255"></a><span class="sd">    interpolation during spatial transforms.</span>
+<a id="__codelineno-0-1256" name="__codelineno-0-1256"></a>
+<a id="__codelineno-0-1257" name="__codelineno-0-1257"></a><span class="sd">    Examples:</span>
+<a id="__codelineno-0-1258" name="__codelineno-0-1258"></a><span class="sd">        &gt;&gt;&gt; import torchio as tio</span>
+<a id="__codelineno-0-1259" name="__codelineno-0-1259"></a><span class="sd">        &gt;&gt;&gt; label = tio.LabelMap(&quot;seg.nii.gz&quot;)</span>
+<a id="__codelineno-0-1260" name="__codelineno-0-1260"></a><span class="sd">        &gt;&gt;&gt; label = tio.LabelMap(torch.randint(0, 5, (1, 256, 256, 176)))</span>
+<a id="__codelineno-0-1261" name="__codelineno-0-1261"></a><span class="sd">    &quot;&quot;&quot;</span>
 </code></pre></div></td></tr></table></div>
               </details>
 
@@ -11368,7 +11368,33 @@ dict-style lookup (e.g., <code>protocol="MPRAGE"</code>).</p>
 <span class="normal"><a href="#__codelineno-0-1206">1206</a></span>
 <span class="normal"><a href="#__codelineno-0-1207">1207</a></span>
 <span class="normal"><a href="#__codelineno-0-1208">1208</a></span>
-<span class="normal"><a href="#__codelineno-0-1209">1209</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-104" name="__codelineno-0-104"></a><span class="k">class</span><span class="w"> </span><span class="nc">Image</span><span class="p">(</span><span class="n">Invertible</span><span class="p">):</span>
+<span class="normal"><a href="#__codelineno-0-1209">1209</a></span>
+<span class="normal"><a href="#__codelineno-0-1210">1210</a></span>
+<span class="normal"><a href="#__codelineno-0-1211">1211</a></span>
+<span class="normal"><a href="#__codelineno-0-1212">1212</a></span>
+<span class="normal"><a href="#__codelineno-0-1213">1213</a></span>
+<span class="normal"><a href="#__codelineno-0-1214">1214</a></span>
+<span class="normal"><a href="#__codelineno-0-1215">1215</a></span>
+<span class="normal"><a href="#__codelineno-0-1216">1216</a></span>
+<span class="normal"><a href="#__codelineno-0-1217">1217</a></span>
+<span class="normal"><a href="#__codelineno-0-1218">1218</a></span>
+<span class="normal"><a href="#__codelineno-0-1219">1219</a></span>
+<span class="normal"><a href="#__codelineno-0-1220">1220</a></span>
+<span class="normal"><a href="#__codelineno-0-1221">1221</a></span>
+<span class="normal"><a href="#__codelineno-0-1222">1222</a></span>
+<span class="normal"><a href="#__codelineno-0-1223">1223</a></span>
+<span class="normal"><a href="#__codelineno-0-1224">1224</a></span>
+<span class="normal"><a href="#__codelineno-0-1225">1225</a></span>
+<span class="normal"><a href="#__codelineno-0-1226">1226</a></span>
+<span class="normal"><a href="#__codelineno-0-1227">1227</a></span>
+<span class="normal"><a href="#__codelineno-0-1228">1228</a></span>
+<span class="normal"><a href="#__codelineno-0-1229">1229</a></span>
+<span class="normal"><a href="#__codelineno-0-1230">1230</a></span>
+<span class="normal"><a href="#__codelineno-0-1231">1231</a></span>
+<span class="normal"><a href="#__codelineno-0-1232">1232</a></span>
+<span class="normal"><a href="#__codelineno-0-1233">1233</a></span>
+<span class="normal"><a href="#__codelineno-0-1234">1234</a></span>
+<span class="normal"><a href="#__codelineno-0-1235">1235</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-104" name="__codelineno-0-104"></a><span class="k">class</span><span class="w"> </span><span class="nc">Image</span><span class="p">(</span><span class="n">Invertible</span><span class="p">):</span>
 <a id="__codelineno-0-105" name="__codelineno-0-105"></a><span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Base image class.</span>
 <a id="__codelineno-0-106" name="__codelineno-0-106"></a>
 <a id="__codelineno-0-107" name="__codelineno-0-107"></a><span class="sd">    TorchIO images are</span>
@@ -12417,63 +12443,89 @@ dict-style lookup (e.g., <code>protocol="MPRAGE"</code>).</p>
 <a id="__codelineno-0-1150" name="__codelineno-0-1150"></a>        <span class="n">affine_copy</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_affine</span><span class="p">)</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_affine</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
 <a id="__codelineno-0-1151" name="__codelineno-0-1151"></a>        <span class="n">meta_copy</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_metadata</span><span class="p">)</span>
 <a id="__codelineno-0-1152" name="__codelineno-0-1152"></a>        <span class="n">points_copy</span><span class="p">,</span> <span class="n">bboxes_copy</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_deep_copy_annotations</span><span class="p">()</span>
-<a id="__codelineno-0-1153" name="__codelineno-0-1153"></a>
-<a id="__codelineno-0-1154" name="__codelineno-0-1154"></a>        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_remote_zarr_uri</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-1155" name="__codelineno-0-1155"></a>            <span class="n">new</span> <span class="o">=</span> <span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)(</span>
-<a id="__codelineno-0-1156" name="__codelineno-0-1156"></a>                <span class="bp">self</span><span class="o">.</span><span class="n">_remote_zarr_uri</span><span class="p">,</span>
-<a id="__codelineno-0-1157" name="__codelineno-0-1157"></a>                <span class="n">reader</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_reader</span><span class="p">,</span>
-<a id="__codelineno-0-1158" name="__codelineno-0-1158"></a>                <span class="n">reader_kwargs</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_reader_kwargs</span><span class="p">),</span>
-<a id="__codelineno-0-1159" name="__codelineno-0-1159"></a>                <span class="n">affine</span><span class="o">=</span><span class="n">affine_copy</span><span class="p">,</span>
-<a id="__codelineno-0-1160" name="__codelineno-0-1160"></a>                <span class="n">points</span><span class="o">=</span><span class="n">points_copy</span><span class="p">,</span>
-<a id="__codelineno-0-1161" name="__codelineno-0-1161"></a>                <span class="n">bounding_boxes</span><span class="o">=</span><span class="n">bboxes_copy</span><span class="p">,</span>
-<a id="__codelineno-0-1162" name="__codelineno-0-1162"></a>                <span class="o">**</span><span class="n">meta_copy</span><span class="p">,</span>
-<a id="__codelineno-0-1163" name="__codelineno-0-1163"></a>            <span class="p">)</span>
-<a id="__codelineno-0-1164" name="__codelineno-0-1164"></a>            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-1165" name="__codelineno-0-1165"></a>                <span class="n">new</span><span class="o">.</span><span class="n">_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="o">.</span><span class="n">clone</span><span class="p">()</span>
-<a id="__codelineno-0-1166" name="__codelineno-0-1166"></a>                <span class="n">new</span><span class="o">.</span><span class="n">_affine</span> <span class="o">=</span> <span class="n">affine_copy</span>
+<a id="__codelineno-0-1153" name="__codelineno-0-1153"></a>        <span class="n">common_kwargs</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+<a id="__codelineno-0-1154" name="__codelineno-0-1154"></a>            <span class="s2">&quot;affine&quot;</span><span class="p">:</span> <span class="n">affine_copy</span><span class="p">,</span>
+<a id="__codelineno-0-1155" name="__codelineno-0-1155"></a>            <span class="s2">&quot;points&quot;</span><span class="p">:</span> <span class="n">points_copy</span><span class="p">,</span>
+<a id="__codelineno-0-1156" name="__codelineno-0-1156"></a>            <span class="s2">&quot;bounding_boxes&quot;</span><span class="p">:</span> <span class="n">bboxes_copy</span><span class="p">,</span>
+<a id="__codelineno-0-1157" name="__codelineno-0-1157"></a>            <span class="o">**</span><span class="n">meta_copy</span><span class="p">,</span>
+<a id="__codelineno-0-1158" name="__codelineno-0-1158"></a>        <span class="p">}</span>
+<a id="__codelineno-0-1159" name="__codelineno-0-1159"></a>
+<a id="__codelineno-0-1160" name="__codelineno-0-1160"></a>        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_remote_zarr_uri</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-1161" name="__codelineno-0-1161"></a>            <span class="n">new</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_deepcopy_from_source</span><span class="p">(</span>
+<a id="__codelineno-0-1162" name="__codelineno-0-1162"></a>                <span class="bp">self</span><span class="o">.</span><span class="n">_remote_zarr_uri</span><span class="p">,</span>
+<a id="__codelineno-0-1163" name="__codelineno-0-1163"></a>                <span class="n">affine_copy</span><span class="p">,</span>
+<a id="__codelineno-0-1164" name="__codelineno-0-1164"></a>                <span class="n">common_kwargs</span><span class="p">,</span>
+<a id="__codelineno-0-1165" name="__codelineno-0-1165"></a>                <span class="n">with_reader</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<a id="__codelineno-0-1166" name="__codelineno-0-1166"></a>            <span class="p">)</span>
 <a id="__codelineno-0-1167" name="__codelineno-0-1167"></a>        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">_path</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-1168" name="__codelineno-0-1168"></a>            <span class="n">new</span> <span class="o">=</span> <span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)(</span>
+<a id="__codelineno-0-1168" name="__codelineno-0-1168"></a>            <span class="n">new</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_deepcopy_from_source</span><span class="p">(</span>
 <a id="__codelineno-0-1169" name="__codelineno-0-1169"></a>                <span class="bp">self</span><span class="o">.</span><span class="n">_path</span><span class="p">,</span>
-<a id="__codelineno-0-1170" name="__codelineno-0-1170"></a>                <span class="n">reader</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_reader</span><span class="p">,</span>
-<a id="__codelineno-0-1171" name="__codelineno-0-1171"></a>                <span class="n">reader_kwargs</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_reader_kwargs</span><span class="p">),</span>
-<a id="__codelineno-0-1172" name="__codelineno-0-1172"></a>                <span class="n">affine</span><span class="o">=</span><span class="n">affine_copy</span><span class="p">,</span>
-<a id="__codelineno-0-1173" name="__codelineno-0-1173"></a>                <span class="n">points</span><span class="o">=</span><span class="n">points_copy</span><span class="p">,</span>
-<a id="__codelineno-0-1174" name="__codelineno-0-1174"></a>                <span class="n">bounding_boxes</span><span class="o">=</span><span class="n">bboxes_copy</span><span class="p">,</span>
-<a id="__codelineno-0-1175" name="__codelineno-0-1175"></a>                <span class="o">**</span><span class="n">meta_copy</span><span class="p">,</span>
-<a id="__codelineno-0-1176" name="__codelineno-0-1176"></a>            <span class="p">)</span>
-<a id="__codelineno-0-1177" name="__codelineno-0-1177"></a>            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-1178" name="__codelineno-0-1178"></a>                <span class="n">new</span><span class="o">.</span><span class="n">_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="o">.</span><span class="n">clone</span><span class="p">()</span>
-<a id="__codelineno-0-1179" name="__codelineno-0-1179"></a>                <span class="n">new</span><span class="o">.</span><span class="n">_affine</span> <span class="o">=</span> <span class="n">affine_copy</span>
-<a id="__codelineno-0-1180" name="__codelineno-0-1180"></a>            <span class="c1"># Backend will be lazily recreated from path when needed</span>
-<a id="__codelineno-0-1181" name="__codelineno-0-1181"></a>        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">_zarr_store</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-1182" name="__codelineno-0-1182"></a>            <span class="n">new</span> <span class="o">=</span> <span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)(</span>
-<a id="__codelineno-0-1183" name="__codelineno-0-1183"></a>                <span class="bp">self</span><span class="o">.</span><span class="n">_zarr_store</span><span class="p">,</span>
-<a id="__codelineno-0-1184" name="__codelineno-0-1184"></a>                <span class="n">reader_kwargs</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_reader_kwargs</span><span class="p">),</span>
-<a id="__codelineno-0-1185" name="__codelineno-0-1185"></a>                <span class="n">affine</span><span class="o">=</span><span class="n">affine_copy</span><span class="p">,</span>
-<a id="__codelineno-0-1186" name="__codelineno-0-1186"></a>                <span class="n">points</span><span class="o">=</span><span class="n">points_copy</span><span class="p">,</span>
-<a id="__codelineno-0-1187" name="__codelineno-0-1187"></a>                <span class="n">bounding_boxes</span><span class="o">=</span><span class="n">bboxes_copy</span><span class="p">,</span>
-<a id="__codelineno-0-1188" name="__codelineno-0-1188"></a>                <span class="o">**</span><span class="n">meta_copy</span><span class="p">,</span>
-<a id="__codelineno-0-1189" name="__codelineno-0-1189"></a>            <span class="p">)</span>
-<a id="__codelineno-0-1190" name="__codelineno-0-1190"></a>            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-1191" name="__codelineno-0-1191"></a>                <span class="n">new</span><span class="o">.</span><span class="n">_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="o">.</span><span class="n">clone</span><span class="p">()</span>
-<a id="__codelineno-0-1192" name="__codelineno-0-1192"></a>                <span class="n">new</span><span class="o">.</span><span class="n">_affine</span> <span class="o">=</span> <span class="n">affine_copy</span>
-<a id="__codelineno-0-1193" name="__codelineno-0-1193"></a>        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-1194" name="__codelineno-0-1194"></a>            <span class="n">new</span> <span class="o">=</span> <span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)(</span>
-<a id="__codelineno-0-1195" name="__codelineno-0-1195"></a>                <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="o">.</span><span class="n">clone</span><span class="p">(),</span>
-<a id="__codelineno-0-1196" name="__codelineno-0-1196"></a>                <span class="n">affine</span><span class="o">=</span><span class="n">affine_copy</span><span class="p">,</span>
-<a id="__codelineno-0-1197" name="__codelineno-0-1197"></a>                <span class="n">points</span><span class="o">=</span><span class="n">points_copy</span><span class="p">,</span>
-<a id="__codelineno-0-1198" name="__codelineno-0-1198"></a>                <span class="n">bounding_boxes</span><span class="o">=</span><span class="n">bboxes_copy</span><span class="p">,</span>
-<a id="__codelineno-0-1199" name="__codelineno-0-1199"></a>                <span class="o">**</span><span class="n">meta_copy</span><span class="p">,</span>
-<a id="__codelineno-0-1200" name="__codelineno-0-1200"></a>            <span class="p">)</span>
-<a id="__codelineno-0-1201" name="__codelineno-0-1201"></a>        <span class="k">else</span><span class="p">:</span>
-<a id="__codelineno-0-1202" name="__codelineno-0-1202"></a>            <span class="n">new</span> <span class="o">=</span> <span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)(</span>
-<a id="__codelineno-0-1203" name="__codelineno-0-1203"></a>                <span class="n">affine</span><span class="o">=</span><span class="n">affine_copy</span><span class="p">,</span>
-<a id="__codelineno-0-1204" name="__codelineno-0-1204"></a>                <span class="n">points</span><span class="o">=</span><span class="n">points_copy</span><span class="p">,</span>
-<a id="__codelineno-0-1205" name="__codelineno-0-1205"></a>                <span class="n">bounding_boxes</span><span class="o">=</span><span class="n">bboxes_copy</span><span class="p">,</span>
-<a id="__codelineno-0-1206" name="__codelineno-0-1206"></a>                <span class="o">**</span><span class="n">meta_copy</span><span class="p">,</span>
-<a id="__codelineno-0-1207" name="__codelineno-0-1207"></a>            <span class="p">)</span>
-<a id="__codelineno-0-1208" name="__codelineno-0-1208"></a>        <span class="n">memo</span><span class="p">[</span><span class="nb">id</span><span class="p">(</span><span class="bp">self</span><span class="p">)]</span> <span class="o">=</span> <span class="n">new</span>
-<a id="__codelineno-0-1209" name="__codelineno-0-1209"></a>        <span class="k">return</span> <span class="n">new</span>
+<a id="__codelineno-0-1170" name="__codelineno-0-1170"></a>                <span class="n">affine_copy</span><span class="p">,</span>
+<a id="__codelineno-0-1171" name="__codelineno-0-1171"></a>                <span class="n">common_kwargs</span><span class="p">,</span>
+<a id="__codelineno-0-1172" name="__codelineno-0-1172"></a>                <span class="n">with_reader</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<a id="__codelineno-0-1173" name="__codelineno-0-1173"></a>            <span class="p">)</span>
+<a id="__codelineno-0-1174" name="__codelineno-0-1174"></a>        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">_zarr_store</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-1175" name="__codelineno-0-1175"></a>            <span class="n">new</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_deepcopy_from_source</span><span class="p">(</span>
+<a id="__codelineno-0-1176" name="__codelineno-0-1176"></a>                <span class="bp">self</span><span class="o">.</span><span class="n">_zarr_store</span><span class="p">,</span>
+<a id="__codelineno-0-1177" name="__codelineno-0-1177"></a>                <span class="n">affine_copy</span><span class="p">,</span>
+<a id="__codelineno-0-1178" name="__codelineno-0-1178"></a>                <span class="n">common_kwargs</span><span class="p">,</span>
+<a id="__codelineno-0-1179" name="__codelineno-0-1179"></a>                <span class="n">with_reader</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+<a id="__codelineno-0-1180" name="__codelineno-0-1180"></a>            <span class="p">)</span>
+<a id="__codelineno-0-1181" name="__codelineno-0-1181"></a>        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-1182" name="__codelineno-0-1182"></a>            <span class="n">new</span> <span class="o">=</span> <span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)(</span><span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="o">.</span><span class="n">clone</span><span class="p">(),</span> <span class="o">**</span><span class="n">common_kwargs</span><span class="p">)</span>
+<a id="__codelineno-0-1183" name="__codelineno-0-1183"></a>        <span class="k">else</span><span class="p">:</span>
+<a id="__codelineno-0-1184" name="__codelineno-0-1184"></a>            <span class="n">new</span> <span class="o">=</span> <span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)(</span><span class="o">**</span><span class="n">common_kwargs</span><span class="p">)</span>
+<a id="__codelineno-0-1185" name="__codelineno-0-1185"></a>            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_backend</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-1186" name="__codelineno-0-1186"></a>                <span class="c1"># Backend-only lazy image (e.g. built from a nibabel image</span>
+<a id="__codelineno-0-1187" name="__codelineno-0-1187"></a>                <span class="c1"># with no path or materialized data). Preserve the backend so</span>
+<a id="__codelineno-0-1188" name="__codelineno-0-1188"></a>                <span class="c1"># the copy can still report its shape and load its data.</span>
+<a id="__codelineno-0-1189" name="__codelineno-0-1189"></a>                <span class="n">new</span><span class="o">.</span><span class="n">_backend</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_backend</span><span class="p">)</span>
+<a id="__codelineno-0-1190" name="__codelineno-0-1190"></a>        <span class="n">memo</span><span class="p">[</span><span class="nb">id</span><span class="p">(</span><span class="bp">self</span><span class="p">)]</span> <span class="o">=</span> <span class="n">new</span>
+<a id="__codelineno-0-1191" name="__codelineno-0-1191"></a>        <span class="k">return</span> <span class="n">new</span>
+<a id="__codelineno-0-1192" name="__codelineno-0-1192"></a>
+<a id="__codelineno-0-1193" name="__codelineno-0-1193"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">_deepcopy_from_source</span><span class="p">(</span>
+<a id="__codelineno-0-1194" name="__codelineno-0-1194"></a>        <span class="bp">self</span><span class="p">,</span>
+<a id="__codelineno-0-1195" name="__codelineno-0-1195"></a>        <span class="n">source</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+<a id="__codelineno-0-1196" name="__codelineno-0-1196"></a>        <span class="n">affine_copy</span><span class="p">:</span> <span class="n">AffineMatrix</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-1197" name="__codelineno-0-1197"></a>        <span class="n">common_kwargs</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
+<a id="__codelineno-0-1198" name="__codelineno-0-1198"></a>        <span class="o">*</span><span class="p">,</span>
+<a id="__codelineno-0-1199" name="__codelineno-0-1199"></a>        <span class="n">with_reader</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+<a id="__codelineno-0-1200" name="__codelineno-0-1200"></a>    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Self</span><span class="p">:</span>
+<a id="__codelineno-0-1201" name="__codelineno-0-1201"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Build a deep copy from a path/store source, re-attaching payload.</span>
+<a id="__codelineno-0-1202" name="__codelineno-0-1202"></a>
+<a id="__codelineno-0-1203" name="__codelineno-0-1203"></a><span class="sd">        Args:</span>
+<a id="__codelineno-0-1204" name="__codelineno-0-1204"></a><span class="sd">            source: The path, remote URI, or store to construct from.</span>
+<a id="__codelineno-0-1205" name="__codelineno-0-1205"></a><span class="sd">            affine_copy: Deep-copied affine to assign when materialized data</span>
+<a id="__codelineno-0-1206" name="__codelineno-0-1206"></a><span class="sd">                is carried over.</span>
+<a id="__codelineno-0-1207" name="__codelineno-0-1207"></a><span class="sd">            common_kwargs: Constructor keyword arguments shared by every</span>
+<a id="__codelineno-0-1208" name="__codelineno-0-1208"></a><span class="sd">                deep-copy branch (affine, annotations, metadata).</span>
+<a id="__codelineno-0-1209" name="__codelineno-0-1209"></a><span class="sd">            with_reader: Whether to forward the custom reader (paths and</span>
+<a id="__codelineno-0-1210" name="__codelineno-0-1210"></a><span class="sd">                remote URIs) or omit it (Zarr stores).</span>
+<a id="__codelineno-0-1211" name="__codelineno-0-1211"></a>
+<a id="__codelineno-0-1212" name="__codelineno-0-1212"></a><span class="sd">        Returns:</span>
+<a id="__codelineno-0-1213" name="__codelineno-0-1213"></a><span class="sd">            The reconstructed image. Materialized data is cloned when present;</span>
+<a id="__codelineno-0-1214" name="__codelineno-0-1214"></a><span class="sd">            otherwise a derived lazy backend (e.g. the cropped/padded view</span>
+<a id="__codelineno-0-1215" name="__codelineno-0-1215"></a><span class="sd">            installed by ``CropOrPad``) is shallow-copied so the crop/pad</span>
+<a id="__codelineno-0-1216" name="__codelineno-0-1216"></a><span class="sd">            survives instead of reverting to the full-resolution source. A</span>
+<a id="__codelineno-0-1217" name="__codelineno-0-1217"></a><span class="sd">            shallow copy is enough because the backend is a read-only access</span>
+<a id="__codelineno-0-1218" name="__codelineno-0-1218"></a><span class="sd">            adapter, avoiding deep copies of nibabel/zarr internals.</span>
+<a id="__codelineno-0-1219" name="__codelineno-0-1219"></a><span class="sd">        &quot;&quot;&quot;</span>
+<a id="__codelineno-0-1220" name="__codelineno-0-1220"></a>        <span class="n">reader_kwargs</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_reader_kwargs</span><span class="p">)</span>
+<a id="__codelineno-0-1221" name="__codelineno-0-1221"></a>        <span class="k">if</span> <span class="n">with_reader</span><span class="p">:</span>
+<a id="__codelineno-0-1222" name="__codelineno-0-1222"></a>            <span class="n">new</span> <span class="o">=</span> <span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)(</span>
+<a id="__codelineno-0-1223" name="__codelineno-0-1223"></a>                <span class="n">source</span><span class="p">,</span>
+<a id="__codelineno-0-1224" name="__codelineno-0-1224"></a>                <span class="n">reader</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_reader</span><span class="p">,</span>
+<a id="__codelineno-0-1225" name="__codelineno-0-1225"></a>                <span class="n">reader_kwargs</span><span class="o">=</span><span class="n">reader_kwargs</span><span class="p">,</span>
+<a id="__codelineno-0-1226" name="__codelineno-0-1226"></a>                <span class="o">**</span><span class="n">common_kwargs</span><span class="p">,</span>
+<a id="__codelineno-0-1227" name="__codelineno-0-1227"></a>            <span class="p">)</span>
+<a id="__codelineno-0-1228" name="__codelineno-0-1228"></a>        <span class="k">else</span><span class="p">:</span>
+<a id="__codelineno-0-1229" name="__codelineno-0-1229"></a>            <span class="n">new</span> <span class="o">=</span> <span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)(</span><span class="n">source</span><span class="p">,</span> <span class="n">reader_kwargs</span><span class="o">=</span><span class="n">reader_kwargs</span><span class="p">,</span> <span class="o">**</span><span class="n">common_kwargs</span><span class="p">)</span>
+<a id="__codelineno-0-1230" name="__codelineno-0-1230"></a>        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-1231" name="__codelineno-0-1231"></a>            <span class="n">new</span><span class="o">.</span><span class="n">_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="o">.</span><span class="n">clone</span><span class="p">()</span>
+<a id="__codelineno-0-1232" name="__codelineno-0-1232"></a>            <span class="n">new</span><span class="o">.</span><span class="n">_affine</span> <span class="o">=</span> <span class="n">affine_copy</span>
+<a id="__codelineno-0-1233" name="__codelineno-0-1233"></a>        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">_backend</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-1234" name="__codelineno-0-1234"></a>            <span class="n">new</span><span class="o">.</span><span class="n">_backend</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_backend</span><span class="p">)</span>
+<a id="__codelineno-0-1235" name="__codelineno-0-1235"></a>        <span class="k">return</span> <span class="n">new</span>
 </code></pre></div></td></tr></table></div>
               </details>
 
