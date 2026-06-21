@@ -103,7 +103,7 @@ TypeSpacingSpec: TypeAlias = (
 )
 TypeControlPoints: TypeAlias = Tensor | npt.ArrayLike
 TypeTargetSpace: TypeAlias = tuple[TypeThreeInts, AffineMatrix]
-TypeInterpolation: TypeAlias = Literal[
+TypeImageInterpolation: TypeAlias = Literal[
     "nearest",
     "linear",
     "quadratic",
@@ -113,8 +113,18 @@ TypeInterpolation: TypeAlias = Literal[
     "sixth",
     "seventh",
 ]
+#: Label maps additionally accept the partial-volume-aware `"label"` mode.
+TypeLabelInterpolation: TypeAlias = TypeImageInterpolation | Literal["label"]
+#: Broad alias accepting any interpolation mode, including `"label"`. Used by
+#: internal helpers that handle both image and label interpolation.
+TypeInterpolation: TypeAlias = TypeLabelInterpolation
 TypeCenter: TypeAlias = Literal["image", "origin"]
 TypePadValue: TypeAlias = Literal["minimum", "mean", "otsu"]
+
+#: Partial-volume label interpolation mode. Only valid for label maps: the map
+#: is one-hot encoded, each channel is resampled linearly, and the per-voxel
+#: argmax recovers the discrete labels (see `_resample_label_partial_volume`).
+LABEL_INTERPOLATION = "label"
 
 _SUPPORTED_INTERPOLATIONS = (
     "nearest",
@@ -125,6 +135,7 @@ _SUPPORTED_INTERPOLATIONS = (
     "fifth",
     "sixth",
     "seventh",
+    LABEL_INTERPOLATION,
 )
 _INTERPOLATION_TO_ORDER: dict[str, int] = {
     "nearest": 0,
@@ -218,13 +229,47 @@ class Spatial(SpatialTransform):
             before the elastic field.  If `False`, apply the elastic
             field first.  The difference is significant for large
             transforms.
-        image_interpolation: `"linear"` (default) or `"nearest"`.
-            Used for [`ScalarImage`][torchio.ScalarImage] instances.
-        label_interpolation: `"nearest"` (default) or `"linear"`.
-            Used for [`LabelMap`][torchio.LabelMap] instances.
+        image_interpolation: Interpolation for
+            [`ScalarImage`][torchio.ScalarImage] instances.  `"linear"`
+            (default) or `"nearest"` use a fast path; higher-order
+            B-spline modes `"quadratic"`, `"cubic"`, `"fourth"`,
+            `"fifth"`, `"sixth"`, and `"seventh"` are also supported, as
+            are the equivalent integer orders `0`-`7`.
+        label_interpolation: Interpolation for
+            [`LabelMap`][torchio.LabelMap] instances.  Accepts the same
+            values as *image_interpolation* (`"nearest"` is the default),
+            plus the special `"label"` mode.  The `"label"` mode performs
+            partial-volume-aware resampling: the label map is one-hot
+            encoded, each channel is resampled with linear interpolation,
+            and the per-voxel argmax recovers the discrete labels.
+            Compared with `"nearest"`, this reduces staircase artifacts
+            and yields more accurate label volumes, which is especially
+            useful when downsampling.  For single-channel label maps it
+            never invents intermediate label values that were absent from
+            the input (the only new value that can appear is
+            `default_pad_label`, used for out-of-bounds voxels).  A
+            multi-channel (already one-hot or probabilistic) label map is
+            instead resampled per channel, so its output can contain
+            fractional partial volumes.
+
+            The `"label"` mode is more memory- and compute-intensive
+            because it processes one channel per label, so memory scales
+            with the number of distinct labels.  For maps with many labels
+            (e.g. hundreds of brain structures) prefer processing patch by
+            patch with [`GridSampler`][torchio.GridSampler] and
+            [`PatchAggregator`][torchio.PatchAggregator] to bound memory.
+        one_hot_label_interpolation: Interpolation used for the one-hot
+            channels of the `"label"` mode.  Accepts the same values as
+            *image_interpolation* (`"nearest"`, `"linear"`, or the
+            higher-order B-spline modes / integer orders 0-7), but **not**
+            `"label"`.  Defaults to `"linear"`.  Higher-order modes give
+            smoother label boundaries, which is particularly useful when
+            upsampling.  Ignored unless `label_interpolation="label"`.
         antialias: If `True`, apply Gaussian smoothing before
-            downsampling intensity images.  Label maps are never
-            smoothed.  The standard deviations follow
+            downsampling intensity images.  Label maps are smoothed only
+            when `label_interpolation="label"` (the one-hot channels are
+            blurred before downsampling); otherwise they are left
+            untouched.  The standard deviations follow
             [Cardoso et al., MICCAI 2015](https://link.springer.com/chapter/10.1007/978-3-319-24571-3_81).
         default_pad_value: Fill rule for out-of-bounds intensity
             voxels.  `"minimum"` (default), `"mean"`, `"otsu"`,
@@ -273,8 +318,9 @@ class Spatial(SpatialTransform):
         max_displacement: TypeParameterValue = 0.0,
         locked_borders: int = 2,
         affine_first: bool = True,
-        image_interpolation: TypeInterpolation = "linear",
-        label_interpolation: TypeInterpolation = "nearest",
+        image_interpolation: TypeImageInterpolation | int = "linear",
+        label_interpolation: TypeLabelInterpolation | int = "nearest",
+        one_hot_label_interpolation: TypeImageInterpolation | int = "linear",
         antialias: bool = False,
         default_pad_value: TypePadValue | float = "minimum",
         default_pad_label: int | float = 0,
@@ -303,8 +349,18 @@ class Spatial(SpatialTransform):
             )
             raise ValueError(msg)
         self.affine_first = affine_first
-        self.image_interpolation = _parse_interpolation(image_interpolation)
+        parsed_image_interpolation = _parse_interpolation(image_interpolation)
+        if parsed_image_interpolation == LABEL_INTERPOLATION:
+            msg = (
+                f'image_interpolation cannot be "{LABEL_INTERPOLATION}"; that mode'
+                " is only valid for label_interpolation"
+            )
+            raise ValueError(msg)
+        self.image_interpolation = parsed_image_interpolation
         self.label_interpolation = _parse_interpolation(label_interpolation)
+        self.one_hot_label_interpolation = _parse_one_hot_label_interpolation(
+            one_hot_label_interpolation,
+        )
         self.antialias = antialias
         self.default_pad_value = _parse_default_pad_value(default_pad_value)
         if not isinstance(default_pad_label, Number):
@@ -402,6 +458,7 @@ class Spatial(SpatialTransform):
             "affine_first": self.affine_first,
             "image_interpolation": self.image_interpolation,
             "label_interpolation": self.label_interpolation,
+            "one_hot_label_interpolation": self.one_hot_label_interpolation,
             "antialias": self.antialias,
             "default_pad_value": self.default_pad_value,
             "default_pad_label": self.default_pad_label,
@@ -541,6 +598,10 @@ class Spatial(SpatialTransform):
             affine_first=params["affine_first"],
             image_interpolation=params["image_interpolation"],
             label_interpolation=params["label_interpolation"],
+            one_hot_label_interpolation=params.get(
+                "one_hot_label_interpolation",
+                "linear",
+            ),
             antialias=params.get("antialias", False),
             default_pad_value=params["default_pad_value"],
             default_pad_label=float(params["default_pad_label"]),
@@ -578,6 +639,10 @@ class Spatial(SpatialTransform):
             "affine_first": not params["affine_first"],
             "image_interpolation": params["image_interpolation"],
             "label_interpolation": params["label_interpolation"],
+            "one_hot_label_interpolation": params.get(
+                "one_hot_label_interpolation",
+                "linear",
+            ),
             "default_pad_value": params["default_pad_value"],
             "default_pad_label": float(params["default_pad_label"]),
             "copy": False,
@@ -626,8 +691,9 @@ class _SpatialInverse(SpatialTransform):
         affine_matrix: npt.ArrayLike | None,
         control_points: TypeControlPoints | None,
         affine_first: bool,
-        image_interpolation: TypeInterpolation,
-        label_interpolation: TypeInterpolation,
+        image_interpolation: TypeImageInterpolation,
+        label_interpolation: TypeLabelInterpolation,
+        one_hot_label_interpolation: TypeImageInterpolation = "linear",
         default_pad_value: TypePadValue | float,
         default_pad_label: float,
         per_sample: _PerSampleGrids | None = None,
@@ -647,8 +713,14 @@ class _SpatialInverse(SpatialTransform):
         )
         self.per_sample = per_sample
         self.affine_first = affine_first
-        self.image_interpolation = _parse_interpolation(image_interpolation)
+        self.image_interpolation = cast(
+            TypeImageInterpolation,
+            _parse_interpolation(image_interpolation),
+        )
         self.label_interpolation = _parse_interpolation(label_interpolation)
+        self.one_hot_label_interpolation = _parse_one_hot_label_interpolation(
+            one_hot_label_interpolation,
+        )
         self.default_pad_value = _parse_default_pad_value(default_pad_value)
         self.default_pad_label = float(default_pad_label)
 
@@ -675,6 +747,7 @@ class _SpatialInverse(SpatialTransform):
             affine_first=self.affine_first,
             image_interpolation=self.image_interpolation,
             label_interpolation=self.label_interpolation,
+            one_hot_label_interpolation=self.one_hot_label_interpolation,
             antialias=False,
             default_pad_value=self.default_pad_value,
             default_pad_label=self.default_pad_label,
@@ -694,6 +767,7 @@ class Resample(Spatial):
             Defaults to 1 mm isotropic.
         image_interpolation: See [`Spatial`][torchio.Spatial].
         label_interpolation: See [`Spatial`][torchio.Spatial].
+        one_hot_label_interpolation: See [`Spatial`][torchio.Spatial].
         antialias: See [`Spatial`][torchio.Spatial].
         **kwargs: See [`Transform`][torchio.Transform].
 
@@ -702,13 +776,20 @@ class Resample(Spatial):
         >>> transform = tio.Resample(2)               # 2 mm isotropic
         >>> transform = tio.Resample("t1")            # match "t1" space
         >>> transform = tio.Resample((1, 1, 3))       # anisotropic
+        >>> # Partial-volume-aware label resampling
+        >>> transform = tio.Resample(
+        ...     2,
+        ...     label_interpolation="label",
+        ...     antialias=True,
+        ... )
     """
 
     def __init__(
         self,
         target: TypeTarget = 1,
-        image_interpolation: TypeInterpolation = "linear",
-        label_interpolation: TypeInterpolation = "nearest",
+        image_interpolation: TypeImageInterpolation | int = "linear",
+        label_interpolation: TypeLabelInterpolation | int = "nearest",
+        one_hot_label_interpolation: TypeImageInterpolation | int = "linear",
         antialias: bool = False,
         **kwargs: Any,
     ) -> None:
@@ -716,6 +797,7 @@ class Resample(Spatial):
             target=target,
             image_interpolation=image_interpolation,
             label_interpolation=label_interpolation,
+            one_hot_label_interpolation=one_hot_label_interpolation,
             antialias=antialias,
             **kwargs,
         )
@@ -740,6 +822,7 @@ class Affine(Spatial):
         default_pad_label: See [`Spatial`][torchio.Spatial].
         image_interpolation: See [`Spatial`][torchio.Spatial].
         label_interpolation: See [`Spatial`][torchio.Spatial].
+        one_hot_label_interpolation: See [`Spatial`][torchio.Spatial].
         **kwargs: See [`Transform`][torchio.Transform].
 
     Examples:
@@ -758,8 +841,9 @@ class Affine(Spatial):
         center: TypeCenter = "image",
         default_pad_value: TypePadValue | float = "minimum",
         default_pad_label: int | float = 0,
-        image_interpolation: TypeInterpolation = "linear",
-        label_interpolation: TypeInterpolation = "nearest",
+        image_interpolation: TypeImageInterpolation | int = "linear",
+        label_interpolation: TypeLabelInterpolation | int = "nearest",
+        one_hot_label_interpolation: TypeImageInterpolation | int = "linear",
         **kwargs: Any,
     ) -> None:
         super().__init__(
@@ -772,6 +856,7 @@ class Affine(Spatial):
             default_pad_label=default_pad_label,
             image_interpolation=image_interpolation,
             label_interpolation=label_interpolation,
+            one_hot_label_interpolation=one_hot_label_interpolation,
             **kwargs,
         )
         self._warn_if_noop(
@@ -801,6 +886,7 @@ class ElasticDeformation(Spatial):
         locked_borders: See [`Spatial`][torchio.Spatial].
         image_interpolation: See [`Spatial`][torchio.Spatial].
         label_interpolation: See [`Spatial`][torchio.Spatial].
+        one_hot_label_interpolation: See [`Spatial`][torchio.Spatial].
         **kwargs: See [`Transform`][torchio.Transform].
 
     Examples:
@@ -819,8 +905,9 @@ class ElasticDeformation(Spatial):
         num_control_points: int | TypeThreeInts = 7,
         max_displacement: TypeParameterValue = 7.5,
         locked_borders: int = 2,
-        image_interpolation: TypeInterpolation = "linear",
-        label_interpolation: TypeInterpolation = "nearest",
+        image_interpolation: TypeImageInterpolation | int = "linear",
+        label_interpolation: TypeLabelInterpolation | int = "nearest",
+        one_hot_label_interpolation: TypeImageInterpolation | int = "linear",
         **kwargs: Any,
     ) -> None:
         super().__init__(
@@ -830,6 +917,7 @@ class ElasticDeformation(Spatial):
             locked_borders=locked_borders,
             image_interpolation=image_interpolation,
             label_interpolation=label_interpolation,
+            one_hot_label_interpolation=one_hot_label_interpolation,
             **kwargs,
         )
 
@@ -1028,8 +1116,9 @@ def _apply_spatial_to_batch(
     control_points: Tensor | None,
     max_displacement: tuple[float, float, float] | None,
     affine_first: bool,
-    image_interpolation: TypeInterpolation,
-    label_interpolation: TypeInterpolation,
+    image_interpolation: TypeImageInterpolation,
+    label_interpolation: TypeLabelInterpolation,
+    one_hot_label_interpolation: TypeImageInterpolation = "linear",
     antialias: bool,
     default_pad_value: TypePadValue | float,
     default_pad_label: float,
@@ -1094,6 +1183,7 @@ def _apply_spatial_to_batch(
             output_affine=output_affine,
             image_interpolation=image_interpolation,
             label_interpolation=label_interpolation,
+            one_hot_label_interpolation=one_hot_label_interpolation,
             antialias=antialias,
             default_pad_value=default_pad_value,
             default_pad_label=default_pad_label,
@@ -1109,8 +1199,9 @@ def _resample_image_batch(
     input_shape: TypeThreeInts,
     input_affine: AffineMatrix,
     output_affine: AffineMatrix,
-    image_interpolation: TypeInterpolation,
-    label_interpolation: TypeInterpolation,
+    image_interpolation: TypeImageInterpolation,
+    label_interpolation: TypeLabelInterpolation,
+    one_hot_label_interpolation: TypeImageInterpolation = "linear",
     antialias: bool,
     default_pad_value: TypePadValue | float,
     default_pad_label: float,
@@ -1127,6 +1218,8 @@ def _resample_image_batch(
         output_affine: Affine shared by every resampled element.
         image_interpolation: Interpolation mode for scalar images.
         label_interpolation: Interpolation mode for label maps.
+        one_hot_label_interpolation: Per-channel interpolation used by the
+            ``"label"`` partial-volume mode.
         antialias: Whether to blur scalar images before downsampling.
         default_pad_value: Fill value for out-of-bounds scalar samples.
         default_pad_label: Fill value for out-of-bounds label samples.
@@ -1140,25 +1233,30 @@ def _resample_image_batch(
         image_interpolation=image_interpolation,
         label_interpolation=label_interpolation,
     )
-    fill_value = _batch_fill_value(
-        img_batch,
-        default_pad_value=default_pad_value,
-        default_pad_label=default_pad_label,
-    )
-    data = img_batch.data
-    # Antialias: blur ScalarImages before downsampling.
-    if antialias and not is_label:
-        data = _antialias_batch(data, input_affine, output_affine)
-    if per_sample is None:
-        img_batch.data = _sample_batch(
-            data,
+    if is_label and interpolation == LABEL_INTERPOLATION:
+        img_batch.data = _resample_label_partial_volume(
+            img_batch.data,
             grid,
             input_shape=input_shape,
-            interpolation=interpolation,
-            fill_value=fill_value,
+            input_affine=input_affine,
+            output_affine=output_affine,
+            antialias=antialias,
+            one_hot_label_interpolation=one_hot_label_interpolation,
+            per_sample=per_sample is not None,
+            default_pad_label=float(default_pad_label),
         )
     else:
-        img_batch.data = _sample_batch_per_sample(
+        fill_value = _batch_fill_value(
+            img_batch,
+            default_pad_value=default_pad_value,
+            default_pad_label=default_pad_label,
+        )
+        data = img_batch.data
+        # Antialias: blur ScalarImages before downsampling.
+        if antialias and not is_label:
+            data = _antialias_batch(data, input_affine, output_affine)
+        sampler = _sample_batch if per_sample is None else _sample_batch_per_sample
+        img_batch.data = sampler(
             data,
             grid,
             input_shape=input_shape,
@@ -1172,6 +1270,123 @@ def _resample_image_batch(
         output_affine=output_affine,
         passthrough=passthrough,
     )
+
+
+def _resample_label_partial_volume(
+    data: Tensor,
+    grid: Tensor,
+    *,
+    input_shape: TypeThreeInts,
+    input_affine: AffineMatrix,
+    output_affine: AffineMatrix,
+    antialias: bool,
+    one_hot_label_interpolation: TypeImageInterpolation = "linear",
+    per_sample: bool = False,
+    default_pad_label: float,
+) -> Tensor:
+    r"""Resample a discrete label map in a partial-volume-aware way.
+
+    Nearest-neighbor resampling of a label map produces staircase artifacts
+    and can drop thin structures, especially when downsampling. This helper
+    instead:
+
+    1. one-hot encodes the label map using the unique label values present
+       (robust to non-contiguous labels such as $\{0, 2, 5\}$),
+    2. optionally Gaussian-smooths each channel before downsampling when
+       *antialias* is `True` (using the same `_antialias_sigmas` as the
+       intensity antialiasing path, from Cardoso et al., MICCAI 2015),
+    3. resamples every channel with *one_hot_label_interpolation*
+       (`"linear"` by default; higher-order B-spline modes give smoother
+       boundaries, which is useful when upsampling), and
+    4. takes the per-voxel argmax to recover the discrete labels.
+
+    This single-channel pipeline (`C == 1`) fills out-of-bounds voxels with
+    *default_pad_label*.
+
+    Multi-channel inputs (`C > 1`, an already one-hot or probabilistic map)
+    take a different path: their channels are resampled with
+    *one_hot_label_interpolation* **without** re-encoding or an argmax,
+    out-of-bounds voxels are filled with `0` (*default_pad_label* is **not**
+    applied), and the partial-volume result is returned as floating point so
+    the interpolated fractions are not truncated.
+
+    Args:
+        data: `(B, C, I, J, K)` label batch. When `C == 1` the full one-hot
+            pipeline is used. When `C > 1` the channels are resampled
+            without re-encoding (see above).
+        grid: `(I_out, J_out, K_out, 3)` sampling grid in input voxel
+            coordinates.
+        input_shape: Spatial shape of the input volume `(I, J, K)`.
+        input_affine: Affine of the input grid.
+        output_affine: Affine of the output grid.
+        antialias: Whether to Gaussian-smooth the one-hot channels before
+            downsampling.
+        one_hot_label_interpolation: Interpolation used to resample the
+            one-hot channels (`"nearest"`, `"linear"`, or a higher-order
+            B-spline mode). Defaults to `"linear"`.
+        per_sample: If `True`, *grid* carries a batch dimension
+            `(B, I_out, J_out, K_out, 3)` and each element is resampled with
+            its own coordinates (per-instance augmentation); otherwise a
+            single shared grid is used.
+        default_pad_label: Value assigned to out-of-bounds voxels. Only
+            applied for single-channel (`C == 1`) inputs; multi-channel
+            inputs use `0` for out-of-bounds.
+
+    Returns:
+        Resampled `(B, 1, I_out, J_out, K_out)` label batch with the input
+        dtype when `C == 1`. When `C > 1`, a `(B, C, ...)` partial-volume
+        batch is returned: the input dtype is preserved for floating-point
+        inputs, otherwise the output is `float32` to avoid truncating the
+        interpolated values.
+    """
+    sampler = _sample_batch_per_sample if per_sample else _sample_batch
+    if data.shape[1] > 1:
+        smoothed = data.float()
+        if antialias:
+            smoothed = _antialias_batch(smoothed, input_affine, output_affine)
+        sampled = sampler(
+            smoothed,
+            grid,
+            input_shape=input_shape,
+            interpolation=one_hot_label_interpolation,
+            fill_value=0.0,
+        )
+        if data.dtype.is_floating_point:
+            return sampled.to(data.dtype)
+        return sampled
+
+    labels = torch.unique(data)
+    values = rearrange(data[:, 0], "b i j k -> b 1 i j k")
+    targets = rearrange(labels, "n -> 1 n 1 1 1")
+    one_hot = (values == targets).float()
+
+    if antialias:
+        one_hot = _antialias_batch(one_hot, input_affine, output_affine)
+
+    sampled = sampler(
+        one_hot,
+        grid,
+        input_shape=input_shape,
+        interpolation=one_hot_label_interpolation,
+        fill_value=0.0,
+    )
+
+    winners = sampled.argmax(dim=1)
+    resampled = labels[winners]
+    # In-bounds voxels keep partition of unity (channels sum to ~1). Near the
+    # border, the channel sum equals the in-bounds fraction of the sampling
+    # neighborhood. A voxel sampled mostly (>50%) from outside the input is
+    # treated as out-of-bounds and set to default_pad_label, matching the
+    # `mask > 0.5` fill convention used for intensity images in
+    # `_sample_batch_grid_sample`.
+    in_bounds = sampled.sum(dim=1) > 0.5
+    resampled = torch.where(
+        in_bounds,
+        resampled,
+        torch.full_like(resampled, default_pad_label),
+    )
+    out = rearrange(resampled, "b i j k -> b 1 i j k")
+    return out.to(data.dtype)
 
 
 def _resolve_target_space(
@@ -2200,8 +2415,8 @@ def _get_spatial_shape(img_batch: ImagesBatch) -> TypeThreeInts:
 def _interpolation_for_batch(
     img_batch: ImagesBatch,
     *,
-    image_interpolation: TypeInterpolation,
-    label_interpolation: TypeInterpolation,
+    image_interpolation: TypeImageInterpolation,
+    label_interpolation: TypeLabelInterpolation,
 ) -> str:
     """Choose the interpolation mode based on the image class."""
     if issubclass(img_batch._image_class, LabelMap):
@@ -2395,6 +2610,34 @@ def _parse_interpolation(
         )
         raise ValueError(msg)
     return lowered
+
+
+def _parse_one_hot_label_interpolation(
+    interpolation: TypeImageInterpolation | int,
+) -> TypeImageInterpolation:
+    """Validate the per-channel interpolation used by the `"label"` mode.
+
+    Accepts the same modes as image interpolation (`"nearest"`, `"linear"`,
+    or B-spline orders `"quadratic"`-`"seventh"` / integer orders 0-7) but
+    rejects `"label"`, which would recurse.
+
+    Args:
+        interpolation: Interpolation mode (string or integer order).
+
+    Returns:
+        The validated interpolation mode as a lowercase string.
+
+    Raises:
+        ValueError: If `"label"` is passed.
+    """
+    parsed = _parse_interpolation(interpolation)
+    if parsed == LABEL_INTERPOLATION:
+        msg = (
+            f'one_hot_label_interpolation cannot be "{LABEL_INTERPOLATION}"; choose'
+            ' an interpolation for the one-hot channels (e.g. "linear")'
+        )
+        raise ValueError(msg)
+    return parsed
 
 
 def _parse_default_pad_value(value: TypePadValue | float) -> TypePadValue | float:
