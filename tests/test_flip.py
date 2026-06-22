@@ -198,17 +198,17 @@ class TestFlip:
         torch.testing.assert_close(restored.t1.data, tensor)
 
     def test_inverse_on_image_via_subject(self) -> None:
-        """Inverse works when copied history image names match."""
+        """Inverse works by copying history to a renamed prediction subject."""
         tensor = torch.rand(1, 4, 5, 6)
         subject = tio.Subject(t1=tio.ScalarImage(tensor.clone()))
         flipped = tio.Flip(axes=0)(subject)
-        # Create a new subject and copy history
+        # Create a prediction subject and copy history
         pred_subject = tio.Subject(
-            t1=tio.ScalarImage(flipped.t1.data.clone()),
+            pred=tio.ScalarImage(flipped.t1.data.clone()),
         )
         pred_subject.applied_transforms = flipped.applied_transforms
         restored = pred_subject.apply_inverse_transform()
-        torch.testing.assert_close(restored.t1.data, tensor)
+        torch.testing.assert_close(restored.pred.data, tensor)
 
     def test_inverse_skips_non_invertible(self) -> None:
         """Non-invertible transforms are skipped with a warning."""

@@ -33,12 +33,14 @@ class AppliedTransform:
     Attributes:
         name: Class name of the transform.
         params: Sampled parameters (JSON-serializable).
-        image_names: Names of images affected by the transform.
+        include: Original include scope of the applied transform.
+        exclude: Original exclude scope of the applied transform.
     """
 
     name: str
     params: dict[str, Any] = field(default_factory=dict)
-    image_names: list[str] | None = None
+    include: list[str] | None = None
+    exclude: list[str] | None = None
 
 
 #: Registry mapping transform class names to classes, for inverse lookup.
@@ -58,6 +60,10 @@ def _all_elements_gated_out(params: dict[str, Any]) -> bool:
     """
     keep = params.get("_keep")
     return keep is not None and not any(keep)
+
+
+def _copy_optional_list(value: list[str] | None) -> list[str] | None:
+    return None if value is None else list(value)
 
 
 class Transform(nn.Module):
@@ -221,7 +227,6 @@ class Transform(nn.Module):
         if not self._per_instance_p_active(batch) and torch.rand(1).item() >= self.p:
             return unwrap(batch)
         params = self.make_params(batch)
-        image_names = list(self._get_images(batch))
         batch = self.apply_transform(batch, params)
         # Record history on the batch, unless every element was gated out by
         # per-element probability: that is an exact no-op, and recording it
@@ -231,7 +236,8 @@ class Transform(nn.Module):
             trace = AppliedTransform(
                 name=type(self).__name__,
                 params=params,
-                image_names=image_names,
+                include=_copy_optional_list(self.include),
+                exclude=_copy_optional_list(self.exclude),
             )
             if not hasattr(batch, "applied_transforms"):
                 batch.applied_transforms = []

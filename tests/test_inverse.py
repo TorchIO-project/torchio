@@ -112,7 +112,7 @@ class TestApplyInverseTransform:
         restored = subject.apply_inverse_transform()
         torch.testing.assert_close(restored.t1.data, original)
 
-    def test_missing_trace_image_skips_inverse(self) -> None:
+    def test_missing_included_image_is_noop(self) -> None:
         a = torch.arange(8.0).reshape(1, 2, 2, 2)
         b = torch.arange(100.0, 108.0).reshape(1, 2, 2, 2)
         subject = tio.Subject(
