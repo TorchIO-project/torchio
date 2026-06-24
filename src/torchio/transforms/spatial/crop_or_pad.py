@@ -512,8 +512,8 @@ class CropOrPad(SpatialTransform):
     ) -> None:
         """Apply lazy pad/crop and record history."""
         images = _get_images(subject, self.include, self.exclude)
-        include = list(self.include) if self.include is not None else None
-        exclude = list(self.exclude) if self.exclude is not None else None
+        include = None if self.include is None else list(self.include)
+        exclude = None if self.exclude is None else list(self.exclude)
 
         if padding is not None:
             for name, image in images.items():
