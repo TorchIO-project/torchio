@@ -126,3 +126,18 @@ class TestCropPadInvertibility:
         assert transformed.t1.shape == (1, 22, 22, 22)
         restored = transformed.apply_inverse_transform()
         assert restored.t1.shape == (1, 20, 20, 20)
+
+    def test_crop_or_pad_inverse_respects_include_scope(self) -> None:
+        a = torch.ones(1, 4, 4, 4)
+        b = torch.ones(1, 4, 4, 4) * 2
+        subject = tio.Subject(
+            a=tio.ScalarImage(a.clone()),
+            b=tio.ScalarImage(b.clone()),
+        )
+
+        transformed = tio.CropOrPad(6, include=["a"])(subject)
+        restored = transformed.apply_inverse_transform()
+
+        assert restored.a.shape == (1, 4, 4, 4)
+        torch.testing.assert_close(restored.a.data, a)
+        torch.testing.assert_close(restored.b.data, b)

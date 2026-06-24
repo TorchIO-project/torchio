@@ -52,7 +52,10 @@ def get_inverse_transform(
                     stacklevel=2,
                 )
             continue
-        steps.append(instance.inverse(trace.params))
+        inverse = instance.inverse(trace.params)
+        inverse.include = trace.include
+        inverse.exclude = trace.exclude
+        steps.append(inverse)
     # copy=True (the default) so applying the inverse does not mutate the
     # caller's data in place, matching every other transform.
     return Compose(steps)

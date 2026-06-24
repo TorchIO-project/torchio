@@ -43,6 +43,34 @@ class TestGamma:
             atol=1e-4,
         )
 
+    def test_inverse_respects_include_scope(self) -> None:
+        a = torch.arange(8.0).reshape(1, 2, 2, 2)
+        b = torch.arange(100.0, 108.0).reshape(1, 2, 2, 2)
+        subject = tio.Subject(
+            a=tio.ScalarImage(a.clone()),
+            b=tio.ScalarImage(b.clone()),
+        )
+
+        transformed = tio.Gamma(log_gamma=0.5, include=["a"])(subject)
+        restored = transformed.apply_inverse_transform()
+
+        torch.testing.assert_close(restored.a.data, a)
+        torch.testing.assert_close(restored.b.data, b)
+
+    def test_inverse_respects_exclude_scope(self) -> None:
+        a = torch.arange(8.0).reshape(1, 2, 2, 2)
+        b = torch.arange(100.0, 108.0).reshape(1, 2, 2, 2)
+        subject = tio.Subject(
+            a=tio.ScalarImage(a.clone()),
+            b=tio.ScalarImage(b.clone()),
+        )
+
+        transformed = tio.Gamma(log_gamma=0.5, exclude=["b"])(subject)
+        restored = transformed.apply_inverse_transform()
+
+        torch.testing.assert_close(restored.a.data, a)
+        torch.testing.assert_close(restored.b.data, b)
+
     def test_leaves_labels_unchanged(self) -> None:
         subject = _make_subject()
         original_seg = subject.seg.data.clone()
