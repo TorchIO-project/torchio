@@ -180,7 +180,7 @@ class _BiasFieldInverse(IntensityTransform):
             if per_element:
                 img_batch.data = _apply_bias_per_element(
                     img_batch.data,
-                    cast("list[float]", self._std),
+                    self._std,
                     cast("list[int]", self._seed),
                     self._scale,
                     divide=True,
