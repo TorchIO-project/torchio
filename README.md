@@ -411,6 +411,7 @@ Thanks goes to all these people ([emoji key](https://allcontributors.org/docs/en
     </tr>
     <tr>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/gaoflow"><img src="https://avatars.githubusercontent.com/u/3355843?v=4?s=100" width="100px;" alt="Vincent Gao"/><br /><sub><b>Vincent Gao</b></sub></a><br /><a href="https://github.com/TorchIO-project/torchio/issues?q=author%3Agaoflow" title="Bug reports">🐛</a> <a href="https://github.com/TorchIO-project/torchio/commits?author=gaoflow" title="Code">💻</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/Jessy-Ding"><img src="https://avatars.githubusercontent.com/u/89423283?v=4?s=100" width="100px;" alt="Mengyuan Ding"/><br /><sub><b>Mengyuan Ding</b></sub></a><br /><a href="https://github.com/TorchIO-project/torchio/issues?q=author%3AJessy-Ding" title="Bug reports">🐛</a></td>
     </tr>
   </tbody>
 </table>
