@@ -260,7 +260,7 @@ def main() -> None:
     if "--version" in sys.argv[1:]:
         print(f"torchio {tio.__version__}")
         raise SystemExit(0)
-    cmd = tyro.cli(Command)  # ty: ignore[no-matching-overload]
+    cmd = tyro.cli(Command)
     cmd.run()
 
 
