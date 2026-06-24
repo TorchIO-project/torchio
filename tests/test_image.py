@@ -133,6 +133,49 @@ class TestImageCreationFromTensor:
         assert image.is_loaded
 
 
+class TestBackwardCompatibleTensorKeyword:
+    """Tests for v1 backward compatibility: tensor= keyword argument."""
+
+    def test_tensor_keyword_loads_data(self):
+        tensor = torch.randn(1, 10, 10, 10)
+        with pytest.warns(DeprecationWarning, match="tensor="):
+            image = ScalarImage(tensor=tensor)
+        assert image.is_loaded
+        assert torch.equal(image.data, tensor)
+
+    def test_tensor_keyword_label_map(self):
+        tensor = torch.randint(0, 5, (1, 10, 10, 10))
+        with pytest.warns(DeprecationWarning, match="tensor="):
+            image = LabelMap(tensor=tensor)
+        assert image.is_loaded
+        assert torch.equal(image.data, tensor)
+
+    def test_tensor_keyword_numpy(self):
+        array = np.random.randn(1, 10, 10, 10).astype(np.float32)
+        with pytest.warns(DeprecationWarning, match="tensor="):
+            image = ScalarImage(tensor=array)
+        assert image.is_loaded
+
+    def test_tensor_keyword_with_affine(self):
+        tensor = torch.randn(1, 10, 10, 10)
+        affine = np.diag([2.0, 2.0, 2.0, 1.0])
+        with pytest.warns(DeprecationWarning, match="tensor="):
+            image = ScalarImage(tensor=tensor, affine=affine)
+        assert image.is_loaded
+        np.testing.assert_array_equal(image.affine, affine)
+
+    def test_tensor_keyword_in_subject_transform(self):
+        """Regression test for issue #1247."""
+        from torchio import Subject, Flip
+
+        with pytest.warns(DeprecationWarning, match="tensor="):
+            image = ScalarImage(tensor=torch.randn(1, 10, 10, 10))
+            mask = LabelMap(tensor=torch.randint(0, 2, (1, 10, 10, 10)))
+        subject = Subject(image=image, mask=mask)
+        result = Flip()(subject)
+        assert result["image"].data.shape == (1, 10, 10, 10)
+
+
 class TestImageProperties:
     @pytest.fixture
     def image(self) -> ScalarImage:
