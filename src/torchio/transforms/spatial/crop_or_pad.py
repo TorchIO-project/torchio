@@ -512,6 +512,8 @@ class CropOrPad(SpatialTransform):
     ) -> None:
         """Apply lazy pad/crop and record history."""
         images = _get_images(subject, self.include, self.exclude)
+        include = None if self.include is None else list(self.include)
+        exclude = None if self.exclude is None else list(self.exclude)
 
         if padding is not None:
             for name, image in images.items():
@@ -529,6 +531,8 @@ class CropOrPad(SpatialTransform):
                         "padding_mode": self.padding_mode,
                         "fill": self.fill,
                     },
+                    include=include,
+                    exclude=exclude,
                 ),
             )
 
@@ -537,13 +541,20 @@ class CropOrPad(SpatialTransform):
             for name, image in images.items():
                 subject._images[name] = _crop_image_lazy(image, cropping)
             subject.applied_transforms.append(
-                AppliedTransform(name="Crop", params={"cropping": cropping}),
+                AppliedTransform(
+                    name="Crop",
+                    params={"cropping": cropping},
+                    include=include,
+                    exclude=exclude,
+                ),
             )
 
         subject.applied_transforms.append(
             AppliedTransform(
                 name="CropOrPad",
                 params={"padding": padding, "cropping": cropping},
+                include=include,
+                exclude=exclude,
             ),
         )
 

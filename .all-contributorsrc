@@ -919,6 +919,24 @@
       "contributions": [
         "bug"
       ]
+    },
+    {
+      "login": "gaoflow",
+      "name": "Vincent Gao",
+      "avatar_url": "https://avatars.githubusercontent.com/u/3355843?v=4",
+      "profile": "https://github.com/gaoflow",
+      "contributions": [
+        "bug",
+        "code"
+    },
+    {
+      "login": "Jessy-Ding",
+      "name": "Mengyuan Ding",
+      "avatar_url": "https://avatars.githubusercontent.com/u/89423283?v=4",
+      "profile": "https://github.com/Jessy-Ding",
+      "contributions": [
+        "bug"
+      ]
     }
   ],
   "contributorsPerLine": 7,

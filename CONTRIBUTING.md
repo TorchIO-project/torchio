@@ -174,7 +174,8 @@ git commit -m "Fix nasty bug"
 git push origin 55-name-of-your-bugfix-or-feature
 ```
 
-Write clear commit messages. These posts have useful guidance:
+Write clear commit messages.
+These posts have useful guidance:
 
 - [How to Write a Git Commit Message](https://chris.beams.io/posts/git-commit/)
 - [Write Joyous Git Commit Messages](https://medium.com/@joshuatauberer/write-joyous-git-commit-messages-2f98891114c4)

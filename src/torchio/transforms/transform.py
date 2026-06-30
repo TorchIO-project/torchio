@@ -33,10 +33,14 @@ class AppliedTransform:
     Attributes:
         name: Class name of the transform.
         params: Sampled parameters (JSON-serializable).
+        include: Original include scope of the applied transform.
+        exclude: Original exclude scope of the applied transform.
     """
 
     name: str
     params: dict[str, Any] = field(default_factory=dict)
+    include: list[str] | None = None
+    exclude: list[str] | None = None
 
 
 #: Registry mapping transform class names to classes, for inverse lookup.
@@ -56,6 +60,10 @@ def _all_elements_gated_out(params: dict[str, Any]) -> bool:
     """
     keep = params.get("_keep")
     return keep is not None and not any(keep)
+
+
+def _copy_optional_list(value: list[str] | None) -> list[str] | None:
+    return None if value is None else list(value)
 
 
 class Transform(nn.Module):
@@ -225,7 +233,12 @@ class Transform(nn.Module):
         # would let history replay (e.g. an invertible spatial transform)
         # trigger an unnecessary identity resample.
         if not _all_elements_gated_out(params):
-            trace = AppliedTransform(name=type(self).__name__, params=params)
+            trace = AppliedTransform(
+                name=type(self).__name__,
+                params=params,
+                include=_copy_optional_list(self.include),
+                exclude=_copy_optional_list(self.exclude),
+            )
             if not hasattr(batch, "applied_transforms"):
                 batch.applied_transforms = []
             batch.applied_transforms.append(trace)

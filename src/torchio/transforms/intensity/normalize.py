@@ -325,7 +325,7 @@ def _out_min_and_range(
         min_b = rearrange(min_t, "b -> b 1 1 1 1")
         max_b = rearrange(max_t, "b -> b 1 1 1 1")
         return min_b, max_b - min_b
-    low = cast("float", out_min)
+    low = out_min
     high = cast("float", out_max)
     return low, high - low
 
