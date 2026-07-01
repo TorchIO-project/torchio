@@ -46,9 +46,9 @@ dependencies = [
     "rich",
     "simpleitk",
     "torch",
-    "torch-interpol>=0.2.6",
-    "typing_extensions>=4.0",
-    "tyro>=1.0.12",
+    "torch-interpol>=0.3.0",
+    "typing_extensions>=4.15.0",
+    "tyro>=1.0.15",
 ]
 
 [project.urls]
@@ -78,7 +78,7 @@ zarr = ["nifti-zarr", "zarr<3.2"]
 
 
 [build-system]
-requires = ["uv_build>=0.11.1,<0.12.0"]
+requires = ["uv_build>=0.11.26,<0.12.0"]
 build-backend = "uv_build"
 
 [tool.pytest.ini_options]
@@ -165,7 +165,7 @@ replace = 'version = "{new_version}"'
 [dependency-groups]
 dev = [
     "bump-my-version",
-    "ipykernel>=7.2.0",
+    "ipykernel>=7.3.0",
     "ipywidgets>=8.1.8",
     "tox-uv",
 ]
@@ -182,8 +182,8 @@ test = [
     # using the `py.path.local` `path` argument removed in pytest 9, so the
     # plugin fails to register and breaks the whole test suite, not just the
     # docs snippets. See https://github.com/nschloe/pytest-codeblocks.
-    "pytest<9",
-    "pytest-codeblocks>=0.17.0",
+    "pytest<10",
+    "pytest-codeblocks>=0.18.0",
     "pytest-cov",
     "pytest-sugar",
 ]
