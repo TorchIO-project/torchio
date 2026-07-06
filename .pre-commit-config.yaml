@@ -15,7 +15,7 @@ repos:
       - id: trailing-whitespace        # Trims trailing whitespace
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.14.10
+    rev: v0.15.20
     hooks:
       - id: ruff
       - id: ruff-format
@@ -46,7 +46,7 @@ repos:
         types_or: [python, pyi]
 
   - repo: https://github.com/yunojuno/pre-commit-xenon
-    rev: cc59b0431a5d072786b59430e9b342b2881064f6
+    rev: v0.1
     hooks:
       - id: xenon
         args: ["--max-average=B", "--max-modules=B", "--max-absolute=B"]
