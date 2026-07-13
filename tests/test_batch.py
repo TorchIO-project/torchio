@@ -790,3 +790,15 @@ class TestMapSubjects:
 
         assert torch.count_nonzero(batch.t1.data) == 0
         assert torch.all(result.t1.data == 1)
+
+    def test_copy_false_allows_in_place_mutation(self) -> None:
+        batch = self._batch()
+
+        def add_in_place(subject: tio.Subject) -> tio.Subject:
+            subject.t1.data.add_(1)
+            return subject
+
+        result = batch.map_subjects(add_in_place, copy=False)
+
+        assert torch.all(batch.t1.data == 1)
+        assert torch.all(result.t1.data == 1)

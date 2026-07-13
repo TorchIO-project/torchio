@@ -179,3 +179,17 @@ class TestMonaiAdapterGeneral:
         result = tio.MonaiAdapter(NormalizeIntensity(), p=0)(subject)
 
         torch.testing.assert_close(result.t1.data, original)
+
+    def test_copy_false_allows_in_place_transform(self) -> None:
+        class AddInPlace:
+            def __call__(self, tensor):
+                return tensor.add_(1)
+
+        batch = tio.SubjectsBatch.from_subjects(
+            [tio.Subject(t1=tio.ScalarImage(torch.zeros(1, 4, 4, 4)))]
+        )
+
+        result = tio.MonaiAdapter(AddInPlace(), copy=False)(batch)
+
+        assert torch.all(batch.t1.data == 1)
+        assert torch.all(result.t1.data == 1)

@@ -485,16 +485,22 @@ class SubjectsBatch(Invertible):
     def map_subjects(
         self,
         callback: Callable[[Subject], Subject],
+        *,
+        copy: bool = True,
     ) -> Self:
         """Apply a callback to every subject and rebuild the batch.
 
         Each callback receives an independent `Subject` carrying its
         complete transform history. All returned subjects must have a
         compatible schema and image shapes so they can be re-stacked.
-        Callback-added histories are retained.
+        Callback-added histories are retained. By default, image tensors
+        are cloned before the callback so the input batch is unchanged.
 
         Args:
             callback: Callable taking and returning one `Subject`.
+            copy: Clone each image tensor before invoking the callback.
+                Set to `False` when the caller has already handled copy
+                semantics.
 
         Returns:
             A new batch containing the callback results.
@@ -513,8 +519,9 @@ class SubjectsBatch(Invertible):
 
         mapped = []
         for index, subject in enumerate(self.unbatch()):
-            for image in subject.images.values():
-                image.set_data(image.data.clone())
+            if copy:
+                for image in subject.images.values():
+                    image.set_data(image.data.clone())
             result = callback(subject)
             if not isinstance(result, Subject):
                 msg = (

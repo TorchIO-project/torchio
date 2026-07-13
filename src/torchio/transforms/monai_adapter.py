@@ -90,7 +90,7 @@ class MonaiAdapter(Transform):
                 _apply_array_transform(images, self.monai_transform, monai)
             return subject
 
-        result = batch.map_subjects(apply_to_subject)
+        result = batch.map_subjects(apply_to_subject, copy=False)
         return unwrap(result)
 
     def apply_transform(self, batch: Any, params: dict[str, Any]) -> Any:
