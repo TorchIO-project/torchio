@@ -490,11 +490,12 @@ class SubjectsBatch(Invertible):
     ) -> Self:
         """Apply a callback to every subject and rebuild the batch.
 
-        Each callback receives an independent `Subject` carrying its
-        complete transform history. All returned subjects must have a
-        compatible schema and image shapes so they can be re-stacked.
-        Callback-added histories are retained. By default, image tensors
-        are cloned before the callback so the input batch is unchanged.
+        Each callback receives an unbatched `Subject` carrying its complete
+        transform history. All returned subjects must have a compatible
+        schema and image shapes so they can be re-stacked. Callback-added
+        histories are retained. By default, image tensors are cloned before
+        the callback so the input batch is unchanged. With `copy=False`,
+        callbacks may mutate the input batch's image tensors.
 
         Args:
             callback: Callable taking and returning one `Subject`.
