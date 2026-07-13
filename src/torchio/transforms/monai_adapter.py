@@ -199,7 +199,9 @@ def _apply_dict_transform(
     for key in subject.metadata:
         subject.metadata[key] = result[key]
 
-    for key in set(result) - set(monai_dict):
+    for key in result:
+        if key in monai_dict:
+            continue
         if not isinstance(key, str):
             msg = f"Expected MONAI output keys to be strings, got {key!r}"
             raise TypeError(msg)

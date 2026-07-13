@@ -116,6 +116,22 @@ class TestMonaiAdapterDict:
         with pytest.raises(ValueError, match=r"new tensor field.*new_image"):
             tio.MonaiAdapter(AddTensor())(subject)
 
+    def test_dict_preserves_added_metadata_order(self) -> None:
+        from monai.transforms import MapTransform
+
+        class AddMetadata(MapTransform):
+            def __init__(self) -> None:
+                super().__init__(keys=["t1"])
+
+            def __call__(self, data):
+                return {**data, "zeta": 1, "alpha": 2}
+
+        subject = tio.Subject(t1=tio.ScalarImage(torch.rand(1, 8, 8, 8)))
+
+        result = tio.MonaiAdapter(AddMetadata())(subject)
+
+        assert list(result.metadata) == ["zeta", "alpha"]
+
 
 @pytest.mark.skipif(not HAS_MONAI, reason="MONAI not installed")
 class TestMonaiAdapterGeneral:
