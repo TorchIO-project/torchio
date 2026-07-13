@@ -57,6 +57,8 @@ class MonaiAdapter(Transform):
         serializable.
     """
 
+    _supports_apply_with_params = False
+
     def __init__(self, monai_transform: Callable, **kwargs: Any) -> None:
         super().__init__(**kwargs)
         if not callable(monai_transform):

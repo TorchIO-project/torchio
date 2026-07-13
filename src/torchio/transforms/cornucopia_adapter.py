@@ -49,6 +49,8 @@ class CornucopiaAdapter(Transform):
         objects are not guaranteed to be serializable.
     """
 
+    _supports_apply_with_params = False
+
     def __init__(
         self,
         cornucopia_transform: Callable,

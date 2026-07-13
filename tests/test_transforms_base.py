@@ -65,6 +65,31 @@ class _FlipSpatial(tio.SpatialTransform):
         return batch
 
 
+class _AddFromParams(tio.Transform):
+    """Add an explicitly supplied value."""
+
+    def __init__(self, **kwargs: Any) -> None:
+        super().__init__(**kwargs)
+        self.make_params_calls = 0
+
+    def make_params(self, batch: Any) -> dict[str, Any]:
+        self.make_params_calls += 1
+        return {"value": 1.0}
+
+    def apply_transform(self, batch: Any, params: dict[str, Any]) -> Any:
+        for image_batch in batch.images.values():
+            image_batch.data = image_batch.data + params["value"]
+        return batch
+
+
+class _MutateParams(tio.Transform):
+    """Mutate params to test defensive copying."""
+
+    def apply_transform(self, batch: Any, params: dict[str, Any]) -> Any:
+        params["value"] = "mutated"
+        return batch
+
+
 # ── Transform base ───────────────────────────────────────────────────
 
 
@@ -193,6 +218,189 @@ class TestTransformBase:
     def test_invalid_input_type(self) -> None:
         with pytest.raises(TypeError):
             _IdentityTransform()("not a valid input")
+
+
+class TestApplyWithParams:
+    def test_bypasses_probability_and_sampling(self) -> None:
+        subject = tio.Subject(t1=tio.ScalarImage(torch.zeros(1, 4, 4, 4)))
+        transform = _AddFromParams(p=0)
+
+        result = transform.apply_with_params(subject, {"value": 2.0})
+
+        assert transform.make_params_calls == 0
+        torch.testing.assert_close(result.t1.data, torch.full_like(result.t1.data, 2))
+
+    def test_records_supplied_params(self) -> None:
+        subject = tio.Subject(t1=tio.ScalarImage(torch.zeros(1, 4, 4, 4)))
+
+        result = _AddFromParams().apply_with_params(subject, {"value": 2.0})
+
+        trace = result.applied_transforms[-1]
+        assert trace.name == "_AddFromParams"
+        assert trace.params == {"value": 2.0}
+
+    def test_preserves_prior_history(self) -> None:
+        subject = tio.Flip(axes=(0,))(
+            tio.Subject(t1=tio.ScalarImage(torch.zeros(1, 4, 4, 4)))
+        )
+
+        result = _AddFromParams().apply_with_params(subject, {"value": 2.0})
+
+        assert [trace.name for trace in result.applied_transforms] == [
+            "Flip",
+            "_AddFromParams",
+        ]
+
+    def test_does_not_mutate_caller_params(self) -> None:
+        subject = tio.Subject(t1=tio.ScalarImage(torch.zeros(1, 4, 4, 4)))
+        params = {"value": "original"}
+
+        _MutateParams().apply_with_params(subject, params)
+
+        assert params == {"value": "original"}
+
+    def test_copy_true_preserves_batch(self) -> None:
+        batch = tio.SubjectsBatch.from_subjects(
+            [tio.Subject(t1=tio.ScalarImage(torch.zeros(1, 4, 4, 4)))]
+        )
+
+        result = _AddFromParams(copy=True).apply_with_params(
+            batch,
+            {"value": 2.0},
+        )
+
+        assert result is not batch
+        assert torch.count_nonzero(batch.t1.data) == 0
+
+    def test_copy_false_mutates_batch(self) -> None:
+        batch = tio.SubjectsBatch.from_subjects(
+            [tio.Subject(t1=tio.ScalarImage(torch.zeros(1, 4, 4, 4)))]
+        )
+
+        result = _AddFromParams(copy=False).apply_with_params(
+            batch,
+            {"value": 2.0},
+        )
+
+        assert result is batch
+        assert torch.all(batch.t1.data == 2)
+
+    def test_replays_stochastic_transform_exactly(self) -> None:
+        subject = tio.Subject(t1=tio.ScalarImage(torch.zeros(1, 4, 4, 4)))
+        transform = tio.Noise(mean=(-1, 1), std=(0.1, 0.5))
+        transformed = transform(subject)
+        params = transformed.applied_transforms[-1].params
+
+        replayed = transform.apply_with_params(subject, params)
+
+        torch.testing.assert_close(replayed.t1.data, transformed.t1.data)
+
+    @pytest.mark.parametrize(
+        "data",
+        [
+            tio.Subject(t1=tio.ScalarImage(torch.zeros(1, 4, 4, 4))),
+            tio.ScalarImage(torch.zeros(1, 4, 4, 4)),
+            torch.zeros(1, 4, 4, 4),
+            np.zeros((1, 4, 4, 4), dtype=np.float32),
+            sitk.Image(4, 4, 4, sitk.sitkFloat32),
+            nib.Nifti1Image(np.zeros((4, 4, 4)), np.eye(4)),
+            {"t1": torch.zeros(1, 4, 4, 4), "age": 42},
+            tio.ImagesBatch.from_images([tio.ScalarImage(torch.zeros(1, 4, 4, 4))]),
+            tio.SubjectsBatch.from_subjects(
+                [tio.Subject(t1=tio.ScalarImage(torch.zeros(1, 4, 4, 4)))]
+            ),
+        ],
+    )
+    def test_preserves_input_type(self, data: Any) -> None:
+        result = _IdentityTransform().apply_with_params(data, {})
+
+        assert type(result) is type(data)
+
+    @pytest.mark.parametrize(
+        ("params", "message"),
+        [
+            (
+                {
+                    "value": [1, 2],
+                    "_batch_size": 3,
+                    "_batched_keys": ["value"],
+                },
+                "batch size",
+            ),
+            (
+                {
+                    "_batch_size": 2,
+                    "_batched_keys": ["missing"],
+                },
+                "missing",
+            ),
+            (
+                {
+                    "value": [1],
+                    "_batch_size": 2,
+                    "_batched_keys": ["value"],
+                },
+                "2 values",
+            ),
+            (
+                {
+                    "value": [1, 2],
+                    "_batch_size": 2,
+                    "_batched_keys": ["value"],
+                    "_keep": [True],
+                },
+                "_keep",
+            ),
+            (
+                {
+                    "value": [1, 2],
+                    "_batch_size": 2,
+                    "_batched_keys": ["value"],
+                    "_keep": [True, 1],
+                },
+                "booleans",
+            ),
+        ],
+    )
+    def test_validates_batched_params(
+        self,
+        params: dict[str, Any],
+        message: str,
+    ) -> None:
+        batch = tio.SubjectsBatch.from_subjects(
+            [tio.Subject(t1=tio.ScalarImage(torch.zeros(1, 4, 4, 4))) for _ in range(2)]
+        )
+
+        with pytest.raises(ValueError, match=message):
+            _IdentityTransform().apply_with_params(batch, params)
+
+    def test_rejects_reserved_fields_without_batched_keys(self) -> None:
+        subject = tio.Subject(t1=tio.ScalarImage(torch.zeros(1, 4, 4, 4)))
+
+        with pytest.raises(ValueError, match="_batched_keys"):
+            _IdentityTransform().apply_with_params(
+                subject,
+                {"_batch_size": 1},
+            )
+
+    @pytest.mark.parametrize(
+        "transform",
+        [
+            tio.Compose([]),
+            tio.OneOf([_IdentityTransform()]),
+            tio.SomeOf([_IdentityTransform()]),
+            tio.MonaiAdapter(lambda value: value),
+            tio.CornucopiaAdapter(lambda value: value),
+        ],
+    )
+    def test_rejects_transforms_without_param_kernel(
+        self,
+        transform: tio.Transform,
+    ) -> None:
+        subject = tio.Subject(t1=tio.ScalarImage(torch.zeros(1, 4, 4, 4)))
+
+        with pytest.raises(NotImplementedError, match="apply_with_params"):
+            transform.apply_with_params(subject, {})
 
 
 # ── include/exclude ──────────────────────────────────────────────────

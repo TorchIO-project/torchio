@@ -148,6 +148,8 @@ class Transform(nn.Module):
             which the transform will *not* be applied.
     """
 
+    _supports_apply_with_params = True
+
     def __init__(
         self,
         *,
@@ -255,26 +257,138 @@ class Transform(nn.Module):
         Args:
             data: Input data to transform.
         """
+        return self._execute(data, params=None, sample_params=True)
+
+    @overload
+    def apply_with_params(
+        self,
+        data: Subject,
+        params: dict[str, Any],
+    ) -> Subject: ...
+    @overload
+    def apply_with_params(
+        self,
+        data: Image,
+        params: dict[str, Any],
+    ) -> Image: ...
+    @overload
+    def apply_with_params(
+        self,
+        data: Tensor,
+        params: dict[str, Any],
+    ) -> Tensor: ...
+    @overload
+    def apply_with_params(
+        self,
+        data: np.ndarray,
+        params: dict[str, Any],
+    ) -> np.ndarray: ...
+    @overload
+    def apply_with_params(
+        self,
+        data: sitk.Image,
+        params: dict[str, Any],
+    ) -> sitk.Image: ...
+    @overload
+    def apply_with_params(
+        self,
+        data: nib.Nifti1Image,
+        params: dict[str, Any],
+    ) -> nib.Nifti1Image: ...
+    @overload
+    def apply_with_params(
+        self,
+        data: dict,
+        params: dict[str, Any],
+    ) -> dict: ...
+    @overload
+    def apply_with_params(
+        self,
+        data: ImagesBatch,
+        params: dict[str, Any],
+    ) -> ImagesBatch: ...
+    @overload
+    def apply_with_params(
+        self,
+        data: SubjectsBatch,
+        params: dict[str, Any],
+    ) -> SubjectsBatch: ...
+
+    def apply_with_params(
+        self,
+        data: Any,
+        params: dict[str, Any],
+    ) -> Any:
+        """Apply an exact parameter set without sampling.
+
+        This method bypasses the transform probability and
+        [`make_params()`][torchio.Transform.make_params], but otherwise
+        follows the normal transform lifecycle: copy handling, input
+        wrapping, output-type restoration, and history recording.
+
+        Args:
+            data: Input data to transform.
+            params: Exact parameters accepted by `apply_transform`.
+
+        Returns:
+            Transformed data with the same type as the input.
+
+        Raises:
+            NotImplementedError: If the transform does not expose one
+                exact-parameter kernel.
+            ValueError: If per-instance parameter dimensions do not
+                match the input batch.
+        """
+        if not self._supports_apply_with_params:
+            msg = (
+                f"{type(self).__name__}.apply_with_params() is not supported"
+                " because this transform does not expose a single"
+                " make_params/apply_transform parameter kernel."
+            )
+            raise NotImplementedError(msg)
+        if not isinstance(params, dict):
+            msg = f"Expected params to be a dict, got {type(params).__name__}"
+            raise TypeError(msg)
+        return self._execute(
+            data,
+            params=_copy.deepcopy(params),
+            sample_params=False,
+        )
+
+    def _execute(
+        self,
+        data: Any,
+        *,
+        params: dict[str, Any] | None,
+        sample_params: bool,
+    ) -> Any:
+        """Run the shared transform lifecycle."""
         self._check_spatial_annotations(data)
         if self.copy:
             data = _copy.deepcopy(data)
         batch, unwrap = self._wrap(data)
-        # When per-element gating is active, the transform handles the
-        # probability itself (masked-out elements get identity params),
-        # so skip the batch-wide coin flip here. Apply iff rand < p, so
-        # p=0 is always a no-op and p=1 always applies.
-        if not self._per_instance_p_active(batch) and torch.rand(1).item() >= self.p:
-            return unwrap(batch)
-        params = self.make_params(batch)
-        batch = self.apply_transform(batch, params)
+        if sample_params:
+            # When per-element gating is active, the transform handles
+            # probability itself (masked-out elements get identity params).
+            if (
+                not self._per_instance_p_active(batch)
+                and torch.rand(1).item() >= self.p
+            ):
+                return unwrap(batch)
+            resolved_params = self.make_params(batch)
+        else:
+            assert params is not None
+            self._validate_batched_params(params, batch)
+            resolved_params = params
+        batch = self.apply_transform(batch, resolved_params)
         # Record history on the batch, unless every element was gated out by
         # per-element probability: that is an exact no-op, and recording it
         # would let history replay (e.g. an invertible spatial transform)
         # trigger an unnecessary identity resample.
-        if not _all_elements_gated_out(params):
+        if not _all_elements_gated_out(resolved_params):
             trace = AppliedTransform(
                 name=type(self).__name__,
-                params=params,
+                params=resolved_params,
                 include=_copy_optional_list(self.include),
                 exclude=_copy_optional_list(self.exclude),
             )
@@ -294,6 +408,71 @@ class Transform(nn.Module):
             with contextlib.suppress(AttributeError):
                 result.applied_transforms = list(batch.applied_transforms)
         return result
+
+    @staticmethod
+    def _validate_batched_params(
+        params: dict[str, Any],
+        batch: SubjectsBatch,
+    ) -> None:
+        """Validate per-instance bookkeeping on an exact parameter set."""
+        has_batch_size = "_batch_size" in params
+        has_batched_keys = "_batched_keys" in params
+        has_keep = "_keep" in params
+        if not (has_batch_size or has_batched_keys or has_keep):
+            return
+        if not has_batch_size or not has_batched_keys:
+            msg = "Batched params must define both _batch_size and _batched_keys."
+            raise ValueError(msg)
+
+        expected_size = params["_batch_size"]
+        if (
+            isinstance(expected_size, bool)
+            or not isinstance(expected_size, int)
+            or expected_size < 1
+        ):
+            msg = f"_batch_size must be a positive integer, got {expected_size!r}"
+            raise ValueError(msg)
+        if expected_size != batch.batch_size:
+            msg = (
+                f"Parameter batch size {expected_size} does not match"
+                f" input batch size {batch.batch_size}"
+            )
+            raise ValueError(msg)
+
+        batched_keys = params["_batched_keys"]
+        if not isinstance(batched_keys, list) or not all(
+            isinstance(key, str) for key in batched_keys
+        ):
+            msg = "_batched_keys must be a list of parameter names"
+            raise ValueError(msg)
+        if len(set(batched_keys)) != len(batched_keys):
+            msg = "_batched_keys contains duplicate parameter names"
+            raise ValueError(msg)
+        for key in batched_keys:
+            if key not in params:
+                msg = f"Batched parameter {key!r} is missing"
+                raise ValueError(msg)
+            value = params[key]
+            try:
+                actual_size = len(value)
+            except TypeError as error:
+                msg = f"Batched parameter {key!r} must contain {expected_size} values"
+                raise ValueError(msg) from error
+            if actual_size != expected_size:
+                msg = (
+                    f"Batched parameter {key!r} must contain"
+                    f" {expected_size} values, got {actual_size}"
+                )
+                raise ValueError(msg)
+
+        if has_keep:
+            keep = params["_keep"]
+            if not isinstance(keep, list) or len(keep) != expected_size:
+                msg = f"_keep must contain {expected_size} boolean values, got {keep!r}"
+                raise ValueError(msg)
+            if not all(type(value) is bool for value in keep):
+                msg = "_keep values must be booleans"
+                raise ValueError(msg)
 
     def _check_spatial_annotations(self, data: Any) -> None:
         """Reject spatial transforms that would leave stale annotations."""
