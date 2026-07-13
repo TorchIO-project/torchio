@@ -468,8 +468,8 @@ class CropOrPad(SpatialTransform):
         without loading data from disk. For batched inputs, falls back
         to the standard `SubjectsBatch` path.
         """
-        self._check_spatial_annotations(data)
         if isinstance(data, (Subject, Image)):
+            self._check_spatial_annotations(data)
             return self._forward_lazy(data)
         return super().forward(data)
 
