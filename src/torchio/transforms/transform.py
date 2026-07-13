@@ -70,6 +70,40 @@ def _copy_optional_list(value: list[str] | None) -> list[str] | None:
     return None if value is None else list(value)
 
 
+def _image_has_annotations(image: Image) -> bool:
+    return bool(image.points or image.bounding_boxes)
+
+
+def _subject_has_annotations(subject: Subject) -> bool:
+    return bool(
+        subject.points
+        or subject.bounding_boxes
+        or any(_image_has_annotations(image) for image in subject.images.values())
+    )
+
+
+def _value_has_annotations(value: Any) -> bool:
+    if isinstance(value, (Points, BoundingBoxes)):
+        return True
+    if isinstance(value, Image):
+        return _image_has_annotations(value)
+    return False
+
+
+def _data_has_annotations(data: Any) -> bool:
+    match data:
+        case SubjectsBatch() | ImagesBatch():
+            return data.has_annotations
+        case Subject():
+            return _subject_has_annotations(data)
+        case Image():
+            return _image_has_annotations(data)
+        case dict():
+            return any(_value_has_annotations(value) for value in data.values())
+        case _:
+            return False
+
+
 class Transform(nn.Module):
     """Abstract class for all TorchIO transforms.
 
@@ -263,34 +297,7 @@ class Transform(nn.Module):
 
     def _check_spatial_annotations(self, data: Any) -> None:
         """Reject spatial transforms that would leave stale annotations."""
-        if not isinstance(self, SpatialTransform):
-            return
-        match data:
-            case SubjectsBatch() | ImagesBatch():
-                has_annotations = data.has_annotations
-            case Subject():
-                has_annotations = bool(
-                    data.points
-                    or data.bounding_boxes
-                    or any(
-                        image.points or image.bounding_boxes
-                        for image in data.images.values()
-                    )
-                )
-            case Image():
-                has_annotations = bool(data.points or data.bounding_boxes)
-            case dict():
-                has_annotations = any(
-                    isinstance(value, (Points, BoundingBoxes))
-                    or (
-                        isinstance(value, Image)
-                        and bool(value.points or value.bounding_boxes)
-                    )
-                    for value in data.values()
-                )
-            case _:
-                has_annotations = False
-        if has_annotations:
+        if isinstance(self, SpatialTransform) and _data_has_annotations(data):
             msg = (
                 "Spatial transforms do not yet support Points or BoundingBoxes."
                 " Remove the annotations before applying the transform, or apply"

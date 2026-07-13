@@ -277,42 +277,14 @@ class SubjectsBatch(Invertible):
         Args:
             subjects: `Subject` instances to stack.
         """
-        from .subject import Subject
-
-        if not subjects:
-            msg = "Cannot create batch from empty list"
-            raise ValueError(msg)
-        for index, subject in enumerate(subjects):
-            if not isinstance(subject, Subject):
-                msg = f"Expected Subject at index {index}, got {type(subject).__name__}"
-                raise TypeError(msg)
-
-        first: Subject = subjects[0]
+        first = _validate_subject_inputs(subjects)
         _validate_subject_schemas(subjects)
 
-        images: dict[str, ImagesBatch] = {}
-        for name in first.images:
-            img_list = [sub.images[name] for sub in subjects]
-            images[name] = ImagesBatch.from_images(img_list)
-
-        points = {
-            name: [_copy.deepcopy(subject.points[name]) for subject in subjects]
-            for name in first.points
-        }
-        bounding_boxes = {
-            name: [_copy.deepcopy(subject.bounding_boxes[name]) for subject in subjects]
-            for name in first.bounding_boxes
-        }
-        metadata = {
-            key: [_copy.deepcopy(subject.metadata[key]) for subject in subjects]
-            for key in first.metadata
-        }
-
         batch = cls(
-            images,
-            points=points,
-            bounding_boxes=bounding_boxes,
-            metadata=metadata,
+            _stack_subject_images(subjects, first),
+            points=_collect_subject_points(subjects, first),
+            bounding_boxes=_collect_subject_boxes(subjects, first),
+            metadata=_collect_subject_metadata(subjects, first),
         )
         _assign_histories(
             batch,
@@ -564,6 +536,64 @@ class SubjectsBatch(Invertible):
 
 # Alias for radiology users (see Subject/Study note in subject.py).
 StudiesBatch = SubjectsBatch
+
+
+def _validate_subject_inputs(subjects: Sequence[Any]) -> Subject:
+    """Validate subject input types and return the first subject."""
+    from .subject import Subject
+
+    if not subjects:
+        msg = "Cannot create batch from empty list"
+        raise ValueError(msg)
+    for index, subject in enumerate(subjects):
+        if not isinstance(subject, Subject):
+            msg = f"Expected Subject at index {index}, got {type(subject).__name__}"
+            raise TypeError(msg)
+    return subjects[0]
+
+
+def _stack_subject_images(
+    subjects: Sequence[Subject],
+    first: Subject,
+) -> dict[str, ImagesBatch]:
+    """Stack each named image across subjects."""
+    return {
+        name: ImagesBatch.from_images([subject.images[name] for subject in subjects])
+        for name in first.images
+    }
+
+
+def _collect_subject_points(
+    subjects: Sequence[Subject],
+    first: Subject,
+) -> dict[str, list[Points]]:
+    """Collect subject-level points without sharing mutable objects."""
+    return {
+        name: [_copy.deepcopy(subject.points[name]) for subject in subjects]
+        for name in first.points
+    }
+
+
+def _collect_subject_boxes(
+    subjects: Sequence[Subject],
+    first: Subject,
+) -> dict[str, list[BoundingBoxes]]:
+    """Collect subject-level boxes without sharing mutable objects."""
+    return {
+        name: [_copy.deepcopy(subject.bounding_boxes[name]) for subject in subjects]
+        for name in first.bounding_boxes
+    }
+
+
+def _collect_subject_metadata(
+    subjects: Sequence[Subject],
+    first: Subject,
+) -> dict[str, list[Any]]:
+    """Collect subject metadata without sharing mutable objects."""
+    return {
+        key: [_copy.deepcopy(subject.metadata[key]) for subject in subjects]
+        for key in first.metadata
+    }
 
 
 def _make_image_template(image: Image) -> Image:
