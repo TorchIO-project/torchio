@@ -536,6 +536,16 @@ class TestImagesBatchValidation:
         with pytest.raises(ValueError, match="empty"):
             ImagesBatch.from_images([])
 
+    def test_non_class_image_class_raises_clear_error(self) -> None:
+        image = tio.ScalarImage(torch.rand(1, 5, 5, 5))
+
+        with pytest.raises(TypeError, match="Image subclass"):
+            ImagesBatch(
+                data=torch.rand(1, 1, 5, 5, 5),
+                affines=[tio.AffineMatrix()],
+                image_class=image,  # type: ignore[arg-type]
+            )
+
     def test_data_setter_non_5d_raises(self) -> None:
         from torchio.data.batch import ImagesBatch
 

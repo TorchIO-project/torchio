@@ -57,7 +57,7 @@ class ImagesBatch(Invertible):
         if len(affines) != data.shape[0]:
             msg = f"Expected {data.shape[0]} affines, got {len(affines)}"
             raise ValueError(msg)
-        if not issubclass(image_class, Image):
+        if not isinstance(image_class, type) or not issubclass(image_class, Image):
             msg = f"Expected an Image subclass, got {image_class!r}"
             raise TypeError(msg)
         if image_templates is not None and len(image_templates) != data.shape[0]:
