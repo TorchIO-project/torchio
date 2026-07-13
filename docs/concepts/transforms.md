@@ -124,7 +124,7 @@ assert batch.metadata == {"site": ["A", "B"], "age": [30, 40]}
 ```
 
 The first subject defines the image-name and metadata-key order of the
-batch. All subjects should have the same schema, although their local
+batch. All subjects must have the same schema, although their local
 key order may differ. A custom transform should preserve that shared
 schema and keep every metadata list aligned with the batch dimension.
 
