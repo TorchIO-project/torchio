@@ -4,12 +4,19 @@
 # https://docs.github.com/github/administering-a-repository/configuration-options-for-dependency-updates
 
 version: 2
+multi-ecosystem-groups:
+  dependencies:
+    schedule:
+      interval: "monthly"
+
 updates:
   - package-ecosystem: "github-actions"
     directory: "/"
-    schedule:
-      interval: "monthly"
+    patterns:
+      - "*"
+    multi-ecosystem-group: "dependencies"
   - package-ecosystem: "pip"
     directory: "/"
-    schedule:
-      interval: "monthly"
+    patterns:
+      - "*"
+    multi-ecosystem-group: "dependencies"

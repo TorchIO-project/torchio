@@ -558,7 +558,7 @@ class Transform(ABC):
     def _get_reproducing_arguments(self):
         """Return a dictionary with the arguments that would be necessary to
         reproduce the transform exactly."""
-        reproducing_arguments = {
+        reproducing_arguments: dict[str, object] = {
             'include': self.include,
             'exclude': self.exclude,
             'copy': self.copy,

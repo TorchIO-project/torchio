@@ -1,3 +1,4 @@
+from ....data.subject import Subject
 from ...transform import TypeMaskingMethod
 from .label_transform import LabelTransform
 
@@ -96,7 +97,7 @@ class RemapLabels(LabelTransform):
         self.masking_method = masking_method
         self.args_names = ['remapping', 'masking_method']
 
-    def apply_transform(self, subject):
+    def apply_transform(self, subject: Subject) -> Subject:
         for image in self.get_images(subject):
             original_label_set = set(image.data.unique().tolist())
             source_label_set = set(self.remapping.keys())

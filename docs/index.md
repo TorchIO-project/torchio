@@ -43,7 +43,7 @@ See [Getting started](getting-started.md) for installation instructions and a
 usage overview.
 
 Contributions are more than welcome.
-Please check our [contributing guide](https://github.com/TorchIO-project/torchio/blob/main/CONTRIBUTING.rst)
+Please check our [contributing guide](https://github.com/TorchIO-project/torchio/blob/main/CONTRIBUTING.md)
 if you would like to contribute.
 
 If you have questions, feel free to ask in the

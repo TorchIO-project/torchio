@@ -35,6 +35,22 @@ class SubjectITKSNAP(Subject):
 
 
 class BrainTumor(SubjectITKSNAP):
+    """Multi-modal brain tumor MRI from the ITK-SNAP data downloads.
+
+    Contains T1, contrast-enhanced T1 (T1C), T2, and FLAIR scalar images,
+    plus a manual tumor segmentation label map, for a single subject from
+    the BRATS dataset (case HG0015).
+
+    Keys: `t1`, `t1c`, `t2`, `flair`, `seg`.
+
+    Examples:
+
+        >>> import torchio as tio
+        >>> subject = tio.datasets.BrainTumor()
+        >>> subject
+        BrainTumor(Keys: ('t1', 't1c', 't2', 'flair', 'seg'); images: 5)
+    """
+
     def __init__(self):
         super().__init__('braintumor', '6161')
 
@@ -53,6 +69,22 @@ class BrainTumor(SubjectITKSNAP):
 
 
 class T1T2(SubjectITKSNAP):
+    """Hippocampal subfield segmentation test workspace from the ITK-SNAP data downloads.
+
+    Contains a whole-brain 3T T1-weighted MRI (MPRAGE) and a high-resolution
+    T2-weighted MRI of the hippocampal region, intended for use with the
+    ASHS-PMC distributed segmentation service.
+
+    Keys: `mprage`, `tse`.
+
+    Examples:
+
+        >>> import torchio as tio
+        >>> subject = tio.datasets.T1T2()
+        >>> subject
+        T1T2(Keys: ('mprage', 'tse'); images: 2)
+    """
+
     def __init__(self):
         super().__init__('ashs_test', '10983')
 
@@ -66,6 +98,23 @@ class T1T2(SubjectITKSNAP):
 
 
 class AorticValve(SubjectITKSNAP):
+    """Bicuspid aortic valve 3D ultrasound from the ITK-SNAP data downloads.
+
+    Contains two 3D frames (frames 14 and 25) from a bicuspid aortic valve
+    ultrasound scan, each paired with a manual segmentation label map.
+    Intended as tutorial data for ITK-SNAP distributed segmentation service
+    development.
+
+    Keys: `b14`, `b14_seg`, `b25`, `b25_seg`.
+
+    Examples:
+
+        >>> import torchio as tio
+        >>> subject = tio.datasets.AorticValve()
+        >>> subject
+        AorticValve(Keys: ('b14', 'b14_seg', 'b25', 'b25_seg'); images: 4)
+    """
+
     def __init__(self):
         super().__init__('bav_example', '11021')
 

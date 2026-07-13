@@ -8,6 +8,25 @@ from .mni import SubjectMNI
 
 
 class Sheep(SubjectMNI):
+    """Population-averaged ovine brain MRI template from the MNI.
+
+    A stereotaxic, population-averaged T1-weighted brain template constructed
+    from 14 normal adult sheep (*Ovis orientalis aries*) at 0.5 mm isotropic
+    resolution. Provides a common stereotaxic reference frame for localizing
+    anatomical and functional information across individual sheep and studies.
+
+    More information can be found on the
+    [MNI Ovine Brain Atlas page](https://www.mcgill.ca/bic/neuroinformatics/brain-atlases-ovine-brain-atlas).
+    Keys: `t1`.
+
+    Examples:
+
+        >>> import torchio as tio
+        >>> subject = tio.datasets.Sheep()
+        >>> subject
+        Sheep(Keys: ('t1',); images: 1)
+    """
+
     def __init__(self):
         self.name = 'NIFTI_ovine_05mm'
         self.url_dir = urllib.parse.urljoin(self.url_base, 'sheep/')

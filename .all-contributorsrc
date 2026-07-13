@@ -937,6 +937,24 @@
       "contributions": [
         "bug"
       ]
+    },
+    {
+      "login": "vcasellesb",
+      "name": "Vicent Caselles-Ballester",
+      "avatar_url": "https://avatars.githubusercontent.com/u/126575139?v=4",
+      "profile": "https://github.com/vcasellesb",
+      "contributions": [
+        "doc"
+      ]
+    },
+    {
+      "login": "ArsalaanAhmad",
+      "name": "Arsalaan Ahmad",
+      "avatar_url": "https://avatars.githubusercontent.com/u/144381108?v=4",
+      "profile": "https://github.com/ArsalaanAhmad",
+      "contributions": [
+        "doc"
+      ]
     }
   ],
   "contributorsPerLine": 7,
