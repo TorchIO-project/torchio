@@ -391,6 +391,8 @@ class TestApplyWithParams:
             tio.SomeOf([_IdentityTransform()]),
             tio.MonaiAdapter(lambda value: value),
             tio.CornucopiaAdapter(lambda value: value),
+            tio.CropOrPad(4),
+            tio.EnsureShapeMultiple(2),
         ],
     )
     def test_rejects_transforms_without_param_kernel(
