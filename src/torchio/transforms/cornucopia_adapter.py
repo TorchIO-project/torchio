@@ -124,8 +124,8 @@ def _apply_cornucopia(
     # and return the same number of tensors.
     results = cornucopia_transform(*tensors)
 
-    # If only one image, result is a single tensor (not a tuple).
-    if len(names) == 1:
+    # A single input may return either one tensor or a one-item sequence.
+    if len(names) == 1 and not isinstance(results, (tuple, list)):
         results = (results,)
 
     for name, result_tensor in zip(names, results, strict=True):

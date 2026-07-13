@@ -125,6 +125,20 @@ class TestCornucopiaAdapterLogic:
         assert torch.all(batch.t1.data == 1)
         assert torch.all(result.t1.data == 1)
 
+    @pytest.mark.parametrize(
+        "transform",
+        [
+            lambda tensor: (tensor,),
+            lambda tensor: [tensor],
+        ],
+    )
+    def test_single_image_accepts_sequence_result(self, transform) -> None:
+        subject = tio.Subject(t1=tio.ScalarImage(torch.rand(1, 4, 4, 4)))
+
+        result = tio.CornucopiaAdapter(transform)(subject)
+
+        torch.testing.assert_close(result.t1.data, subject.t1.data)
+
 
 # ── Real Cornucopia transforms ───────────────────────────────────────
 
