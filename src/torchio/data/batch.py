@@ -156,7 +156,7 @@ class ImagesBatch(Invertible):
                 affine=self._affines[index].clone(),
             )
             image._metadata = _copy.deepcopy(template.metadata)
-        image.applied_transforms = _get_element_histories(self)[index]
+        image.applied_transforms = _get_element_history(self, index)
         return image
 
     def __len__(self) -> int:
@@ -822,14 +822,15 @@ def _assign_histories(batch: Any, histories: Sequence[list[Any]]) -> None:
 
 def _get_element_histories(batch: Any) -> list[list[Any]]:
     """Return each element's complete history."""
-    histories = []
-    for index in range(batch.batch_size):
-        suffix = _slice_history(batch.applied_transforms, index)
-        if batch._per_element_history is None:
-            histories.append(suffix)
-        else:
-            histories.append(list(batch._per_element_history[index]) + suffix)
-    return histories
+    return [_get_element_history(batch, index) for index in range(batch.batch_size)]
+
+
+def _get_element_history(batch: Any, index: int) -> list[Any]:
+    """Return one element's complete history."""
+    suffix = _slice_history(batch.applied_transforms, index)
+    if batch._per_element_history is None:
+        return suffix
+    return list(batch._per_element_history[index]) + suffix
 
 
 def _slice_params(
