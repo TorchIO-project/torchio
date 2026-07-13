@@ -108,12 +108,13 @@ class Points:
         return self._data.device
 
     def to(self, *args: Any, **kwargs: Any) -> Self:
-        """Move point data to a device and/or cast to a dtype.
+        """Move point data and affine to a device or dtype.
 
         Returns:
             `self` (modified in-place).
         """
         self._data = self._data.to(*args, **kwargs)
+        self._affine.to(*args, **kwargs)
         return self
 
     # --- Methods ---
