@@ -197,7 +197,7 @@ def _apply_dict_transform(
         _update_image_from_result(image, value, monai)
 
     for key in subject.metadata:
-        subject._metadata[key] = result[key]
+        subject.metadata[key] = result[key]
 
     for key in set(result) - set(monai_dict):
         if not isinstance(key, str):
@@ -211,4 +211,4 @@ def _apply_dict_transform(
                 " before applying the adapter."
             )
             raise ValueError(msg)
-        subject._metadata[key] = value
+        subject.metadata[key] = value
