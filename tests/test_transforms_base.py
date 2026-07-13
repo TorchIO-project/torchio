@@ -344,6 +344,14 @@ class TestApplyWithParams:
             ),
             (
                 {
+                    "value": (1, 2),
+                    "_batch_size": 2,
+                    "_batched_keys": ["value"],
+                },
+                "must be a list",
+            ),
+            (
+                {
                     "value": [1, 2],
                     "_batch_size": 2,
                     "_batched_keys": ["value"],

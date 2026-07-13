@@ -153,11 +153,11 @@ def _validate_batched_value(
     if key not in params:
         msg = f"Batched parameter {key!r} is missing"
         raise ValueError(msg)
-    try:
-        actual_size = len(params[key])
-    except TypeError as error:
-        msg = f"Batched parameter {key!r} must contain {expected_size} values"
-        raise ValueError(msg) from error
+    value = params[key]
+    if not isinstance(value, list):
+        msg = f"Batched parameter {key!r} must be a list"
+        raise ValueError(msg)
+    actual_size = len(value)
     if actual_size != expected_size:
         msg = (
             f"Batched parameter {key!r} must contain"
