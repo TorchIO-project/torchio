@@ -167,8 +167,9 @@ torch.testing.assert_close(replayed.image.data, transformed.image.data)
 `apply_with_params()` bypasses `p` and `make_params()`, honors `copy`,
 restores the input type, validates per-instance parameter dimensions,
 and records the supplied parameters in history. `Compose`, `OneOf`,
-`SomeOf`, `MonaiAdapter`, and `CornucopiaAdapter` do not expose one
-parameter kernel and therefore reject this method.
+`SomeOf`, `CropOrPad`, `EnsureShapeMultiple`, `MonaiAdapter`, and
+`CornucopiaAdapter` do not expose a compatible exact-parameter kernel
+and therefore reject this method.
 
 ## Handle annotations safely
 
