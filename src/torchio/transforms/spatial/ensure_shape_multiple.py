@@ -114,7 +114,6 @@ class EnsureShapeMultiple(SpatialTransform):
         For `Subject` and `Image` inputs, delegates to `CropOrPad`
         for lazy operation without loading data from disk.
         """
-        self._check_spatial_annotations(data)
         if isinstance(data, (Subject, Image)):
             return self._build_crop_or_pad(data).forward(data)
         return super().forward(data)
