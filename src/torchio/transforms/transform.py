@@ -334,6 +334,7 @@ class Transform(nn.Module):
             Transformed data with the same type as the input.
 
         Raises:
+            TypeError: If `params` is not a dictionary.
             NotImplementedError: If the transform does not expose one
                 exact-parameter kernel.
             ValueError: If per-instance parameter dimensions do not
