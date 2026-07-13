@@ -123,10 +123,7 @@ def _apply_cornucopia(
     # Cornucopia transforms accept multiple tensors as *args
     # and return the same number of tensors.
     results = cornucopia_transform(*tensors)
-
-    # A single input may return either one tensor or a one-item sequence.
-    if len(names) == 1 and not isinstance(results, (tuple, list)):
-        results = (results,)
+    results = _normalize_results(results, len(names))
 
     for name, result_tensor in zip(names, results, strict=True):
         if not isinstance(result_tensor, torch.Tensor):
@@ -136,6 +133,25 @@ def _apply_cornucopia(
             )
             raise TypeError(msg)
         images[name].set_data(result_tensor)
+
+
+def _normalize_results(
+    results: Any,
+    num_images: int,
+) -> tuple[Any, ...] | list[Any]:
+    """Normalize Cornucopia outputs and validate their arity."""
+    if num_images == 1:
+        return results if isinstance(results, (tuple, list)) else (results,)
+    if not isinstance(results, (tuple, list)):
+        msg = (
+            f"Expected a tuple or list with {num_images} image results,"
+            f" got {type(results).__name__}"
+        )
+        raise TypeError(msg)
+    if len(results) != num_images:
+        msg = f"Expected {num_images} image results, got {len(results)}"
+        raise ValueError(msg)
+    return results
 
 
 def _filter_images(

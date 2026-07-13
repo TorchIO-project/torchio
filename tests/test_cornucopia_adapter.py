@@ -107,10 +107,10 @@ class TestCornucopiaAdapterLogic:
         torch.testing.assert_close(result.t1.data, original)
 
     def test_rejects_non_tensor_result(self) -> None:
-        subject = _make_subject()
+        subject = tio.Subject(t1=tio.ScalarImage(torch.rand(1, 4, 4, 4)))
 
         with pytest.raises(TypeError, match=r"torch.Tensor"):
-            tio.CornucopiaAdapter(lambda *tensors: "not a tensor")(subject)
+            tio.CornucopiaAdapter(lambda tensor: "not a tensor")(subject)
 
     def test_copy_false_allows_in_place_transform(self) -> None:
         batch = tio.SubjectsBatch.from_subjects(
@@ -138,6 +138,12 @@ class TestCornucopiaAdapterLogic:
         result = tio.CornucopiaAdapter(transform)(subject)
 
         torch.testing.assert_close(result.t1.data, subject.t1.data)
+
+    def test_multiple_images_reject_single_tensor_result(self) -> None:
+        subject = _make_subject()
+
+        with pytest.raises(TypeError, match="tuple or list with 2 image results"):
+            tio.CornucopiaAdapter(lambda *tensors: tensors[0])(subject)
 
 
 # ── Real Cornucopia transforms ───────────────────────────────────────
