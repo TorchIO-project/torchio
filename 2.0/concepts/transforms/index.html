@@ -730,13 +730,30 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#the-make_params-apply-split" class="md-nav__link">
+  <a href="#the-make_params-apply_transform-split" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        The <code>make_params</code> / <code>apply</code> split
+        The <code>make_params</code> / <code>apply_transform</code> split
       </span>
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="The make_params &#x2f; apply_transform split">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#metadata-in-a-batch" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Metadata in a batch
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -3713,13 +3730,30 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#the-make_params-apply-split" class="md-nav__link">
+  <a href="#the-make_params-apply_transform-split" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        The <code>make_params</code> / <code>apply</code> split
+        The <code>make_params</code> / <code>apply_transform</code> split
       </span>
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="The make_params &#x2f; apply_transform split">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#metadata-in-a-batch" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Metadata in a batch
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -3863,49 +3897,123 @@ and always return the same type.</p>
 <p>Internally, <strong>all inputs are converted to a <code>SubjectsBatch</code></strong>
 before the transform runs. A single <code>Image</code> becomes a batch of
 size 1; a <code>SubjectsBatch</code> from a <code>DataLoader</code> passes through
-directly. This means transform authors write <strong>one method</strong> that
-works identically for single samples and batches:</p>
-<!-- pytest-codeblocks:skip -->
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">Flip</span><span class="p">(</span><span class="n">SpatialTransform</span><span class="p">):</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">apply_transform</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">batch</span><span class="p">,</span> <span class="n">params</span><span class="p">):</span>
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>        <span class="n">dims</span> <span class="o">=</span> <span class="p">[</span><span class="n">a</span> <span class="o">-</span> <span class="mi">3</span> <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">params</span><span class="p">[</span><span class="s2">&quot;axes&quot;</span><span class="p">]]</span>
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>        <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">img_batch</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_images</span><span class="p">(</span><span class="n">batch</span><span class="p">)</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>            <span class="n">img_batch</span><span class="o">.</span><span class="n">_data</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">flip</span><span class="p">(</span><span class="n">img_batch</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">dims</span><span class="p">)</span>
-<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>        <span class="k">return</span> <span class="n">batch</span>
+directly. This means transform authors write <strong>one batch-oriented
+application method</strong> that works identically for single samples and batches
+(<code>apply_transform</code>), plus <code>make_params</code> when parameter construction is
+needed:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="kn">import</span><span class="w"> </span><span class="nn">torchio</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">tio</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="k">class</span><span class="w"> </span><span class="nc">AddValue</span><span class="p">(</span><span class="n">tio</span><span class="o">.</span><span class="n">Transform</span><span class="p">):</span>
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Add a fixed value to every image in a batch.&quot;&quot;&quot;</span>
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="n">value</span>
+<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>
+<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">make_params</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">batch</span><span class="p">:</span> <span class="n">tio</span><span class="o">.</span><span class="n">SubjectsBatch</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the value to add.&quot;&quot;&quot;</span>
+<a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>        <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;value&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="p">}</span>
+<a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>
+<a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">apply_transform</span><span class="p">(</span>
+<a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>        <span class="bp">self</span><span class="p">,</span>
+<a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a>        <span class="n">batch</span><span class="p">:</span> <span class="n">tio</span><span class="o">.</span><span class="n">SubjectsBatch</span><span class="p">,</span>
+<a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a>        <span class="n">params</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
+<a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a>    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">tio</span><span class="o">.</span><span class="n">SubjectsBatch</span><span class="p">:</span>
+<a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Add the value to each 5D image tensor.&quot;&quot;&quot;</span>
+<a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a>        <span class="k">for</span> <span class="n">image_batch</span> <span class="ow">in</span> <span class="n">batch</span><span class="o">.</span><span class="n">images</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+<a id="__codelineno-0-25" name="__codelineno-0-25" href="#__codelineno-0-25"></a>            <span class="n">image_batch</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">image_batch</span><span class="o">.</span><span class="n">data</span> <span class="o">+</span> <span class="n">params</span><span class="p">[</span><span class="s2">&quot;value&quot;</span><span class="p">]</span>
+<a id="__codelineno-0-26" name="__codelineno-0-26" href="#__codelineno-0-26"></a>        <span class="k">return</span> <span class="n">batch</span>
+<a id="__codelineno-0-27" name="__codelineno-0-27" href="#__codelineno-0-27"></a>
+<a id="__codelineno-0-28" name="__codelineno-0-28" href="#__codelineno-0-28"></a>
+<a id="__codelineno-0-29" name="__codelineno-0-29" href="#__codelineno-0-29"></a><span class="n">subject</span> <span class="o">=</span> <span class="n">tio</span><span class="o">.</span><span class="n">Subject</span><span class="p">(</span>
+<a id="__codelineno-0-30" name="__codelineno-0-30" href="#__codelineno-0-30"></a>    <span class="n">image</span><span class="o">=</span><span class="n">tio</span><span class="o">.</span><span class="n">ScalarImage</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">)),</span>
+<a id="__codelineno-0-31" name="__codelineno-0-31" href="#__codelineno-0-31"></a>    <span class="n">site</span><span class="o">=</span><span class="s2">&quot;A&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-32" name="__codelineno-0-32" href="#__codelineno-0-32"></a><span class="p">)</span>
+<a id="__codelineno-0-33" name="__codelineno-0-33" href="#__codelineno-0-33"></a><span class="n">batch</span> <span class="o">=</span> <span class="n">tio</span><span class="o">.</span><span class="n">SubjectsBatch</span><span class="o">.</span><span class="n">from_subjects</span><span class="p">([</span><span class="n">subject</span><span class="p">])</span>
+<a id="__codelineno-0-34" name="__codelineno-0-34" href="#__codelineno-0-34"></a><span class="k">assert</span> <span class="n">subject</span><span class="o">.</span><span class="n">image</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span>
+<a id="__codelineno-0-35" name="__codelineno-0-35" href="#__codelineno-0-35"></a><span class="k">assert</span> <span class="n">batch</span><span class="o">.</span><span class="n">image</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span>
+<a id="__codelineno-0-36" name="__codelineno-0-36" href="#__codelineno-0-36"></a>
+<a id="__codelineno-0-37" name="__codelineno-0-37" href="#__codelineno-0-37"></a><span class="n">transformed</span> <span class="o">=</span> <span class="n">AddValue</span><span class="p">(</span><span class="mi">2</span><span class="p">)(</span><span class="n">subject</span><span class="p">)</span>
+<a id="__codelineno-0-38" name="__codelineno-0-38" href="#__codelineno-0-38"></a><span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">transformed</span><span class="p">,</span> <span class="n">tio</span><span class="o">.</span><span class="n">Subject</span><span class="p">)</span>
+<a id="__codelineno-0-39" name="__codelineno-0-39" href="#__codelineno-0-39"></a><span class="k">assert</span> <span class="n">transformed</span><span class="o">.</span><span class="n">image</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span>
+<a id="__codelineno-0-40" name="__codelineno-0-40" href="#__codelineno-0-40"></a><span class="k">assert</span> <span class="n">torch</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">transformed</span><span class="o">.</span><span class="n">image</span><span class="o">.</span><span class="n">data</span> <span class="o">==</span> <span class="mi">2</span><span class="p">)</span>
 </code></pre></div>
-<p>The negative dim indexing (<code>-3</code>, <code>-2</code>, <code>-1</code> for spatial axes)
-works for both 5D <code>(B, C, I, J, K)</code> batch tensors and 5D
-<code>(1, C, I, J, K)</code> single-sample tensors.</p>
+<p>The public call performs the complete round trip:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>Subject -&gt; SubjectsBatch -&gt; apply_transform -&gt; Subject
+</code></pre></div>
+<p>An image tensor shaped <code>(C, I, J, K)</code> therefore reaches
+<code>apply_transform</code> as <code>(B, C, I, J, K)</code>. For a single <code>Subject</code>,
+<code>B</code> is 1. Negative dimension indices (<code>-3</code>, <code>-2</code>, <code>-1</code>) identify
+the spatial axes for both single-element and multi-element batches.</p>
 <p>When a <code>SubjectsBatch</code> is passed (e.g., from <code>SubjectsLoader</code>),
 transforms that support it sample <strong>independent parameters per batch
 element</strong> by default, so a single call produces diverse augmentations
 (see <a href="../per-instance-augmentation/">Per-instance augmentation</a>). Pass
 <code>per_instance=False</code> to share one sampled parameter set across all
-elements. Single inputs are unaffected.</p>
-<h2 id="the-make_params-apply-split">The <code>make_params</code> / <code>apply</code> split</h2>
+elements. Fixed parameters are not sampled and therefore remain shared.
+Single inputs are unaffected.</p>
+<h2 id="the-make_params-apply_transform-split">The <code>make_params</code> / <code>apply_transform</code> split</h2>
 <p>Every transform has two methods:</p>
 <ul>
-<li><strong><code>make_params(subject)</code></strong>: sample random parameters (called once
-  per transform invocation).</li>
-<li><strong><code>apply(subject, params)</code></strong>: apply the transform using those
-  parameters.</li>
+<li><strong><code>make_params(batch)</code></strong>: create or sample parameters for the
+  <code>SubjectsBatch</code>.</li>
+<li><strong><code>apply_transform(batch, params)</code></strong>: apply those parameters to the
+  <code>SubjectsBatch</code>.</li>
 </ul>
 <p>This separation (inspired by Torchvision V2) means the same random
-parameters are applied consistently to all images, points, and bounding
-boxes in a Subject. Params are saved in history for replay.</p>
+parameters are applied consistently to all images in a <code>Subject</code>.
+Parameters are saved in history for inspection and inversion.</p>
+<div class="admonition warning">
+<p class="admonition-title"><code>apply_transform</code> is a low-level kernel</p>
+<p>Application code should call the transform itself, for example
+<code>result = transform(subject)</code>. Calling <code>apply_transform</code> directly
+bypasses input wrapping, copying, probability handling, history
+recording, and output-type restoration. It requires a
+<code>SubjectsBatch</code>, not a <code>Subject</code>.</p>
+</div>
+<h3 id="metadata-in-a-batch">Metadata in a batch</h3>
+<p><code>Subject.metadata</code> is a <code>dict[str, Any]</code>. After batching,
+<code>batch.metadata</code> is a <code>dict[str, list[Any]]</code>, with one value per batch
+element:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="kn">import</span><span class="w"> </span><span class="nn">torchio</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">tio</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="n">subjects</span> <span class="o">=</span> <span class="p">[</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>    <span class="n">tio</span><span class="o">.</span><span class="n">Subject</span><span class="p">(</span>
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>        <span class="n">image</span><span class="o">=</span><span class="n">tio</span><span class="o">.</span><span class="n">ScalarImage</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">)),</span>
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>        <span class="n">site</span><span class="o">=</span><span class="s2">&quot;A&quot;</span><span class="p">,</span>
+<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>        <span class="n">age</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span>
+<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>    <span class="p">),</span>
+<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>    <span class="n">tio</span><span class="o">.</span><span class="n">Subject</span><span class="p">(</span>
+<a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a>        <span class="n">image</span><span class="o">=</span><span class="n">tio</span><span class="o">.</span><span class="n">ScalarImage</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">)),</span>
+<a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a>        <span class="n">site</span><span class="o">=</span><span class="s2">&quot;B&quot;</span><span class="p">,</span>
+<a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a>        <span class="n">age</span><span class="o">=</span><span class="mi">40</span><span class="p">,</span>
+<a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a>    <span class="p">),</span>
+<a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a><span class="p">]</span>
+<a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a><span class="n">batch</span> <span class="o">=</span> <span class="n">tio</span><span class="o">.</span><span class="n">SubjectsBatch</span><span class="o">.</span><span class="n">from_subjects</span><span class="p">(</span><span class="n">subjects</span><span class="p">)</span>
+<a id="__codelineno-2-17" name="__codelineno-2-17" href="#__codelineno-2-17"></a><span class="k">assert</span> <span class="n">batch</span><span class="o">.</span><span class="n">metadata</span> <span class="o">==</span> <span class="p">{</span><span class="s2">&quot;site&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;A&quot;</span><span class="p">,</span> <span class="s2">&quot;B&quot;</span><span class="p">],</span> <span class="s2">&quot;age&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">30</span><span class="p">,</span> <span class="mi">40</span><span class="p">]}</span>
+</code></pre></div>
+<p>The first subject defines the image-name and metadata-key order of the
+batch. All subjects must have the same schema, although their local
+key order may differ. A custom transform should preserve that shared
+schema and keep every metadata list aligned with the batch dimension.</p>
 <h2 id="scalar-range-or-distribution-one-class-for-both">Scalar, range, or distribution: one class for both</h2>
 <p>Transform parameters accept three forms. No separate
 <code>RandomNoise</code> class:</p>
 <!-- pytest-codeblocks:skip -->
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1"># Deterministic: always std=0.1</span>
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="n">tio</span><span class="o">.</span><span class="n">Noise</span><span class="p">(</span><span class="n">std</span><span class="o">=</span><span class="mf">0.1</span><span class="p">)</span>
-<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>
-<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="c1"># Random: sample std ~ U(0.05, 0.2) each call</span>
-<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="n">tio</span><span class="o">.</span><span class="n">Noise</span><span class="p">(</span><span class="n">std</span><span class="o">=</span><span class="p">(</span><span class="mf">0.05</span><span class="p">,</span> <span class="mf">0.2</span><span class="p">))</span>
-<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>
-<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="c1"># Custom distribution: sample from any torch.distributions.Distribution</span>
-<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="kn">from</span><span class="w"> </span><span class="nn">torch.distributions</span><span class="w"> </span><span class="kn">import</span> <span class="n">LogNormal</span>
-<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="n">tio</span><span class="o">.</span><span class="n">Noise</span><span class="p">(</span><span class="n">std</span><span class="o">=</span><span class="n">LogNormal</span><span class="p">(</span><span class="n">loc</span><span class="o">=-</span><span class="mi">2</span><span class="p">,</span> <span class="n">scale</span><span class="o">=</span><span class="mf">0.5</span><span class="p">))</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="c1"># Deterministic: always std=0.1</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="n">tio</span><span class="o">.</span><span class="n">Noise</span><span class="p">(</span><span class="n">std</span><span class="o">=</span><span class="mf">0.1</span><span class="p">)</span>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="c1"># Random: sample std ~ U(0.05, 0.2) each call</span>
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="n">tio</span><span class="o">.</span><span class="n">Noise</span><span class="p">(</span><span class="n">std</span><span class="o">=</span><span class="p">(</span><span class="mf">0.05</span><span class="p">,</span> <span class="mf">0.2</span><span class="p">))</span>
+<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>
+<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="c1"># Custom distribution: sample from any torch.distributions.Distribution</span>
+<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="kn">from</span><span class="w"> </span><span class="nn">torch.distributions</span><span class="w"> </span><span class="kn">import</span> <span class="n">LogNormal</span>
+<a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="n">tio</span><span class="o">.</span><span class="n">Noise</span><span class="p">(</span><span class="n">std</span><span class="o">=</span><span class="n">LogNormal</span><span class="p">(</span><span class="n">loc</span><span class="o">=-</span><span class="mi">2</span><span class="p">,</span> <span class="n">scale</span><span class="o">=</span><span class="mf">0.5</span><span class="p">))</span>
 </code></pre></div>
 <p>This parsing and sampling is handled internally. Any
 <code>torch.distributions.Distribution</code> can be used
@@ -3923,13 +4031,13 @@ with their default parameters.</p>
 <h2 id="input-flexibility">Input flexibility</h2>
 <p>Transforms accept multiple input types and return the same type:</p>
 <!-- pytest-codeblocks:skip -->
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="n">result</span> <span class="o">=</span> <span class="n">transform</span><span class="p">(</span><span class="n">subject</span><span class="p">)</span>      <span class="c1"># Subject → Subject</span>
-<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="n">result</span> <span class="o">=</span> <span class="n">transform</span><span class="p">(</span><span class="n">image</span><span class="p">)</span>        <span class="c1"># Image → Image</span>
-<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="n">result</span> <span class="o">=</span> <span class="n">transform</span><span class="p">(</span><span class="n">tensor</span><span class="p">)</span>       <span class="c1"># 4D Tensor → 4D Tensor</span>
-<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="n">result</span> <span class="o">=</span> <span class="n">transform</span><span class="p">(</span><span class="n">ndarray</span><span class="p">)</span>      <span class="c1"># NumPy array → NumPy array</span>
-<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="n">result</span> <span class="o">=</span> <span class="n">transform</span><span class="p">(</span><span class="n">sitk_image</span><span class="p">)</span>   <span class="c1"># SimpleITK → SimpleITK</span>
-<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="n">result</span> <span class="o">=</span> <span class="n">transform</span><span class="p">(</span><span class="n">nifti_image</span><span class="p">)</span>  <span class="c1"># NiBabel → NiBabel</span>
-<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="n">result</span> <span class="o">=</span> <span class="n">transform</span><span class="p">(</span><span class="n">data_dict</span><span class="p">)</span>    <span class="c1"># dict → dict (MONAI-compatible)</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="n">result</span> <span class="o">=</span> <span class="n">transform</span><span class="p">(</span><span class="n">subject</span><span class="p">)</span>      <span class="c1"># Subject → Subject</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="n">result</span> <span class="o">=</span> <span class="n">transform</span><span class="p">(</span><span class="n">image</span><span class="p">)</span>        <span class="c1"># Image → Image</span>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="n">result</span> <span class="o">=</span> <span class="n">transform</span><span class="p">(</span><span class="n">tensor</span><span class="p">)</span>       <span class="c1"># 4D Tensor → 4D Tensor</span>
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="n">result</span> <span class="o">=</span> <span class="n">transform</span><span class="p">(</span><span class="n">ndarray</span><span class="p">)</span>      <span class="c1"># NumPy array → NumPy array</span>
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="n">result</span> <span class="o">=</span> <span class="n">transform</span><span class="p">(</span><span class="n">sitk_image</span><span class="p">)</span>   <span class="c1"># SimpleITK → SimpleITK</span>
+<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="n">result</span> <span class="o">=</span> <span class="n">transform</span><span class="p">(</span><span class="n">nifti_image</span><span class="p">)</span>  <span class="c1"># NiBabel → NiBabel</span>
+<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="n">result</span> <span class="o">=</span> <span class="n">transform</span><span class="p">(</span><span class="n">data_dict</span><span class="p">)</span>    <span class="c1"># dict → dict (MONAI-compatible)</span>
 </code></pre></div>
 <p>Non-Subject inputs are wrapped in a temporary Subject internally.
 Spatial metadata (spacing, affine) is preserved through the
@@ -3937,12 +4045,12 @@ round-trip.</p>
 <h3 id="monai-interoperability">MONAI interoperability</h3>
 <p>Dict input makes TorchIO transforms usable in MONAI pipelines:</p>
 <!-- pytest-codeblocks:skip -->
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="c1"># MONAI-style dict</span>
-<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="n">data</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;image&quot;</span><span class="p">:</span> <span class="n">tensor</span><span class="p">,</span> <span class="s2">&quot;label&quot;</span><span class="p">:</span> <span class="n">label_tensor</span><span class="p">,</span> <span class="s2">&quot;age&quot;</span><span class="p">:</span> <span class="mi">42</span><span class="p">}</span>
-<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>
-<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="c1"># TorchIO transforms work directly</span>
-<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="n">augmented</span> <span class="o">=</span> <span class="n">tio</span><span class="o">.</span><span class="n">Noise</span><span class="p">(</span><span class="n">std</span><span class="o">=</span><span class="mf">0.1</span><span class="p">)(</span><span class="n">data</span><span class="p">)</span>   <span class="c1"># returns dict</span>
-<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="n">augmented</span> <span class="o">=</span> <span class="n">tio</span><span class="o">.</span><span class="n">Flip</span><span class="p">(</span><span class="n">axes</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,))(</span><span class="n">data</span><span class="p">)</span>  <span class="c1"># returns dict</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="c1"># MONAI-style dict</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="n">data</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;image&quot;</span><span class="p">:</span> <span class="n">tensor</span><span class="p">,</span> <span class="s2">&quot;label&quot;</span><span class="p">:</span> <span class="n">label_tensor</span><span class="p">,</span> <span class="s2">&quot;age&quot;</span><span class="p">:</span> <span class="mi">42</span><span class="p">}</span>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="c1"># TorchIO transforms work directly</span>
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="n">augmented</span> <span class="o">=</span> <span class="n">tio</span><span class="o">.</span><span class="n">Noise</span><span class="p">(</span><span class="n">std</span><span class="o">=</span><span class="mf">0.1</span><span class="p">)(</span><span class="n">data</span><span class="p">)</span>   <span class="c1"># returns dict</span>
+<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="n">augmented</span> <span class="o">=</span> <span class="n">tio</span><span class="o">.</span><span class="n">Flip</span><span class="p">(</span><span class="n">axes</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,))(</span><span class="n">data</span><span class="p">)</span>  <span class="c1"># returns dict</span>
 </code></pre></div>
 <p>Tensor values are treated as images; non-tensor values pass through
 unchanged. See also <a href="../../how-to/monai/"><code>MonaiAdapter</code></a> for wrapping
@@ -3959,60 +4067,60 @@ MONAI transforms in TorchIO pipelines.</p>
 <p><strong><code>Compose</code></strong> runs transforms sequentially. It deep-copies the input
 by default so the original data is preserved:</p>
 <!-- pytest-codeblocks:skip -->
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="n">pipeline</span> <span class="o">=</span> <span class="n">tio</span><span class="o">.</span><span class="n">Compose</span><span class="p">([</span>
-<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>    <span class="n">tio</span><span class="o">.</span><span class="n">Flip</span><span class="p">(</span><span class="n">axes</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,)),</span>
-<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>    <span class="n">tio</span><span class="o">.</span><span class="n">Noise</span><span class="p">(</span><span class="n">std</span><span class="o">=</span><span class="mf">0.05</span><span class="p">),</span>
-<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="p">])</span>
-<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="n">result</span> <span class="o">=</span> <span class="n">pipeline</span><span class="p">(</span><span class="n">subject</span><span class="p">)</span>  <span class="c1"># original unchanged</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="n">pipeline</span> <span class="o">=</span> <span class="n">tio</span><span class="o">.</span><span class="n">Compose</span><span class="p">([</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>    <span class="n">tio</span><span class="o">.</span><span class="n">Flip</span><span class="p">(</span><span class="n">axes</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,)),</span>
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>    <span class="n">tio</span><span class="o">.</span><span class="n">Noise</span><span class="p">(</span><span class="n">std</span><span class="o">=</span><span class="mf">0.05</span><span class="p">),</span>
+<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="p">])</span>
+<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="n">result</span> <span class="o">=</span> <span class="n">pipeline</span><span class="p">(</span><span class="n">subject</span><span class="p">)</span>  <span class="c1"># original unchanged</span>
 </code></pre></div>
 <p><strong><code>OneOf</code></strong> picks one transform at random (with optional weights):</p>
 <!-- pytest-codeblocks:skip -->
-<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="n">augment</span> <span class="o">=</span> <span class="n">tio</span><span class="o">.</span><span class="n">OneOf</span><span class="p">({</span>
-<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>    <span class="n">tio</span><span class="o">.</span><span class="n">Noise</span><span class="p">(</span><span class="n">std</span><span class="o">=</span><span class="mf">0.1</span><span class="p">):</span> <span class="mf">0.7</span><span class="p">,</span>
-<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>    <span class="n">tio</span><span class="o">.</span><span class="n">Blur</span><span class="p">(</span><span class="n">std</span><span class="o">=</span><span class="mf">1.0</span><span class="p">):</span> <span class="mf">0.3</span><span class="p">,</span>
-<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="p">})</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="n">augment</span> <span class="o">=</span> <span class="n">tio</span><span class="o">.</span><span class="n">OneOf</span><span class="p">({</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>    <span class="n">tio</span><span class="o">.</span><span class="n">Noise</span><span class="p">(</span><span class="n">std</span><span class="o">=</span><span class="mf">0.1</span><span class="p">):</span> <span class="mf">0.7</span><span class="p">,</span>
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>    <span class="n">tio</span><span class="o">.</span><span class="n">Blur</span><span class="p">(</span><span class="n">std</span><span class="o">=</span><span class="mf">1.0</span><span class="p">):</span> <span class="mf">0.3</span><span class="p">,</span>
+<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="p">})</span>
 </code></pre></div>
 <p><strong><code>SomeOf</code></strong> picks N transforms:</p>
 <!-- pytest-codeblocks:skip -->
-<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="n">augment</span> <span class="o">=</span> <span class="n">tio</span><span class="o">.</span><span class="n">SomeOf</span><span class="p">(</span>
-<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>    <span class="p">[</span><span class="n">tio</span><span class="o">.</span><span class="n">Noise</span><span class="p">(</span><span class="n">std</span><span class="o">=</span><span class="mf">0.1</span><span class="p">),</span> <span class="n">tio</span><span class="o">.</span><span class="n">Blur</span><span class="p">(</span><span class="n">std</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">)),</span> <span class="n">tio</span><span class="o">.</span><span class="n">Gamma</span><span class="p">(</span><span class="n">log_gamma</span><span class="o">=</span><span class="p">(</span><span class="o">-</span><span class="mf">0.3</span><span class="p">,</span> <span class="mf">0.3</span><span class="p">))],</span>
-<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>    <span class="n">num_transforms</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
-<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="n">augment</span> <span class="o">=</span> <span class="n">tio</span><span class="o">.</span><span class="n">SomeOf</span><span class="p">(</span>
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>    <span class="p">[</span><span class="n">tio</span><span class="o">.</span><span class="n">Noise</span><span class="p">(</span><span class="n">std</span><span class="o">=</span><span class="mf">0.1</span><span class="p">),</span> <span class="n">tio</span><span class="o">.</span><span class="n">Blur</span><span class="p">(</span><span class="n">std</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">)),</span> <span class="n">tio</span><span class="o">.</span><span class="n">Gamma</span><span class="p">(</span><span class="n">log_gamma</span><span class="o">=</span><span class="p">(</span><span class="o">-</span><span class="mf">0.3</span><span class="p">,</span> <span class="mf">0.3</span><span class="p">))],</span>
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>    <span class="n">num_transforms</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="p">)</span>
 </code></pre></div>
 <h2 id="history-traceability-and-replay">History, traceability, and replay</h2>
 <p>Every transform records an <code>AppliedTransform</code> in the Subject's
 <code>applied_transforms</code> list:</p>
-<!-- pytest-codeblocks:skip -->
-<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="n">result</span> <span class="o">=</span> <span class="n">pipeline</span><span class="p">(</span><span class="n">subject</span><span class="p">)</span>
-<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="k">for</span> <span class="n">trace</span> <span class="ow">in</span> <span class="n">result</span><span class="o">.</span><span class="n">applied_transforms</span><span class="p">:</span>
-<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>    <span class="nb">print</span><span class="p">(</span><span class="n">trace</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">trace</span><span class="o">.</span><span class="n">params</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
+<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="kn">import</span><span class="w"> </span><span class="nn">torchio</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">tio</span>
+<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a>
+<a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a><span class="n">subject</span> <span class="o">=</span> <span class="n">tio</span><span class="o">.</span><span class="n">Subject</span><span class="p">(</span><span class="n">image</span><span class="o">=</span><span class="n">tio</span><span class="o">.</span><span class="n">ScalarImage</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">)))</span>
+<a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a><span class="n">result</span> <span class="o">=</span> <span class="n">tio</span><span class="o">.</span><span class="n">Noise</span><span class="p">(</span><span class="n">std</span><span class="o">=</span><span class="mf">0.1</span><span class="p">)(</span><span class="n">subject</span><span class="p">)</span>
+<a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a><span class="n">trace</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">applied_transforms</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+<a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a><span class="k">assert</span> <span class="n">trace</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="s2">&quot;Noise&quot;</span>
+<a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a><span class="k">assert</span> <span class="n">trace</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;std&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="mf">0.1</span>
 </code></pre></div>
-<p><strong>Replay</strong> applies the exact same augmentation to different data:</p>
-<!-- pytest-codeblocks:skip -->
-<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="c1"># Get the params from history</span>
-<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="n">params</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">applied_transforms</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">params</span>
-<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>
-<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="c1"># Replay on a new subject</span>
-<a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a><span class="n">noise</span> <span class="o">=</span> <span class="n">tio</span><span class="o">.</span><span class="n">Noise</span><span class="p">(</span><span class="n">std</span><span class="o">=</span><span class="mf">0.1</span><span class="p">)</span>
-<a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a><span class="n">replayed</span> <span class="o">=</span> <span class="n">noise</span><span class="o">.</span><span class="n">apply_transform</span><span class="p">(</span><span class="n">new_subject</span><span class="p">,</span> <span class="n">params</span><span class="p">)</span>
-</code></pre></div>
+<p>History parameters support inspection and inversion. TorchIO does not
+currently expose a public API for applying an arbitrary saved parameter
+dictionary to another input. In particular, do not use
+<code>apply_transform(new_subject, params)</code> for replay: the method requires
+an already wrapped <code>SubjectsBatch</code> and omits the public-call lifecycle.</p>
 <h2 id="hydra-configuration">Hydra configuration</h2>
 <p>Transforms can export themselves as Hydra-compatible YAML configs
 for reproducible experiment management:</p>
 <!-- pytest-codeblocks:skip -->
-<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="n">pipeline</span> <span class="o">=</span> <span class="n">tio</span><span class="o">.</span><span class="n">Compose</span><span class="p">([</span>
-<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>    <span class="n">tio</span><span class="o">.</span><span class="n">Flip</span><span class="p">(</span><span class="n">axes</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="n">p</span><span class="o">=</span><span class="mf">0.5</span><span class="p">),</span>
-<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a>    <span class="n">tio</span><span class="o">.</span><span class="n">Noise</span><span class="p">(</span><span class="n">std</span><span class="o">=</span><span class="p">(</span><span class="mf">0.05</span><span class="p">,</span> <span class="mf">0.2</span><span class="p">)),</span>
-<a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a><span class="p">])</span>
-<a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a><span class="n">cfg</span> <span class="o">=</span> <span class="n">pipeline</span><span class="o">.</span><span class="n">to_hydra</span><span class="p">()</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="n">pipeline</span> <span class="o">=</span> <span class="n">tio</span><span class="o">.</span><span class="n">Compose</span><span class="p">([</span>
+<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>    <span class="n">tio</span><span class="o">.</span><span class="n">Flip</span><span class="p">(</span><span class="n">axes</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="n">p</span><span class="o">=</span><span class="mf">0.5</span><span class="p">),</span>
+<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>    <span class="n">tio</span><span class="o">.</span><span class="n">Noise</span><span class="p">(</span><span class="n">std</span><span class="o">=</span><span class="p">(</span><span class="mf">0.05</span><span class="p">,</span> <span class="mf">0.2</span><span class="p">)),</span>
+<a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="p">])</span>
+<a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a><span class="n">cfg</span> <span class="o">=</span> <span class="n">pipeline</span><span class="o">.</span><span class="n">to_hydra</span><span class="p">()</span>
 </code></pre></div>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="p">{</span>
-<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>    <span class="s2">&quot;_target_&quot;</span><span class="p">:</span> <span class="s2">&quot;torchio.Compose&quot;</span><span class="p">,</span>
-<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>    <span class="s2">&quot;transforms&quot;</span><span class="p">:</span> <span class="p">[</span>
-<a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a>        <span class="p">{</span><span class="s2">&quot;_target_&quot;</span><span class="p">:</span> <span class="s2">&quot;torchio.Flip&quot;</span><span class="p">,</span> <span class="s2">&quot;p&quot;</span><span class="p">:</span> <span class="mf">0.5</span><span class="p">,</span> <span class="s2">&quot;axes&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">]},</span>
-<a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a>        <span class="p">{</span><span class="s2">&quot;_target_&quot;</span><span class="p">:</span> <span class="s2">&quot;torchio.Noise&quot;</span><span class="p">,</span> <span class="s2">&quot;std&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mf">0.05</span><span class="p">,</span> <span class="mf">0.2</span><span class="p">]},</span>
-<a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a>    <span class="p">],</span>
-<a id="__codelineno-10-7" name="__codelineno-10-7" href="#__codelineno-10-7"></a><span class="p">}</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="p">{</span>
+<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>    <span class="s2">&quot;_target_&quot;</span><span class="p">:</span> <span class="s2">&quot;torchio.Compose&quot;</span><span class="p">,</span>
+<a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a>    <span class="s2">&quot;transforms&quot;</span><span class="p">:</span> <span class="p">[</span>
+<a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a>        <span class="p">{</span><span class="s2">&quot;_target_&quot;</span><span class="p">:</span> <span class="s2">&quot;torchio.Flip&quot;</span><span class="p">,</span> <span class="s2">&quot;p&quot;</span><span class="p">:</span> <span class="mf">0.5</span><span class="p">,</span> <span class="s2">&quot;axes&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">]},</span>
+<a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a>        <span class="p">{</span><span class="s2">&quot;_target_&quot;</span><span class="p">:</span> <span class="s2">&quot;torchio.Noise&quot;</span><span class="p">,</span> <span class="s2">&quot;std&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mf">0.05</span><span class="p">,</span> <span class="mf">0.2</span><span class="p">]},</span>
+<a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a>    <span class="p">],</span>
+<a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a><span class="p">}</span>
 </code></pre></div>
 <p>Instantiate with <code>hydra.utils.instantiate(cfg)</code>.</p>
 <h2 id="gpu-and-differentiability">GPU and differentiability</h2>
@@ -4020,15 +4128,15 @@ for reproducible experiment management:</p>
 <code>torch.nn.functional.grid_sample</code>, which is differentiable and
 GPU-compatible:</p>
 <!-- pytest-codeblocks:skip -->
-<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="c1"># Augmentation on GPU or MPS</span>
-<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="n">subject</span> <span class="o">=</span> <span class="n">subject</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s2">&quot;cuda&quot;</span><span class="p">)</span>  <span class="c1"># or &quot;mps&quot; on Apple Silicon</span>
-<a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a><span class="n">result</span> <span class="o">=</span> <span class="n">transform</span><span class="p">(</span><span class="n">subject</span><span class="p">)</span>   <span class="c1"># stays on device</span>
-<a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a>
-<a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a><span class="c1"># Gradients flow through</span>
-<a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a><span class="k">with</span> <span class="n">torch</span><span class="o">.</span><span class="n">enable_grad</span><span class="p">():</span>
-<a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a>    <span class="n">result</span> <span class="o">=</span> <span class="n">transform</span><span class="p">(</span><span class="n">subject</span><span class="p">)</span>
-<a id="__codelineno-11-8" name="__codelineno-11-8" href="#__codelineno-11-8"></a>    <span class="n">loss</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">t1</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
-<a id="__codelineno-11-9" name="__codelineno-11-9" href="#__codelineno-11-9"></a>    <span class="n">loss</span><span class="o">.</span><span class="n">backward</span><span class="p">()</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="c1"># Augmentation on GPU or MPS</span>
+<a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a><span class="n">subject</span> <span class="o">=</span> <span class="n">subject</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s2">&quot;cuda&quot;</span><span class="p">)</span>  <span class="c1"># or &quot;mps&quot; on Apple Silicon</span>
+<a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a><span class="n">result</span> <span class="o">=</span> <span class="n">transform</span><span class="p">(</span><span class="n">subject</span><span class="p">)</span>   <span class="c1"># stays on device</span>
+<a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a>
+<a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a><span class="c1"># Gradients flow through</span>
+<a id="__codelineno-12-6" name="__codelineno-12-6" href="#__codelineno-12-6"></a><span class="k">with</span> <span class="n">torch</span><span class="o">.</span><span class="n">enable_grad</span><span class="p">():</span>
+<a id="__codelineno-12-7" name="__codelineno-12-7" href="#__codelineno-12-7"></a>    <span class="n">result</span> <span class="o">=</span> <span class="n">transform</span><span class="p">(</span><span class="n">subject</span><span class="p">)</span>
+<a id="__codelineno-12-8" name="__codelineno-12-8" href="#__codelineno-12-8"></a>    <span class="n">loss</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">t1</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+<a id="__codelineno-12-9" name="__codelineno-12-9" href="#__codelineno-12-9"></a>    <span class="n">loss</span><span class="o">.</span><span class="n">backward</span><span class="p">()</span>
 </code></pre></div>
 
 
