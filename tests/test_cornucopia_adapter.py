@@ -112,6 +112,19 @@ class TestCornucopiaAdapterLogic:
         with pytest.raises(TypeError, match=r"torch.Tensor"):
             tio.CornucopiaAdapter(lambda *tensors: "not a tensor")(subject)
 
+    def test_copy_false_allows_in_place_transform(self) -> None:
+        batch = tio.SubjectsBatch.from_subjects(
+            [tio.Subject(t1=tio.ScalarImage(torch.zeros(1, 4, 4, 4)))]
+        )
+
+        result = tio.CornucopiaAdapter(
+            lambda tensor: tensor.add_(1),
+            copy=False,
+        )(batch)
+
+        assert torch.all(batch.t1.data == 1)
+        assert torch.all(result.t1.data == 1)
+
 
 # ── Real Cornucopia transforms ───────────────────────────────────────
 

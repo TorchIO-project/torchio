@@ -77,7 +77,7 @@ class CornucopiaAdapter(Transform):
             _apply_cornucopia(subject, self.cornucopia_transform, self)
             return subject
 
-        result = batch.map_subjects(apply_to_subject)
+        result = batch.map_subjects(apply_to_subject, copy=False)
         return unwrap(result)
 
     def apply_transform(
