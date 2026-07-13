@@ -70,15 +70,14 @@ class CornucopiaAdapter(Transform):
         batch, unwrap = self._wrap(data)
         if self.copy:
             batch = _copy.deepcopy(batch)
-        if torch.rand(1).item() > self.p:
+        if torch.rand(1).item() >= self.p:
             return unwrap(batch)
-        subjects = batch.unbatch()
-        for subject in subjects:
-            _apply_cornucopia(subject, self.cornucopia_transform, self)
-        from ..data.batch import SubjectsBatch
 
-        result = SubjectsBatch.from_subjects(subjects)
-        result.adopt_history(batch, subjects)
+        def apply_to_subject(subject: Subject) -> Subject:
+            _apply_cornucopia(subject, self.cornucopia_transform, self)
+            return subject
+
+        result = batch.map_subjects(apply_to_subject)
         return unwrap(result)
 
     def apply_transform(
@@ -130,8 +129,13 @@ def _apply_cornucopia(
         results = (results,)
 
     for name, result_tensor in zip(names, results, strict=True):
-        if isinstance(result_tensor, torch.Tensor):
-            images[name].set_data(result_tensor)
+        if not isinstance(result_tensor, torch.Tensor):
+            msg = (
+                f"Expected torch.Tensor for image field {name!r},"
+                f" got {type(result_tensor).__name__}"
+            )
+            raise TypeError(msg)
+        images[name].set_data(result_tensor)
 
 
 def _filter_images(

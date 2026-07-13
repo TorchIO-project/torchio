@@ -81,6 +81,37 @@ class TestCornucopiaAdapterLogic:
         result = pipeline(subject)
         assert result.t1.data.shape == subject.t1.data.shape
 
+    def test_preserves_prior_history_and_annotations(self) -> None:
+        subject = tio.Gamma(log_gamma=0.2)(
+            tio.Subject(
+                t1=tio.ScalarImage(torch.rand(1, 8, 8, 8) + 1),
+                landmarks=tio.Points(torch.rand(2, 3)),
+            )
+        )
+
+        result = tio.CornucopiaAdapter(lambda tensor: tensor)(subject)
+
+        assert [trace.name for trace in result.applied_transforms] == ["Gamma"]
+        assert set(result.points) == {"landmarks"}
+
+    def test_probability_zero_when_random_draw_is_zero(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        subject = _make_subject()
+        original = subject.t1.data.clone()
+        monkeypatch.setattr(torch, "rand", lambda *args, **kwargs: torch.zeros(1))
+
+        result = tio.CornucopiaAdapter(lambda tensor: tensor + 1, p=0)(subject)
+
+        torch.testing.assert_close(result.t1.data, original)
+
+    def test_rejects_non_tensor_result(self) -> None:
+        subject = _make_subject()
+
+        with pytest.raises(TypeError, match=r"torch.Tensor"):
+            tio.CornucopiaAdapter(lambda *tensors: "not a tensor")(subject)
+
 
 # ── Real Cornucopia transforms ───────────────────────────────────────
 
