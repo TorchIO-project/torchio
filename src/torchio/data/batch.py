@@ -577,7 +577,7 @@ def _make_image_template(image: Image) -> Image:
         dtype=image.data.dtype,
         device=image.data.device,
     )
-    template = image.new_like(data=data, affine=image.affine)
+    template = image.new_like(data=data)
     template._metadata = _copy.deepcopy(image.metadata)
     template.applied_transforms = list(image.applied_transforms)
     return template

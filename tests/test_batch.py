@@ -107,6 +107,14 @@ class TestImagesBatch:
         assert restored.points["landmarks"].data.dtype == torch.float64
         assert restored.bounding_boxes["tumors"].data.dtype == torch.float64
 
+    def test_template_does_not_share_original_affine(self) -> None:
+        image = tio.ScalarImage(torch.rand(1, 4, 4, 4))
+
+        batch = ImagesBatch.from_images([image])
+
+        assert batch._image_templates is not None
+        assert batch._image_templates[0].affine is not image.affine
+
 
 class TestSubjectsBatch:
     def test_from_subjects(self) -> None:
