@@ -10,42 +10,123 @@ and always return the same type.
 Internally, **all inputs are converted to a `SubjectsBatch`**
 before the transform runs. A single `Image` becomes a batch of
 size 1; a `SubjectsBatch` from a `DataLoader` passes through
-directly. This means transform authors write **one method** that
-works identically for single samples and batches:
+directly. This means transform authors write **one batch-oriented
+application method** that works identically for single samples and batches
+(`apply_transform`), plus `make_params` when parameter construction is
+needed:
 
-<!-- pytest-codeblocks:skip -->
 ```python
-class Flip(SpatialTransform):
-    def apply_transform(self, batch, params):
-        dims = [a - 3 for a in params["axes"]]
-        for name, img_batch in self._get_images(batch).items():
-            img_batch._data = torch.flip(img_batch.data, dims)
+from typing import Any
+
+import torch
+import torchio as tio
+
+
+class AddValue(tio.Transform):
+    """Add a fixed value to every image in a batch."""
+
+    def __init__(self, value: float) -> None:
+        super().__init__()
+        self.value = value
+
+    def make_params(self, batch: tio.SubjectsBatch) -> dict[str, Any]:
+        """Return the value to add."""
+        return {"value": self.value}
+
+    def apply_transform(
+        self,
+        batch: tio.SubjectsBatch,
+        params: dict[str, Any],
+    ) -> tio.SubjectsBatch:
+        """Add the value to each 5D image tensor."""
+        for image_batch in batch.images.values():
+            image_batch.data = image_batch.data + params["value"]
         return batch
+
+
+subject = tio.Subject(
+    image=tio.ScalarImage(torch.zeros(1, 2, 3, 4)),
+    site="A",
+)
+batch = tio.SubjectsBatch.from_subjects([subject])
+assert subject.image.data.shape == (1, 2, 3, 4)
+assert batch.image.data.shape == (1, 1, 2, 3, 4)
+
+transformed = AddValue(2)(subject)
+assert isinstance(transformed, tio.Subject)
+assert transformed.image.data.shape == (1, 2, 3, 4)
+assert torch.all(transformed.image.data == 2)
 ```
 
-The negative dim indexing (`-3`, `-2`, `-1` for spatial axes)
-works for both 5D `(B, C, I, J, K)` batch tensors and 5D
-`(1, C, I, J, K)` single-sample tensors.
+The public call performs the complete round trip:
+
+```text
+Subject -> SubjectsBatch -> apply_transform -> Subject
+```
+
+An image tensor shaped `(C, I, J, K)` therefore reaches
+`apply_transform` as `(B, C, I, J, K)`. For a single `Subject`,
+`B` is 1. Negative dimension indices (`-3`, `-2`, `-1`) identify
+the spatial axes for both single-element and multi-element batches.
 
 When a `SubjectsBatch` is passed (e.g., from `SubjectsLoader`),
 transforms that support it sample **independent parameters per batch
 element** by default, so a single call produces diverse augmentations
 (see [Per-instance augmentation](per-instance-augmentation.md)). Pass
 `per_instance=False` to share one sampled parameter set across all
-elements. Single inputs are unaffected.
+elements. Fixed parameters are not sampled and therefore remain shared.
+Single inputs are unaffected.
 
-## The `make_params` / `apply` split
+## The `make_params` / `apply_transform` split
 
 Every transform has two methods:
 
-- **`make_params(subject)`**: sample random parameters (called once
-  per transform invocation).
-- **`apply(subject, params)`**: apply the transform using those
-  parameters.
+- **`make_params(batch)`**: create or sample parameters for the
+  `SubjectsBatch`.
+- **`apply_transform(batch, params)`**: apply those parameters to the
+  `SubjectsBatch`.
 
 This separation (inspired by Torchvision V2) means the same random
-parameters are applied consistently to all images, points, and bounding
-boxes in a Subject. Params are saved in history for replay.
+parameters are applied consistently to all images in a `Subject`.
+Parameters are saved in history for inspection and inversion.
+
+!!! warning "`apply_transform` is a low-level kernel"
+    Application code should call the transform itself, for example
+    `result = transform(subject)`. Calling `apply_transform` directly
+    bypasses input wrapping, copying, probability handling, history
+    recording, and output-type restoration. It requires a
+    `SubjectsBatch`, not a `Subject`.
+
+### Metadata in a batch
+
+`Subject.metadata` is a `dict[str, Any]`. After batching,
+`batch.metadata` is a `dict[str, list[Any]]`, with one value per batch
+element:
+
+```python
+import torch
+import torchio as tio
+
+subjects = [
+    tio.Subject(
+        image=tio.ScalarImage(torch.zeros(1, 2, 3, 4)),
+        site="A",
+        age=30,
+    ),
+    tio.Subject(
+        image=tio.ScalarImage(torch.ones(1, 2, 3, 4)),
+        site="B",
+        age=40,
+    ),
+]
+batch = tio.SubjectsBatch.from_subjects(subjects)
+assert batch.metadata == {"site": ["A", "B"], "age": [30, 40]}
+```
+
+The first subject defines the image-name and metadata-key order of the
+batch. All subjects must have the same schema, although their local
+key order may differ. A custom transform should preserve that shared
+schema and keep every metadata list aligned with the batch dimension.
 
 ## Scalar, range, or distribution: one class for both
 
@@ -162,24 +243,22 @@ augment = tio.SomeOf(
 Every transform records an `AppliedTransform` in the Subject's
 `applied_transforms` list:
 
-<!-- pytest-codeblocks:skip -->
 ```python
-result = pipeline(subject)
-for trace in result.applied_transforms:
-    print(trace.name, trace.params)
+import torch
+import torchio as tio
+
+subject = tio.Subject(image=tio.ScalarImage(torch.zeros(1, 2, 3, 4)))
+result = tio.Noise(std=0.1)(subject)
+trace = result.applied_transforms[-1]
+assert trace.name == "Noise"
+assert trace.params["std"] == 0.1
 ```
 
-**Replay** applies the exact same augmentation to different data:
-
-<!-- pytest-codeblocks:skip -->
-```python
-# Get the params from history
-params = result.applied_transforms[0].params
-
-# Replay on a new subject
-noise = tio.Noise(std=0.1)
-replayed = noise.apply_transform(new_subject, params)
-```
+History parameters support inspection and inversion. TorchIO does not
+currently expose a public API for applying an arbitrary saved parameter
+dictionary to another input. In particular, do not use
+`apply_transform(new_subject, params)` for replay: the method requires
+an already wrapped `SubjectsBatch` and omits the public-call lifecycle.
 
 ## Hydra configuration
 
