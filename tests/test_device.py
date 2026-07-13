@@ -29,6 +29,23 @@ class TestImageTo:
         result = image.to(torch.float16)
         assert result.data.dtype == torch.float16
 
+    def test_moves_image_annotations(self) -> None:
+        image = tio.ScalarImage(
+            torch.rand(1, 4, 4, 4),
+            points={"landmarks": Points(torch.rand(2, 3))},
+            bounding_boxes={
+                "tumors": BoundingBoxes(
+                    torch.rand(2, 6),
+                    format=BoundingBoxFormat.IJKIJK,
+                )
+            },
+        )
+
+        result = image.to(torch.float64)
+
+        assert result.points["landmarks"].data.dtype == torch.float64
+        assert result.bounding_boxes["tumors"].data.dtype == torch.float64
+
     @pytest.mark.skipif(not HAS_CUDA, reason="No CUDA")
     def test_to_cuda(self) -> None:
         image = tio.ScalarImage(torch.rand(1, 4, 4, 4))

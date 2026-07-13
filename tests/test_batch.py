@@ -90,6 +90,23 @@ class TestImagesBatch:
         assert restored[0].applied_transforms[0].params["axes"] == (0,)
         assert restored[1].applied_transforms[0].params["axes"] == (1,)
 
+    def test_to_moves_template_annotations(self) -> None:
+        image = tio.ScalarImage(
+            torch.rand(1, 4, 4, 4),
+            points={"landmarks": tio.Points(torch.rand(2, 3))},
+            bounding_boxes={
+                "tumors": tio.BoundingBoxes(
+                    torch.rand(2, 6),
+                    format=tio.BoundingBoxFormat.IJKIJK,
+                )
+            },
+        )
+
+        restored = ImagesBatch.from_images([image]).to(torch.float64).unbatch()[0]
+
+        assert restored.points["landmarks"].data.dtype == torch.float64
+        assert restored.bounding_boxes["tumors"].data.dtype == torch.float64
+
 
 class TestSubjectsBatch:
     def test_from_subjects(self) -> None:
