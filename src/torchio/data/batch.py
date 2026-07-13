@@ -2,7 +2,11 @@
 
 from __future__ import annotations
 
+import copy as _copy
 import dataclasses
+from collections.abc import Callable
+from collections.abc import Sequence
+from typing import TYPE_CHECKING
 from typing import Any
 
 import torch
@@ -10,9 +14,14 @@ from torch import Tensor
 from typing_extensions import Self
 
 from .affine import AffineMatrix
+from .bboxes import BoundingBoxes
 from .image import Image
 from .image import ScalarImage
 from .invertible import Invertible
+from .points import Points
+
+if TYPE_CHECKING:
+    from .subject import Subject
 
 #: Reserved param keys used for per-instance history bookkeeping.
 _BATCH_META_KEYS = ("_batch_size", "_batched_keys", "_keep")
@@ -37,35 +46,64 @@ class ImagesBatch(Invertible):
         affines: list[AffineMatrix],
         *,
         image_class: type[Image] = ScalarImage,
+        image_templates: Sequence[Image] | None = None,
     ) -> None:
         if data.ndim != 5:
             msg = f"Expected 5D tensor (B, C, I, J, K), got {data.ndim}D"
             raise ValueError(msg)
+        if data.shape[0] == 0:
+            msg = "Cannot create an empty image batch"
+            raise ValueError(msg)
         if len(affines) != data.shape[0]:
             msg = f"Expected {data.shape[0]} affines, got {len(affines)}"
+            raise ValueError(msg)
+        if not issubclass(image_class, Image):
+            msg = f"Expected an Image subclass, got {image_class!r}"
+            raise TypeError(msg)
+        if image_templates is not None and len(image_templates) != data.shape[0]:
+            msg = (
+                f"Expected {data.shape[0]} image templates, got {len(image_templates)}"
+            )
             raise ValueError(msg)
         self._data = data
         self._affines = affines
         self._image_class = image_class
+        self._image_templates = (
+            list(image_templates) if image_templates is not None else None
+        )
         self.applied_transforms: list[Any] = []
+        self._per_element_history: list[list[Any]] | None = None
 
     @classmethod
-    def from_images(cls, images: list[Image]) -> Self:
+    def from_images(cls, images: Sequence[Image]) -> Self:
         """Stack a list of images into a batch.
 
-        All images must have the same shape.
+        All images must have the same class, shape, dtype, device, and
+        nested metadata/annotation schema.
 
         Args:
-            images: List of `Image` instances to stack.
+            images: Images to stack.
         """
         if not images:
             msg = "Cannot create batch from empty list"
             raise ValueError(msg)
+        _validate_images(images)
         tensors = [img.data for img in images]
         stacked = torch.stack(tensors)
         affines = [img.affine.clone() for img in images]
         image_class = type(images[0])
-        return cls(stacked, affines, image_class=image_class)
+        templates = [_make_image_template(image) for image in images]
+        batch = cls(
+            stacked,
+            affines,
+            image_class=image_class,
+            image_templates=templates,
+        )
+        _assign_histories(
+            batch,
+            [list(image.applied_transforms) for image in images],
+        )
+        return batch
 
     @property
     def data(self) -> Tensor:
@@ -99,14 +137,27 @@ class ImagesBatch(Invertible):
         self._data = self._data.to(*args, **kwargs)
         for affine in self._affines:
             affine.to(*args, **kwargs)
+        if self._image_templates is not None:
+            for template in self._image_templates:
+                template.to(*args, **kwargs)
         return self
 
     def __getitem__(self, index: int) -> Image:
         """Get a single image from the batch by index."""
-        return self._image_class(
-            self._data[index],
-            affine=self._affines[index].clone(),
-        )
+        if self._image_templates is None:
+            image = self._image_class(
+                self._data[index],
+                affine=self._affines[index].clone(),
+            )
+        else:
+            template = self._image_templates[index]
+            image = template.new_like(
+                data=self._data[index],
+                affine=self._affines[index].clone(),
+            )
+            image._metadata = _copy.deepcopy(template.metadata)
+        image.applied_transforms = _get_element_histories(self)[index]
+        return image
 
     def __len__(self) -> int:
         return self.batch_size
@@ -114,6 +165,50 @@ class ImagesBatch(Invertible):
     def unbatch(self) -> list[Image]:
         """Split the batch into individual images."""
         return [self[i] for i in range(self.batch_size)]
+
+    @property
+    def has_annotations(self) -> bool:
+        """Whether any image has attached points or bounding boxes."""
+        if self._image_templates is None:
+            return False
+        return any(
+            template.points or template.bounding_boxes
+            for template in self._image_templates
+        )
+
+    def set_per_element_history(self, histories: list[list[Any]]) -> None:
+        """Freeze a distinct transform history for each batch element."""
+        if len(histories) != self.batch_size:
+            msg = (
+                f"Expected {self.batch_size} per-element histories,"
+                f" got {len(histories)}"
+            )
+            raise ValueError(msg)
+        self._per_element_history = [list(history) for history in histories]
+        self.applied_transforms = []
+
+    def clear_history(self) -> None:
+        """Remove all applied transform records."""
+        self.applied_transforms = []
+        self._per_element_history = None
+
+    def get_inverse_transform(self, **kwargs: Any) -> Any:
+        """Build a transform that inverts the recorded history."""
+        if self._per_element_history is not None:
+            msg = (
+                "This image batch has per-element transform histories, so a"
+                " single batch inverse is ambiguous. Call"
+                " apply_inverse_transform() or unbatch() and invert each image."
+            )
+            raise RuntimeError(msg)
+        return super().get_inverse_transform(**kwargs)
+
+    def apply_inverse_transform(self, **kwargs: Any) -> ImagesBatch:
+        """Apply the inverse of the recorded history."""
+        if self._per_element_history is not None:
+            inverted = [image.apply_inverse_transform(**kwargs) for image in self]
+            return type(self).from_images(inverted)
+        return super().apply_inverse_transform(**kwargs)
 
     def __repr__(self) -> str:
         b, c, i, j, k = self._data.shape
@@ -132,12 +227,22 @@ class SubjectsBatch(Invertible):
 
     def __init__(
         self,
-        images: dict[str, ImagesBatch],
+        images: dict[str, ImagesBatch] | None = None,
         *,
+        points: dict[str, list[Points]] | None = None,
+        bounding_boxes: dict[str, list[BoundingBoxes]] | None = None,
         metadata: dict[str, list[Any]] | None = None,
     ) -> None:
-        self._images = images
-        self._metadata: dict[str, list[Any]] = metadata or {}
+        self._images = dict(images or {})
+        self._points = dict(points or {})
+        self._bounding_boxes = dict(bounding_boxes or {})
+        self._metadata = dict(metadata or {})
+        self._batch_size = _resolve_batch_size(
+            self._images,
+            self._points,
+            self._bounding_boxes,
+            self._metadata,
+        )
         self.applied_transforms: list[Any] = []
         # When per-element branching occurs (e.g. per-instance OneOf),
         # this stores the frozen per-element history prefix. Transforms
@@ -166,40 +271,59 @@ class SubjectsBatch(Invertible):
         self.applied_transforms = []
 
     @classmethod
-    def from_subjects(cls, subjects: list[Any]) -> Self:
+    def from_subjects(cls, subjects: Sequence[Any]) -> Self:
         """Stack a list of subjects into a batch.
 
         Args:
-            subjects: List of `Subject` instances.
+            subjects: `Subject` instances to stack.
         """
         from .subject import Subject
 
         if not subjects:
             msg = "Cannot create batch from empty list"
             raise ValueError(msg)
+        for index, subject in enumerate(subjects):
+            if not isinstance(subject, Subject):
+                msg = f"Expected Subject at index {index}, got {type(subject).__name__}"
+                raise TypeError(msg)
 
-        # Collect image names and types from the first subject
         first: Subject = subjects[0]
-        image_names = list(first.images.keys())
+        _validate_subject_schemas(subjects)
 
-        # Stack images
         images: dict[str, ImagesBatch] = {}
-        for name in image_names:
+        for name in first.images:
             img_list = [sub.images[name] for sub in subjects]
             images[name] = ImagesBatch.from_images(img_list)
 
-        # Collect metadata (non-image, non-annotation entries)
-        metadata: dict[str, list[Any]] = {}
-        for key in first.metadata:
-            metadata[key] = [sub.metadata[key] for sub in subjects]
+        points = {
+            name: [_copy.deepcopy(subject.points[name]) for subject in subjects]
+            for name in first.points
+        }
+        bounding_boxes = {
+            name: [_copy.deepcopy(subject.bounding_boxes[name]) for subject in subjects]
+            for name in first.bounding_boxes
+        }
+        metadata = {
+            key: [_copy.deepcopy(subject.metadata[key]) for subject in subjects]
+            for key in first.metadata
+        }
 
-        return cls(images, metadata=metadata)
+        batch = cls(
+            images,
+            points=points,
+            bounding_boxes=bounding_boxes,
+            metadata=metadata,
+        )
+        _assign_histories(
+            batch,
+            [list(subject.applied_transforms) for subject in subjects],
+        )
+        return batch
 
     @property
     def batch_size(self) -> int:
         """Number of samples in the batch."""
-        first = next(iter(self._images.values()))
-        return first.batch_size
+        return self._batch_size
 
     @property
     def images(self) -> dict[str, ImagesBatch]:
@@ -207,32 +331,83 @@ class SubjectsBatch(Invertible):
         return self._images
 
     @property
+    def points(self) -> dict[str, list[Points]]:
+        """Dict of named point sets, one list entry per sample."""
+        return self._points
+
+    @property
+    def bounding_boxes(self) -> dict[str, list[BoundingBoxes]]:
+        """Dict of named bounding boxes, one list entry per sample."""
+        return self._bounding_boxes
+
+    @property
     def metadata(self) -> dict[str, list[Any]]:
         """Metadata lists (one value per sample)."""
         return self._metadata
 
     @property
+    def has_annotations(self) -> bool:
+        """Whether the batch contains subject- or image-level annotations."""
+        return bool(
+            self._points
+            or self._bounding_boxes
+            or any(image_batch.has_annotations for image_batch in self._images.values())
+        )
+
+    @property
     def device(self) -> torch.device:
         """Device of the batch data."""
-        first = next(iter(self._images.values()))
-        return first.device
+        devices = [image.device for image in self._images.values()]
+        devices.extend(
+            points.device for values in self._points.values() for points in values
+        )
+        devices.extend(
+            boxes.device for values in self._bounding_boxes.values() for boxes in values
+        )
+        if not devices:
+            return torch.device("cpu")
+        reference = devices[0]
+        if any(device != reference for device in devices[1:]):
+            msg = f"Inconsistent devices in SubjectsBatch: {devices}"
+            raise RuntimeError(msg)
+        return reference
 
     def to(self, *args: Any, **kwargs: Any) -> Self:
         """Move all data to a device and/or cast dtype."""
         for batch in self._images.values():
             batch.to(*args, **kwargs)
+        for values in self._points.values():
+            for points in values:
+                points.to(*args, **kwargs)
+        for values in self._bounding_boxes.values():
+            for boxes in values:
+                boxes.to(*args, **kwargs)
         return self
 
-    def __getitem__(self, key: str) -> ImagesBatch:
-        """Get a named image batch."""
-        return self._images[key]
+    def __getitem__(self, key: str) -> Any:
+        """Get a named batched field."""
+        for store in (
+            self._images,
+            self._points,
+            self._bounding_boxes,
+            self._metadata,
+        ):
+            if key in store:
+                return store[key]
+        raise KeyError(key)
 
-    def __getattr__(self, name: str) -> ImagesBatch:
-        """Attribute-style access to image batches."""
+    def __getattr__(self, name: str) -> Any:
+        """Access a named batched field as an attribute."""
         if name.startswith("_"):
             raise AttributeError(name)
-        if name in self._images:
-            return self._images[name]
+        for store in (
+            self._images,
+            self._points,
+            self._bounding_boxes,
+            self._metadata,
+        ):
+            if name in store:
+                return store[name]
         msg = f"SubjectsBatch has no attribute {name!r}"
         raise AttributeError(msg)
 
@@ -246,22 +421,65 @@ class SubjectsBatch(Invertible):
         """
         from .subject import Subject
 
-        n = self.batch_size
+        histories = _get_element_histories(self)
         subjects = []
-        for i in range(n):
+        for i in range(self.batch_size):
             kwargs: dict[str, Any] = {}
             for name, img_batch in self._images.items():
                 kwargs[name] = img_batch[i]
+            for name, values in self._points.items():
+                kwargs[name] = _copy.deepcopy(values[i])
+            for name, values in self._bounding_boxes.items():
+                kwargs[name] = _copy.deepcopy(values[i])
             for key, values in self._metadata.items():
-                kwargs[key] = values[i]
+                kwargs[key] = _copy.deepcopy(values[i])
             sub = Subject(**kwargs)
-            suffix = _slice_history(self.applied_transforms, i)
-            if self._per_element_history is not None:
-                sub.applied_transforms = list(self._per_element_history[i]) + suffix
-            else:
-                sub.applied_transforms = suffix
+            sub.applied_transforms = histories[i]
             subjects.append(sub)
         return subjects
+
+    def map_subjects(
+        self,
+        callback: Callable[[Subject], Subject],
+    ) -> Self:
+        """Apply a callback to every subject and rebuild the batch.
+
+        Each callback receives an independent `Subject` carrying its
+        complete transform history. All returned subjects must have a
+        compatible schema and image shapes so they can be re-stacked.
+        Callback-added histories are retained.
+
+        Args:
+            callback: Callable taking and returning one `Subject`.
+
+        Returns:
+            A new batch containing the callback results.
+
+        Raises:
+            TypeError: If the callback does not return a `Subject`.
+            ValueError: If callback results cannot be batched together.
+
+        Examples:
+            >>> def normalize_identifier(subject):
+            ...     subject.metadata["identifier"] = subject.identifier.strip()
+            ...     return subject
+            >>> result = batch.map_subjects(normalize_identifier)
+        """
+        from .subject import Subject
+
+        mapped = []
+        for index, subject in enumerate(self.unbatch()):
+            for image in subject.images.values():
+                image.set_data(image.data.clone())
+            result = callback(subject)
+            if not isinstance(result, Subject):
+                msg = (
+                    f"Expected callback result at index {index} to be a Subject,"
+                    f" got {type(result).__name__}"
+                )
+                raise TypeError(msg)
+            mapped.append(result)
+        return type(self).from_subjects(mapped)
 
     def __len__(self) -> int:
         return self.batch_size
@@ -278,10 +496,16 @@ class SubjectsBatch(Invertible):
             source: The batch the subjects were unbatched from.
             subjects: The processed subjects, in batch order.
         """
-        if source._per_element_history is not None:
-            self.set_per_element_history([s.applied_transforms for s in subjects])
-        else:
-            self.applied_transforms = list(source.applied_transforms)
+        if len(subjects) != source.batch_size:
+            msg = (
+                f"Expected {source.batch_size} subjects when adopting history,"
+                f" got {len(subjects)}"
+            )
+            raise ValueError(msg)
+        _assign_histories(
+            self,
+            [list(subject.applied_transforms) for subject in subjects],
+        )
 
     def clear_history(self) -> None:
         """Remove all applied transform records, including per-element ones."""
@@ -326,12 +550,286 @@ class SubjectsBatch(Invertible):
         return super().apply_inverse_transform(**kwargs)
 
     def __repr__(self) -> str:
-        names = ", ".join(self._images.keys())
-        return f"SubjectsBatch(batch_size={self.batch_size}, images=[{names}])"
+        fields = []
+        for label, store in (
+            ("images", self._images),
+            ("points", self._points),
+            ("bboxes", self._bounding_boxes),
+            ("metadata", self._metadata),
+        ):
+            if store:
+                fields.append(f"{label}=[{', '.join(store)}]")
+        return f"SubjectsBatch(batch_size={self.batch_size}, {', '.join(fields)})"
 
 
 # Alias for radiology users (see Subject/Study note in subject.py).
 StudiesBatch = SubjectsBatch
+
+
+def _make_image_template(image: Image) -> Image:
+    """Create a lightweight image carrying the per-element payload."""
+    channels = image.shape[0]
+    data = torch.empty(
+        channels,
+        1,
+        1,
+        1,
+        dtype=image.data.dtype,
+        device=image.data.device,
+    )
+    template = image.new_like(data=data, affine=image.affine)
+    template._metadata = _copy.deepcopy(image.metadata)
+    template.applied_transforms = list(image.applied_transforms)
+    return template
+
+
+def _validate_images(
+    images: Sequence[Image],
+    *,
+    image_name: str | None = None,
+) -> None:
+    """Validate image compatibility before stacking."""
+    first = images[0]
+    context = "Image" if image_name is None else f"Image {image_name!r}"
+    reference_metadata = first.metadata.keys()
+    reference_points = first.points
+    reference_boxes = first.bounding_boxes
+    for index, image in enumerate(images[1:], 1):
+        if type(image) is not type(first):
+            msg = (
+                f"{context} at index {index} is incompatible:"
+                f" expected {type(first).__name__}, got {type(image).__name__}"
+            )
+            raise ValueError(msg)
+        for attribute in ("shape", "dtype", "device"):
+            expected = getattr(first, attribute)
+            actual = getattr(image, attribute)
+            if actual != expected:
+                msg = (
+                    f"{context} at index {index} has {attribute} {actual},"
+                    f" expected {expected}"
+                )
+                raise ValueError(msg)
+        _validate_keys(
+            reference_metadata,
+            image.metadata.keys(),
+            index=index,
+            field="metadata",
+            context=context.lower(),
+        )
+        _validate_annotation_store(
+            reference_points,
+            image.points,
+            index=index,
+            field="point",
+            context=context.lower(),
+        )
+        _validate_annotation_store(
+            reference_boxes,
+            image.bounding_boxes,
+            index=index,
+            field="bounding box",
+            context=context.lower(),
+        )
+
+
+def _validate_subject_schemas(subjects: Sequence[Any]) -> None:
+    """Validate all subject and nested image schemas."""
+    first = subjects[0]
+    reference_stores = (
+        ("image", first.images),
+        ("metadata", first.metadata),
+        ("point", first.points),
+        ("bounding box", first.bounding_boxes),
+    )
+    for index, subject in enumerate(subjects[1:], 1):
+        current_stores = (
+            subject.images,
+            subject.metadata,
+            subject.points,
+            subject.bounding_boxes,
+        )
+        for (field, reference), current in zip(
+            reference_stores,
+            current_stores,
+            strict=True,
+        ):
+            _validate_keys(
+                reference.keys(),
+                current.keys(),
+                index=index,
+                field=field,
+                context="Subject",
+            )
+        for name in first.points:
+            _validate_annotation(
+                first.points[name],
+                subject.points[name],
+                index=index,
+                field="point",
+                context="Subject",
+                name=name,
+            )
+        for name in first.bounding_boxes:
+            _validate_annotation(
+                first.bounding_boxes[name],
+                subject.bounding_boxes[name],
+                index=index,
+                field="bounding box",
+                context="Subject",
+                name=name,
+            )
+    for name in first.images:
+        _validate_images(
+            [subject.images[name] for subject in subjects],
+            image_name=name,
+        )
+
+
+def _validate_annotation_store(
+    reference: dict[str, Any],
+    current: dict[str, Any],
+    *,
+    index: int,
+    field: str,
+    context: str,
+) -> None:
+    """Validate a named annotation store."""
+    _validate_keys(
+        reference.keys(),
+        current.keys(),
+        index=index,
+        field=field,
+        context=context,
+    )
+    for name in reference:
+        _validate_annotation(
+            reference[name],
+            current[name],
+            index=index,
+            field=field,
+            context=context,
+            name=name,
+        )
+
+
+def _validate_annotation(
+    reference: Points | BoundingBoxes,
+    current: Points | BoundingBoxes,
+    *,
+    index: int,
+    field: str,
+    context: str,
+    name: str,
+) -> None:
+    """Validate one named annotation's type and metadata schema."""
+    if type(current) is not type(reference):
+        msg = (
+            f"{context} at index {index} has incompatible {field} {name!r}:"
+            f" expected {type(reference).__name__}, got {type(current).__name__}"
+        )
+        raise ValueError(msg)
+    _validate_keys(
+        reference.metadata.keys(),
+        current.metadata.keys(),
+        index=index,
+        field=f"{field} {name!r} metadata",
+        context=context,
+    )
+
+
+def _validate_keys(
+    reference: Any,
+    current: Any,
+    *,
+    index: int,
+    field: str,
+    context: str,
+) -> None:
+    """Validate equivalent key sets while allowing reordered keys."""
+    reference_set = set(reference)
+    current_set = set(current)
+    if reference_set == current_set:
+        return
+    missing = sorted(reference_set - current_set)
+    unexpected = sorted(current_set - reference_set)
+    msg = (
+        f"{context} at index {index} has incompatible {field} keys:"
+        f" missing {missing}, unexpected {unexpected}"
+    )
+    raise ValueError(msg)
+
+
+def _resolve_batch_size(
+    images: dict[str, ImagesBatch],
+    points: dict[str, list[Points]],
+    bounding_boxes: dict[str, list[BoundingBoxes]],
+    metadata: dict[str, list[Any]],
+) -> int:
+    """Resolve and validate the shared length of every batched field."""
+    sizes: list[tuple[str, int]] = []
+    sizes.extend(
+        (f"image {name!r}", image_batch.batch_size)
+        for name, image_batch in images.items()
+    )
+    sizes.extend((f"point {name!r}", len(values)) for name, values in points.items())
+    sizes.extend(
+        (f"bounding box {name!r}", len(values))
+        for name, values in bounding_boxes.items()
+    )
+    sizes.extend(
+        (f"metadata {name!r}", len(values)) for name, values in metadata.items()
+    )
+    if not sizes:
+        msg = "A SubjectsBatch must contain at least one batched field"
+        raise ValueError(msg)
+    reference_name, reference_size = sizes[0]
+    if reference_size == 0:
+        msg = "Cannot create an empty SubjectsBatch"
+        raise ValueError(msg)
+    for name, size in sizes[1:]:
+        if size != reference_size:
+            msg = (
+                f"Inconsistent batch size: {reference_name} has"
+                f" {reference_size} elements, but {name} has {size}"
+            )
+            raise ValueError(msg)
+    return reference_size
+
+
+def _histories_equal(first: list[Any], second: list[Any]) -> bool:
+    """Compare histories, conservatively treating ambiguous equality as false."""
+    try:
+        return bool(first == second)
+    except (RuntimeError, TypeError, ValueError):
+        return False
+
+
+def _assign_histories(batch: Any, histories: Sequence[list[Any]]) -> None:
+    """Store histories in shared or per-element form."""
+    copied = [list(history) for history in histories]
+    if not copied:
+        batch.applied_transforms = []
+        batch._per_element_history = None
+        return
+    first = copied[0]
+    if all(_histories_equal(first, history) for history in copied[1:]):
+        batch.applied_transforms = list(first)
+        batch._per_element_history = None
+    else:
+        batch.set_per_element_history(copied)
+
+
+def _get_element_histories(batch: Any) -> list[list[Any]]:
+    """Return each element's complete history."""
+    histories = []
+    for index in range(batch.batch_size):
+        suffix = _slice_history(batch.applied_transforms, index)
+        if batch._per_element_history is None:
+            histories.append(suffix)
+        else:
+            histories.append(list(batch._per_element_history[index]) + suffix)
+    return histories
 
 
 def _slice_params(

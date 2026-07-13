@@ -21,6 +21,8 @@ from torch import nn
 
 from ..data.batch import ImagesBatch
 from ..data.batch import SubjectsBatch
+from ..data.batch import _assign_histories
+from ..data.batch import _get_element_histories
 from ..data.image import Image
 from ..data.image import ScalarImage
 from ..data.subject import Subject
@@ -217,6 +219,7 @@ class Transform(nn.Module):
         Args:
             data: Input data to transform.
         """
+        self._check_spatial_annotations(data)
         if self.copy:
             data = _copy.deepcopy(data)
         batch, unwrap = self._wrap(data)
@@ -246,12 +249,43 @@ class Transform(nn.Module):
         # Propagate history to outputs that can carry it
         if (
             hasattr(batch, "applied_transforms")
-            and not isinstance(result, (SubjectsBatch, Tensor, np.ndarray))
+            and not isinstance(
+                result,
+                (ImagesBatch, SubjectsBatch, Tensor, np.ndarray),
+            )
             and not isinstance(result, dict)
         ):
             with contextlib.suppress(AttributeError):
                 result.applied_transforms = list(batch.applied_transforms)
         return result
+
+    def _check_spatial_annotations(self, data: Any) -> None:
+        """Reject spatial transforms that would leave stale annotations."""
+        if not isinstance(self, SpatialTransform):
+            return
+        match data:
+            case SubjectsBatch() | ImagesBatch():
+                has_annotations = data.has_annotations
+            case Subject():
+                has_annotations = bool(
+                    data.points
+                    or data.bounding_boxes
+                    or any(
+                        image.points or image.bounding_boxes
+                        for image in data.images.values()
+                    )
+                )
+            case Image():
+                has_annotations = bool(data.points or data.bounding_boxes)
+            case _:
+                has_annotations = False
+        if has_annotations:
+            msg = (
+                "Spatial transforms do not yet support Points or BoundingBoxes."
+                " Remove the annotations before applying the transform, or apply"
+                " an annotation-aware spatial operation."
+            )
+            raise NotImplementedError(msg)
 
     @property
     def supports_per_instance_params(self) -> bool:
@@ -497,6 +531,7 @@ class Transform(nn.Module):
                 return data, _unwrap_subjects_batch
             case ImagesBatch():
                 sb = SubjectsBatch({"tio_default_image": data})
+                _assign_histories(sb, _get_element_histories(data))
                 return sb, _unwrap_images_batch
             case Subject():
                 sb = SubjectsBatch.from_subjects([data])
@@ -512,6 +547,7 @@ def _wrap_single_image(img: Image, unwrap_fn: Any) -> tuple[Any, Any]:
     from ..data.batch import SubjectsBatch
 
     sub = Subject(tio_default_image=img)
+    sub.applied_transforms = list(img.applied_transforms)
     sb = SubjectsBatch.from_subjects([sub])
     return sb, unwrap_fn
 
@@ -607,7 +643,9 @@ def _unwrap_subjects_batch(batch: SubjectsBatch) -> SubjectsBatch:
 
 
 def _unwrap_images_batch(batch: SubjectsBatch) -> ImagesBatch:
-    return batch.images["tio_default_image"]
+    image_batch = batch.images["tio_default_image"]
+    _assign_histories(image_batch, _get_element_histories(batch))
+    return image_batch
 
 
 def _unwrap_subject(batch: SubjectsBatch) -> Subject:
@@ -616,7 +654,9 @@ def _unwrap_subject(batch: SubjectsBatch) -> Subject:
 
 def _unwrap_image(batch: SubjectsBatch) -> Image:
     sub = batch.unbatch()[0]
-    return sub.tio_default_image
+    image = sub.tio_default_image
+    image.applied_transforms = list(sub.applied_transforms)
+    return image
 
 
 def _unwrap_tensor(batch: SubjectsBatch) -> Tensor:
