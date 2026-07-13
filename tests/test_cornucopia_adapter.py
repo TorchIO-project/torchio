@@ -145,6 +145,12 @@ class TestCornucopiaAdapterLogic:
         with pytest.raises(TypeError, match="tuple or list with 2 image results"):
             tio.CornucopiaAdapter(lambda *tensors: tensors[0])(subject)
 
+    def test_single_image_rejects_wrong_result_count(self) -> None:
+        subject = tio.Subject(t1=tio.ScalarImage(torch.rand(1, 4, 4, 4)))
+
+        with pytest.raises(ValueError, match="Expected 1 image result, got 2"):
+            tio.CornucopiaAdapter(lambda tensor: (tensor, tensor))(subject)
+
 
 # ── Real Cornucopia transforms ───────────────────────────────────────
 

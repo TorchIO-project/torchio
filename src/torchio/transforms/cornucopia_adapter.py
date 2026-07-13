@@ -141,7 +141,12 @@ def _normalize_results(
 ) -> tuple[Any, ...] | list[Any]:
     """Normalize Cornucopia outputs and validate their arity."""
     if num_images == 1:
-        return results if isinstance(results, (tuple, list)) else (results,)
+        if not isinstance(results, (tuple, list)):
+            return (results,)
+        if len(results) != 1:
+            msg = f"Expected 1 image result, got {len(results)}"
+            raise ValueError(msg)
+        return results
     if not isinstance(results, (tuple, list)):
         msg = (
             f"Expected a tuple or list with {num_images} image results,"
