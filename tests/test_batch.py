@@ -469,7 +469,7 @@ class TestBatchTransforms:
         assert set(result.t1.points) == {"image_landmarks"}
 
     @pytest.mark.parametrize(
-        "subject",
+        "data",
         [
             tio.Subject(
                 t1=tio.ScalarImage(torch.rand(1, 4, 4, 4)),
@@ -486,14 +486,24 @@ class TestBatchTransforms:
                     },
                 )
             ),
+            {
+                "t1": torch.rand(1, 4, 4, 4),
+                "landmarks": tio.Points(torch.rand(2, 3)),
+            },
+            {
+                "t1": tio.ScalarImage(
+                    torch.rand(1, 4, 4, 4),
+                    points={"landmarks": tio.Points(torch.rand(2, 3))},
+                )
+            },
         ],
     )
     def test_spatial_transform_rejects_annotations(
         self,
-        subject: tio.Subject,
+        data: object,
     ) -> None:
         with pytest.raises(NotImplementedError, match="annotations"):
-            tio.Flip(axes=(0,))(subject)
+            tio.Flip(axes=(0,))(data)
 
 
 # ── Coverage gap tests ───────────────────────────────────────────────

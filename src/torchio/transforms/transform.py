@@ -23,8 +23,10 @@ from ..data.batch import ImagesBatch
 from ..data.batch import SubjectsBatch
 from ..data.batch import _assign_histories
 from ..data.batch import _get_element_histories
+from ..data.bboxes import BoundingBoxes
 from ..data.image import Image
 from ..data.image import ScalarImage
+from ..data.points import Points
 from ..data.subject import Subject
 
 
@@ -277,6 +279,15 @@ class Transform(nn.Module):
                 )
             case Image():
                 has_annotations = bool(data.points or data.bounding_boxes)
+            case dict():
+                has_annotations = any(
+                    isinstance(value, (Points, BoundingBoxes))
+                    or (
+                        isinstance(value, Image)
+                        and bool(value.points or value.bounding_boxes)
+                    )
+                    for value in data.values()
+                )
             case _:
                 has_annotations = False
         if has_annotations:
