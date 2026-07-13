@@ -104,6 +104,80 @@ def _data_has_annotations(data: Any) -> bool:
             return False
 
 
+def _has_batched_param_metadata(params: dict[str, Any]) -> bool:
+    return any(key in params for key in ("_batch_size", "_batched_keys", "_keep"))
+
+
+def _get_expected_batch_size(
+    params: dict[str, Any],
+    batch: SubjectsBatch,
+) -> int:
+    if "_batch_size" not in params or "_batched_keys" not in params:
+        msg = "Batched params must define both _batch_size and _batched_keys."
+        raise ValueError(msg)
+    expected_size = params["_batch_size"]
+    if (
+        isinstance(expected_size, bool)
+        or not isinstance(expected_size, int)
+        or expected_size < 1
+    ):
+        msg = f"_batch_size must be a positive integer, got {expected_size!r}"
+        raise ValueError(msg)
+    if expected_size != batch.batch_size:
+        msg = (
+            f"Parameter batch size {expected_size} does not match"
+            f" input batch size {batch.batch_size}"
+        )
+        raise ValueError(msg)
+    return expected_size
+
+
+def _get_batched_keys(params: dict[str, Any]) -> list[str]:
+    batched_keys = params["_batched_keys"]
+    if not isinstance(batched_keys, list) or not all(
+        isinstance(key, str) for key in batched_keys
+    ):
+        msg = "_batched_keys must be a list of parameter names"
+        raise ValueError(msg)
+    if len(set(batched_keys)) != len(batched_keys):
+        msg = "_batched_keys contains duplicate parameter names"
+        raise ValueError(msg)
+    return batched_keys
+
+
+def _validate_batched_value(
+    params: dict[str, Any],
+    key: str,
+    expected_size: int,
+) -> None:
+    if key not in params:
+        msg = f"Batched parameter {key!r} is missing"
+        raise ValueError(msg)
+    try:
+        actual_size = len(params[key])
+    except TypeError as error:
+        msg = f"Batched parameter {key!r} must contain {expected_size} values"
+        raise ValueError(msg) from error
+    if actual_size != expected_size:
+        msg = (
+            f"Batched parameter {key!r} must contain"
+            f" {expected_size} values, got {actual_size}"
+        )
+        raise ValueError(msg)
+
+
+def _validate_keep(params: dict[str, Any], expected_size: int) -> None:
+    if "_keep" not in params:
+        return
+    keep = params["_keep"]
+    if not isinstance(keep, list) or len(keep) != expected_size:
+        msg = f"_keep must contain {expected_size} boolean values, got {keep!r}"
+        raise ValueError(msg)
+    if not all(type(value) is bool for value in keep):
+        msg = "_keep values must be booleans"
+        raise ValueError(msg)
+
+
 class Transform(nn.Module):
     """Abstract class for all TorchIO transforms.
 
@@ -368,47 +442,65 @@ class Transform(nn.Module):
         if self.copy:
             data = _copy.deepcopy(data)
         batch, unwrap = self._wrap(data)
-        if sample_params:
-            # When per-element gating is active, the transform handles
-            # probability itself (masked-out elements get identity params).
-            if (
-                not self._per_instance_p_active(batch)
-                and torch.rand(1).item() >= self.p
-            ):
-                return unwrap(batch)
-            resolved_params = self.make_params(batch)
-        else:
-            assert params is not None
-            self._validate_batched_params(params, batch)
-            resolved_params = params
+        if sample_params and self._should_skip(batch):
+            return unwrap(batch)
+        resolved_params = self._resolve_execution_params(
+            batch,
+            params,
+            sample_params,
+        )
         batch = self.apply_transform(batch, resolved_params)
-        # Record history on the batch, unless every element was gated out by
-        # per-element probability: that is an exact no-op, and recording it
-        # would let history replay (e.g. an invertible spatial transform)
-        # trigger an unnecessary identity resample.
-        if not _all_elements_gated_out(resolved_params):
-            trace = AppliedTransform(
-                name=type(self).__name__,
-                params=resolved_params,
-                include=_copy_optional_list(self.include),
-                exclude=_copy_optional_list(self.exclude),
-            )
-            if not hasattr(batch, "applied_transforms"):
-                batch.applied_transforms = []
-            batch.applied_transforms.append(trace)
+        self._record_applied_transform(batch, resolved_params)
         result = unwrap(batch)
-        # Propagate history to outputs that can carry it
-        if (
-            hasattr(batch, "applied_transforms")
-            and not isinstance(
-                result,
-                (ImagesBatch, SubjectsBatch, Tensor, np.ndarray),
-            )
-            and not isinstance(result, dict)
-        ):
-            with contextlib.suppress(AttributeError):
-                result.applied_transforms = list(batch.applied_transforms)
+        self._propagate_history(batch, result)
         return result
+
+    def _should_skip(self, batch: SubjectsBatch) -> bool:
+        """Return whether batch-wide probability skips this application."""
+        return not self._per_instance_p_active(batch) and torch.rand(1).item() >= self.p
+
+    def _resolve_execution_params(
+        self,
+        batch: SubjectsBatch,
+        params: dict[str, Any] | None,
+        sample_params: bool,
+    ) -> dict[str, Any]:
+        """Sample parameters or validate an exact supplied set."""
+        if sample_params:
+            return self.make_params(batch)
+        assert params is not None
+        self._validate_batched_params(params, batch)
+        return params
+
+    def _record_applied_transform(
+        self,
+        batch: SubjectsBatch,
+        params: dict[str, Any],
+    ) -> None:
+        """Append a history trace unless the application was an exact no-op."""
+        if _all_elements_gated_out(params):
+            return
+        trace = AppliedTransform(
+            name=type(self).__name__,
+            params=params,
+            include=_copy_optional_list(self.include),
+            exclude=_copy_optional_list(self.exclude),
+        )
+        if not hasattr(batch, "applied_transforms"):
+            batch.applied_transforms = []
+        batch.applied_transforms.append(trace)
+
+    @staticmethod
+    def _propagate_history(batch: SubjectsBatch, result: Any) -> None:
+        """Copy history to non-batch output types that can carry it."""
+        excluded_types = (ImagesBatch, SubjectsBatch, Tensor, np.ndarray, dict)
+        if not hasattr(batch, "applied_transforms") or isinstance(
+            result,
+            excluded_types,
+        ):
+            return
+        with contextlib.suppress(AttributeError):
+            result.applied_transforms = list(batch.applied_transforms)
 
     @staticmethod
     def _validate_batched_params(
@@ -416,64 +508,13 @@ class Transform(nn.Module):
         batch: SubjectsBatch,
     ) -> None:
         """Validate per-instance bookkeeping on an exact parameter set."""
-        has_batch_size = "_batch_size" in params
-        has_batched_keys = "_batched_keys" in params
-        has_keep = "_keep" in params
-        if not (has_batch_size or has_batched_keys or has_keep):
+        if not _has_batched_param_metadata(params):
             return
-        if not has_batch_size or not has_batched_keys:
-            msg = "Batched params must define both _batch_size and _batched_keys."
-            raise ValueError(msg)
-
-        expected_size = params["_batch_size"]
-        if (
-            isinstance(expected_size, bool)
-            or not isinstance(expected_size, int)
-            or expected_size < 1
-        ):
-            msg = f"_batch_size must be a positive integer, got {expected_size!r}"
-            raise ValueError(msg)
-        if expected_size != batch.batch_size:
-            msg = (
-                f"Parameter batch size {expected_size} does not match"
-                f" input batch size {batch.batch_size}"
-            )
-            raise ValueError(msg)
-
-        batched_keys = params["_batched_keys"]
-        if not isinstance(batched_keys, list) or not all(
-            isinstance(key, str) for key in batched_keys
-        ):
-            msg = "_batched_keys must be a list of parameter names"
-            raise ValueError(msg)
-        if len(set(batched_keys)) != len(batched_keys):
-            msg = "_batched_keys contains duplicate parameter names"
-            raise ValueError(msg)
+        expected_size = _get_expected_batch_size(params, batch)
+        batched_keys = _get_batched_keys(params)
         for key in batched_keys:
-            if key not in params:
-                msg = f"Batched parameter {key!r} is missing"
-                raise ValueError(msg)
-            value = params[key]
-            try:
-                actual_size = len(value)
-            except TypeError as error:
-                msg = f"Batched parameter {key!r} must contain {expected_size} values"
-                raise ValueError(msg) from error
-            if actual_size != expected_size:
-                msg = (
-                    f"Batched parameter {key!r} must contain"
-                    f" {expected_size} values, got {actual_size}"
-                )
-                raise ValueError(msg)
-
-        if has_keep:
-            keep = params["_keep"]
-            if not isinstance(keep, list) or len(keep) != expected_size:
-                msg = f"_keep must contain {expected_size} boolean values, got {keep!r}"
-                raise ValueError(msg)
-            if not all(type(value) is bool for value in keep):
-                msg = "_keep values must be booleans"
-                raise ValueError(msg)
+            _validate_batched_value(params, key, expected_size)
+        _validate_keep(params, expected_size)
 
     def _check_spatial_annotations(self, data: Any) -> None:
         """Reject spatial transforms that would leave stale annotations."""
