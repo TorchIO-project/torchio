@@ -358,9 +358,8 @@ for the capability contract and stochastic-realisation caveats.
 ### Migrate inherently per-subject logic
 
 Prefer vectorized operations on 5D tensors or metadata lists. If logic
-must call a subject-oriented external API, the current low-level escape
-hatch is to unbatch, process every subject without changing its schema,
-restack, and adopt the prior history:
+must call a subject-oriented external API, use
+`SubjectsBatch.map_subjects()`:
 
 ```python
 from typing import Any
@@ -382,13 +381,12 @@ class StripIdentifier(tio.Transform):
         params: dict[str, Any],
     ) -> tio.SubjectsBatch:
         """Process metadata one subject at a time."""
-        subjects = batch.unbatch()
-        for subject in subjects:
-            identifier = subject.metadata["identifier"]
-            subject.metadata["identifier"] = identifier.strip()
-        rebuilt = tio.SubjectsBatch.from_subjects(subjects)
-        rebuilt.adopt_history(batch, subjects)
-        return rebuilt
+        return batch.map_subjects(self._strip_identifier)
+
+    @staticmethod
+    def _strip_identifier(subject: tio.Subject) -> tio.Subject:
+        subject.metadata["identifier"] = subject.identifier.strip()
+        return subject
 
 
 subject = tio.Subject(
@@ -399,10 +397,9 @@ result = StripIdentifier()(subject)
 assert result.identifier == "sub-01"
 ```
 
-This pattern is more expensive than vectorized code and requires every
-resulting subject to retain a compatible image and metadata schema. A
-supported mapping utility is planned, but it is not part of the current
-API.
+This pattern is more expensive than vectorized code. Uniform schema
+changes are supported, but all callback results must remain compatible
+enough to be re-stacked.
 
 ## New features
 
