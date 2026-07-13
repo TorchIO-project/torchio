@@ -10,8 +10,10 @@ and always return the same type.
 Internally, **all inputs are converted to a `SubjectsBatch`**
 before the transform runs. A single `Image` becomes a batch of
 size 1; a `SubjectsBatch` from a `DataLoader` passes through
-directly. This means transform authors write **one method** that
-works identically for single samples and batches:
+directly. This means transform authors write **one batch-oriented
+application method** that works identically for single samples and batches
+(`apply_transform`), plus `make_params` when parameter construction is
+needed:
 
 ```python
 from typing import Any
