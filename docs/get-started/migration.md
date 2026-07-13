@@ -18,6 +18,8 @@ This guide covers every breaking change between TorchIO v1 and v2.
 - Replace `RescaleIntensity(out_min_max=...)` with `Normalize(out_min=..., out_max=...)`
 - Replace `SubjectsDataset` with any `Dataset` passed to `SubjectsLoader`
 - Replace `GridAggregator` with `PatchAggregator`
+- Rewrite custom transforms to accept a `SubjectsBatch` in
+  `make_params(batch)` and `apply_transform(batch, params)`
 
 ## Image construction
 
@@ -206,6 +208,201 @@ tio.Compose([
     tio.HistogramStandardization(t2_landmarks, include=["t2"]),
 ])
 ```
+
+## Custom transforms
+
+### Rewrite the transform hooks
+
+In v1, custom transforms implemented a subject-level hook:
+
+<!-- pytest-codeblocks:skip -->
+```python
+# v1
+def apply_transform(self, subject: tio.Subject) -> tio.Subject:
+    ...
+```
+
+In v2, parameter creation and application are separate batch-level
+hooks:
+
+<!-- pytest-codeblocks:skip -->
+```python
+# v2
+def make_params(self, batch: tio.SubjectsBatch) -> dict[str, Any]:
+    ...
+
+def apply_transform(
+    self,
+    batch: tio.SubjectsBatch,
+    params: dict[str, Any],
+) -> tio.SubjectsBatch:
+    ...
+```
+
+Call the transform normally rather than calling either hook yourself.
+For a single subject, TorchIO performs this conversion automatically:
+
+```text
+Subject -> SubjectsBatch -> apply_transform -> Subject
+```
+
+The following complete transform works for both a single `Subject` and
+a `SubjectsBatch`:
+
+```python
+from typing import Any
+
+import torch
+import torchio as tio
+
+
+class AddValue(tio.Transform):
+    """Add a fixed value to every batched image."""
+
+    def __init__(self, value: float) -> None:
+        super().__init__()
+        self.value = value
+        self.received_shape: tuple[int, ...] | None = None
+
+    def make_params(self, batch: tio.SubjectsBatch) -> dict[str, Any]:
+        """Return the value to add."""
+        return {"value": self.value}
+
+    def apply_transform(
+        self,
+        batch: tio.SubjectsBatch,
+        params: dict[str, Any],
+    ) -> tio.SubjectsBatch:
+        """Add the value to every image tensor."""
+        for image_batch in batch.images.values():
+            self.received_shape = tuple(image_batch.data.shape)
+            image_batch.data = image_batch.data + params["value"]
+        return batch
+
+
+subject = tio.Subject(image=tio.ScalarImage(torch.zeros(1, 2, 3, 4)))
+transform = AddValue(2)
+result = transform(subject)
+assert isinstance(result, tio.Subject)
+assert transform.received_shape == (1, 1, 2, 3, 4)
+assert result.image.data.shape == (1, 2, 3, 4)
+assert torch.all(result.image.data == 2)
+```
+
+The image is 4D `(C, I, J, K)` before and after the public call, but it
+is 5D `(B, C, I, J, K)` inside `apply_transform`. For a single subject,
+`B` is 1.
+
+!!! warning "`apply_transform` is not a public replay method"
+    It is the low-level batch kernel. Calling it directly bypasses
+    wrapping, copying, probability handling, history recording, and
+    output-type restoration. Pass a supported input to the transform
+    itself instead.
+
+### Migrate metadata access
+
+In v1, subject metadata values were scalars or arbitrary objects. In a
+v2 batch, each metadata key maps to a list containing one value per
+element:
+
+```python
+import torch
+import torchio as tio
+
+subjects = [
+    tio.Subject(
+        image=tio.ScalarImage(torch.zeros(1, 2, 3, 4)),
+        site="A",
+        age=30,
+    ),
+    tio.Subject(
+        image=tio.ScalarImage(torch.ones(1, 2, 3, 4)),
+        site="B",
+        age=40,
+    ),
+]
+batch = tio.SubjectsBatch.from_subjects(subjects)
+assert batch.metadata == {"site": ["A", "B"], "age": [30, 40]}
+```
+
+Treat `batch.metadata` as `dict[str, list[Any]]`. Metadata transforms
+must keep each list aligned with the batch dimension. Subjects in one
+batch should have equivalent image names and metadata keys. The first
+subject determines the shared key order; later subjects may use a
+different local order, but custom transforms should preserve the batch
+schema rather than adding, removing, or renaming keys for only some
+elements.
+
+### Choose deterministic or per-instance behavior
+
+A fixed scalar is not sampled: transforms such as `Gamma` use that
+value for every batch element. For built-in stochastic transforms that
+support per-instance sampling, ranges and distributions produce
+independent parameters for each batch element by default. Set
+`per_instance=False` to share one sampled parameter set:
+
+```python
+import torchio as tio
+
+independent = tio.Gamma(log_gamma=(-0.3, 0.3))
+shared = tio.Gamma(log_gamma=(-0.3, 0.3), per_instance=False)
+deterministic = tio.Gamma(log_gamma=0.2)
+```
+
+Custom transforms do not gain per-instance sampling automatically.
+Unless a transform explicitly implements and advertises that
+capability, its parameters remain batch-shared. See
+[Per-instance augmentation](../concepts/per-instance-augmentation.md)
+for the capability contract and stochastic-realisation caveats.
+
+### Migrate inherently per-subject logic
+
+Prefer vectorized operations on 5D tensors or metadata lists. If logic
+must call a subject-oriented external API, the current low-level escape
+hatch is to unbatch, process every subject without changing its schema,
+restack, and adopt the prior history:
+
+```python
+from typing import Any
+
+import torch
+import torchio as tio
+
+
+class StripIdentifier(tio.Transform):
+    """Strip whitespace from subject identifiers."""
+
+    def make_params(self, batch: tio.SubjectsBatch) -> dict[str, Any]:
+        """Return no parameters."""
+        return {}
+
+    def apply_transform(
+        self,
+        batch: tio.SubjectsBatch,
+        params: dict[str, Any],
+    ) -> tio.SubjectsBatch:
+        """Process metadata one subject at a time."""
+        subjects = batch.unbatch()
+        for subject in subjects:
+            identifier = subject.metadata["identifier"]
+            subject.metadata["identifier"] = identifier.strip()
+        rebuilt = tio.SubjectsBatch.from_subjects(subjects)
+        rebuilt.adopt_history(batch, subjects)
+        return rebuilt
+
+
+subject = tio.Subject(
+    image=tio.ScalarImage(torch.zeros(1, 2, 3, 4)),
+    identifier=" sub-01 ",
+)
+result = StripIdentifier()(subject)
+assert result.identifier == "sub-01"
+```
+
+This pattern is more expensive than vectorized code and requires every
+resulting subject to retain a compatible image and metadata schema. A
+supported mapping utility is planned, but it is not part of the current
+API.
 
 ## New features
 
