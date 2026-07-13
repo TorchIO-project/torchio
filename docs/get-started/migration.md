@@ -327,7 +327,7 @@ assert batch.metadata == {"site": ["A", "B"], "age": [30, 40]}
 
 Treat `batch.metadata` as `dict[str, list[Any]]`. Metadata transforms
 must keep each list aligned with the batch dimension. Subjects in one
-batch should have equivalent image names and metadata keys. The first
+batch must have equivalent image names and metadata keys. The first
 subject determines the shared key order; later subjects may use a
 different local order, but custom transforms should preserve the batch
 schema rather than adding, removing, or renaming keys for only some
