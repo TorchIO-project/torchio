@@ -646,6 +646,10 @@ class Image(Invertible):
 
         Accepts the same arguments as `torch.Tensor.to()`.
 
+        Args:
+            *args: Positional arguments forwarded to `torch.Tensor.to`.
+            **kwargs: Keyword arguments forwarded to `torch.Tensor.to`.
+
         Returns:
             `self` (modified in-place).
         """

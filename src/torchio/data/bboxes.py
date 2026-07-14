@@ -312,6 +312,10 @@ class BoundingBoxes:
     def to(self, *args: Any, **kwargs: Any) -> Self:
         """Move bounding box data and affine to a device or dtype.
 
+        Args:
+            *args: Positional arguments forwarded to `torch.Tensor.to`.
+            **kwargs: Keyword arguments forwarded to `torch.Tensor.to`.
+
         Returns:
             `self` (modified in-place).
         """

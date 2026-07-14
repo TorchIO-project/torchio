@@ -38,6 +38,11 @@ class ImagesBatch(Invertible):
         data: 5D tensor with shape `(B, C, I, J, K)`.
         affines: List of affine matrices, one per sample.
         image_class: The `Image` subclass to use when unbatching.
+        image_templates: Optional per-element image prototypes used to
+            preserve subclasses, metadata, annotations, and other image
+            payload when unbatching. The sequence length must match the
+            batch size. If `None`, images are reconstructed from
+            `image_class`.
     """
 
     def __init__(
@@ -133,7 +138,15 @@ class ImagesBatch(Invertible):
         return self._data.device
 
     def to(self, *args: Any, **kwargs: Any) -> Self:
-        """Move batch data to a device and/or cast dtype."""
+        """Move batch data to a device and/or cast dtype.
+
+        Args:
+            *args: Positional arguments forwarded to `torch.Tensor.to`.
+            **kwargs: Keyword arguments forwarded to `torch.Tensor.to`.
+
+        Returns:
+            `self` (modified in-place).
+        """
         self._data = self._data.to(*args, **kwargs)
         for affine in self._affines:
             affine.to(*args, **kwargs)
@@ -143,7 +156,14 @@ class ImagesBatch(Invertible):
         return self
 
     def __getitem__(self, index: int) -> Image:
-        """Get a single image from the batch by index."""
+        """Get a single image from the batch by index.
+
+        Args:
+            index: Batch element index.
+
+        Returns:
+            The reconstructed image for the selected element.
+        """
         if self._image_templates is None:
             image = self._image_class(
                 self._data[index],
@@ -177,7 +197,11 @@ class ImagesBatch(Invertible):
         )
 
     def set_per_element_history(self, histories: list[list[Any]]) -> None:
-        """Freeze a distinct transform history for each batch element."""
+        """Freeze a distinct transform history for each batch element.
+
+        Args:
+            histories: One transform-history list per batch element.
+        """
         if len(histories) != self.batch_size:
             msg = (
                 f"Expected {self.batch_size} per-element histories,"
@@ -193,7 +217,11 @@ class ImagesBatch(Invertible):
         self._per_element_history = None
 
     def get_inverse_transform(self, **kwargs: Any) -> Any:
-        """Build a transform that inverts the recorded history."""
+        """Build a transform that inverts the recorded history.
+
+        Args:
+            **kwargs: Forwarded to `Invertible.get_inverse_transform`.
+        """
         if self._per_element_history is not None:
             msg = (
                 "This image batch has per-element transform histories, so a"
@@ -204,7 +232,14 @@ class ImagesBatch(Invertible):
         return super().get_inverse_transform(**kwargs)
 
     def apply_inverse_transform(self, **kwargs: Any) -> ImagesBatch:
-        """Apply the inverse of the recorded history."""
+        """Apply the inverse of the recorded history.
+
+        Args:
+            **kwargs: Forwarded to `get_inverse_transform`.
+
+        Returns:
+            A batch with the transforms undone.
+        """
         if self._per_element_history is not None:
             inverted = [image.apply_inverse_transform(**kwargs) for image in self]
             return type(self).from_images(inverted)
@@ -223,6 +258,19 @@ class SubjectsBatch(Invertible):
     stored as lists (one value per sample).
 
     Created by `SubjectsLoader` or `SubjectsBatch.from_subjects()`.
+
+    Args:
+        images: Named image batches. May be empty for metadata-only or
+            annotation-only batches.
+        points: Named subject-level point sets, stored as one `Points`
+            instance per batch element.
+        bounding_boxes: Named subject-level bounding boxes, stored as one
+            `BoundingBoxes` instance per batch element.
+        metadata: Named metadata values, stored as one value per batch
+            element.
+
+    All supplied batched fields must contain the same non-zero number of
+    elements.
     """
 
     def __init__(
@@ -345,7 +393,17 @@ class SubjectsBatch(Invertible):
         return reference
 
     def to(self, *args: Any, **kwargs: Any) -> Self:
-        """Move all data to a device and/or cast dtype."""
+        """Move all data to a device and/or cast dtype.
+
+        Args:
+            *args: Positional arguments forwarded to each field's `to`
+                method.
+            **kwargs: Keyword arguments forwarded to each field's `to`
+                method.
+
+        Returns:
+            `self` (modified in-place).
+        """
         for batch in self._images.values():
             batch.to(*args, **kwargs)
         for values in self._points.values():
@@ -357,7 +415,14 @@ class SubjectsBatch(Invertible):
         return self
 
     def __getitem__(self, key: str) -> Any:
-        """Get a named batched field."""
+        """Get a named batched field.
+
+        Args:
+            key: Image, point, bounding-box, or metadata field name.
+
+        Returns:
+            The corresponding batched field.
+        """
         for store in (
             self._images,
             self._points,
@@ -369,7 +434,14 @@ class SubjectsBatch(Invertible):
         raise KeyError(key)
 
     def __getattr__(self, name: str) -> Any:
-        """Access a named batched field as an attribute."""
+        """Access a named batched field as an attribute.
+
+        Args:
+            name: Image, point, bounding-box, or metadata field name.
+
+        Returns:
+            The corresponding batched field.
+        """
         if name.startswith("_"):
             raise AttributeError(name)
         for store in (
@@ -486,6 +558,9 @@ class SubjectsBatch(Invertible):
 
     def get_inverse_transform(self, **kwargs: Any) -> Any:
         """Build a transform that inverts the recorded history.
+
+        Args:
+            **kwargs: Forwarded to `Invertible.get_inverse_transform`.
 
         Raises:
             RuntimeError: If the batch carries per-element histories (from
