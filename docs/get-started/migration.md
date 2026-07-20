@@ -327,11 +327,19 @@ assert batch.metadata == {"site": ["A", "B"], "age": [30, 40]}
 
 Treat `batch.metadata` as `dict[str, list[Any]]`. Metadata transforms
 must keep each list aligned with the batch dimension. Subjects in one
-batch must have equivalent image names and metadata keys. The first
+batch must have equivalent image, metadata, point, and bounding-box
+schemas, including image-level metadata and annotation keys. The first
 subject determines the shared key order; later subjects may use a
 different local order, but custom transforms should preserve the batch
 schema rather than adding, removing, or renaming keys for only some
 elements.
+
+!!! warning "Spatial transforms and annotations"
+    Batching preserves subject- and image-level Points and
+    BoundingBoxes, but v2 spatial transforms do not yet update their
+    coordinates. They raise a clear error instead of returning stale
+    annotations. Remove annotations before a spatial transform or use
+    an annotation-aware operation.
 
 ### Choose deterministic or per-instance behavior
 
@@ -358,9 +366,8 @@ for the capability contract and stochastic-realisation caveats.
 ### Migrate inherently per-subject logic
 
 Prefer vectorized operations on 5D tensors or metadata lists. If logic
-must call a subject-oriented external API, the current low-level escape
-hatch is to unbatch, process every subject without changing its schema,
-and restack. Exact per-element histories are preserved automatically:
+must call a subject-oriented external API, use
+`SubjectsBatch.map_subjects()`:
 
 ```python
 from typing import Any
@@ -382,11 +389,12 @@ class StripIdentifier(tio.Transform):
         params: dict[str, Any],
     ) -> tio.SubjectsBatch:
         """Process metadata one subject at a time."""
-        subjects = batch.unbatch()
-        for subject in subjects:
-            identifier = subject.metadata["identifier"]
-            subject.metadata["identifier"] = identifier.strip()
-        return tio.SubjectsBatch.from_subjects(subjects)
+        return batch.map_subjects(self._strip_identifier)
+
+    @staticmethod
+    def _strip_identifier(subject: tio.Subject) -> tio.Subject:
+        subject.metadata["identifier"] = subject.identifier.strip()
+        return subject
 
 
 subject = tio.Subject(
@@ -397,10 +405,13 @@ result = StripIdentifier()(subject)
 assert result.identifier == "sub-01"
 ```
 
-This pattern is more expensive than vectorized code and requires every
-resulting subject to retain a compatible image and metadata schema. A
-supported mapping utility is planned, but it is not part of the current
-API.
+This pattern is more expensive than vectorized code. Uniform schema
+changes are supported, but all callback results must remain compatible
+enough to be re-stacked.
+Use `transform.apply_with_params(data, params)` when migrating code
+that replays an exact parameter dictionary. It performs normal
+wrapping, copying, history recording, and output restoration without
+calling `make_params()` or applying the probability gate.
 
 ## New features
 
