@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import nibabel as nib
+import numpy as np
 import pytest
 import torch
 
@@ -243,6 +245,21 @@ class TestSubjectsBatch:
 
         assert list(batch.images) == ["t1", "seg"]
         assert list(batch.metadata) == ["age", "name"]
+
+    def test_loaded_and_lazy_equivalent_dtypes_are_accepted(self) -> None:
+        loaded = tio.ScalarImage(torch.zeros(1, 4, 4, 4, dtype=torch.float32))
+        lazy = tio.ScalarImage(
+            nib.Nifti1Image(
+                np.zeros((4, 4, 4), dtype=np.float32),
+                np.eye(4),
+            )
+        )
+
+        batch = SubjectsBatch.from_subjects(
+            [tio.Subject(image=loaded), tio.Subject(image=lazy)]
+        )
+
+        assert batch.image.data.dtype == torch.float32
 
     @pytest.mark.parametrize(
         ("first", "second", "message"),

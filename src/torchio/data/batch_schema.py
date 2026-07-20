@@ -53,7 +53,7 @@ class _ImageSchema:
 
     value_type: type[Image]
     shape: tuple[int, ...]
-    dtype: torch.dtype | Any
+    dtype: str
     device: torch.device
     metadata_keys: tuple[str, ...]
     points: dict[str, _AnnotationSchema]
@@ -65,7 +65,7 @@ class _ImageSchema:
         return cls(
             value_type=type(image),
             shape=tuple(image.shape),
-            dtype=image.dtype,
+            dtype=_normalize_dtype(image.dtype),
             device=image.device,
             metadata_keys=tuple(image.metadata),
             points={
@@ -87,7 +87,7 @@ class _ImageSchema:
                 f" expected {self.value_type.__name__}"
             )
             raise ValueError(msg)
-        for attribute in ("shape", "dtype", "device"):
+        for attribute in ("shape", "device"):
             expected = getattr(self, attribute)
             actual = getattr(image, attribute)
             if actual != expected:
@@ -96,6 +96,13 @@ class _ImageSchema:
                     f" expected {expected}"
                 )
                 raise ValueError(msg)
+        actual_dtype = _normalize_dtype(image.dtype)
+        if actual_dtype != self.dtype:
+            msg = (
+                f"{context} at index {index} has dtype {actual_dtype},"
+                f" expected {self.dtype}"
+            )
+            raise ValueError(msg)
         _validate_keys(
             self.metadata_keys,
             image.metadata,
@@ -203,3 +210,8 @@ def _validate_keys(
         f" missing {missing}, unexpected {unexpected}"
     )
     raise ValueError(msg)
+
+
+def _normalize_dtype(dtype: Any) -> str:
+    """Return one comparable dtype name for Torch and NumPy dtypes."""
+    return str(dtype).removeprefix("torch.")
