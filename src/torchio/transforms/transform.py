@@ -716,9 +716,9 @@ def _unwrap_dict(batch: SubjectsBatch, keys: list[str]) -> dict[str, Any]:
 class SpatialTransform(Transform):
     """Base for transforms that modify spatial geometry.
 
-    Spatial transforms apply to all images (ScalarImage and LabelMap),
-    and also transform any Points and BoundingBoxes attached to the
-    Subject.
+    Spatial transforms apply to all images (ScalarImage and LabelMap).
+    Coordinate updates for `Points` and `BoundingBoxes` are not yet
+    supported, so annotated inputs raise before mutation.
     """
 
 
