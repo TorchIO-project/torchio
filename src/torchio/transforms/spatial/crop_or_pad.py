@@ -469,7 +469,6 @@ class CropOrPad(SpatialTransform):
         to the standard `SubjectsBatch` path.
         """
         if isinstance(data, (Subject, Image)):
-            self._check_spatial_annotations(data)
             return self._forward_lazy(data)
         return super().forward(data)
 
@@ -484,9 +483,10 @@ class CropOrPad(SpatialTransform):
         if self.copy:
             subject = _copy.deepcopy(subject)
 
-        if torch.rand(1).item() > self.p:
+        if torch.rand(1).item() >= self.p:
             return subject.tio_default_image if is_image else subject
 
+        self._check_spatial_annotations(subject)
         first_image = next(iter(subject.images.values()))
         current_shape: TypeThreeInts = first_image.spatial_shape
         target_voxels = _to_voxels(

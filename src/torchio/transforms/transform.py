@@ -253,7 +253,6 @@ class Transform(nn.Module):
         Args:
             data: Input data to transform.
         """
-        self._check_spatial_annotations(data)
         if self.copy:
             data = _copy.deepcopy(data)
         batch, unwrap = self._wrap(data)
@@ -264,6 +263,8 @@ class Transform(nn.Module):
         if not self._per_instance_p_active(batch) and torch.rand(1).item() >= self.p:
             return unwrap(batch)
         params = self.make_params(batch)
+        if not _all_elements_gated_out(params):
+            self._check_spatial_annotations(batch)
         batch = self.apply_transform(batch, params)
         # Record history on the batch, unless every element was gated out by
         # per-element probability: that is an exact no-op, and recording it

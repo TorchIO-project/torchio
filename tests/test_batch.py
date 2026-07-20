@@ -411,6 +411,28 @@ class TestBatchTransforms:
         with pytest.raises(NotImplementedError, match="annotations"):
             tio.Flip(axes=(0,))(data)
 
+    @pytest.mark.parametrize(
+        "transform",
+        [
+            tio.Flip(axes=(0,), p=0),
+            tio.CropOrPad(2, p=0),
+        ],
+    )
+    def test_skipped_spatial_transform_allows_annotations(
+        self,
+        transform: tio.Transform,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        subject = tio.Subject(
+            image=tio.ScalarImage(torch.rand(1, 4, 4, 4)),
+            landmarks=tio.Points(torch.rand(2, 3)),
+        )
+        monkeypatch.setattr(torch, "rand", lambda *args, **kwargs: torch.zeros(1))
+
+        result = transform(subject)
+
+        assert set(result.points) == {"landmarks"}
+
 
 # ── Coverage gap tests ───────────────────────────────────────────────
 
