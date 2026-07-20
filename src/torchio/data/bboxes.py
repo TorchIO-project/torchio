@@ -310,7 +310,11 @@ class BoundingBoxes:
         return self._data.device
 
     def to(self, *args: Any, **kwargs: Any) -> Self:
-        """Move bounding box data and affine to a device or dtype.
+        """Move box coordinates and affine to a device or dtype.
+
+        Coordinate dtype casts are applied to the box tensor. Labels
+        preserve their dtype and move only to the coordinate device.
+        The affine moves to supported devices but remains `float64`.
 
         Args:
             *args: Positional arguments forwarded to `torch.Tensor.to`.
