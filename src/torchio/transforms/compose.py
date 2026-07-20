@@ -65,6 +65,8 @@ class Compose(Transform):
         ... })
     """
 
+    _supports_apply_with_params = False
+
     def __init__(
         self,
         transforms: Sequence[Transform] | Mapping[str, Transform] | None = None,
@@ -121,6 +123,8 @@ class OneOf(Transform):
         ...     tio.Flip(axes=(0,)): 0.3,
         ... })
     """
+
+    _supports_apply_with_params = False
 
     def __init__(
         self,
@@ -207,6 +211,8 @@ class SomeOf(Transform):
         ...     num_transforms=2,
         ... )
     """
+
+    _supports_apply_with_params = False
 
     def __init__(
         self,

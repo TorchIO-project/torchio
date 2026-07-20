@@ -81,6 +81,76 @@ class TestCornucopiaAdapterLogic:
         result = pipeline(subject)
         assert result.t1.data.shape == subject.t1.data.shape
 
+    def test_preserves_prior_history_and_annotations(self) -> None:
+        subject = tio.Gamma(log_gamma=0.2)(
+            tio.Subject(
+                t1=tio.ScalarImage(torch.rand(1, 8, 8, 8) + 1),
+                landmarks=tio.Points(torch.rand(2, 3)),
+            )
+        )
+
+        result = tio.CornucopiaAdapter(lambda tensor: tensor)(subject)
+
+        assert [trace.name for trace in result.applied_transforms] == ["Gamma"]
+        assert set(result.points) == {"landmarks"}
+
+    def test_probability_zero_when_random_draw_is_zero(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        subject = _make_subject()
+        original = subject.t1.data.clone()
+        monkeypatch.setattr(torch, "rand", lambda *args, **kwargs: torch.zeros(1))
+
+        result = tio.CornucopiaAdapter(lambda tensor: tensor + 1, p=0)(subject)
+
+        torch.testing.assert_close(result.t1.data, original)
+
+    def test_rejects_non_tensor_result(self) -> None:
+        subject = tio.Subject(t1=tio.ScalarImage(torch.rand(1, 4, 4, 4)))
+
+        with pytest.raises(TypeError, match=r"torch.Tensor"):
+            tio.CornucopiaAdapter(lambda tensor: "not a tensor")(subject)
+
+    def test_copy_false_allows_in_place_transform(self) -> None:
+        batch = tio.SubjectsBatch.from_subjects(
+            [tio.Subject(t1=tio.ScalarImage(torch.zeros(1, 4, 4, 4)))]
+        )
+
+        result = tio.CornucopiaAdapter(
+            lambda tensor: tensor.add_(1),
+            copy=False,
+        )(batch)
+
+        assert torch.all(batch.t1.data == 1)
+        assert torch.all(result.t1.data == 1)
+
+    @pytest.mark.parametrize(
+        "transform",
+        [
+            lambda tensor: (tensor,),
+            lambda tensor: [tensor],
+        ],
+    )
+    def test_single_image_accepts_sequence_result(self, transform) -> None:
+        subject = tio.Subject(t1=tio.ScalarImage(torch.rand(1, 4, 4, 4)))
+
+        result = tio.CornucopiaAdapter(transform)(subject)
+
+        torch.testing.assert_close(result.t1.data, subject.t1.data)
+
+    def test_multiple_images_reject_single_tensor_result(self) -> None:
+        subject = _make_subject()
+
+        with pytest.raises(TypeError, match="tuple or list with 2 image results"):
+            tio.CornucopiaAdapter(lambda *tensors: tensors[0])(subject)
+
+    def test_single_image_rejects_wrong_result_count(self) -> None:
+        subject = tio.Subject(t1=tio.ScalarImage(torch.rand(1, 4, 4, 4)))
+
+        with pytest.raises(ValueError, match="Expected 1 image result, got 2"):
+            tio.CornucopiaAdapter(lambda tensor: (tensor, tensor))(subject)
+
 
 # ── Real Cornucopia transforms ───────────────────────────────────────
 

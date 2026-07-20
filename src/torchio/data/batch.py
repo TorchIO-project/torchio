@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import copy as _copy
+from collections.abc import Callable
 from collections.abc import Sequence
 from typing import TYPE_CHECKING
 from typing import Any
@@ -432,6 +433,47 @@ class SubjectsBatch(_BatchedHistoryMixin):
             sub.applied_transforms = list(self.history(i))
             subjects.append(sub)
         return subjects
+
+    def map_subjects(
+        self,
+        callback: Callable[[Subject], Subject],
+        *,
+        copy: bool = True,
+    ) -> Self:
+        """Apply a callback to every subject and rebuild the batch.
+
+        Each callback receives an unbatched `Subject` carrying its exact
+        history. By default, image tensors are cloned before the callback
+        so the input batch is unchanged. With `copy=False`, callbacks may
+        mutate the input batch's image tensors.
+
+        Args:
+            callback: Callable taking and returning one `Subject`.
+            copy: Clone each image tensor before invoking the callback.
+
+        Returns:
+            A new batch containing the callback results.
+
+        Raises:
+            TypeError: If the callback does not return a `Subject`.
+            ValueError: If callback results cannot be batched together.
+        """
+        from .subject import Subject
+
+        mapped = []
+        for index, subject in enumerate(self.unbatch()):
+            if copy:
+                for image in subject.images.values():
+                    image.set_data(image.data.clone())
+            result = callback(subject)
+            if not isinstance(result, Subject):
+                msg = (
+                    f"Expected callback result at index {index} to be a Subject,"
+                    f" got {type(result).__name__}"
+                )
+                raise TypeError(msg)
+            mapped.append(result)
+        return type(self).from_subjects(mapped)
 
     def _batch_items(self, items: Sequence[Any]) -> Self:
         """Rebuild a subject batch from subjects."""

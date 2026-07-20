@@ -49,6 +49,8 @@ class CornucopiaAdapter(Transform):
         objects are not guaranteed to be serializable.
     """
 
+    _supports_apply_with_params = False
+
     def __init__(
         self,
         cornucopia_transform: Callable,
@@ -68,14 +70,14 @@ class CornucopiaAdapter(Transform):
         batch, unwrap = self._wrap(data)
         if self.copy:
             batch = _copy.deepcopy(batch)
-        if torch.rand(1).item() > self.p:
+        if torch.rand(1).item() >= self.p:
             return unwrap(batch)
-        subjects = batch.unbatch()
-        for subject in subjects:
-            _apply_cornucopia(subject, self.cornucopia_transform, self)
-        from ..data.batch import SubjectsBatch
 
-        result = SubjectsBatch.from_subjects(subjects)
+        def apply_to_subject(subject: Subject) -> Subject:
+            _apply_cornucopia(subject, self.cornucopia_transform, self)
+            return subject
+
+        result = batch.map_subjects(apply_to_subject, copy=False)
         return unwrap(result)
 
     def apply_transform(
@@ -121,14 +123,40 @@ def _apply_cornucopia(
     # Cornucopia transforms accept multiple tensors as *args
     # and return the same number of tensors.
     results = cornucopia_transform(*tensors)
-
-    # If only one image, result is a single tensor (not a tuple).
-    if len(names) == 1:
-        results = (results,)
+    results = _normalize_results(results, len(names))
 
     for name, result_tensor in zip(names, results, strict=True):
-        if isinstance(result_tensor, torch.Tensor):
-            images[name].set_data(result_tensor)
+        if not isinstance(result_tensor, torch.Tensor):
+            msg = (
+                f"Expected torch.Tensor for image field {name!r},"
+                f" got {type(result_tensor).__name__}"
+            )
+            raise TypeError(msg)
+        images[name].set_data(result_tensor)
+
+
+def _normalize_results(
+    results: Any,
+    num_images: int,
+) -> tuple[Any, ...] | list[Any]:
+    """Normalize Cornucopia outputs and validate their arity."""
+    if num_images == 1:
+        if not isinstance(results, (tuple, list)):
+            return (results,)
+        if len(results) != 1:
+            msg = f"Expected 1 image result, got {len(results)}"
+            raise ValueError(msg)
+        return results
+    if not isinstance(results, (tuple, list)):
+        msg = (
+            f"Expected a tuple or list with {num_images} image results,"
+            f" got {type(results).__name__}"
+        )
+        raise TypeError(msg)
+    if len(results) != num_images:
+        msg = f"Expected {num_images} image results, got {len(results)}"
+        raise ValueError(msg)
+    return results
 
 
 def _filter_images(

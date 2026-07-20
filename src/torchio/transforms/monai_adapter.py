@@ -57,6 +57,8 @@ class MonaiAdapter(Transform):
         serializable.
     """
 
+    _supports_apply_with_params = False
+
     def __init__(self, monai_transform: Callable, **kwargs: Any) -> None:
         super().__init__(**kwargs)
         if not callable(monai_transform):
@@ -72,12 +74,11 @@ class MonaiAdapter(Transform):
         batch, unwrap = self._wrap(data)
         if self.copy:
             batch = _copy.deepcopy(batch)
-        if torch.rand(1).item() > self.p:
+        if torch.rand(1).item() >= self.p:
             return unwrap(batch)
-        # MONAI transforms operate per-subject
         monai = get_monai()
-        subjects = batch.unbatch()
-        for subject in subjects:
+
+        def apply_to_subject(subject: Subject) -> Subject:
             is_dict = isinstance(
                 self.monai_transform,
                 monai.transforms.MapTransform,
@@ -87,9 +88,9 @@ class MonaiAdapter(Transform):
             else:
                 images = self._get_subject_images(subject)
                 _apply_array_transform(images, self.monai_transform, monai)
-        from ..data.batch import SubjectsBatch
+            return subject
 
-        result = SubjectsBatch.from_subjects(subjects)
+        result = batch.map_subjects(apply_to_subject, copy=False)
         return unwrap(result)
 
     def apply_transform(self, batch: Any, params: dict[str, Any]) -> Any:
@@ -168,18 +169,79 @@ def _apply_dict_transform(
     monai_transform: Callable,
     monai: ModuleType,
 ) -> None:
+    monai_dict = _build_monai_dict(subject, monai)
+    original_keys = tuple(monai_dict)
+    result = _validate_dict_result(monai_transform(monai_dict), original_keys)
+    _update_subject_images(subject, result, monai)
+    _update_subject_metadata(subject, result, original_keys)
+
+
+def _build_monai_dict(subject: Subject, monai: ModuleType) -> dict[str, Any]:
+    """Build a MONAI mapping from subject images and metadata."""
     monai_dict: dict[str, Any] = {}
     for name, image in subject.images.items():
         monai_dict[name] = _image_to_meta_tensor(image, monai)
     for key, value in subject.metadata.items():
         monai_dict[key] = value
+    return monai_dict
 
-    result = monai_transform(monai_dict)
 
+def _validate_dict_result(
+    result: Any,
+    original_keys: tuple[str, ...],
+) -> Mapping:
+    """Validate the mapping returned by a MONAI dictionary transform."""
     if not isinstance(result, Mapping):
         msg = f"Expected mapping from MONAI dict transform, got {type(result).__name__}"
         raise TypeError(msg)
+    missing = set(original_keys) - set(result)
+    if missing:
+        msg = f"MONAI dictionary transform removed fields: {sorted(missing)}"
+        raise ValueError(msg)
+    return result
 
+
+def _update_subject_images(
+    subject: Subject,
+    result: Mapping,
+    monai: ModuleType,
+) -> None:
+    """Update existing subject images from a MONAI result."""
     for name, image in subject.images.items():
-        if name in result and isinstance(result[name], torch.Tensor):
-            _update_image_from_result(image, result[name], monai)
+        value = result[name]
+        if not isinstance(value, torch.Tensor):
+            msg = (
+                f"Expected torch.Tensor for image field {name!r},"
+                f" got {type(value).__name__}"
+            )
+            raise TypeError(msg)
+        _update_image_from_result(image, value, monai)
+
+
+def _update_subject_metadata(
+    subject: Subject,
+    result: Mapping,
+    original_keys: tuple[str, ...],
+) -> None:
+    """Update existing metadata and append new scalar fields."""
+    for key in subject.metadata:
+        subject.metadata[key] = result[key]
+    for key in result:
+        if key in original_keys:
+            continue
+        _add_subject_metadata(subject, key, result[key])
+
+
+def _add_subject_metadata(subject: Subject, key: Any, value: Any) -> None:
+    """Add one new metadata field returned by MONAI."""
+    if not isinstance(key, str):
+        msg = f"Expected MONAI output keys to be strings, got {key!r}"
+        raise TypeError(msg)
+    if isinstance(value, torch.Tensor):
+        msg = (
+            f"MONAI dictionary transform added new tensor field {key!r}."
+            " TorchIO cannot infer its image type; add it to the Subject"
+            " before applying the adapter."
+        )
+        raise ValueError(msg)
+    subject.metadata[key] = value

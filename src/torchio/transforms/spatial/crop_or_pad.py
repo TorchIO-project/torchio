@@ -431,6 +431,8 @@ class CropOrPad(SpatialTransform):
         >>> transform = tio.CropOrPad(target_shape=256, padding_mode='mean')
     """
 
+    _supports_apply_with_params = False
+
     def __init__(
         self,
         target_shape: TargetShapeParam,
