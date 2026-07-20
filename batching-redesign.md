@@ -163,9 +163,9 @@ When a transform finishes:
 Private batching keys may still exist transiently while built-in transforms are
 migrated, but they are never persisted in public history.
 
-Uniform applications reuse one trace record across element histories so large
-shared parameter payloads are not duplicated. Per-instance applications create
-independent clean traces for each element.
+Every element receives an independent trace record, including uniform
+applications. This avoids cross-element aliasing through mutable parameter
+dictionaries and keeps the exact-history model simple.
 
 This removes:
 
