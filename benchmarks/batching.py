@@ -58,7 +58,7 @@ def _benchmark_device(device: torch.device) -> dict[str, float]:
     uniform_transformed = tio.Gamma(log_gamma=0.3, per_instance=False)(batch)
     metadata_subjects = [tio.Subject(age=index) for index in range(_BATCH_SIZE)]
 
-    return {
+    results = {
         "construct": _measure(
             lambda: tio.SubjectsBatch.from_subjects(subjects),
             _ITERATIONS,
@@ -75,12 +75,14 @@ def _benchmark_device(device: torch.device) -> dict[str, float]:
             _ITERATIONS,
             device,
         ),
-        "metadata-only": _measure(
+    }
+    if device.type == "cpu":
+        results["metadata-only"] = _measure(
             lambda: tio.SubjectsBatch.from_subjects(metadata_subjects),
             _ITERATIONS,
             torch.device("cpu"),
-        ),
-    }
+        )
+    return results
 
 
 def main() -> None:
@@ -98,7 +100,12 @@ def main() -> None:
     for operation in results["cpu"]:
         table.add_row(
             operation,
-            *(f"{results[device.type][operation]:.2f}" for device in devices),
+            *(
+                f"{results[device.type][operation]:.2f}"
+                if operation in results[device.type]
+                else "—"
+                for device in devices
+            ),
         )
     Console().print(table)
 
