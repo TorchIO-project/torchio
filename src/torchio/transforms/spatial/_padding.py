@@ -10,7 +10,7 @@ import torch
 from torch import Tensor
 
 from ...types import TypeSixInts
-from ..intensity.normalize import _quantile
+from .._statistics import compute_quantile
 
 #: Accepted padding modes.
 PaddingMode = Literal[
@@ -59,7 +59,7 @@ def _compute_padding_statistic(
         statistic = float_flat.mean(dim=1)
     else:
         statistic = torch.stack(
-            [_quantile(values, 0.5) for values in float_flat],
+            [compute_quantile(values, 0.5) for values in float_flat],
         )
     return statistic.to(data.dtype)
 
