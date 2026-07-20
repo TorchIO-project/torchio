@@ -90,6 +90,14 @@ class _MutateParams(tio.Transform):
         return batch
 
 
+class _MutateBatchedParams(tio.Transform):
+    """Mutate nested batched params to test history isolation."""
+
+    def apply_transform(self, batch: Any, params: dict[str, Any]) -> Any:
+        params["value"][0]["nested"] = "mutated"
+        return batch
+
+
 # ── Transform base ───────────────────────────────────────────────────
 
 
@@ -258,6 +266,20 @@ class TestApplyWithParams:
         _MutateParams().apply_with_params(subject, params)
 
         assert params == {"value": "original"}
+
+    def test_batched_history_does_not_alias_kernel_params(self) -> None:
+        batch = tio.SubjectsBatch.from_subjects(
+            [tio.Subject(t1=tio.ScalarImage(torch.zeros(1, 4, 4, 4))) for _ in range(2)]
+        )
+        params = {
+            "value": [{"nested": "first"}, {"nested": "second"}],
+            "_batch_size": 2,
+            "_batched_keys": ["value"],
+        }
+
+        result = _MutateBatchedParams().apply_with_params(batch, params)
+
+        assert result.history(0)[-1].params["value"] == {"nested": "first"}
 
     def test_copy_true_preserves_batch(self) -> None:
         batch = tio.SubjectsBatch.from_subjects(

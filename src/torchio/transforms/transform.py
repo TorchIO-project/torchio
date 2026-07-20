@@ -491,7 +491,7 @@ class Transform(nn.Module):
                 traces.append(None)
                 continue
             element_params = _slice_params(params, index, batched_keys)
-            traces.append(self._make_applied_transform(element_params))
+            traces.append(self._make_applied_transform(_copy.deepcopy(element_params)))
         return traces
 
     @staticmethod
