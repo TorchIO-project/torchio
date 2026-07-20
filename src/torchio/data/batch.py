@@ -111,7 +111,7 @@ class ImagesBatch(Invertible):
             msg = f"Expected 5D tensor (B, C, I, J, K), got {data.ndim}D"
             raise ValueError(msg)
         resolved_affines = (
-            [AffineMatrix() for _ in range(data.shape[0])]
+            [AffineMatrix().to(data.device) for _ in range(data.shape[0])]
             if affines is None
             else affines
         )

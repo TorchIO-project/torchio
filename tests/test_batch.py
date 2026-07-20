@@ -27,6 +27,11 @@ class TestImagesBatch:
         assert batch.batch_size == 3
         assert all(affine.spacing == (1.0, 1.0, 1.0) for affine in batch.affines)
 
+    def test_from_tensor_default_affines_follow_data_device(self) -> None:
+        batch = ImagesBatch.from_tensor(torch.empty(2, 1, 2, 3, 4, device="meta"))
+
+        assert all(affine.device.type == "meta" for affine in batch.affines)
+
     def test_image_class_properties(self) -> None:
         scalar = ImagesBatch.from_tensor(
             torch.rand(2, 1, 4, 4, 4),
