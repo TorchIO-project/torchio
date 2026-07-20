@@ -293,6 +293,10 @@ histories match, inversion remains vectorized over the 5D batch. When
 histories differ (for example after per-element `OneOf`), inversion is
 performed per element and the results are re-batched.
 
+For compatibility, a batch with uniform histories exposes an immutable
+`applied_transforms` tuple. Use `histories` or `history(index)` for
+batch code; `Subject.applied_transforms` remains a mutable list.
+
 ## Hydra configuration
 
 Transforms can export themselves as Hydra-compatible YAML configs
