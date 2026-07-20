@@ -163,9 +163,9 @@ When a transform finishes:
 Private batching keys may still exist transiently while built-in transforms are
 migrated, but they are never persisted in public history.
 
-The first implementation uses independent trace records. It does not share
-mutable `AppliedTransform` objects across elements. Memory optimization can be
-added later only if profiling justifies an immutable trace representation.
+Uniform applications reuse one trace record across element histories so large
+shared parameter payloads are not duplicated. Per-instance applications create
+independent clean traces for each element.
 
 This removes:
 
