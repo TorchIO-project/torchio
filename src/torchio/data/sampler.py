@@ -17,7 +17,7 @@ from .patch import PatchLocation
 from .subject import Subject
 
 if TYPE_CHECKING:
-    from ..transforms.spatial.pad import PaddingMode
+    from ..transforms.spatial._padding import PaddingMode
 
 
 class PatchSampler:

@@ -10,8 +10,8 @@ from ...data.image import Image
 from ...data.subject import Subject
 from ...types import TypeThreeInts
 from ..transform import SpatialTransform
+from ._padding import PaddingMode
 from .crop_or_pad import CropOrPad
-from .pad import PaddingMode
 
 #: Accepted target_multiple specifications.
 #: `int` → same value for all axes.

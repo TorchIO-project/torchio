@@ -27,11 +27,11 @@ from ...types import TypeThreeInts
 from ..compose import Compose
 from ..transform import AppliedTransform
 from ..transform import SpatialTransform
+from ._padding import PaddingMode
+from ._padding import pad_tensor
+from ._padding import parse_padding_mode
 from .crop import Crop
 from .pad import Pad
-from .pad import PaddingMode
-from .pad import _pad_tensor
-from .pad import _parse_padding_mode
 
 #: Accepted target shape specifications.
 #: `int` or `float` → same size for each axis.
@@ -237,7 +237,7 @@ class _PaddedBackend:
 
     def to_tensor(self) -> Tensor:
         base = self._source.to_tensor()
-        return _pad_tensor(
+        return pad_tensor(
             base,
             self._padding,
             self._padding_mode,
@@ -337,7 +337,7 @@ def _pad_image_lazy(
     padded_shape = (c, si + i0 + i1, sj + j0 + j1, sk + k0 + k1)
 
     if image.is_loaded:
-        new_data = _pad_tensor(
+        new_data = pad_tensor(
             image.data,
             padding,
             padding_mode,
@@ -369,7 +369,7 @@ def _pad_image_lazy(
         return new
 
     # No backend → fall back to eager pad
-    new_data = _pad_tensor(
+    new_data = pad_tensor(
         image.data,
         padding,
         padding_mode,
@@ -455,7 +455,7 @@ class CropOrPad(SpatialTransform):
             raise ValueError(msg)
         self.target_shape = _parse_target_shape(target_shape)
         self.units: Units = units
-        self.padding_mode = _parse_padding_mode(padding_mode)
+        self.padding_mode = parse_padding_mode(padding_mode)
         self.fill = fill
         self.only_crop = only_crop
         self.only_pad = only_pad
