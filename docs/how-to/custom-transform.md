@@ -171,9 +171,10 @@ and records the supplied parameters in history. `Compose`, `OneOf`,
 `CornucopiaAdapter` do not expose a compatible exact-parameter kernel
 and therefore reject this method.
 
-For a transformed batch, use `batch.history(index)` to retrieve the
-clean parameter dictionary for one element. Internal batching keys are
-never persisted in public history.
+For a transformed batch, `batch.history(index)` returns that element's
+trace tuple. Read `batch.history(index)[-1].params` for the latest clean
+parameter dictionary. Internal batching keys are never persisted in
+public history.
 
 ## Handle annotations safely
 
