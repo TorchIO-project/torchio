@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import warnings
+from collections.abc import Sequence
 from typing import Any
 
 from .compose import Compose
@@ -13,7 +14,7 @@ from .transform import Transform
 
 
 def get_inverse_transform(
-    history: list[AppliedTransform],
+    history: Sequence[AppliedTransform],
     *,
     warn: bool = True,
     ignore_intensity: bool = False,

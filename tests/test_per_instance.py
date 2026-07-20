@@ -180,7 +180,7 @@ class TestFullyGatedNoHistory:
         torch.manual_seed(0)
         batch = _identical_batch(batch_size=4)
         result = tio.Affine(degrees=20.0, p=0.0)(batch)
-        assert result.applied_transforms == []
+        assert not result.applied_transforms
 
     def test_fully_gated_inverse_preserves_float64(self) -> None:
         torch.manual_seed(0)

@@ -66,8 +66,8 @@ class _BatchedHistoryMixin(Invertible):
         )
 
     @property
-    def applied_transforms(self) -> list[Any]:
-        """Uniform batch history for compatibility.
+    def applied_transforms(self) -> tuple[Any, ...]:
+        """Immutable uniform batch history for compatibility.
 
         Raises:
             RuntimeError: If element histories differ.
@@ -78,7 +78,7 @@ class _BatchedHistoryMixin(Invertible):
                 " or `history(index)` instead of `applied_transforms`."
             )
             raise RuntimeError(msg)
-        return list(self._histories[0])
+        return tuple(self._histories[0])
 
     @applied_transforms.setter
     def applied_transforms(self, history: Sequence[Any]) -> None:

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from typing import Any
 
 from typing_extensions import Self
@@ -17,7 +18,7 @@ class Invertible:
     `self.applied_transforms = []` in their constructor.
     """
 
-    applied_transforms: list[Any]
+    applied_transforms: Sequence[Any]
 
     def get_inverse_transform(
         self,

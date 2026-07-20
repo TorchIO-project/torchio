@@ -589,3 +589,10 @@ class TestPerElementHistory:
         assert not rebuilt.has_divergent_history
         for subject in rebuilt.unbatch():
             assert [t.name for t in subject.applied_transforms] == ["Gamma"]
+
+    def test_uniform_applied_transforms_view_is_immutable(self) -> None:
+        result = tio.Gamma(log_gamma=0.2, per_instance=False)(self._batch())
+
+        assert isinstance(result.applied_transforms, tuple)
+        with pytest.raises(AttributeError):
+            result.applied_transforms.append("invalid")  # type: ignore[attr-defined]

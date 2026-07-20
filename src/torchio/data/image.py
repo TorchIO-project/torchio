@@ -157,6 +157,8 @@ class Image(Invertible):
         >>> image = tio.ScalarImage(nifti_image)  # from nibabel (lazy)
     """
 
+    applied_transforms: list[Any]
+
     #: Source types accepted by the constructor.
     ImageInput = (
         ImageSource  # str | Path | IOBase | OpenFile

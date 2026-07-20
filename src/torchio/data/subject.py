@@ -56,6 +56,8 @@ class Subject(Invertible):
         >>> subject.age         # metadata access (returns 45)
     """
 
+    applied_transforms: list[Any]
+
     def __init__(self, **kwargs: Any) -> None:
         images: dict[str, Image] = {}
         points: dict[str, Points] = {}
