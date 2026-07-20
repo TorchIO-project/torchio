@@ -5,6 +5,7 @@ from __future__ import annotations
 import warnings
 from typing import Any
 from typing import Literal
+from typing import get_args
 
 import torch
 from torch import Tensor
@@ -32,15 +33,7 @@ PaddingMode = Literal[
     "minimum",
 ]
 
-_PADDING_MODES: tuple[PaddingMode, ...] = (
-    "constant",
-    "reflect",
-    "replicate",
-    "circular",
-    "mean",
-    "median",
-    "minimum",
-)
+_PADDING_MODES: tuple[PaddingMode, ...] = get_args(PaddingMode)
 
 _STATISTIC_PADDING_MODES = ("mean", "median", "minimum")
 
