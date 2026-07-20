@@ -108,7 +108,10 @@ class Points:
         return self._data.device
 
     def to(self, *args: Any, **kwargs: Any) -> Self:
-        """Move point data and affine to a device or dtype.
+        """Move point coordinates and affine to a device or dtype.
+
+        Coordinate dtype casts are applied to the point tensor. The
+        affine moves to supported devices but always remains `float64`.
 
         Args:
             *args: Positional arguments forwarded to `torch.Tensor.to`.
