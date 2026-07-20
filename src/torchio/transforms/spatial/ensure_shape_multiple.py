@@ -11,6 +11,7 @@ from ...data.subject import Subject
 from ...types import TypeThreeInts
 from ..transform import SpatialTransform
 from ._padding import PaddingMode
+from ._padding import parse_padding_mode
 from .crop_or_pad import CropOrPad
 
 #: Accepted target_multiple specifications.
@@ -104,7 +105,7 @@ class EnsureShapeMultiple(SpatialTransform):
             msg = f"method must be 'crop' or 'pad', got {method!r}"
             raise ValueError(msg)
         self.method = method
-        self.padding_mode = padding_mode
+        self.padding_mode = parse_padding_mode(padding_mode)
         self.fill = fill
 
     def forward(self, data: Any) -> Any:
