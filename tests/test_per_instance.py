@@ -123,7 +123,7 @@ class TestSpatialBatchSizeValidation:
         torch.manual_seed(0)
         batch = _identical_batch(batch_size=4)
         result = tio.Noise(std=(0.1, 0.5))(batch)
-        with pytest.raises(IndexError):
+        with pytest.raises(IndexError, match=r"element 4.*batch size is 4"):
             result.history(4)
 
 

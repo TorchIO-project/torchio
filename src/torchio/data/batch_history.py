@@ -49,6 +49,12 @@ class _BatchedHistoryMixin(Invertible):
         Returns:
             Immutable transform-history view for the element.
         """
+        if not 0 <= index < self.batch_size:
+            msg = (
+                f"Cannot get history for element {index}:"
+                f" batch size is {self.batch_size}"
+            )
+            raise IndexError(msg)
         return tuple(self._histories[index])
 
     @property
