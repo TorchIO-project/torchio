@@ -21,8 +21,10 @@ from torch import nn
 
 from ..data.batch import ImagesBatch
 from ..data.batch import SubjectsBatch
+from ..data.bboxes import BoundingBoxes
 from ..data.image import Image
 from ..data.image import ScalarImage
+from ..data.points import Points
 from ..data.subject import Subject
 
 
@@ -64,6 +66,40 @@ def _all_elements_gated_out(params: dict[str, Any]) -> bool:
 
 def _copy_optional_list(value: list[str] | None) -> list[str] | None:
     return None if value is None else list(value)
+
+
+def _image_has_annotations(image: Image) -> bool:
+    return bool(image.points or image.bounding_boxes)
+
+
+def _subject_has_annotations(subject: Subject) -> bool:
+    return bool(
+        subject.points
+        or subject.bounding_boxes
+        or any(_image_has_annotations(image) for image in subject.images.values())
+    )
+
+
+def _value_has_annotations(value: Any) -> bool:
+    if isinstance(value, (Points, BoundingBoxes)):
+        return True
+    if isinstance(value, Image):
+        return _image_has_annotations(value)
+    return False
+
+
+def _data_has_annotations(data: Any) -> bool:
+    match data:
+        case SubjectsBatch() | ImagesBatch():
+            return data.has_annotations
+        case Subject():
+            return _subject_has_annotations(data)
+        case Image():
+            return _image_has_annotations(data)
+        case dict():
+            return any(_value_has_annotations(value) for value in data.values())
+        case _:
+            return False
 
 
 class Transform(nn.Module):
@@ -217,6 +253,7 @@ class Transform(nn.Module):
         Args:
             data: Input data to transform.
         """
+        self._check_spatial_annotations(data)
         if self.copy:
             data = _copy.deepcopy(data)
         batch, unwrap = self._wrap(data)
@@ -252,6 +289,16 @@ class Transform(nn.Module):
             with contextlib.suppress(AttributeError):
                 result.applied_transforms = list(batch.applied_transforms)
         return result
+
+    def _check_spatial_annotations(self, data: Any) -> None:
+        """Reject spatial transforms that would leave stale annotations."""
+        if isinstance(self, SpatialTransform) and _data_has_annotations(data):
+            msg = (
+                "Spatial transforms do not yet support Points or BoundingBoxes."
+                " Remove the annotations before applying the transform, or apply"
+                " an annotation-aware spatial operation."
+            )
+            raise NotImplementedError(msg)
 
     @property
     def supports_per_instance_params(self) -> bool:
@@ -684,7 +731,9 @@ class IntensityTransform(Transform):
     def _get_images(self, batch: SubjectsBatch) -> dict[str, ImagesBatch]:
         """Filter to ScalarImage batches only, then apply include/exclude."""
         images = {
-            k: v for k, v in batch.images.items() if v._image_class is ScalarImage
+            k: v
+            for k, v in batch.images.items()
+            if issubclass(v.image_class, ScalarImage)
         }
         if self.include is not None:
             images = {k: v for k, v in images.items() if k in self.include}

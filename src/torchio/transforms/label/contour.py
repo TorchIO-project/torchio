@@ -8,7 +8,6 @@ import torch
 import torch.nn.functional as functional
 
 from ...data.batch import SubjectsBatch
-from ...data.image import LabelMap
 from ..transform import Transform
 
 
@@ -43,7 +42,7 @@ class Contour(Transform):
     ) -> SubjectsBatch:
         """Replace each label map with its boundary voxels."""
         for _name, img_batch in batch.images.items():
-            if not issubclass(img_batch._image_class, LabelMap):
+            if not img_batch.is_label:
                 continue
             img_batch.data = _extract_contour(img_batch.data)
         return batch

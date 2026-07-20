@@ -10,7 +10,6 @@ from einops import rearrange
 from torch import Tensor
 
 from ...data.batch import SubjectsBatch
-from ...data.image import LabelMap
 from ...data.image import ScalarImage
 from ..parameter_range import to_range
 from ..transform import Transform
@@ -173,7 +172,7 @@ class LabelsToImage(Transform):
             return batch.images[self.label_key]
         # Auto-detect first LabelMap.
         for _name, img_batch in batch.images.items():
-            if issubclass(img_batch._image_class, LabelMap):
+            if img_batch.is_label:
                 return img_batch
         msg = "No LabelMap found in the subject"
         raise KeyError(msg)

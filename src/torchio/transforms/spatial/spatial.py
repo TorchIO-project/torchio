@@ -37,7 +37,6 @@ from ...data.affine import AffineMatrix
 from ...data.batch import ImagesBatch
 from ...data.batch import SubjectsBatch
 from ...data.image import Image
-from ...data.image import LabelMap
 from ...data.image import ScalarImage
 from ...types import TypeSpacing
 from ...types import TypeThreeInts
@@ -1227,7 +1226,7 @@ def _resample_image_batch(
     """
     original_data = img_batch.data
     original_affines = list(img_batch.affines)
-    is_label = issubclass(img_batch._image_class, LabelMap)
+    is_label = img_batch.is_label
     interpolation = _interpolation_for_batch(
         img_batch,
         image_interpolation=image_interpolation,
@@ -2038,7 +2037,7 @@ def _batch_fill_value(
     default_pad_label: float,
 ) -> float | Tensor:
     """Compute a single fill value for the whole image batch."""
-    if issubclass(img_batch._image_class, LabelMap):
+    if img_batch.is_label:
         return float(default_pad_label)
 
     if isinstance(default_pad_value, Number):
@@ -2419,7 +2418,7 @@ def _interpolation_for_batch(
     label_interpolation: TypeLabelInterpolation,
 ) -> str:
     """Choose the interpolation mode based on the image class."""
-    if issubclass(img_batch._image_class, LabelMap):
+    if img_batch.is_label:
         return label_interpolation
     return image_interpolation
 

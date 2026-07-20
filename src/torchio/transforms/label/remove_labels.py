@@ -6,7 +6,6 @@ from collections.abc import Sequence
 from typing import Any
 
 from ...data.batch import SubjectsBatch
-from ...data.image import LabelMap
 from ..transform import Transform
 
 
@@ -52,7 +51,7 @@ class RemoveLabels(Transform):
     ) -> SubjectsBatch:
         """Set specified labels to the background value."""
         for _name, img_batch in batch.images.items():
-            if not issubclass(img_batch._image_class, LabelMap):
+            if not img_batch.is_label:
                 continue
             data = img_batch.data.clone()
             for label in self.labels:

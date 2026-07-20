@@ -12,7 +12,6 @@ from torch import Tensor
 
 from ...data.batch import ImagesBatch
 from ...data.batch import SubjectsBatch
-from ...data.image import LabelMap
 from .._statistics import compute_quantile
 from ..parameter_range import Choice
 from ..parameter_range import _ParameterRange
@@ -221,7 +220,7 @@ class Normalize(IntensityTransform):
                 )
                 raise KeyError(msg)
             mask_batch = batch.images[key]
-            if not issubclass(mask_batch._image_class, LabelMap):
+            if not mask_batch.is_label:
                 msg = f'Masking method "{key}" must refer to a LabelMap.'
                 raise TypeError(msg)
             return mask_batch.data[0].bool()

@@ -9,7 +9,6 @@ import torch.nn.functional as functional
 from einops import rearrange
 
 from ...data.batch import SubjectsBatch
-from ...data.image import LabelMap
 from ..parameter_range import to_nonneg_range
 from ..transform import Transform
 
@@ -106,7 +105,7 @@ class Anisotropy(Transform):
         """Downsample then upsample along the chosen axis."""
         per_instance = self._is_per_instance_params(params)
         for _name, img_batch in batch.images.items():
-            is_label = issubclass(img_batch._image_class, LabelMap)
+            is_label = img_batch.is_label
             mode = "nearest" if is_label else self.image_interpolation
             if per_instance:
                 data = img_batch.data

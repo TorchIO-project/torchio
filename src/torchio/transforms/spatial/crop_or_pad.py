@@ -469,6 +469,7 @@ class CropOrPad(SpatialTransform):
         to the standard `SubjectsBatch` path.
         """
         if isinstance(data, (Subject, Image)):
+            self._check_spatial_annotations(data)
             return self._forward_lazy(data)
         return super().forward(data)
 
