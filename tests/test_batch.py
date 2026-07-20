@@ -605,6 +605,7 @@ class TestPerElementHistory:
         with pytest.raises(AttributeError):
             result.applied_transforms.append("invalid")  # type: ignore[attr-defined]
 
+
 class TestMapSubjects:
     def _batch(self) -> SubjectsBatch:
         return SubjectsBatch.from_subjects(
