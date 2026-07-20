@@ -272,8 +272,10 @@ class Transform(nn.Module):
         """Build one clean optional history trace per element."""
         batched_keys = params.get("_batched_keys")
         if batched_keys is None:
-            trace = self._make_applied_transform(_copy.deepcopy(params))
-            return [trace] * batch_size
+            return [
+                self._make_applied_transform(_copy.deepcopy(params))
+                for _ in range(batch_size)
+            ]
         expected_size = params.get("_batch_size")
         if expected_size != batch_size:
             msg = (
