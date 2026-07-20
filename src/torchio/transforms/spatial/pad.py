@@ -35,7 +35,7 @@ PaddingMode = Literal[
 
 _PADDING_MODES: tuple[PaddingMode, ...] = get_args(PaddingMode)
 
-_STATISTIC_PADDING_MODES = ("mean", "median", "minimum")
+_STATISTIC_PADDING_MODES = "mean", "median", "minimum"
 
 
 def _parse_padding(padding: PaddingParam) -> TypeSixInts:
