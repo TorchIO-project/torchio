@@ -360,7 +360,7 @@ for the capability contract and stochastic-realisation caveats.
 Prefer vectorized operations on 5D tensors or metadata lists. If logic
 must call a subject-oriented external API, the current low-level escape
 hatch is to unbatch, process every subject without changing its schema,
-restack, and adopt the prior history:
+and restack. Exact per-element histories are preserved automatically:
 
 ```python
 from typing import Any
@@ -386,9 +386,7 @@ class StripIdentifier(tio.Transform):
         for subject in subjects:
             identifier = subject.metadata["identifier"]
             subject.metadata["identifier"] = identifier.strip()
-        rebuilt = tio.SubjectsBatch.from_subjects(subjects)
-        rebuilt.adopt_history(batch, subjects)
-        return rebuilt
+        return tio.SubjectsBatch.from_subjects(subjects)
 
 
 subject = tio.Subject(

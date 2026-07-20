@@ -566,14 +566,11 @@ class TestPerElementHistory:
         return SubjectsBatch.from_subjects(subjects)
 
     def test_adopt_history_preserves_per_element(self) -> None:
-        # Simulate the adapter pattern: a per-element batch is unbatched,
-        # processed, and re-stacked; history must survive.
         torch.manual_seed(0)
         batch = self._batch()
         branched = tio.OneOf([tio.Flip(axes=(0,)), tio.Flip(axes=(1,))])(batch)
         subjects = branched.unbatch()
         rebuilt = SubjectsBatch.from_subjects(subjects)
-        rebuilt.adopt_history(branched, subjects)
         for original, restored in zip(
             branched.unbatch(),
             rebuilt.unbatch(),
@@ -589,7 +586,6 @@ class TestPerElementHistory:
         transformed = tio.Gamma(log_gamma=0.3, per_instance=False)(batch)
         subjects = transformed.unbatch()
         rebuilt = SubjectsBatch.from_subjects(subjects)
-        rebuilt.adopt_history(transformed, subjects)
-        assert rebuilt._per_element_history is None
+        assert not rebuilt.has_divergent_history
         for subject in rebuilt.unbatch():
             assert [t.name for t in subject.applied_transforms] == ["Gamma"]

@@ -63,9 +63,9 @@ class TestSwapPerInstance:
         torch.manual_seed(0)
         batch = self._batch()
         result = tio.Swap(patch_size=4, num_iterations=20)(batch)
-        params = result.applied_transforms[-1].params
-        assert "_batched_keys" in params
-        assert len(params["locations"]) == batch.batch_size
+        params = [history[-1].params for history in result.histories]
+        assert all("_batched_keys" not in item for item in params)
+        assert len({repr(item["locations"]) for item in params}) > 1
         assert not torch.allclose(result.t1.data[0], result.t1.data[1])
 
     def test_per_instance_false_is_shared(self) -> None:

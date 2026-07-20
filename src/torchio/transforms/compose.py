@@ -283,9 +283,7 @@ class SomeOf(Transform):
 def _apply_to_element(subject: Any, apply_fn: Any) -> Any:
     """Apply a transform (or callable) to one element, preserving history.
 
-    Wrapping a `Subject` directly into a batch discards its existing
-    history, so the element is wrapped into a one-element batch seeded
-    with its prior history; the transform then appends to that history.
+    The one-element batch inherits the subject's exact history.
 
     Args:
         subject: The single subject to transform (carrying its history).
@@ -298,7 +296,6 @@ def _apply_to_element(subject: Any, apply_fn: Any) -> Any:
     from ..data.batch import SubjectsBatch
 
     element_batch = SubjectsBatch.from_subjects([subject])
-    element_batch.applied_transforms = list(subject.applied_transforms)
     element_batch = apply_fn(element_batch)
     return element_batch.unbatch()[0]
 
@@ -317,10 +314,9 @@ def _rebatch_with_history(subjects: list[Any], transform_name: str) -> Any:
     """
     from ..data.batch import SubjectsBatch
 
-    _check_consistent_schema(subjects, transform_name)
     try:
         batch = SubjectsBatch.from_subjects(subjects)
-    except (RuntimeError, KeyError) as error:
+    except ValueError as error:
         msg = (
             f"Per-instance {transform_name} produced batch elements with"
             " different shapes or schemas, which cannot be re-stacked. Use"
@@ -328,35 +324,4 @@ def _rebatch_with_history(subjects: list[Any], transform_name: str) -> Any:
             f" {transform_name}, or pass per_instance=False."
         )
         raise RuntimeError(msg) from error
-    batch.set_per_element_history([s.applied_transforms for s in subjects])
     return batch
-
-
-def _check_consistent_schema(subjects: list[Any], transform_name: str) -> None:
-    """Ensure all subjects share the same image names and classes.
-
-    Per-element branching may apply different transforms to different
-    elements; if those change the set of images (or their type), the
-    elements can no longer be re-stacked into one batch. This raises a
-    clear error instead of silently dropping data.
-
-    Args:
-        subjects: The subjects about to be re-stacked.
-        transform_name: Name of the branching transform for the message.
-
-    Raises:
-        RuntimeError: If image names or classes differ across subjects.
-    """
-    if not subjects:
-        return
-    reference = {name: type(image) for name, image in subjects[0].images.items()}
-    for subject in subjects[1:]:
-        current = {name: type(image) for name, image in subject.images.items()}
-        if current != reference:
-            msg = (
-                f"Per-instance {transform_name} produced batch elements with"
-                " different image names or types, which cannot be re-stacked."
-                " Use only schema-preserving transforms with per-instance"
-                f" {transform_name}, or pass per_instance=False."
-            )
-            raise RuntimeError(msg)

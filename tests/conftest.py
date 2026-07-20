@@ -10,7 +10,6 @@ import pytest
 import torch
 
 from torchio.data.batch import SubjectsBatch
-from torchio.data.batch import _slice_params
 
 
 @pytest.fixture
@@ -38,10 +37,6 @@ def assert_vectorized() -> Callable[..., None]:
     ) -> None:
         original = copy.deepcopy(batch)
         result = transform(batch)
-        params = result.applied_transforms[-1].params
-        assert "_batched_keys" in params, "per-instance path was not active"
-        batched_keys = params["_batched_keys"]
-        keep = params.get("_keep")
         image_names = list(transform._get_images(result).keys())
         result_images = transform._get_images(result)
         original_subjects = original.unbatch()
@@ -51,10 +46,14 @@ def assert_vectorized() -> Callable[..., None]:
                 name: image.data.clone()
                 for name, image in transform._get_images(single).items()
             }
-            element_params = _slice_params(params, index, batched_keys)
-            single = transform.apply_transform(single, element_params)
+            history = result.history(index)
+            gated_out = not history
+            if history:
+                single = transform.apply_transform(
+                    single,
+                    history[-1].params,
+                )
             single_images = transform._get_images(single)
-            gated_out = keep is not None and not keep[index]
             for name in image_names:
                 result_row = result_images[name].data[index : index + 1]
                 torch.testing.assert_close(

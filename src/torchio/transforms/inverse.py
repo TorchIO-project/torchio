@@ -80,15 +80,16 @@ def apply_inverse_transform(
     Returns:
         Data with transforms undone, same type as input.
     """
-    if not hasattr(data, "applied_transforms"):
-        return data
-    # Batches with per-element histories (from per-instance OneOf/SomeOf)
-    # know how to invert each element; delegate to their own method.
-    if getattr(data, "_per_element_history", None) is not None:
+    from ..data.batch import ImagesBatch
+    from ..data.batch import SubjectsBatch
+
+    if isinstance(data, (ImagesBatch, SubjectsBatch)):
         return data.apply_inverse_transform(
             warn=warn,
             ignore_intensity=ignore_intensity,
         )
+    if not hasattr(data, "applied_transforms"):
+        return data
     inverse = get_inverse_transform(
         data.applied_transforms,
         warn=warn,

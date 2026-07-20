@@ -61,9 +61,9 @@ class TestMotionPerInstance:
         result = tio.Motion(degrees=(5, 15), translation=(5, 15), num_transforms=2)(
             batch
         )
-        params = result.applied_transforms[-1].params
-        assert "_batched_keys" in params
-        assert len(params["transforms"]) == batch.batch_size
+        params = [history[-1].params for history in result.histories]
+        assert all("_batched_keys" not in item for item in params)
+        assert len({repr(item["transforms"]) for item in params}) > 1
         assert not torch.allclose(result.t1.data[0], result.t1.data[1])
 
     def test_per_instance_false_is_shared(self) -> None:

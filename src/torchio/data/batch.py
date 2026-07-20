@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import copy as _copy
-import dataclasses
 from collections.abc import Sequence
 from typing import TYPE_CHECKING
 from typing import Any
@@ -13,13 +12,13 @@ from torch import Tensor
 from typing_extensions import Self
 
 from .affine import AffineMatrix
+from .batch_history import _BatchedHistoryMixin
 from .batch_schema import _ImageSchema
 from .batch_schema import _SubjectSchema
 from .bboxes import BoundingBoxes
 from .image import Image
 from .image import LabelMap
 from .image import ScalarImage
-from .invertible import Invertible
 from .points import Points
 
 if TYPE_CHECKING:
@@ -29,7 +28,7 @@ if TYPE_CHECKING:
 _BATCH_META_KEYS = ("_batch_size", "_batched_keys", "_keep")
 
 
-class ImagesBatch(Invertible):
+class ImagesBatch(_BatchedHistoryMixin):
     """A batch of images with per-sample affines and private prototypes.
 
     Wraps a 5D tensor `(B, C, I, J, K)` and a list of `AffineMatrix`
@@ -57,6 +56,7 @@ class ImagesBatch(Invertible):
         data: Tensor,
         affines: Sequence[AffineMatrix],
         prototypes: Sequence[Image],
+        histories: Sequence[Sequence[Any]] | None = None,
     ) -> None:
         """Initialize a validated image batch."""
         if data.ndim != 5:
@@ -74,7 +74,7 @@ class ImagesBatch(Invertible):
         self._data = data
         self._affines = [affine.clone() for affine in affines]
         self._prototypes = list(prototypes)
-        self.applied_transforms: list[Any] = []
+        self._initialize_histories(data.shape[0], histories)
 
     @classmethod
     def _from_parts(
@@ -82,10 +82,11 @@ class ImagesBatch(Invertible):
         data: Tensor,
         affines: Sequence[AffineMatrix],
         prototypes: Sequence[Image],
+        histories: Sequence[Sequence[Any]] | None = None,
     ) -> Self:
         """Build an image batch from validated internal parts."""
         batch = cls.__new__(cls)
-        batch._initialize(data, affines, prototypes)
+        batch._initialize(data, affines, prototypes, histories)
         return batch
 
     @classmethod
@@ -139,7 +140,8 @@ class ImagesBatch(Invertible):
         stacked = torch.stack(tensors)
         affines = [image.affine for image in images]
         prototypes = [_make_image_prototype(image) for image in images]
-        return cls._from_parts(stacked, affines, prototypes)
+        histories = [image.applied_transforms for image in images]
+        return cls._from_parts(stacked, affines, prototypes, histories)
 
     @property
     def data(self) -> Tensor:
@@ -210,10 +212,7 @@ class ImagesBatch(Invertible):
             affine=self._affines[index].clone(),
         )
         image._metadata = _copy.deepcopy(prototype.metadata)
-        image.applied_transforms = [
-            *prototype.applied_transforms,
-            *self.applied_transforms,
-        ]
+        image.applied_transforms = list(self.history(index))
         return image
 
     def __len__(self) -> int:
@@ -222,6 +221,10 @@ class ImagesBatch(Invertible):
     def unbatch(self) -> list[Image]:
         """Split the batch into individual images."""
         return [self[i] for i in range(self.batch_size)]
+
+    def _batch_items(self, items: Sequence[Any]) -> Self:
+        """Rebuild an image batch from images."""
+        return type(self).from_images(items)
 
     @property
     def has_annotations(self) -> bool:
@@ -237,7 +240,7 @@ class ImagesBatch(Invertible):
         return f"ImagesBatch({cls}, batch_size={b}, shape=({c}, {i}, {j}, {k}))"
 
 
-class SubjectsBatch(Invertible):
+class SubjectsBatch(_BatchedHistoryMixin):
     """A batch of image columns and per-element object stores.
 
     Each image field becomes an `ImagesBatch`. Metadata, points, and
@@ -271,32 +274,7 @@ class SubjectsBatch(Invertible):
             self._metadata,
         )
         self._schema: _SubjectSchema | None = None
-        self.applied_transforms: list[Any] = []
-        # When per-element branching occurs (e.g. per-instance OneOf),
-        # this stores the frozen per-element history prefix. Transforms
-        # applied afterwards still append to `applied_transforms`, and
-        # `unbatch()` merges the prefix with the sliced suffix.
-        self._per_element_history: list[list[Any]] | None = None
-
-    def set_per_element_history(self, histories: list[list[Any]]) -> None:
-        """Freeze a distinct transform history for each batch element.
-
-        Used when different elements receive different transforms (for
-        example per-instance [`OneOf`][torchio.OneOf]). Resets the shared
-        `applied_transforms` so that subsequent transforms accumulate as
-        a common suffix.
-
-        Args:
-            histories: One history list per batch element.
-        """
-        if len(histories) != self.batch_size:
-            msg = (
-                f"Expected {self.batch_size} per-element histories,"
-                f" got {len(histories)}"
-            )
-            raise ValueError(msg)
-        self._per_element_history = [list(history) for history in histories]
-        self.applied_transforms = []
+        self._initialize_histories(self._batch_size)
 
     @classmethod
     def from_subjects(cls, subjects: Sequence[Any]) -> Self:
@@ -316,6 +294,9 @@ class SubjectsBatch(Invertible):
             metadata=_collect_subject_metadata(subjects, schema),
         )
         batch._schema = schema
+        batch._set_histories(
+            [subject.applied_transforms for subject in subjects],
+        )
         return batch
 
     @property
@@ -448,75 +429,16 @@ class SubjectsBatch(Invertible):
             for key, values in self._metadata.items():
                 kwargs[key] = _copy.deepcopy(values[i])
             sub = Subject(**kwargs)
-            suffix = _slice_history(self.applied_transforms, i)
-            if self._per_element_history is not None:
-                sub.applied_transforms = list(self._per_element_history[i]) + suffix
-            else:
-                sub.applied_transforms = suffix
+            sub.applied_transforms = list(self.history(i))
             subjects.append(sub)
         return subjects
 
+    def _batch_items(self, items: Sequence[Any]) -> Self:
+        """Rebuild a subject batch from subjects."""
+        return type(self).from_subjects(items)
+
     def __len__(self) -> int:
         return self.batch_size
-
-    def adopt_history(self, source: SubjectsBatch, subjects: list[Any]) -> None:
-        """Carry transform history from *source* after rebuilding the batch.
-
-        Used by code that unbatches, processes, and re-stacks subjects
-        (for example the MONAI and Cornucopia adapters). Preserves a
-        per-element history if *source* had one, otherwise copies the
-        shared history.
-
-        Args:
-            source: The batch the subjects were unbatched from.
-            subjects: The processed subjects, in batch order.
-        """
-        if source._per_element_history is not None:
-            self.set_per_element_history([s.applied_transforms for s in subjects])
-        else:
-            self.applied_transforms = list(source.applied_transforms)
-
-    def clear_history(self) -> None:
-        """Remove all applied transform records, including per-element ones."""
-        self.applied_transforms = []
-        self._per_element_history = None
-
-    def get_inverse_transform(self, **kwargs: Any) -> Any:
-        """Build a transform that inverts the recorded history.
-
-        Raises:
-            RuntimeError: If the batch carries per-element histories (from
-                a per-instance `OneOf`/`SomeOf`), since a single batch
-                inverse is ambiguous. Call `apply_inverse_transform`
-                (which inverts each element) or `unbatch()` and invert
-                each subject.
-        """
-        if self._per_element_history is not None:
-            msg = (
-                "This batch has per-element transform histories from a"
-                " per-instance OneOf/SomeOf, so a single batch inverse is"
-                " ambiguous. Call apply_inverse_transform() (which inverts"
-                " each element) or unbatch() and invert each subject."
-            )
-            raise RuntimeError(msg)
-        return super().get_inverse_transform(**kwargs)
-
-    def apply_inverse_transform(self, **kwargs: Any) -> SubjectsBatch:
-        """Apply the inverse of the recorded history.
-
-        When the batch carries per-element histories, each element is
-        inverted independently and the results are re-stacked.
-
-        Args:
-            **kwargs: Forwarded to `get_inverse_transform`.
-
-        Returns:
-            A batch with the transforms undone.
-        """
-        if self._per_element_history is not None:
-            inverted = [s.apply_inverse_transform(**kwargs) for s in self.unbatch()]
-            return type(self).from_subjects(inverted)
-        return super().apply_inverse_transform(**kwargs)
 
     def __repr__(self) -> str:
         fields = []
@@ -703,41 +625,4 @@ def _slice_params(
             sliced[key] = value[index]
         else:
             sliced[key] = value
-    return sliced
-
-
-def _slice_history(history: list[Any], index: int) -> list[Any]:
-    """Build the per-subject transform history for batch element *index*.
-
-    Batch-shared traces are copied unchanged. Per-instance traces are
-    sliced to the element's own parameters, and traces whose per-element
-    keep mask excludes this element are dropped.
-
-    Args:
-        history: The batch-level list of `AppliedTransform` records.
-        index: The batch element whose history to build.
-
-    Returns:
-        The list of `AppliedTransform` records for the element.
-    """
-    sliced: list[Any] = []
-    for trace in history:
-        params = getattr(trace, "params", None)
-        if not isinstance(params, dict) or "_batched_keys" not in params:
-            sliced.append(trace)
-            continue
-        expected_size = params.get("_batch_size")
-        if expected_size is not None and not 0 <= index < expected_size:
-            msg = (
-                f"Cannot extract per-instance history for element {index}:"
-                f" the transform was recorded for a batch of size"
-                f" {expected_size}"
-            )
-            raise IndexError(msg)
-        keep = params.get("_keep")
-        if keep is not None and not keep[index]:
-            continue
-        batched_keys = params["_batched_keys"]
-        new_params = _slice_params(params, index, batched_keys)
-        sliced.append(dataclasses.replace(trace, params=new_params))
     return sliced

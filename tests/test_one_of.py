@@ -127,9 +127,10 @@ class TestOneOfPerInstance:
 
     def test_get_inverse_transform_raises_for_per_element(self) -> None:
         torch.manual_seed(0)
-        batch = self._batch(batch_size=4)
-        result = tio.OneOf([tio.Flip(axes=(0,))])(batch)
-        with pytest.raises(RuntimeError, match="per-element"):
+        batch = self._batch(batch_size=16)
+        result = tio.OneOf([tio.Flip(axes=(0,)), tio.Flip(axes=(1,))])(batch)
+        assert result.has_divergent_history
+        with pytest.raises(RuntimeError, match="divergent"):
             result.get_inverse_transform()
 
     def test_clear_history_clears_per_element(self) -> None:
@@ -137,7 +138,7 @@ class TestOneOfPerInstance:
         batch = self._batch(batch_size=4)
         result = tio.OneOf([tio.Flip(axes=(0,))])(batch)
         result.clear_history()
-        assert result._per_element_history is None
+        assert all(not history for history in result.histories)
         for subject in result.unbatch():
             assert subject.applied_transforms == []
 
@@ -149,7 +150,7 @@ class TestOneOfPerInstance:
         flipped = tio.Flip(axes=(0,))(batch)
         result = tio.OneOf([tio.Flip(axes=(1,))], p=0.0)(flipped)
         torch.testing.assert_close(result.t1.data, flipped.t1.data)
-        assert result._per_element_history is None
+        assert not result.has_divergent_history
         # The shared Flip history is intact and still invertible as a batch.
         restored = result.apply_inverse_transform()
         torch.testing.assert_close(restored.t1.data, original)
