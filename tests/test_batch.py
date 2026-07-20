@@ -604,3 +604,103 @@ class TestPerElementHistory:
         assert isinstance(result.applied_transforms, tuple)
         with pytest.raises(AttributeError):
             result.applied_transforms.append("invalid")  # type: ignore[attr-defined]
+
+class TestMapSubjects:
+    def _batch(self) -> SubjectsBatch:
+        return SubjectsBatch.from_subjects(
+            [
+                tio.Subject(
+                    t1=tio.ScalarImage(torch.zeros(1, 4, 4, 4)),
+                    identifier=f" subject-{index} ",
+                    index=index,
+                )
+                for index in range(2)
+            ]
+        )
+
+    def test_maps_text_metadata(self) -> None:
+        batch = self._batch()
+
+        def strip_identifier(subject: tio.Subject) -> tio.Subject:
+            subject.metadata["identifier"] = subject.identifier.strip()
+            return subject
+
+        result = batch.map_subjects(strip_identifier)
+
+        assert result.metadata["identifier"] == ["subject-0", "subject-1"]
+        assert batch.metadata["identifier"] == [" subject-0 ", " subject-1 "]
+
+    def test_preserves_annotations(self) -> None:
+        batch = SubjectsBatch.from_subjects(
+            [
+                tio.Subject(
+                    landmarks=tio.Points(torch.rand(index + 1, 3)),
+                    identifier=f"subject-{index}",
+                )
+                for index in range(2)
+            ]
+        )
+
+        result = batch.map_subjects(lambda subject: subject)
+
+        assert result.points["landmarks"][0].num_points == 1
+        assert result.points["landmarks"][1].num_points == 2
+
+    def test_allows_uniform_schema_change(self) -> None:
+        def add_site(subject: tio.Subject) -> tio.Subject:
+            subject.metadata["site"] = "A"
+            return subject
+
+        result = self._batch().map_subjects(add_site)
+
+        assert result.metadata["site"] == ["A", "A"]
+
+    def test_rejects_divergent_schema_change(self) -> None:
+        def add_site_to_first(subject: tio.Subject) -> tio.Subject:
+            if subject.index == 0:
+                subject.metadata["site"] = "A"
+            return subject
+
+        with pytest.raises(ValueError, match=r"metadata.*index 1.*missing.*site"):
+            self._batch().map_subjects(add_site_to_first)
+
+    def test_rejects_non_subject_result(self) -> None:
+        def return_dict(subject: tio.Subject) -> dict:
+            return {"subject": subject}
+
+        with pytest.raises(TypeError, match=r"index 0.*Subject.*dict"):
+            self._batch().map_subjects(return_dict)  # type: ignore[arg-type]
+
+    def test_retains_callback_history(self) -> None:
+        def flip_by_index(subject: tio.Subject) -> tio.Subject:
+            return tio.Flip(axes=(subject.index,))(subject)
+
+        result = self._batch().map_subjects(flip_by_index)
+
+        assert result.has_divergent_history
+        assert result.history(0)[0].params["axes"] == (0,)
+        assert result.history(1)[0].params["axes"] == (1,)
+
+    def test_in_place_callback_does_not_mutate_input(self) -> None:
+        batch = self._batch()
+
+        def add_in_place(subject: tio.Subject) -> tio.Subject:
+            subject.t1.data.add_(1)
+            return subject
+
+        result = batch.map_subjects(add_in_place)
+
+        assert torch.count_nonzero(batch.t1.data) == 0
+        assert torch.all(result.t1.data == 1)
+
+    def test_copy_false_allows_in_place_mutation(self) -> None:
+        batch = self._batch()
+
+        def add_in_place(subject: tio.Subject) -> tio.Subject:
+            subject.t1.data.add_(1)
+            return subject
+
+        result = batch.map_subjects(add_in_place, copy=False)
+
+        assert torch.all(batch.t1.data == 1)
+        assert torch.all(result.t1.data == 1)

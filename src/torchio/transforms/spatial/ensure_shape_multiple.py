@@ -90,6 +90,8 @@ class EnsureShapeMultiple(SpatialTransform):
         >>> transform = tio.EnsureShapeMultiple((4, 8, 16))
     """
 
+    _supports_apply_with_params = False
+
     def __init__(
         self,
         target_multiple: TargetMultipleParam,

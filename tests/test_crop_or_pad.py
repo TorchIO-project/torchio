@@ -392,8 +392,9 @@ class TestBatch:
 
 
 class TestProbability:
-    def test_p_zero_is_no_op(self) -> None:
+    def test_p_zero_is_no_op(self, monkeypatch: pytest.MonkeyPatch) -> None:
         subject = _make_subject((20, 20, 20))
+        monkeypatch.setattr(torch, "rand", lambda *args, **kwargs: torch.zeros(1))
         result = tio.CropOrPad(target_shape=10, p=0)(subject)
         assert result.t1.shape == (1, 20, 20, 20)
 
