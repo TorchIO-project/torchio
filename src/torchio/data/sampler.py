@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Iterator
+from typing import TYPE_CHECKING
 from typing import Any
 
 import numpy as np
@@ -14,6 +15,9 @@ from torch.utils.data import IterableDataset
 from ..types import TypeThreeInts
 from .patch import PatchLocation
 from .subject import Subject
+
+if TYPE_CHECKING:
+    from ..transforms.spatial.pad import PaddingMode
 
 
 class PatchSampler:
@@ -95,7 +99,7 @@ class GridSampler(PatchSampler, Dataset):
         subject: Subject,
         patch_size: int | TypeThreeInts,
         patch_overlap: int | TypeThreeInts = 0,
-        padding_mode: str | None = None,
+        padding_mode: PaddingMode | None = None,
         fill: float = 0,
     ) -> None:
         super().__init__(patch_size)

@@ -11,6 +11,7 @@ from ...data.subject import Subject
 from ...types import TypeThreeInts
 from ..transform import SpatialTransform
 from .crop_or_pad import CropOrPad
+from .pad import PaddingMode
 
 #: Accepted target_multiple specifications.
 #: `int` → same value for all axes.
@@ -74,7 +75,8 @@ class EnsureShapeMultiple(SpatialTransform):
             multiple.
         padding_mode: Padding mode forwarded to `CropOrPad` when
             `method='pad'`. One of `'constant'`, `'reflect'`,
-            `'replicate'`, or `'circular'`.
+            `'replicate'`, `'circular'`, `'mean'`, `'median'`, or
+            `'minimum'`.
         fill: Fill value when `padding_mode='constant'`.
         **kwargs: See [`Transform`][torchio.Transform] for additional
             keyword arguments.
@@ -92,7 +94,7 @@ class EnsureShapeMultiple(SpatialTransform):
         target_multiple: TargetMultipleParam,
         *,
         method: str = "pad",
-        padding_mode: str = "constant",
+        padding_mode: PaddingMode = "constant",
         fill: float = 0,
         **kwargs: Any,
     ) -> None:

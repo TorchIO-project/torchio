@@ -161,7 +161,7 @@ class Pad(SpatialTransform):
         self,
         *,
         padding: PaddingParam,
-        padding_mode: str = "constant",
+        padding_mode: PaddingMode = "constant",
         fill: float = 0,
         **kwargs: Any,
     ) -> None:

@@ -436,7 +436,7 @@ class CropOrPad(SpatialTransform):
         target_shape: TargetShapeParam,
         *,
         units: Units = "voxels",
-        padding_mode: str = "constant",
+        padding_mode: PaddingMode = "constant",
         fill: float = 0,
         only_crop: bool = False,
         only_pad: bool = False,
