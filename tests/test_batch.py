@@ -588,7 +588,7 @@ class TestPerElementHistory:
                 t.name for t in original.applied_transforms
             ]
 
-    def test_adopt_history_shared_case(self) -> None:
+    def test_restack_preserves_uniform_history(self) -> None:
         torch.manual_seed(0)
         batch = self._batch()
         transformed = tio.Gamma(log_gamma=0.3, per_instance=False)(batch)
