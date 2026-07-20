@@ -4,12 +4,13 @@ from __future__ import annotations
 
 from typing import Any
 
-import torch
-
 from ...data.batch import SubjectsBatch
 from ...types import TypeSixInts
 from ...types import TypeThreeInts
 from ..transform import SpatialTransform
+from ._padding import PaddingMode
+from ._padding import pad_tensor
+from ._padding import parse_padding_mode
 
 #: Accepted padding specifications.
 #: `int` → same amount on each side of each axis.
@@ -50,8 +51,11 @@ class Pad(SpatialTransform):
             $i_\text{ini} = i_\text{fin} = i$, etc.
             If only one value $n$ is provided, all six values are $n$.
         padding_mode: One of `'constant'`, `'reflect'`,
-            `'replicate'`, or `'circular'`. See
-            [`torch.nn.functional.pad`](https://pytorch.org/docs/stable/generated/torch.nn.functional.pad.html).
+            `'replicate'`, `'circular'`, `'mean'`, `'median'`, or
+            `'minimum'`. Statistical modes use one value computed from
+            the whole image volume. For integer inputs, `'mean'` and
+            `'median'` may be truncated to the input dtype and emit a
+            warning.
         fill: Fill value when `padding_mode='constant'`.
         **kwargs: See [`Transform`][torchio.Transform] for additional
             keyword arguments.
@@ -61,19 +65,20 @@ class Pad(SpatialTransform):
         >>> transform = tio.Pad(padding=10)
         >>> transform = tio.Pad(padding=(5, 10, 0))
         >>> transform = tio.Pad(padding=10, padding_mode='reflect')
+        >>> transform = tio.Pad(padding=10, padding_mode='minimum')
     """
 
     def __init__(
         self,
         *,
         padding: PaddingParam,
-        padding_mode: str = "constant",
+        padding_mode: PaddingMode = "constant",
         fill: float = 0,
         **kwargs: Any,
     ) -> None:
         super().__init__(**kwargs)
         self.padding = _parse_padding(padding)
-        self.padding_mode = padding_mode
+        self.padding_mode = parse_padding_mode(padding_mode)
         self.fill = fill
 
     def make_params(self, batch: SubjectsBatch) -> dict[str, Any]:
@@ -91,14 +96,12 @@ class Pad(SpatialTransform):
         i0, i1, j0, j1, k0, k1 = params["padding"]
         mode = params["padding_mode"]
         fill = params["fill"]
-        # F.pad expects reversed order: (k0, k1, j0, j1, i0, i1)
-        pad_arg = (k0, k1, j0, j1, i0, i1)
         for _name, img_batch in self._get_images(batch).items():
-            img_batch.data = torch.nn.functional.pad(
+            img_batch.data = pad_tensor(
                 img_batch.data,
-                pad_arg,
-                mode=mode,
-                value=fill,
+                (i0, i1, j0, j1, k0, k1),
+                mode,
+                fill,
             )
             # Update each affine's origin (shift back)
             for affine in img_batch.affines:

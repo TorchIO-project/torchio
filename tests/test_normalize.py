@@ -7,6 +7,7 @@ import pytest
 import torch
 
 import torchio as tio
+from torchio.transforms._statistics import compute_quantile
 
 
 def _make_subject(
@@ -230,30 +231,24 @@ class TestAlias:
 
 
 class TestQuantile:
-    """Tests for the ``torch.kthvalue``-based ``_quantile`` helper."""
+    """Tests for the `torch.kthvalue`-based quantile helper."""
 
     @pytest.mark.parametrize("q", [0.0, 0.1, 0.25, 0.5, 0.75, 0.9, 1.0])
     def test_matches_torch_quantile(self, q: float) -> None:
-        from torchio.transforms.intensity.normalize import _quantile
-
         values = torch.linspace(-3.0, 7.0, 101)
         expected = torch.quantile(values, q)
-        result = _quantile(values, q)
+        result = compute_quantile(values, q)
         assert torch.allclose(result, expected, atol=1e-5)
 
     def test_invalid_q_raises(self) -> None:
-        from torchio.transforms.intensity.normalize import _quantile
-
         values = torch.arange(10, dtype=torch.float32)
         with pytest.raises(ValueError, match="0 <= q <= 1"):
-            _quantile(values, 1.5)
+            compute_quantile(values, 1.5)
 
     def test_large_tensor_interior_quantile(self) -> None:
-        from torchio.transforms.intensity.normalize import _quantile
-
         # torch.quantile raises for more than 2**24 elements; kthvalue does not.
         values = torch.arange(2**24 + 1, dtype=torch.float32)
-        result = _quantile(values, 0.5)
+        result = compute_quantile(values, 0.5)
         assert result.item() == pytest.approx(2**23)
 
     def test_rescale_intensity_large_image(self) -> None:

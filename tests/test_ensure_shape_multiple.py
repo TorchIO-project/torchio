@@ -106,6 +106,10 @@ class TestValidation:
         with pytest.raises(ValueError, match="method"):
             tio.EnsureShapeMultiple(8, method="resize")
 
+    def test_invalid_padding_mode_raises(self) -> None:
+        with pytest.raises(ValueError, match="padding_mode"):
+            tio.EnsureShapeMultiple(8, padding_mode="maximum")  # type: ignore[arg-type]
+
     def test_method_must_be_crop_or_pad(self) -> None:
         # Valid methods should not raise
         tio.EnsureShapeMultiple(8, method="crop")

@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import math
 import warnings
 from collections.abc import Callable
 from typing import Any
@@ -14,6 +13,7 @@ from torch import Tensor
 from ...data.batch import ImagesBatch
 from ...data.batch import SubjectsBatch
 from ...data.image import LabelMap
+from .._statistics import compute_quantile
 from ..parameter_range import Choice
 from ..parameter_range import _ParameterRange
 from ..transform import IntensityTransform
@@ -360,44 +360,9 @@ def _percentile_range(
         )
         values = tensor.reshape(-1)
 
-    low = float(_quantile(values.float(), pct_low / 100.0).item())
-    high = float(_quantile(values.float(), pct_high / 100.0).item())
+    low = float(compute_quantile(values.float(), pct_low / 100.0).item())
+    high = float(compute_quantile(values.float(), pct_high / 100.0).item())
     return low, high
-
-
-def _quantile(values: Tensor, q: float) -> Tensor:
-    """Compute a single quantile of a 1D tensor using ``torch.kthvalue``.
-
-    ``torch.quantile`` raises ``RuntimeError: quantile() input tensor is too
-    large`` for inputs with more than ``2**24`` elements, which is easily
-    reached by high-resolution volumes. ``torch.kthvalue`` has no such size
-    limit and is much faster on large tensors, so it is used here with linear
-    interpolation to reproduce the default ``torch.quantile`` behaviour.
-
-    This is adapted from the solution by Élie Goudout (``@ego-thales``):
-    https://github.com/pytorch/pytorch/issues/157431#issuecomment-3026856373
-
-    Args:
-        values: One-dimensional tensor of values.
-        q: Quantile to compute, in the ``[0, 1]`` range.
-
-    Returns:
-        Zero-dimensional tensor with the computed quantile.
-
-    Raises:
-        ValueError: If ``q`` is outside the ``[0, 1]`` range.
-    """
-    if not 0 <= q <= 1:
-        msg = f"Only values 0 <= q <= 1 are supported, but got {q!r}"
-        raise ValueError(msg)
-    index = q * (values.numel() - 1)
-    lower = math.floor(index)
-    lower_value = torch.kthvalue(values, lower + 1).values
-    if index == lower:
-        return lower_value
-    upper_value = torch.kthvalue(values, lower + 2).values
-    weight = index - lower
-    return lower_value.lerp(upper_value, weight)
 
 
 # Backwards-compatible alias.
