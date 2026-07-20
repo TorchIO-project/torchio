@@ -29,6 +29,9 @@ from ..transform import AppliedTransform
 from ..transform import SpatialTransform
 from .crop import Crop
 from .pad import Pad
+from .pad import PaddingMode
+from .pad import _pad_tensor
+from .pad import _parse_padding_mode
 
 #: Accepted target shape specifications.
 #: `int` or `float` → same size for each axis.
@@ -208,7 +211,7 @@ class _PaddedBackend:
         padding: TypeSixInts,
         padded_shape: tuple[int, int, int, int],
         affine: TypeAffineMatrix,
-        padding_mode: str = "constant",
+        padding_mode: PaddingMode = "constant",
         fill: float = 0,
     ) -> None:
         self._source = source
@@ -234,13 +237,11 @@ class _PaddedBackend:
 
     def to_tensor(self) -> Tensor:
         base = self._source.to_tensor()
-        i0, i1, j0, j1, k0, k1 = self._padding
-        pad_arg = (k0, k1, j0, j1, i0, i1)
-        return torch.nn.functional.pad(
+        return _pad_tensor(
             base,
-            pad_arg,
-            mode=self._padding_mode,
-            value=self._fill,
+            self._padding,
+            self._padding_mode,
+            self._fill,
         )
 
     def __getitem__(self, slices: SliceIndex) -> Tensor:
@@ -318,7 +319,7 @@ def _crop_image_lazy(image: Image, cropping: TypeSixInts) -> Image:
 def _pad_image_lazy(
     image: Image,
     padding: TypeSixInts,
-    padding_mode: str,
+    padding_mode: PaddingMode,
     fill: float,
 ) -> Image:
     """Pad an image lazily (data is only loaded when accessed)."""
@@ -336,12 +337,11 @@ def _pad_image_lazy(
     padded_shape = (c, si + i0 + i1, sj + j0 + j1, sk + k0 + k1)
 
     if image.is_loaded:
-        pad_arg = (k0, k1, j0, j1, i0, i1)
-        new_data = torch.nn.functional.pad(
+        new_data = _pad_tensor(
             image.data,
-            pad_arg,
-            mode=padding_mode,
-            value=fill,
+            padding,
+            padding_mode,
+            fill,
         )
         return image.new_like(data=new_data, affine=new_affine)
 
@@ -369,12 +369,11 @@ def _pad_image_lazy(
         return new
 
     # No backend → fall back to eager pad
-    pad_arg = (k0, k1, j0, j1, i0, i1)
-    new_data = torch.nn.functional.pad(
+    new_data = _pad_tensor(
         image.data,
-        pad_arg,
-        mode=padding_mode,
-        value=fill,
+        padding,
+        padding_mode,
+        fill,
     )
     return image.new_like(data=new_data, affine=new_affine)
 
@@ -403,8 +402,11 @@ class CropOrPad(SpatialTransform):
         units: Coordinate system for `target_shape`. One of
             `"voxels"` (default), `"mm"`, or `"cm"`.
         padding_mode: One of `'constant'`, `'reflect'`,
-            `'replicate'`, or `'circular'`. See
-            [`torch.nn.functional.pad`](https://pytorch.org/docs/stable/generated/torch.nn.functional.pad.html).
+            `'replicate'`, `'circular'`, `'mean'`, `'median'`, or
+            `'minimum'`. Statistical modes use one value computed from
+            the whole image volume. For integer inputs, `'mean'` and
+            `'median'` may be truncated to the input dtype and emit a
+            warning.
         fill: Fill value when `padding_mode='constant'`.
         only_crop: If `True`, padding is never applied. Mutually
             exclusive with `only_pad`.
@@ -426,6 +428,7 @@ class CropOrPad(SpatialTransform):
         >>> transform = tio.CropOrPad(target_shape=256, only_pad=True)
         >>> transform = tio.CropOrPad(target_shape=(256, 256, None))  # keep depth
         >>> transform = tio.CropOrPad(target_shape=96, location='random')
+        >>> transform = tio.CropOrPad(target_shape=256, padding_mode='mean')
     """
 
     def __init__(
@@ -452,7 +455,7 @@ class CropOrPad(SpatialTransform):
             raise ValueError(msg)
         self.target_shape = _parse_target_shape(target_shape)
         self.units: Units = units
-        self.padding_mode = padding_mode
+        self.padding_mode = _parse_padding_mode(padding_mode)
         self.fill = fill
         self.only_crop = only_crop
         self.only_pad = only_pad

@@ -235,6 +235,26 @@ class TestPaddingMode:
         )(subject)
         assert result.t1.shape == (1, 8, 8, 8)
 
+    @pytest.mark.parametrize(
+        ("padding_mode", "expected"),
+        [
+            ("mean", 3.5),
+            ("median", 3.5),
+            ("minimum", 0),
+        ],
+    )
+    def test_statistic_mode_tensor_path(
+        self,
+        padding_mode: str,
+        expected: float,
+    ) -> None:
+        tensor = torch.arange(8, dtype=torch.float32).reshape(1, 2, 2, 2)
+        result = tio.CropOrPad(
+            target_shape=4,
+            padding_mode=padding_mode,
+        )(tensor)
+        assert result[0, 0, 0, 0].item() == expected
+
 
 # ---------------------------------------------------------------------------
 # AffineMatrix correctness
@@ -531,6 +551,30 @@ class TestLazyBackends:
         subject = tio.Subject(t1=image)
         result = tio.CropOrPad(target_shape=12)(subject)
         assert result.t1.affine is not None
+
+    @pytest.mark.parametrize(
+        ("padding_mode", "expected"),
+        [
+            ("mean", 3.5),
+            ("median", 3.5),
+            ("minimum", 0),
+        ],
+    )
+    def test_pad_lazy_backend_statistic_mode(
+        self,
+        tmp_path,
+        padding_mode: str,
+        expected: float,
+    ) -> None:
+        path = tmp_path / "test.nii.gz"
+        data = np.arange(8, dtype=np.float32).reshape(2, 2, 2)
+        nib.save(nib.Nifti1Image(data, np.eye(4)), path)
+        result = tio.CropOrPad(
+            target_shape=4,
+            padding_mode=padding_mode,
+        )(tio.Subject(t1=tio.ScalarImage(path)))
+        assert not result.t1.is_loaded
+        assert result.t1.data[0, 0, 0, 0].item() == expected
 
     def test_crop_and_pad_lazy_mixed(self, tmp_path) -> None:
         """Anisotropic shape needing both crop and pad."""
