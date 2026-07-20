@@ -19,6 +19,7 @@ from einops import rearrange
 from torch import Tensor
 from torch import nn
 
+from ..data.batch import _BATCH_META_KEYS
 from ..data.batch import ImagesBatch
 from ..data.batch import SubjectsBatch
 from ..data.batch import _slice_params
@@ -89,7 +90,7 @@ def _data_has_annotations(data: Any) -> bool:
 
 
 def _has_batched_param_metadata(params: dict[str, Any]) -> bool:
-    return any(key in params for key in ("_batch_size", "_batched_keys", "_keep"))
+    return any(key in params for key in _BATCH_META_KEYS)
 
 
 def _get_expected_batch_size(
