@@ -573,7 +573,7 @@ class TestPerElementHistory:
         ]
         return SubjectsBatch.from_subjects(subjects)
 
-    def test_adopt_history_preserves_per_element(self) -> None:
+    def test_restack_preserves_divergent_history(self) -> None:
         torch.manual_seed(0)
         batch = self._batch()
         branched = tio.OneOf([tio.Flip(axes=(0,)), tio.Flip(axes=(1,))])(batch)
