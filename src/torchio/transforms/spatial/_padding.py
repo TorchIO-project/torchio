@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import warnings
 from typing import Literal
+from typing import TypeGuard
 from typing import get_args
 
 import torch
@@ -27,9 +28,13 @@ _PADDING_MODES: tuple[PaddingMode, ...] = get_args(PaddingMode)
 _STATISTIC_PADDING_MODES = "mean", "median", "minimum"
 
 
+def _is_padding_mode(value: str) -> TypeGuard[PaddingMode]:
+    return value in _PADDING_MODES
+
+
 def parse_padding_mode(padding_mode: str) -> PaddingMode:
     """Validate and return a padding mode."""
-    if padding_mode not in _PADDING_MODES:
+    if not _is_padding_mode(padding_mode):
         msg = f"padding_mode must be one of {_PADDING_MODES}, got {padding_mode!r}"
         raise ValueError(msg)
     return padding_mode
