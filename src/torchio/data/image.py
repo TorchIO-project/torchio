@@ -645,7 +645,8 @@ class Image(Invertible):
         """Move image data, affine, and annotations to a device or dtype.
 
         Accepts the same arguments as `torch.Tensor.to()`.
-        Dtype casts apply to image and annotation tensors. Affines move
+        Dtype casts apply to image data, point coordinates, and bounding-box
+        coordinates. Bounding-box labels preserve their dtype. Affines move
         to supported devices but always remain `float64`.
 
         Args:
