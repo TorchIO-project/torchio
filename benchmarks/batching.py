@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import copy
 import time
 from collections.abc import Callable
 
@@ -33,16 +32,20 @@ def _make_subjects(
     ]
 
 
-def _measure(operation: Callable[[], object], iterations: int) -> float:
+def _measure(
+    operation: Callable[[], object],
+    iterations: int,
+    device: torch.device,
+) -> float:
     """Return average operation time in milliseconds."""
     for _ in range(2):
         operation()
-    if torch.cuda.is_available():
+    if device.type == "cuda":
         torch.cuda.synchronize()
     start = time.perf_counter()
     for _ in range(iterations):
         operation()
-    if torch.cuda.is_available():
+    if device.type == "cuda":
         torch.cuda.synchronize()
     return (time.perf_counter() - start) * 1000 / iterations
 
@@ -59,19 +62,23 @@ def _benchmark_device(device: torch.device) -> dict[str, float]:
         "construct": _measure(
             lambda: tio.SubjectsBatch.from_subjects(subjects),
             _ITERATIONS,
+            device,
         ),
-        "unbatch": _measure(batch.unbatch, _ITERATIONS),
+        "unbatch": _measure(batch.unbatch, _ITERATIONS, device),
         "vectorized transform": _measure(
-            lambda: transform(copy.deepcopy(batch)),
+            lambda: transform(batch),
             _ITERATIONS,
+            device,
         ),
         "uniform inverse": _measure(
             uniform_transformed.apply_inverse_transform,
             _ITERATIONS,
+            device,
         ),
         "metadata-only": _measure(
             lambda: tio.SubjectsBatch.from_subjects(metadata_subjects),
             _ITERATIONS,
+            device,
         ),
     }
 
