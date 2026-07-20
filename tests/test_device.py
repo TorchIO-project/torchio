@@ -58,6 +58,7 @@ class TestImageTo:
                 "tumors": BoundingBoxes(
                     torch.rand(2, 6),
                     format=BoundingBoxFormat.IJKIJK,
+                    labels=torch.tensor([1, 2]),
                 )
             },
         )
@@ -66,6 +67,8 @@ class TestImageTo:
 
         assert result.points["landmarks"].data.dtype == torch.float64
         assert result.bounding_boxes["tumors"].data.dtype == torch.float64
+        assert result.bounding_boxes["tumors"].labels is not None
+        assert result.bounding_boxes["tumors"].labels.dtype == torch.int64
 
     @pytest.mark.skipif(not HAS_CUDA, reason="No CUDA")
     def test_to_cuda(self) -> None:

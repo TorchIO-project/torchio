@@ -321,7 +321,7 @@ class BoundingBoxes:
         """
         self._data = self._data.to(*args, **kwargs)
         if self._labels is not None:
-            self._labels = self._labels.to(*args, **kwargs)
+            self._labels = self._labels.to(device=self._data.device)
         self._affine.to(*args, **kwargs)
         return self
 
