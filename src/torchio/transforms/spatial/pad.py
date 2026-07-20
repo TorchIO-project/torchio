@@ -80,7 +80,7 @@ def _compute_padding_statistic(
             stacklevel=4,
         )
 
-    float_flat = flat.float()
+    float_flat = flat if data.dtype in (torch.float32, torch.float64) else flat.float()
     if padding_mode == "mean":
         statistic = float_flat.mean(dim=1)
     else:

@@ -134,6 +134,25 @@ class TestPad:
         result.sum().backward()
         assert tensor.grad is not None
 
+    @pytest.mark.parametrize("padding_mode", ["mean", "median"])
+    def test_pad_statistic_mode_preserves_float64_precision(
+        self,
+        padding_mode: str,
+    ) -> None:
+        values = torch.tensor([1.0, 1.0 + 2**-40], dtype=torch.float64)
+        tensor = values.reshape(1, 1, 1, 2)
+        result = tio.Pad(
+            padding=(0, 0, 0, 1, 0, 0),
+            padding_mode=padding_mode,
+        )(tensor)
+        expected = values.mean()
+        torch.testing.assert_close(
+            result[0, 0, 1, 0],
+            expected,
+            rtol=0,
+            atol=0,
+        )
+
     def test_pad_all_images(self) -> None:
         subject = tio.Subject(
             t1=tio.ScalarImage(torch.rand(1, 10, 10, 10)),
