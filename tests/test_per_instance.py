@@ -108,6 +108,14 @@ class TestPerInstanceHistory:
             assert trace.params["log_gamma"] == batch_log_gammas[i]
             assert "_batched_keys" not in trace.params
 
+    def test_uniform_history_reuses_one_trace(self) -> None:
+        batch = _identical_batch(batch_size=4)
+
+        result = tio.Gamma(log_gamma=0.2, per_instance=False)(batch)
+
+        trace = result.history(0)[-1]
+        assert all(history[-1] is trace for history in result.histories)
+
 
 class TestSpatialBatchSizeValidation:
     def test_mismatched_batch_size_raises(self) -> None:

@@ -249,10 +249,11 @@ class Transform(nn.Module):
         if not self._per_instance_p_active(batch) and torch.rand(1).item() >= self.p:
             return unwrap(batch)
         params = self.make_params(batch)
-        if not _all_elements_gated_out(params):
+        traces = self._build_history_traces(params, batch.batch_size)
+        if any(trace is not None for trace in traces):
             self._check_spatial_annotations(batch)
         batch = self.apply_transform(batch, params)
-        batch._append_history(self._build_history_traces(params, batch.batch_size))
+        batch._append_history(traces)
         result = unwrap(batch)
         # Propagate history to outputs that can carry it
         if not isinstance(
@@ -271,10 +272,8 @@ class Transform(nn.Module):
         """Build one clean optional history trace per element."""
         batched_keys = params.get("_batched_keys")
         if batched_keys is None:
-            return [
-                self._make_applied_transform(_copy.deepcopy(params))
-                for _ in range(batch_size)
-            ]
+            trace = self._make_applied_transform(_copy.deepcopy(params))
+            return [trace] * batch_size
         expected_size = params.get("_batch_size")
         if expected_size != batch_size:
             msg = (
