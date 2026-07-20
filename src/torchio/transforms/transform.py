@@ -161,11 +161,6 @@ def _validate_keep(params: dict[str, Any], expected_size: int) -> None:
         raise ValueError(msg)
 
 
-def _params_apply_to_any_element(params: dict[str, Any]) -> bool:
-    keep = params.get("_keep")
-    return keep is None or any(keep)
-
-
 class Transform(nn.Module):
     """Abstract class for all TorchIO transforms.
 
