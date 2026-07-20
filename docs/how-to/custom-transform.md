@@ -17,7 +17,7 @@ import torch
 import torchio as tio
 
 
-class AddValue(tio.Transform):
+class AddValue(tio.IntensityTransform):
     """Add a fixed value to every image."""
 
     def __init__(self, value: float) -> None:
@@ -34,7 +34,7 @@ class AddValue(tio.Transform):
         params: dict[str, Any],
     ) -> tio.SubjectsBatch:
         """Add the value to all 5D image tensors."""
-        for image_batch in batch.images.values():
+        for image_batch in self._get_images(batch).values():
             assert image_batch.data.ndim == 5
             image_batch.data = image_batch.data + params["value"]
         return batch
