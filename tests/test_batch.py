@@ -486,6 +486,14 @@ class TestImagesBatchValidation:
         with pytest.raises(ValueError, match="empty"):
             ImagesBatch.from_images([])
 
+    def test_empty_history_view_is_defensive(self) -> None:
+        batch = object.__new__(ImagesBatch)
+        batch._data = torch.empty(0, 1, 1, 1, 1)
+        batch._histories = []
+
+        assert batch.has_divergent_history is False
+        assert batch.applied_transforms == ()
+
     def test_data_setter_non_5d_raises(self) -> None:
         from torchio.data.batch import ImagesBatch
 

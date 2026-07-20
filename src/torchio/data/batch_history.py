@@ -60,6 +60,8 @@ class _BatchedHistoryMixin(Invertible):
     @property
     def has_divergent_history(self) -> bool:
         """Whether element histories differ."""
+        if self.batch_size <= 1:
+            return False
         first = self._histories[0]
         return any(
             not _histories_equal(first, history) for history in self._histories[1:]
@@ -72,6 +74,8 @@ class _BatchedHistoryMixin(Invertible):
         Raises:
             RuntimeError: If element histories differ.
         """
+        if self.batch_size == 0:
+            return ()
         if self.has_divergent_history:
             msg = (
                 "This batch has divergent element histories. Use `histories`"
