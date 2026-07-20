@@ -72,10 +72,9 @@ class TestLabelsToImagePerInstance:
         batch = self._batch()
         transform = tio.LabelsToImage(label_key="seg", default_mean=(0.2, 0.9))
         result = transform(batch)
-        params = result.applied_transforms[-1].params
-        assert "_batched_keys" in params
-        assert len(params["means"]) == batch.batch_size
-        means_for_label_1 = [m[1] for m in params["means"]]
+        params = [history[-1].params for history in result.histories]
+        assert all("_batched_keys" not in item for item in params)
+        means_for_label_1 = [item["means"][1] for item in params]
         assert len(set(means_for_label_1)) > 1
         assert result.image_from_labels.data.shape[0] == batch.batch_size
 
@@ -117,18 +116,19 @@ class TestLabelsToImagePerElementVectorized:
         )
         torch.manual_seed(1)
         result = transform(batch)
-        params = result.applied_transforms[-1].params
-        assert "_batched_keys" in params
         image = result.img.data
         for index in range(batch.batch_size):
+            params = result.history(index)[-1].params
             region_one = image[index, 0, : size // 2]
             region_two = image[index, 0, size // 2 :]
             assert region_one.mean().item() == pytest.approx(
-                params["means"][index][1], abs=0.5
+                params["means"][1], abs=0.5
             )
             assert region_two.mean().item() == pytest.approx(
-                params["means"][index][2], abs=0.5
+                params["means"][2], abs=0.5
             )
         # Independent per-element sampling: means vary across the batch.
-        label_one_means = {round(params["means"][i][1], 3) for i in range(3)}
+        label_one_means = {
+            round(result.history(i)[-1].params["means"][1], 3) for i in range(3)
+        }
         assert len(label_one_means) > 1

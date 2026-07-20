@@ -244,10 +244,9 @@ class TestNoisePerInstance:
         torch.manual_seed(0)
         batch = self._batch()
         result = tio.Noise(std=(0.5, 1.5))(batch)
-        params = result.applied_transforms[-1].params
-        assert isinstance(params["std"], list)
-        assert len(params["std"]) == batch.batch_size
-        assert len(set(params["std"])) > 1
+        stds = [history[-1].params["std"] for history in result.histories]
+        assert all(isinstance(value, float) for value in stds)
+        assert len(set(stds)) > 1
 
     def test_per_instance_false_is_shared(self) -> None:
         torch.manual_seed(0)
@@ -265,7 +264,7 @@ class TestNoisePerInstance:
         torch.manual_seed(0)
         batch = self._batch(batch_size=5)
         result = tio.Noise(mean=(5.0, 20.0), std=0.0)(batch)
-        means = result.applied_transforms[-1].params["mean"]
+        means = [history[-1].params["mean"] for history in result.histories]
         for i, mean in enumerate(means):
             torch.testing.assert_close(
                 result.t1.data[i].mean(),

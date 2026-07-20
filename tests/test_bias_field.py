@@ -94,9 +94,9 @@ class TestBiasFieldPerInstance:
         torch.manual_seed(0)
         batch = self._batch()
         result = tio.BiasField(std=(0.3, 0.6))(batch)
-        params = result.applied_transforms[-1].params
-        assert "_batched_keys" in params
-        assert len(params["std"]) == batch.batch_size
+        params = [history[-1].params for history in result.histories]
+        assert all("_batched_keys" not in item for item in params)
+        assert len({item["std"] for item in params}) > 1
         assert not torch.allclose(result.t1.data[0], result.t1.data[1])
 
     def test_per_instance_false_shares_std(self) -> None:

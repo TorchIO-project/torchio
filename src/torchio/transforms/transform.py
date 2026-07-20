@@ -21,6 +21,7 @@ from torch import nn
 
 from ..data.batch import ImagesBatch
 from ..data.batch import SubjectsBatch
+from ..data.batch import _slice_params
 from ..data.bboxes import BoundingBoxes
 from ..data.image import Image
 from ..data.image import ScalarImage
@@ -47,21 +48,6 @@ class AppliedTransform:
 
 #: Registry mapping transform class names to classes, for inverse lookup.
 _TRANSFORM_REGISTRY: dict[str, type[Transform]] = {}
-
-
-def _all_elements_gated_out(params: dict[str, Any]) -> bool:
-    """Whether per-element gating masked out every batch element.
-
-    Args:
-        params: The parameter dict produced by `make_params`, possibly
-            carrying a `_keep` mask added by `_tag_batched`.
-
-    Returns:
-        `True` only when a `_keep` mask is present and none of its
-        elements are kept, i.e. the transform was an exact no-op.
-    """
-    keep = params.get("_keep")
-    return keep is not None and not any(keep)
 
 
 def _copy_optional_list(value: list[str] | None) -> list[str] | None:
@@ -263,33 +249,61 @@ class Transform(nn.Module):
         if not self._per_instance_p_active(batch) and torch.rand(1).item() >= self.p:
             return unwrap(batch)
         params = self.make_params(batch)
-        if not _all_elements_gated_out(params):
+        traces = self._build_history_traces(params, batch.batch_size)
+        if any(trace is not None for trace in traces):
             self._check_spatial_annotations(batch)
         batch = self.apply_transform(batch, params)
-        # Record history on the batch, unless every element was gated out by
-        # per-element probability: that is an exact no-op, and recording it
-        # would let history replay (e.g. an invertible spatial transform)
-        # trigger an unnecessary identity resample.
-        if not _all_elements_gated_out(params):
-            trace = AppliedTransform(
-                name=type(self).__name__,
-                params=params,
-                include=_copy_optional_list(self.include),
-                exclude=_copy_optional_list(self.exclude),
-            )
-            if not hasattr(batch, "applied_transforms"):
-                batch.applied_transforms = []
-            batch.applied_transforms.append(trace)
+        batch._append_history(traces)
         result = unwrap(batch)
         # Propagate history to outputs that can carry it
-        if (
-            hasattr(batch, "applied_transforms")
-            and not isinstance(result, (SubjectsBatch, Tensor, np.ndarray))
-            and not isinstance(result, dict)
-        ):
+        if not isinstance(
+            result,
+            (ImagesBatch, SubjectsBatch, Tensor, np.ndarray),
+        ) and not isinstance(result, dict):
             with contextlib.suppress(AttributeError):
                 result.applied_transforms = list(batch.applied_transforms)
         return result
+
+    def _build_history_traces(
+        self,
+        params: dict[str, Any],
+        batch_size: int,
+    ) -> list[AppliedTransform | None]:
+        """Build one clean optional history trace per element."""
+        batched_keys = params.get("_batched_keys")
+        if batched_keys is None:
+            return [
+                self._make_applied_transform(_copy.deepcopy(params))
+                for _ in range(batch_size)
+            ]
+        expected_size = params.get("_batch_size")
+        if expected_size != batch_size:
+            msg = (
+                f"Parameter batch size {expected_size} does not match"
+                f" input batch size {batch_size}"
+            )
+            raise ValueError(msg)
+        keep = params.get("_keep")
+        traces: list[AppliedTransform | None] = []
+        for index in range(batch_size):
+            if keep is not None and not keep[index]:
+                traces.append(None)
+                continue
+            element_params = _slice_params(params, index, batched_keys)
+            traces.append(self._make_applied_transform(element_params))
+        return traces
+
+    def _make_applied_transform(
+        self,
+        params: dict[str, Any],
+    ) -> AppliedTransform:
+        """Build one history trace."""
+        return AppliedTransform(
+            name=type(self).__name__,
+            params=params,
+            include=_copy_optional_list(self.include),
+            exclude=_copy_optional_list(self.exclude),
+        )
 
     def _check_spatial_annotations(self, data: Any) -> None:
         """Reject spatial transforms that would leave stale annotations."""
@@ -545,6 +559,7 @@ class Transform(nn.Module):
                 return data, _unwrap_subjects_batch
             case ImagesBatch():
                 sb = SubjectsBatch({"tio_default_image": data})
+                sb._set_histories(data.histories)
                 return sb, _unwrap_images_batch
             case Subject():
                 sb = SubjectsBatch.from_subjects([data])
@@ -560,6 +575,7 @@ def _wrap_single_image(img: Image, unwrap_fn: Any) -> tuple[Any, Any]:
     from ..data.batch import SubjectsBatch
 
     sub = Subject(tio_default_image=img)
+    sub.applied_transforms = list(img.applied_transforms)
     sb = SubjectsBatch.from_subjects([sub])
     return sb, unwrap_fn
 
@@ -655,7 +671,9 @@ def _unwrap_subjects_batch(batch: SubjectsBatch) -> SubjectsBatch:
 
 
 def _unwrap_images_batch(batch: SubjectsBatch) -> ImagesBatch:
-    return batch.images["tio_default_image"]
+    image_batch = batch.images["tio_default_image"]
+    image_batch._set_histories(batch.histories)
+    return image_batch
 
 
 def _unwrap_subject(batch: SubjectsBatch) -> Subject:
@@ -664,7 +682,9 @@ def _unwrap_subject(batch: SubjectsBatch) -> Subject:
 
 def _unwrap_image(batch: SubjectsBatch) -> Image:
     sub = batch.unbatch()[0]
-    return sub.tio_default_image
+    image = sub.tio_default_image
+    image.applied_transforms = list(sub.applied_transforms)
+    return image
 
 
 def _unwrap_tensor(batch: SubjectsBatch) -> Tensor:

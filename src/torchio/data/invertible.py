@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from typing import Any
 
 from typing_extensions import Self
@@ -13,11 +14,12 @@ class Invertible:
     Provides `apply_inverse_transform()` and
     `get_inverse_transform()` to undo recorded transforms.
 
-    Classes that inherit from this mixin must initialise
-    `self.applied_transforms = []` in their constructor.
+    Subclasses must expose an `applied_transforms` sequence. `Subject`
+    and `Image` use mutable lists; batch containers provide an immutable
+    uniform-history view backed by their per-element history store.
     """
 
-    applied_transforms: list[Any]
+    applied_transforms: Sequence[Any]
 
     def get_inverse_transform(
         self,

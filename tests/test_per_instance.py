@@ -82,9 +82,9 @@ class TestComposePerInstance:
         batch = _identical_batch()
         pipeline = tio.Compose([tio.Gamma(log_gamma=(0.2, 0.8))])
         result = pipeline(batch)
-        params = result.applied_transforms[-1].params
-        assert isinstance(params["log_gamma"], list)
-        assert len(set(params["log_gamma"])) > 1
+        log_gammas = [history[-1].params["log_gamma"] for history in result.histories]
+        assert all(isinstance(value, float) for value in log_gammas)
+        assert len(set(log_gammas)) > 1
 
     def test_compose_respects_per_instance_false(self) -> None:
         torch.manual_seed(0)
@@ -100,11 +100,22 @@ class TestPerInstanceHistory:
         torch.manual_seed(0)
         batch = _identical_batch(batch_size=4)
         result = tio.Gamma(log_gamma=(0.2, 0.8))(batch)
-        batch_log_gammas = result.applied_transforms[-1].params["log_gamma"]
+        batch_log_gammas = [
+            history[-1].params["log_gamma"] for history in result.histories
+        ]
         for i, subject in enumerate(result.unbatch()):
             trace = subject.applied_transforms[-1]
             assert trace.params["log_gamma"] == batch_log_gammas[i]
             assert "_batched_keys" not in trace.params
+
+    def test_uniform_history_uses_independent_traces(self) -> None:
+        batch = _identical_batch(batch_size=4)
+
+        result = tio.Gamma(log_gamma=0.2, per_instance=False)(batch)
+
+        traces = [history[-1] for history in result.histories]
+        assert all(trace.params == traces[0].params for trace in traces)
+        assert all(trace is not traces[0] for trace in traces[1:])
 
 
 class TestSpatialBatchSizeValidation:
@@ -112,23 +123,17 @@ class TestSpatialBatchSizeValidation:
         torch.manual_seed(0)
         batch = _identical_batch(batch_size=4)
         transform = tio.Affine(degrees=(20.0, 80.0), default_pad_value=0.0)
-        result = transform(batch)
-        params = result.applied_transforms[-1].params
+        params = transform.make_params(batch)
         smaller = _identical_batch(batch_size=2)
         with pytest.raises(RuntimeError, match="Per-instance spatial parameters"):
             transform.apply_transform(smaller, params)
 
-    def test_history_slice_out_of_range_raises(self) -> None:
-        # Slicing per-instance history for an element beyond the recorded
-        # batch size must fail with a clear error rather than an opaque one.
-        from torchio.data.batch import _slice_history
-
+    def test_history_index_out_of_range_raises(self) -> None:
         torch.manual_seed(0)
         batch = _identical_batch(batch_size=4)
         result = tio.Noise(std=(0.1, 0.5))(batch)
-        history = result.applied_transforms
-        with pytest.raises(IndexError, match="batch of size 4"):
-            _slice_history(history, 4)
+        with pytest.raises(IndexError, match=r"element 4.*batch size is 4"):
+            result.history(4)
 
 
 class TestPerInstanceDtypePreservation:
@@ -176,7 +181,7 @@ class TestFullyGatedNoHistory:
         torch.manual_seed(0)
         batch = _identical_batch(batch_size=4)
         result = tio.Affine(degrees=20.0, p=0.0)(batch)
-        assert result.applied_transforms == []
+        assert not result.applied_transforms
 
     def test_fully_gated_inverse_preserves_float64(self) -> None:
         torch.manual_seed(0)

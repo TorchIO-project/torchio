@@ -92,10 +92,9 @@ class TestGammaPerInstance:
         batch = self._batch()
         transform = tio.Gamma(log_gamma=(0.2, 0.8))
         result = transform(batch)
-        params = result.applied_transforms[-1].params
-        assert isinstance(params["log_gamma"], list)
-        assert len(params["log_gamma"]) == batch.batch_size
-        assert len(set(params["log_gamma"])) > 1
+        log_gammas = [history[-1].params["log_gamma"] for history in result.histories]
+        assert all(isinstance(value, float) for value in log_gammas)
+        assert len(set(log_gammas)) > 1
 
     def test_per_instance_false_is_shared(self) -> None:
         torch.manual_seed(0)
@@ -117,7 +116,7 @@ class TestGammaPerInstance:
         original = batch.t1.data.clone()
         transform = tio.Gamma(log_gamma=(0.2, 0.8))
         result = transform(batch)
-        log_gammas = result.applied_transforms[-1].params["log_gamma"]
+        log_gammas = [history[-1].params["log_gamma"] for history in result.histories]
         for i, log_gamma in enumerate(log_gammas):
             gamma = torch.tensor(log_gamma).exp()
             expected = original[i].sign() * original[i].abs().pow(gamma)

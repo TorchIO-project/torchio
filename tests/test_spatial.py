@@ -410,9 +410,9 @@ class TestSpatialPerInstance:
         batch = self._identical_batch()
         transform = AffineTransform(degrees=(20.0, 80.0), default_pad_value=0.0)
         result = transform(batch)
-        params = result.applied_transforms[-1].params
-        assert "_batched_keys" in params
-        assert len(params["affine_matrix"]) == batch.batch_size
+        params = [history[-1].params for history in result.histories]
+        assert all("_batched_keys" not in item for item in params)
+        assert len({repr(item["affine_matrix"]) for item in params}) > 1
         data = result.t1.data
         assert not torch.allclose(data[0], data[1])
         assert not torch.allclose(data[1], data[2])
@@ -502,9 +502,9 @@ class TestSpatialPerInstance:
             max_displacement=(1.0, 3.0),
         )
         result = transform(batch)
-        params = result.applied_transforms[-1].params
-        assert "_batched_keys" in params
-        assert len(params["control_points"]) == batch.batch_size
+        params = [history[-1].params for history in result.histories]
+        assert all("_batched_keys" not in item for item in params)
+        assert len({repr(item["control_points"]) for item in params}) > 1
         data = result.t1.data
         assert not torch.allclose(data[0], data[1])
         assert not torch.allclose(data[1], data[2])

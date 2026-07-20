@@ -79,3 +79,13 @@ def test_anisotropy_tie_rounding_matches_scalar(assert_vectorized) -> None:
         [tio.Subject(t1=tio.ScalarImage(data.clone() + index)) for index in range(4)]
     )
     assert_vectorized(tio.Anisotropy(downsampling=2.0), batch)
+
+
+def test_gating_with_prior_history(assert_vectorized) -> None:
+    torch.manual_seed(0)
+    batch = tio.Gamma(log_gamma=0.2, per_instance=False)(_batch(batch_size=6))
+
+    assert_vectorized(
+        tio.Flip(axes=(0, 1, 2), flip_probability=1.0, p=0.5),
+        batch,
+    )

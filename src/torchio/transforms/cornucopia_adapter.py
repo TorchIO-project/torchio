@@ -76,7 +76,6 @@ class CornucopiaAdapter(Transform):
         from ..data.batch import SubjectsBatch
 
         result = SubjectsBatch.from_subjects(subjects)
-        result.adopt_history(batch, subjects)
         return unwrap(result)
 
     def apply_transform(

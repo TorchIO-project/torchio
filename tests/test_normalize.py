@@ -278,15 +278,14 @@ class TestNormalizePerInstance:
         batch = self._batch()
         transform = tio.RescaleIntensity(out_min=(-1.0, 0.0), out_max=(0.5, 1.0))
         result = transform(batch)
-        params = result.applied_transforms[-1].params
-        assert "_batched_keys" in params
-        assert len(params["out_min"]) == batch.batch_size
-        assert len(set(params["out_min"])) > 1
+        params = [history[-1].params for history in result.histories]
+        assert all("_batched_keys" not in item for item in params)
+        assert len({item["out_min"] for item in params}) > 1
         # Each element rescaled to its own output range.
         for i in range(batch.batch_size):
             data = result.t1.data[i]
-            assert data.min() >= params["out_min"][i] - 1e-4
-            assert data.max() <= params["out_max"][i] + 1e-4
+            assert data.min() >= params[i]["out_min"] - 1e-4
+            assert data.max() <= params[i]["out_max"] + 1e-4
 
     def test_per_instance_false_shares_params(self) -> None:
         torch.manual_seed(0)
@@ -314,7 +313,9 @@ class TestNormalizePerInstance:
         batch = tio.SubjectsBatch.from_subjects(subjects)
         transform = tio.RescaleIntensity(out_min=0.0, out_max=0.0)
         result = transform(batch)
-        assert "_batched_keys" in result.applied_transforms[-1].params
+        assert all(
+            "_batched_keys" not in history[-1].params for history in result.histories
+        )
         restored = result.apply_inverse_transform()
         assert not torch.isnan(restored.t1.data).any()
         # Identical inputs: the batch-shared input range covers every

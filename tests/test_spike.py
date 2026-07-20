@@ -56,9 +56,9 @@ class TestSpikePerInstance:
         torch.manual_seed(0)
         batch = self._batch()
         result = tio.Spike(intensity=(1.0, 3.0))(batch)
-        params = result.applied_transforms[-1].params
-        assert "_batched_keys" in params
-        assert len(params["intensity"]) == batch.batch_size
+        params = [history[-1].params for history in result.histories]
+        assert all("_batched_keys" not in item for item in params)
+        assert len({item["intensity"] for item in params}) > 1
         assert not torch.allclose(result.t1.data[0], result.t1.data[1])
 
     def test_per_instance_false_is_shared(self) -> None:

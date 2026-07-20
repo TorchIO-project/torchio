@@ -50,9 +50,9 @@ class TestBlurPerInstance:
         torch.manual_seed(0)
         batch = self._batch()
         result = tio.Blur(std=(1.0, 4.0))(batch)
-        params = result.applied_transforms[-1].params
-        assert "_batched_keys" in params
-        assert len(params["std"]) == batch.batch_size
+        params = [history[-1].params for history in result.histories]
+        assert all("_batched_keys" not in item for item in params)
+        assert len({tuple(item["std"]) for item in params}) > 1
         data = result.t1.data
         assert not torch.allclose(data[0], data[1])
 
