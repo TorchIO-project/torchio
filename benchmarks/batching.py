@@ -41,12 +41,12 @@ def _measure(
     for _ in range(2):
         operation()
     if device.type == "cuda":
-        torch.cuda.synchronize()
+        torch.cuda.synchronize(device)
     start = time.perf_counter()
     for _ in range(iterations):
         operation()
     if device.type == "cuda":
-        torch.cuda.synchronize()
+        torch.cuda.synchronize(device)
     return (time.perf_counter() - start) * 1000 / iterations
 
 
