@@ -65,6 +65,19 @@ class TestImagesBatch:
         assert restored[0].points["landmarks"].num_points == 1
         assert restored[1].bounding_boxes["tumors"].num_boxes == 2
 
+    def test_per_image_history_round_trip(self) -> None:
+        images = [
+            tio.ScalarImage(torch.rand(1, 4, 4, 4)),
+            tio.ScalarImage(torch.rand(1, 4, 4, 4)),
+        ]
+        images[0].applied_transforms = [tio.AppliedTransform("Flip", {"axes": (0,)})]
+        images[1].applied_transforms = [tio.AppliedTransform("Flip", {"axes": (1,)})]
+
+        restored = ImagesBatch.from_images(images).unbatch()
+
+        assert restored[0].applied_transforms[0].params["axes"] == (0,)
+        assert restored[1].applied_transforms[0].params["axes"] == (1,)
+
     def test_custom_image_subclass_round_trip(self) -> None:
         class CustomScalarImage(tio.ScalarImage):
             pass

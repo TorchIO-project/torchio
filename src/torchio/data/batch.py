@@ -210,7 +210,10 @@ class ImagesBatch(Invertible):
             affine=self._affines[index].clone(),
         )
         image._metadata = _copy.deepcopy(prototype.metadata)
-        image.applied_transforms = list(self.applied_transforms)
+        image.applied_transforms = [
+            *prototype.applied_transforms,
+            *self.applied_transforms,
+        ]
         return image
 
     def __len__(self) -> int:
