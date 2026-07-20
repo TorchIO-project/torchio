@@ -300,7 +300,28 @@ for batch in loader:
 ```
 
 Each `ImagesBatch` stores per-sample affine matrices, so subjects
-with different spatial properties batch correctly.
+with different spatial properties batch correctly. It also stores one
+private image prototype per element so unbatching preserves image
+subclasses, metadata, and annotations.
+
+Create batches through the lossless factories:
+
+```python
+import torch
+import torchio as tio
+
+images = [tio.ScalarImage(torch.zeros(1, 2, 3, 4)) for _ in range(2)]
+tensor_5d = torch.zeros(2, 1, 2, 3, 4)
+subjects = [tio.Subject(image=image) for image in images]
+
+image_batch = tio.ImagesBatch.from_images(images)
+tensor_batch = tio.ImagesBatch.from_tensor(tensor_5d)
+subject_batch = tio.SubjectsBatch.from_subjects(subjects)
+```
+
+Metadata-only and annotation-only subjects are supported. Every subject
+in one batch must share the same field schema, but point and bounding-box
+counts may differ because annotations are stored as per-element objects.
 
 Transforms work directly on batches. By default, transforms that
 support it sample independent parameters per batch element (see
@@ -310,3 +331,22 @@ support it sample independent parameters per batch element (see
 ```python
 augmented = tio.Flip(axes=(0,))(batch)
 ```
+
+Each batch element carries its own exact transform history:
+
+```python
+import torch
+import torchio as tio
+
+batch = tio.SubjectsBatch.from_subjects([
+    tio.Subject(image=tio.ScalarImage(torch.zeros(1, 2, 3, 4))),
+    tio.Subject(image=tio.ScalarImage(torch.ones(1, 2, 3, 4))),
+])
+augmented = tio.Flip(axes=(0,))(batch)
+
+first_history = augmented.history(0)
+all_histories = augmented.histories
+```
+
+Uniform histories can be inverted as one vectorized batch. Divergent
+histories are inverted element by element.

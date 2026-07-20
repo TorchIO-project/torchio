@@ -123,10 +123,11 @@ batch = tio.SubjectsBatch.from_subjects(subjects)
 assert batch.metadata == {"site": ["A", "B"], "age": [30, 40]}
 ```
 
-The first subject defines the image-name and metadata-key order of the
-batch. All subjects must have the same schema, although their local
-key order may differ. A custom transform should preserve that shared
-schema and keep every metadata list aligned with the batch dimension.
+The first subject defines the image, metadata, point, and bounding-box
+key order of the batch. All subjects must have the same schema,
+although their local key order may differ. A custom transform should
+preserve that shared schema and keep every per-element list aligned
+with the batch dimension.
 
 ## Scalar, range, or distribution: one class for both
 
@@ -198,9 +199,10 @@ MONAI transforms in TorchIO pipelines.
 
 ## Transform types
 
-- **`SpatialTransform`**: modifies geometry. Applies to all images
-  (ScalarImage and LabelMap) and transforms attached Points and
-  BoundingBoxes.
+- **`SpatialTransform`**: modifies image geometry and applies to all
+  images (ScalarImage and LabelMap). Spatial transforms currently raise
+  an error when a `Subject` or batch contains Points or BoundingBoxes,
+  because annotation-coordinate updates are not implemented yet.
 - **`IntensityTransform`**: modifies voxel values. Applies only to
   ScalarImage, leaving LabelMap and annotations untouched.
 
@@ -252,13 +254,44 @@ result = tio.Noise(std=0.1)(subject)
 trace = result.applied_transforms[-1]
 assert trace.name == "Noise"
 assert trace.params["std"] == 0.1
+replayed = tio.Noise().apply_with_params(subject, trace.params)
+torch.testing.assert_close(replayed.image.data, result.image.data)
 ```
 
-History parameters support inspection and inversion. TorchIO does not
-currently expose a public API for applying an arbitrary saved parameter
-dictionary to another input. In particular, do not use
+Use `apply_with_params()` to apply an exact saved parameter dictionary
+without sampling again.
+
+This bypasses `p` and `make_params()`, but retains normal copying,
+wrapping, history recording, and output-type restoration. Do not use
 `apply_transform(new_subject, params)` for replay: the method requires
 an already wrapped `SubjectsBatch` and omits the public-call lifecycle.
+
+See [Write a custom transform](../how-to/custom-transform.md) for
+vectorized image, batched metadata, and subject-wise examples.
+
+### Batch histories
+
+A batch stores one exact history per element:
+
+```python
+import torch
+import torchio as tio
+
+batch = tio.SubjectsBatch.from_subjects([
+    tio.Subject(image=tio.ScalarImage(torch.zeros(1, 2, 3, 4))),
+    tio.Subject(image=tio.ScalarImage(torch.ones(1, 2, 3, 4))),
+])
+result = tio.Gamma(log_gamma=(0.2, 0.8))(batch)
+
+assert len(result.histories) == 2
+assert isinstance(result.history(0)[-1].params["log_gamma"], float)
+assert "_batched_keys" not in result.history(0)[-1].params
+```
+
+The batch history contains no private batching fields. When all element
+histories match, inversion remains vectorized over the 5D batch. When
+histories differ (for example after per-element `OneOf`), inversion is
+performed per element and the results are re-batched.
 
 ## Hydra configuration
 
