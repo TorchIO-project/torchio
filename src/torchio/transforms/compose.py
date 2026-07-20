@@ -316,7 +316,7 @@ def _rebatch_with_history(subjects: list[Any], transform_name: str) -> Any:
 
     try:
         batch = SubjectsBatch.from_subjects(subjects)
-    except ValueError as error:
+    except (TypeError, ValueError) as error:
         msg = (
             f"Per-instance {transform_name} produced batch elements with"
             " different shapes or schemas, which cannot be re-stacked. Use"

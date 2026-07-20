@@ -181,3 +181,10 @@ class TestOneOfCopy:
 
         tio.OneOf([_Spy()])(_make_subject())
         assert seen == [False]
+
+
+def test_rebatch_rejects_non_subject_elements() -> None:
+    from torchio.transforms.compose import _rebatch_with_history
+
+    with pytest.raises(RuntimeError, match="cannot be re-stacked"):
+        _rebatch_with_history([object()], "OneOf")
