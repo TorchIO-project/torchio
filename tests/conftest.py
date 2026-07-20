@@ -46,9 +46,11 @@ def assert_vectorized() -> Callable[..., None]:
                 name: image.data.clone()
                 for name, image in transform._get_images(single).items()
             }
+            prior_history_size = len(original.history(index))
             history = result.history(index)
-            gated_out = not history
-            if history:
+            gated_out = len(history) == prior_history_size
+            if not gated_out:
+                assert len(history) == prior_history_size + 1
                 single = transform.apply_transform(
                     single,
                     history[-1].params,
