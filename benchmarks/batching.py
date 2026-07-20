@@ -78,7 +78,7 @@ def _benchmark_device(device: torch.device) -> dict[str, float]:
         "metadata-only": _measure(
             lambda: tio.SubjectsBatch.from_subjects(metadata_subjects),
             _ITERATIONS,
-            device,
+            torch.device("cpu"),
         ),
     }
 
