@@ -71,7 +71,9 @@ def pad_tensor(
     fill: float,
 ) -> Tensor:
     """Pad a 4D image tensor or 5D image batch."""
-    assert data.ndim in (4, 5)
+    if data.ndim not in (4, 5):
+        msg = f"Expected a 4D or 5D image tensor, got {data.ndim}D"
+        raise ValueError(msg)
     i0, i1, j0, j1, k0, k1 = padding
     pad_arg = k0, k1, j0, j1, i0, i1
     if padding_mode not in _STATISTIC_PADDING_MODES:

@@ -8,9 +8,19 @@ import pytest
 import torch
 
 import torchio as tio
+from torchio.transforms.spatial._padding import pad_tensor
 
 
 class TestPad:
+    def test_pad_tensor_rejects_invalid_number_of_dimensions(self) -> None:
+        with pytest.raises(ValueError, match="4D or 5D"):
+            pad_tensor(
+                torch.ones(2, 2, 2),
+                (0, 0, 0, 0, 0, 0),
+                "mean",
+                0,
+            )
+
     def test_pad_uniform(self) -> None:
         image = tio.ScalarImage(torch.rand(1, 10, 10, 10))
         subject = tio.Subject(t1=image)
