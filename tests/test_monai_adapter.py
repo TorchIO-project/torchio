@@ -116,6 +116,25 @@ class TestMonaiAdapterDict:
         with pytest.raises(ValueError, match=r"new tensor field.*new_image"):
             tio.MonaiAdapter(AddTensor())(subject)
 
+    def test_dict_rejects_in_place_field_removal(self) -> None:
+        from monai.transforms import MapTransform
+
+        class RemoveMetadata(MapTransform):
+            def __init__(self) -> None:
+                super().__init__(keys=["t1"])
+
+            def __call__(self, data):
+                del data["site"]
+                return data
+
+        subject = tio.Subject(
+            t1=tio.ScalarImage(torch.rand(1, 8, 8, 8)),
+            site="A",
+        )
+
+        with pytest.raises(ValueError, match=r"removed fields.*site"):
+            tio.MonaiAdapter(RemoveMetadata())(subject)
+
     def test_dict_preserves_added_metadata_order(self) -> None:
         from monai.transforms import MapTransform
 

@@ -170,9 +170,10 @@ def _apply_dict_transform(
     monai: ModuleType,
 ) -> None:
     monai_dict = _build_monai_dict(subject, monai)
-    result = _validate_dict_result(monai_transform(monai_dict), monai_dict)
+    original_keys = tuple(monai_dict)
+    result = _validate_dict_result(monai_transform(monai_dict), original_keys)
     _update_subject_images(subject, result, monai)
-    _update_subject_metadata(subject, result, monai_dict)
+    _update_subject_metadata(subject, result, original_keys)
 
 
 def _build_monai_dict(subject: Subject, monai: ModuleType) -> dict[str, Any]:
@@ -187,13 +188,13 @@ def _build_monai_dict(subject: Subject, monai: ModuleType) -> dict[str, Any]:
 
 def _validate_dict_result(
     result: Any,
-    monai_dict: dict[str, Any],
+    original_keys: tuple[str, ...],
 ) -> Mapping:
     """Validate the mapping returned by a MONAI dictionary transform."""
     if not isinstance(result, Mapping):
         msg = f"Expected mapping from MONAI dict transform, got {type(result).__name__}"
         raise TypeError(msg)
-    missing = set(monai_dict) - set(result)
+    missing = set(original_keys) - set(result)
     if missing:
         msg = f"MONAI dictionary transform removed fields: {sorted(missing)}"
         raise ValueError(msg)
@@ -220,13 +221,13 @@ def _update_subject_images(
 def _update_subject_metadata(
     subject: Subject,
     result: Mapping,
-    monai_dict: dict[str, Any],
+    original_keys: tuple[str, ...],
 ) -> None:
     """Update existing metadata and append new scalar fields."""
     for key in subject.metadata:
         subject.metadata[key] = result[key]
     for key in result:
-        if key in monai_dict:
+        if key in original_keys:
             continue
         _add_subject_metadata(subject, key, result[key])
 
