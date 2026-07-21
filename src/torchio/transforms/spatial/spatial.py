@@ -1568,13 +1568,14 @@ def _build_sampling_grid(
     )
 
     if affine_first:
-        # Affine first: map to input space, then add elastic offset.
-        input_voxels = _apply_voxel_mapping(output_coords, mapping)
-        input_voxels = input_voxels + displacement / input_spacing_t
-    else:
-        # Elastic first: deform in output space, then map to input.
+        # Resampling follows the inverse transform, so apply the operations
+        # in reverse order: undo the elastic field, then the affine mapping.
         deformed_output = output_coords + displacement / output_spacing_t
         input_voxels = _apply_voxel_mapping(deformed_output, mapping)
+    else:
+        # Undo the affine mapping first, then the elastic field.
+        input_voxels = _apply_voxel_mapping(output_coords, mapping)
+        input_voxels = input_voxels + displacement / input_spacing_t
 
     return input_voxels
 
