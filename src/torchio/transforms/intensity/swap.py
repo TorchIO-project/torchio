@@ -10,7 +10,6 @@ from einops import rearrange
 from torch import Tensor
 
 from ...data.batch import SubjectsBatch
-from ...data.image import LabelMap
 from ..parameter_range import to_nonneg_range
 from ..transform import IntensityTransform
 
@@ -63,7 +62,7 @@ class Swap(IntensityTransform):
         """Sample swap locations (per element when batched)."""
         # Warn if label maps are present.
         for _name, img_batch in batch.images.items():
-            if issubclass(img_batch._image_class, LabelMap):
+            if img_batch.is_label:
                 warnings.warn(
                     "Swap is applied to a subject containing LabelMap "
                     "images. The spatial rearrangement will make labels "

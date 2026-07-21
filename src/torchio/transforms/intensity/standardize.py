@@ -10,7 +10,6 @@ from torch import Tensor
 
 from ...data.batch import ImagesBatch
 from ...data.batch import SubjectsBatch
-from ...data.image import LabelMap
 from ..transform import IntensityTransform
 
 
@@ -166,7 +165,7 @@ def _get_mask(
             )
             raise KeyError(msg)
         mask_batch = batch.images[masking_method]
-        if not issubclass(mask_batch._image_class, LabelMap):
+        if not mask_batch.is_label:
             msg = f'Masking method "{masking_method}" must refer to a LabelMap.'
             raise TypeError(msg)
         return mask_batch.data[0].bool()

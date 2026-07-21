@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import nibabel as nib
+import numpy as np
 import pytest
 import torch
 
@@ -15,6 +17,94 @@ class TestImagesBatch:
         images = [tio.ScalarImage(torch.rand(1, 8, 8, 8)) for _ in range(4)]
         batch = ImagesBatch.from_images(images)
         assert batch.data.shape == (4, 1, 8, 8, 8)
+
+    def test_from_tensor(self) -> None:
+        data = torch.rand(3, 1, 4, 5, 6)
+
+        batch = ImagesBatch.from_tensor(data)
+
+        assert batch.data is data
+        assert batch.batch_size == 3
+        assert all(affine.spacing == (1.0, 1.0, 1.0) for affine in batch.affines)
+
+    def test_from_tensor_default_affines_follow_data_device(self) -> None:
+        batch = ImagesBatch.from_tensor(torch.empty(2, 1, 2, 3, 4, device="meta"))
+
+        assert all(affine.device.type == "meta" for affine in batch.affines)
+
+    def test_image_class_properties(self) -> None:
+        scalar = ImagesBatch.from_tensor(
+            torch.rand(2, 1, 4, 4, 4),
+            image_class=tio.ScalarImage,
+        )
+        label = ImagesBatch.from_tensor(
+            torch.zeros(2, 1, 4, 4, 4),
+            image_class=tio.LabelMap,
+        )
+
+        assert scalar.image_class is tio.ScalarImage
+        assert scalar.is_label is False
+        assert label.image_class is tio.LabelMap
+        assert label.is_label is True
+
+    def test_payload_round_trip(self) -> None:
+        images = [
+            tio.ScalarImage(
+                torch.rand(1, 4, 4, 4),
+                protocol=f"protocol-{index}",
+                points={"landmarks": tio.Points(torch.rand(index + 1, 3))},
+                bounding_boxes={
+                    "tumors": tio.BoundingBoxes(
+                        torch.rand(index + 1, 6),
+                        format=tio.BoundingBoxFormat.IJKIJK,
+                    )
+                },
+            )
+            for index in range(2)
+        ]
+
+        restored = ImagesBatch.from_images(images).unbatch()
+
+        assert [image.protocol for image in restored] == [
+            "protocol-0",
+            "protocol-1",
+        ]
+        assert restored[0].points["landmarks"].num_points == 1
+        assert restored[1].bounding_boxes["tumors"].num_boxes == 2
+
+    def test_per_image_history_round_trip(self) -> None:
+        images = [
+            tio.ScalarImage(torch.rand(1, 4, 4, 4)),
+            tio.ScalarImage(torch.rand(1, 4, 4, 4)),
+        ]
+        images[0].applied_transforms = [tio.AppliedTransform("Flip", {"axes": (0,)})]
+        images[1].applied_transforms = [tio.AppliedTransform("Flip", {"axes": (1,)})]
+
+        restored = ImagesBatch.from_images(images).unbatch()
+
+        assert restored[0].applied_transforms[0].params["axes"] == (0,)
+        assert restored[1].applied_transforms[0].params["axes"] == (1,)
+
+    def test_custom_image_subclass_round_trip(self) -> None:
+        class CustomScalarImage(tio.ScalarImage):
+            pass
+
+        images = [
+            CustomScalarImage(torch.rand(1, 4, 4, 4), sequence="custom")
+            for _ in range(2)
+        ]
+
+        restored = ImagesBatch.from_images(images).unbatch()
+
+        assert all(type(image) is CustomScalarImage for image in restored)
+        assert all(image.sequence == "custom" for image in restored)
+
+    def test_template_does_not_share_affine(self) -> None:
+        image = tio.ScalarImage(torch.rand(1, 4, 4, 4))
+
+        batch = ImagesBatch.from_images([image])
+
+        assert batch._prototypes[0].affine is not image.affine
 
     def test_batch_size(self) -> None:
         batch = ImagesBatch(
@@ -142,6 +232,122 @@ class TestSubjectsBatch:
         assert batch.metadata["age"] == [42, 43, 44]
         assert batch.metadata["name"] == ["sub_0", "sub_1", "sub_2"]
 
+    def test_reordered_schema_is_accepted(self) -> None:
+        first = tio.Subject(
+            t1=tio.ScalarImage(torch.rand(1, 4, 4, 4)),
+            seg=tio.LabelMap(torch.zeros(1, 4, 4, 4)),
+            age=42,
+            name="first",
+        )
+        second = tio.Subject(
+            seg=tio.LabelMap(torch.zeros(1, 4, 4, 4)),
+            t1=tio.ScalarImage(torch.rand(1, 4, 4, 4)),
+            name="second",
+            age=43,
+        )
+
+        batch = SubjectsBatch.from_subjects([first, second])
+
+        assert list(batch.images) == ["t1", "seg"]
+        assert list(batch.metadata) == ["age", "name"]
+
+    def test_loaded_and_lazy_equivalent_dtypes_are_accepted(self) -> None:
+        loaded = tio.ScalarImage(torch.zeros(1, 4, 4, 4, dtype=torch.float32))
+        lazy = tio.ScalarImage(
+            nib.Nifti1Image(
+                np.zeros((4, 4, 4), dtype=np.float32),
+                np.eye(4),
+            )
+        )
+
+        batch = SubjectsBatch.from_subjects(
+            [tio.Subject(image=loaded), tio.Subject(image=lazy)]
+        )
+
+        assert batch.image.data.dtype == torch.float32
+
+    @pytest.mark.parametrize(
+        ("first", "second", "message"),
+        [
+            (
+                tio.Subject(t1=tio.ScalarImage(torch.rand(1, 4, 4, 4))),
+                tio.Subject(
+                    t1=tio.ScalarImage(torch.rand(1, 4, 4, 4)),
+                    t2=tio.ScalarImage(torch.rand(1, 4, 4, 4)),
+                ),
+                "Subject images.*unexpected.*t2",
+            ),
+            (
+                tio.Subject(
+                    t1=tio.ScalarImage(torch.rand(1, 4, 4, 4)),
+                    age=42,
+                ),
+                tio.Subject(t1=tio.ScalarImage(torch.rand(1, 4, 4, 4))),
+                "Subject metadata.*missing.*age",
+            ),
+            (
+                tio.Subject(
+                    t1=tio.ScalarImage(torch.rand(1, 4, 4, 4)),
+                    landmarks=tio.Points(torch.rand(2, 3)),
+                ),
+                tio.Subject(t1=tio.ScalarImage(torch.rand(1, 4, 4, 4))),
+                "Subject points.*missing.*landmarks",
+            ),
+        ],
+    )
+    def test_incompatible_schema_raises(
+        self,
+        first: tio.Subject,
+        second: tio.Subject,
+        message: str,
+    ) -> None:
+        with pytest.raises(ValueError, match=message):
+            SubjectsBatch.from_subjects([first, second])
+
+    def test_metadata_only_batch(self) -> None:
+        batch = SubjectsBatch.from_subjects([tio.Subject(age=42), tio.Subject(age=43)])
+
+        assert batch.batch_size == 2
+        assert batch.device.type == "cpu"
+        assert [subject.age for subject in batch.unbatch()] == [42, 43]
+
+    def test_annotation_only_batch(self) -> None:
+        subjects = [
+            tio.Subject(landmarks=tio.Points(torch.rand(index + 1, 3)))
+            for index in range(2)
+        ]
+
+        restored = SubjectsBatch.from_subjects(subjects).unbatch()
+
+        assert restored[0].landmarks.num_points == 1
+        assert restored[1].landmarks.num_points == 2
+
+    def test_subject_annotations_round_trip(self) -> None:
+        subject = tio.Subject(
+            t1=tio.ScalarImage(torch.rand(1, 4, 4, 4)),
+            landmarks=tio.Points(torch.rand(2, 3), metadata={"source": "manual"}),
+            tumors=tio.BoundingBoxes(
+                torch.rand(3, 6),
+                format=tio.BoundingBoxFormat.IJKWHD,
+                metadata={"reader": "test"},
+            ),
+        )
+
+        restored = SubjectsBatch.from_subjects([subject]).unbatch()[0]
+
+        assert restored.landmarks.metadata == {"source": "manual"}
+        assert restored.tumors.metadata == {"reader": "test"}
+        assert restored.tumors.format == tio.BoundingBoxFormat.IJKWHD
+
+    def test_metadata_remains_mutable(self) -> None:
+        batch = SubjectsBatch.from_subjects([tio.Subject(age=42), tio.Subject(age=43)])
+
+        batch.metadata["age"][0] = 50
+        batch.metadata["site"] = ["A", "B"]
+
+        assert batch.unbatch()[0].age == 50
+        assert batch.unbatch()[1].site == "B"
+
 
 class TestBatchTransforms:
     def test_flip_images_batch(self) -> None:
@@ -195,6 +401,59 @@ class TestBatchTransforms:
         tio.Noise(std=1.0)(batch)
         # Original should be unchanged (copy=True default)
         torch.testing.assert_close(batch.data, original)
+
+    def test_intensity_transform_preserves_annotations(self) -> None:
+        subject = tio.Subject(
+            t1=tio.ScalarImage(
+                torch.rand(1, 4, 4, 4) + 0.1,
+                points={"image_landmarks": tio.Points(torch.rand(2, 3))},
+            ),
+            landmarks=tio.Points(torch.rand(3, 3)),
+        )
+
+        result = tio.Gamma(log_gamma=0.2)(subject)
+
+        assert set(result.points) == {"landmarks"}
+        assert set(result.t1.points) == {"image_landmarks"}
+
+    @pytest.mark.parametrize(
+        "data",
+        [
+            tio.Subject(
+                t1=tio.ScalarImage(torch.rand(1, 4, 4, 4)),
+                landmarks=tio.Points(torch.rand(2, 3)),
+            ),
+            {
+                "t1": torch.rand(1, 4, 4, 4),
+                "landmarks": tio.Points(torch.rand(2, 3)),
+            },
+        ],
+    )
+    def test_spatial_transform_rejects_annotations(self, data: object) -> None:
+        with pytest.raises(NotImplementedError, match="annotations"):
+            tio.Flip(axes=(0,))(data)
+
+    @pytest.mark.parametrize(
+        "transform",
+        [
+            tio.Flip(axes=(0,), p=0),
+            tio.CropOrPad(2, p=0),
+        ],
+    )
+    def test_skipped_spatial_transform_allows_annotations(
+        self,
+        transform: tio.Transform,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        subject = tio.Subject(
+            image=tio.ScalarImage(torch.rand(1, 4, 4, 4)),
+            landmarks=tio.Points(torch.rand(2, 3)),
+        )
+        monkeypatch.setattr(torch, "rand", lambda *args, **kwargs: torch.zeros(1))
+
+        result = transform(subject)
+
+        assert set(result.points) == {"landmarks"}
 
 
 # ── Coverage gap tests ───────────────────────────────────────────────

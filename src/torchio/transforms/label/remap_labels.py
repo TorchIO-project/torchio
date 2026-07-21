@@ -5,7 +5,6 @@ from __future__ import annotations
 from typing import Any
 
 from ...data.batch import SubjectsBatch
-from ...data.image import LabelMap
 from ..transform import Transform
 
 
@@ -49,7 +48,7 @@ class RemapLabels(Transform):
         """Remap labels in each label map."""
         remapping = params["remapping"]
         for _name, img_batch in batch.images.items():
-            if not issubclass(img_batch._image_class, LabelMap):
+            if not img_batch.is_label:
                 continue
             data = img_batch.data.clone()
             for old, new in remapping.items():

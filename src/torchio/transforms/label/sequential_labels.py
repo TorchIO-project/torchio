@@ -7,7 +7,6 @@ from typing import Any
 import torch
 
 from ...data.batch import SubjectsBatch
-from ...data.image import LabelMap
 from ..transform import Transform
 
 
@@ -38,7 +37,7 @@ class SequentialLabels(Transform):
         """Compute the remapping from the first sample's labels."""
         remappings: dict[str, dict[int, int]] = {}
         for name, img_batch in batch.images.items():
-            if not issubclass(img_batch._image_class, LabelMap):
+            if not img_batch.is_label:
                 continue
             unique = sorted(int(v) for v in img_batch.data[0].unique().tolist())
             remappings[name] = {old: new for new, old in enumerate(unique)}

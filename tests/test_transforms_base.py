@@ -32,6 +32,14 @@ def _make_subject() -> tio.Subject:
     )
 
 
+def _make_image_subject() -> tio.Subject:
+    return tio.Subject(
+        t1=tio.ScalarImage(torch.rand(1, 8, 8, 8)),
+        seg=tio.LabelMap(torch.randint(0, 3, (1, 8, 8, 8))),
+        age=42,
+    )
+
+
 class _IdentityTransform(tio.Transform):
     """Transform that does nothing (for testing the base flow)."""
 
@@ -232,7 +240,7 @@ class TestIntensityTransform:
 
 class TestSpatialTransform:
     def test_all_images_modified(self) -> None:
-        subject = _make_subject()
+        subject = _make_image_subject()
         result = _FlipSpatial()(subject)
         # Both t1 and seg should be flipped
         assert result.t1.data.shape == (1, 8, 8, 8)
@@ -366,7 +374,7 @@ class TestAddOperator:
             tio.Flip(axes=(0,)) + 42  # type: ignore[operator]
 
     def test_add_produces_working_pipeline(self) -> None:
-        subject = _make_subject()
+        subject = _make_image_subject()
         pipeline = tio.Flip(axes=(0,)) + tio.Noise(std=0.01)
         result = pipeline(subject)
         assert result.t1.shape == subject.t1.shape
@@ -393,7 +401,7 @@ class TestOrOperator:
             tio.Flip(axes=(0,)) | "bad"  # type: ignore[operator]
 
     def test_or_produces_working_pipeline(self) -> None:
-        subject = _make_subject()
+        subject = _make_image_subject()
         pipeline = tio.Flip(axes=(0,)) | tio.Noise(std=0.01)
         result = pipeline(subject)
         assert result.t1.shape == subject.t1.shape

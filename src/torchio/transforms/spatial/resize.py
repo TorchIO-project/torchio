@@ -7,7 +7,6 @@ from typing import Any
 import torch.nn.functional as functional
 
 from ...data.batch import SubjectsBatch
-from ...data.image import LabelMap
 from ..transform import SpatialTransform
 
 
@@ -64,7 +63,7 @@ class Resize(SpatialTransform):
         """Resize each image to the target shape."""
         target = list(params["target_shape"])
         for _name, img_batch in batch.images.items():
-            is_label = issubclass(img_batch._image_class, LabelMap)
+            is_label = img_batch.is_label
             mode = self.label_interpolation if is_label else self.image_interpolation
             torch_mode = "nearest" if mode == "nearest" else "trilinear"
             old_shape = img_batch.data.shape[2:]

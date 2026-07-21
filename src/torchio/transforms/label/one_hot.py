@@ -7,7 +7,6 @@ from typing import Any
 import torch.nn.functional as functional
 
 from ...data.batch import SubjectsBatch
-from ...data.image import LabelMap
 from ..transform import Transform
 
 
@@ -58,7 +57,7 @@ class OneHot(Transform):
         """One-hot encode each label map in the batch."""
         num_classes = params["num_classes"]
         for _name, img_batch in batch.images.items():
-            if not issubclass(img_batch._image_class, LabelMap):
+            if not img_batch.is_label:
                 continue
             # (B, 1, I, J, K) -> (B, num_classes, I, J, K)
             data = img_batch.data.long()
@@ -90,7 +89,7 @@ class _OneHotInverse(Transform):
         params: dict[str, Any],
     ) -> SubjectsBatch:
         for _name, img_batch in batch.images.items():
-            if not issubclass(img_batch._image_class, LabelMap):
+            if not img_batch.is_label:
                 continue
             if img_batch.data.shape[1] > 1:
                 img_batch.data = img_batch.data.argmax(dim=1, keepdim=True).float()

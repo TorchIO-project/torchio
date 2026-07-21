@@ -14,6 +14,27 @@ HAS_CUDA = torch.cuda.is_available()
 HAS_MPS = torch.backends.mps.is_available()
 
 
+class TestAnnotationTo:
+    def test_points_to_moves_affine(self) -> None:
+        points = Points(torch.rand(2, 3))
+
+        points.to("meta")
+
+        assert points.device.type == "meta"
+        assert points.affine.device.type == "meta"
+
+    def test_bounding_boxes_to_moves_affine(self) -> None:
+        boxes = BoundingBoxes(
+            torch.rand(2, 6),
+            format=BoundingBoxFormat.IJKIJK,
+        )
+
+        boxes.to("meta")
+
+        assert boxes.device.type == "meta"
+        assert boxes.affine.device.type == "meta"
+
+
 class TestImageTo:
     def test_to_returns_self(self) -> None:
         image = tio.ScalarImage(torch.rand(1, 4, 4, 4))
@@ -28,6 +49,26 @@ class TestImageTo:
         image = tio.ScalarImage(torch.rand(1, 4, 4, 4))
         result = image.to(torch.float16)
         assert result.data.dtype == torch.float16
+
+    def test_moves_image_annotations(self) -> None:
+        image = tio.ScalarImage(
+            torch.rand(1, 4, 4, 4),
+            points={"landmarks": Points(torch.rand(2, 3))},
+            bounding_boxes={
+                "tumors": BoundingBoxes(
+                    torch.rand(2, 6),
+                    format=BoundingBoxFormat.IJKIJK,
+                    labels=torch.tensor([1, 2]),
+                )
+            },
+        )
+
+        result = image.to(torch.float64)
+
+        assert result.points["landmarks"].data.dtype == torch.float64
+        assert result.bounding_boxes["tumors"].data.dtype == torch.float64
+        assert result.bounding_boxes["tumors"].labels is not None
+        assert result.bounding_boxes["tumors"].labels.dtype == torch.int64
 
     @pytest.mark.skipif(not HAS_CUDA, reason="No CUDA")
     def test_to_cuda(self) -> None:

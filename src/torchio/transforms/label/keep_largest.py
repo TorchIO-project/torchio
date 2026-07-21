@@ -10,7 +10,6 @@ import torch
 from torch import Tensor
 
 from ...data.batch import SubjectsBatch
-from ...data.image import LabelMap
 from ..transform import Transform
 
 
@@ -67,7 +66,7 @@ class KeepLargestComponent(Transform):
     ) -> SubjectsBatch:
         """Keep only the largest connected component per label."""
         for _name, img_batch in batch.images.items():
-            if not issubclass(img_batch._image_class, LabelMap):
+            if not img_batch.is_label:
                 continue
             b, c = img_batch.data.shape[:2]
             if c != 1:

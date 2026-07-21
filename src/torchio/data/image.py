@@ -642,9 +642,16 @@ class Image(Invertible):
         return self.data.device
 
     def to(self, *args: Any, **kwargs: Any) -> Self:
-        """Move image data and affine to a device and/or cast to a dtype.
+        """Move image data, affine, and annotations to a device or dtype.
 
         Accepts the same arguments as `torch.Tensor.to()`.
+        Dtype casts apply to image data, point coordinates, and bounding-box
+        coordinates. Bounding-box labels preserve their dtype. Affines move
+        to supported devices but always remain `float64`.
+
+        Args:
+            *args: Positional arguments forwarded to `torch.Tensor.to`.
+            **kwargs: Keyword arguments forwarded to `torch.Tensor.to`.
 
         Returns:
             `self` (modified in-place).
@@ -652,6 +659,10 @@ class Image(Invertible):
         self._data = self.data.to(*args, **kwargs)
         if self._affine is not None:
             self._affine.to(*args, **kwargs)
+        for points in self._points.values():
+            points.to(*args, **kwargs)
+        for boxes in self._bounding_boxes.values():
+            boxes.to(*args, **kwargs)
         self._refresh_backend_from_data()
         return self
 
