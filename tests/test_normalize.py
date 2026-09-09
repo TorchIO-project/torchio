@@ -146,14 +146,18 @@ class TestPercentiles:
 
 
 class TestInputRangeContract:
-    @pytest.mark.parametrize("mode", ["auto", "minimum", "maximum", "both"])
+    @pytest.mark.parametrize(
+        "bounds",
+        [{}, {"in_min": -20.0}, {"in_max": 180.0}, {"in_min": -20.0, "in_max": 180.0}],
+        ids=["auto", "minimum", "maximum", "both"],
+    )
     @pytest.mark.parametrize("dtype", [torch.float32, torch.float64, torch.int16])
     @pytest.mark.parametrize("shape", [(2, 7, 9, 1), (2, 4, 5, 6)])
     @pytest.mark.parametrize("masked", [False, True])
     @pytest.mark.parametrize("batched", [False, True])
     def test_matches_numpy_reference(
         self,
-        mode: str,
+        bounds: dict[str, float],
         dtype: torch.dtype,
         shape: tuple[int, int, int, int],
         masked: bool,
@@ -172,11 +176,6 @@ class TestInputRangeContract:
             for index in range(2 if batched else 1)
         ]
         source = tio.SubjectsBatch.from_subjects(subjects) if batched else subjects[0]
-        bounds = {}
-        if mode in ("minimum", "both"):
-            bounds["in_min"] = -20.0
-        if mode in ("maximum", "both"):
-            bounds["in_max"] = 180.0
         result = tio.Normalize(
             out_min=-2.0,
             out_max=3.0,
@@ -200,7 +199,6 @@ class TestInputRangeContract:
             actual = result[name].data.numpy()
             np.testing.assert_allclose(actual, expected, atol=2e-5, rtol=2e-5)
             assert actual.shape == original.shape
-            assert np.isfinite(actual).all()
             assert actual.min() >= -2.0 - 1e-5
             assert actual.max() <= 3.0 + 1e-5
         torch.testing.assert_close(result.mask.data, source.mask.data)
