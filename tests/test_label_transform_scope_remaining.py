@@ -81,9 +81,7 @@ def test_sequential_labels_inverse_respects_selection(as_batch: bool) -> None:
     """The inverse of SequentialLabels must also respect include/exclude."""
     subject = _make_subject()
     # Give b labels {0, 5, 10} so the renumbering would be visible
-    subject["b"].set_data(
-        torch.tensor([0.0, 5.0, 10.0, 5.0]).reshape(1, 1, 2, 2)
-    )
+    subject["b"].set_data(torch.tensor([0.0, 5.0, 10.0, 5.0]).reshape(1, 1, 2, 2))
     data = _make_input(subject, as_batch)
     original_b = data["b"].data.clone()
 
