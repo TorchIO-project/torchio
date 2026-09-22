@@ -11,7 +11,6 @@ and ``exclude`` kwargs inherited from Transform.
 from __future__ import annotations
 
 import copy
-from functools import partial
 
 import pytest
 import torch
