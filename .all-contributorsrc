@@ -928,12 +928,22 @@
       "contributions": [
         "bug",
         "code"
+      ]
     },
     {
       "login": "Jessy-Ding",
       "name": "Mengyuan Ding",
       "avatar_url": "https://avatars.githubusercontent.com/u/89423283?v=4",
       "profile": "https://github.com/Jessy-Ding",
+      "contributions": [
+        "bug"
+      ]
+    },
+    {
+      "login": "Sal-sal-sal",
+      "name": "Saladin",
+      "avatar_url": "https://avatars.githubusercontent.com/u/172976617?v=4",
+      "profile": "https://github.com/Sal-sal-sal",
       "contributions": [
         "bug"
       ]
