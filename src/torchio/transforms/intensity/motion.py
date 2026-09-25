@@ -45,15 +45,32 @@ class Motion(IntensityTransform):
     3. Reconstructs the corrupted image via inverse FFT.
 
     Args:
-        degrees: Rotation range in degrees.  A scalar $d$ means
-            $\theta_i \sim \mathcal{U}(-d, d)$.  A 2-tuple $(a, b)$
-            means $\theta_i \sim \mathcal{U}(a, b)$.
-        translation: Translation range in voxels, same convention as
-            *degrees*. The translation is applied in normalized grid
-            coordinates (a voxel-space approximation), not in millimeters.
+        degrees: Euler rotation angles $(\theta_1, \theta_2, \theta_3)$
+            in degrees for each rigid sub-transform, following the
+            value/range/distribution convention of
+            [`Spatial`][torchio.Spatial] (a scalar is deterministic, a
+            2-tuple $(a, b)$ samples $\theta_i \sim \mathcal{U}(a, b)$).
+            The angles are right-handed rotations about the tensor axes
+            $(i, j, k)$, composed as $R = R_k R_j R_i$ and pivoting on
+            the image center, matching
+            [`Affine`][torchio.Affine] with `center="image"`.
+        translation: Translation $(t_1, t_2, t_3)$ in voxels along the
+            tensor axes $(i, j, k)$, same convention as *degrees*.
         num_transforms: Number of inter-segment motion events.
             More transforms produce more distortion.
         **kwargs: See [`Transform`][torchio.Transform].
+
+    Note:
+        Each rigid sub-transform uses the same parameter conventions as
+        [`Affine`][torchio.Affine] with `center="image"`, interpreted
+        in voxel space: for an image whose affine is the identity
+        (RAS+, 1 mm isotropic, zero origin), the underlying rigid step
+        with parameters `(degrees, translation)` moves the image
+        exactly like `Affine(degrees=degrees, translation=translation,
+        center="image")`.  Unlike `Affine`, `Motion` ignores the image
+        affine, so for other orientations or spacings the parameters
+        describe voxel-space motion rather than world-space
+        millimeters.
 
     Warning:
         Large numbers of transforms increase execution time
@@ -421,11 +438,16 @@ def _apply_rigid_transform(
     """Apply per-element rigid-body transforms to a 5-D tensor.
 
     Each batch element gets its own affine grid, shared by all channels.
+    The parameters follow the [`Affine`][torchio.Affine] conventions
+    (see `_affine_matrices`): for an identity image affine, the output
+    matches `Affine(degrees=..., translation=..., center="image")`.
 
     Args:
         tensor: `(B, C, I, J, K)` tensor.
-        degrees: Euler angles in degrees, with shape `(B, 3)`.
-        translation: Translation in voxels, with shape `(B, 3)`.
+        degrees: Right-handed Euler angles in degrees about the tensor
+            axes `(i, j, k)`, with shape `(B, 3)`.
+        translation: Translation in voxels along the tensor axes
+            `(i, j, k)`, with shape `(B, 3)`.
 
     Returns:
         Transformed `(B, C, I, J, K)` tensor.
@@ -456,6 +478,15 @@ def _affine_matrices(
 ) -> Tensor:
     """Build batched affine matrices for `affine_grid`.
 
+    The parameters follow the same convention as
+    [`Affine`][torchio.Affine] with `center="image"`, interpreted in
+    voxel space: *degrees* are right-handed Euler angles about the
+    tensor axes `(i, j, k)` (composed as `R = R_k @ R_j @ R_i`)
+    pivoting on the image center, and *translation* is in voxels along
+    `(i, j, k)`.  For an image whose affine is the identity, the
+    resulting resampling matches
+    `Affine(degrees=degrees, translation=translation, center="image")`.
+
     Args:
         degrees: Euler angles in degrees, with shape `(B, 3)`.
         translation: Translation in voxels, with shape `(B, 3)`.
@@ -464,6 +495,25 @@ def _affine_matrices(
     Returns:
         Batched affine matrices with shape `(B, 3, 4)`.
     """
+    rotation = _rotation_matrices(degrees)
+    # `affine_grid` matrices map output coordinates to input
+    # coordinates, so the sampling grid uses the inverse of the content
+    # transform (the transpose, for a rigid rotation).
+    inverse_rotation = rotation.transpose(-1, -2)
+    # With `align_corners=True`, normalized grid coordinates span
+    # [-1, 1] over each axis, so one voxel is `1 / half_extent` grid
+    # units and the origin sits at the image center.
+    half_extents = _half_extents(spatial_shape, degrees)
+    # Grid coordinates are ordered `(x, y, z) = (k, j, i)`, reversed
+    # with respect to the tensor axes: conjugate the voxel-space
+    # inverse into flipped, per-axis-normalized coordinates.
+    inverse_grid = inverse_rotation.flip(-1).flip(-2)
+    flipped_extents = half_extents.flip(0)
+    linear = (
+        inverse_grid * flipped_extents.view(1, 1, 3) / flipped_extents.view(1, 3, 1)
+    )
+    moved = torch.einsum("bij,bj->bi", inverse_rotation, translation)
+    offset = -moved.flip(-1) / flipped_extents
     theta = torch.zeros(
         degrees.shape[0],
         3,
@@ -471,34 +521,40 @@ def _affine_matrices(
         dtype=degrees.dtype,
         device=degrees.device,
     )
-    theta[:, :3, :3] = _rotation_matrices(degrees)
-    theta[:, :3, 3] = _normalized_translation(translation, spatial_shape)
+    theta[:, :3, :3] = linear
+    theta[:, :3, 3] = offset
     return theta
 
 
-def _normalized_translation(
-    translation: Tensor,
-    spatial_shape: list[int],
-) -> Tensor:
-    """Normalize voxel translations to `affine_grid` coordinates.
+def _half_extents(spatial_shape: list[int], like: Tensor) -> Tensor:
+    """Return voxel half-extents `(size - 1) / 2` for each axis.
+
+    Singleton axes get a half-extent of 1 to avoid division by zero;
+    their normalized coordinate is always at the center.
 
     Args:
-        translation: Translation in voxels, with shape `(B, 3)`.
         spatial_shape: Spatial tensor shape `(I, J, K)`.
+        like: Tensor providing the dtype and device of the result.
 
     Returns:
-        Normalized translations with shape `(B, 3)`.
+        Half-extents with shape `(3,)`.
     """
-    shape = torch.as_tensor(
+    extents = torch.as_tensor(
         spatial_shape,
-        dtype=translation.dtype,
-        device=translation.device,
+        dtype=like.dtype,
+        device=like.device,
     )
-    return translation / (shape / 2)
+    half = (extents - 1) / 2
+    return torch.where(half > 0, half, torch.ones_like(half))
 
 
 def _rotation_matrices(degrees: Tensor) -> Tensor:
     """Build batched Euler rotation matrices.
+
+    The angles are right-handed rotations about the tensor axes
+    `(i, j, k)`, composed as `R = R_k @ R_j @ R_i` (ZYX extrinsic),
+    matching the world-space rotation built by
+    [`Affine`][torchio.Affine].
 
     Args:
         degrees: Euler angles in degrees, with shape `(B, 3)`.
