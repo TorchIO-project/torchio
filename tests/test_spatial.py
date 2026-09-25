@@ -88,6 +88,34 @@ class TestSpatial:
 
         assert not torch.allclose(first.t1.data, second.t1.data)
 
+    def test_affine_first_composes_inverse_grid_in_reverse_order(self) -> None:
+        identity = AffineMatrix(np.eye(4))
+        affine_matrix = np.diag([2.0, 1.0, 1.0, 1.0])
+        control_points = torch.zeros(4, 4, 4, 3)
+        control_points[..., 0] = 1.0
+        kwargs = {
+            "input_shape": (3, 3, 3),
+            "input_affine": identity,
+            "output_shape": (3, 3, 3),
+            "output_affine": identity,
+            "affine_matrix": affine_matrix,
+            "control_points": control_points,
+            "max_displacement": (1.0, 0.0, 0.0),
+            "device": torch.device("cpu"),
+        }
+
+        affine_then_elastic = _build_sampling_grid(affine_first=True, **kwargs)
+        elastic_then_affine = _build_sampling_grid(affine_first=False, **kwargs)
+
+        torch.testing.assert_close(
+            affine_then_elastic[2, 0, 0],
+            torch.tensor([1.5, 0.0, 0.0]),
+        )
+        torch.testing.assert_close(
+            elastic_then_affine[2, 0, 0],
+            torch.tensor([2.0, 0.0, 0.0]),
+        )
+
     def test_2d_suppresses_out_of_plane(self) -> None:
         data = torch.rand(1, 8, 8, 1)
         subject = tio.Subject(t1=tio.ScalarImage(data))
