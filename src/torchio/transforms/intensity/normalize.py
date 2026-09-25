@@ -131,21 +131,23 @@ class Normalize(IntensityTransform):
             params["in_min"] = explicit_min
             params["in_max"] = explicit_max
         else:
+            # Only the missing bound is computed from the data, so an explicit
+            # bound never triggers percentile computation or validation (its
+            # corresponding `percentile_low`/`percentile_high` is ignored).
             in_ranges: dict[str, tuple[float, float]] = {}
             for name, img_batch in self._get_images(batch).items():
                 mask = self._get_mask(img_batch, batch)
-                in_min, in_max = _percentile_range(
-                    img_batch.data[0],
-                    mask,
-                    pct_low,
-                    pct_high,
-                    name,
+                values = _masked_values(img_batch.data[0], mask, name)
+                in_min = (
+                    explicit_min
+                    if explicit_min is not None
+                    else float(compute_quantile(values, pct_low / 100.0).item())
                 )
-                # Override the auto-computed bound(s) with any explicit value.
-                if explicit_min is not None:
-                    in_min = explicit_min
-                if explicit_max is not None:
-                    in_max = explicit_max
+                in_max = (
+                    explicit_max
+                    if explicit_max is not None
+                    else float(compute_quantile(values, pct_high / 100.0).item())
+                )
                 in_ranges[name] = (in_min, in_max)
             params["in_ranges"] = in_ranges
 
@@ -339,24 +341,23 @@ def _out_min_and_range(
     return low, high - low
 
 
-def _percentile_range(
+def _masked_values(
     tensor: Tensor,
     mask: Tensor | None,
-    pct_low: float,
-    pct_high: float,
     image_name: str,
-) -> tuple[float, float]:
-    """Compute the input range from percentiles of (masked) data.
+) -> Tensor:
+    """Return the (masked) voxel values used to compute input percentiles.
+
+    Extracted so the caller can compute only the quantile it needs, keeping any
+    explicitly supplied bound free of percentile computation and validation.
 
     Args:
         tensor: `(C, I, J, K)` image tensor (first sample).
         mask: Optional boolean mask with compatible shape, or `None`.
-        pct_low: Lower percentile (0-100).
-        pct_high: Upper percentile (0-100).
         image_name: Used in warning messages.
 
     Returns:
-        `(in_min, in_max)` tuple.
+        A one-dimensional float tensor of the selected values.
     """
     values = tensor[mask.expand_as(tensor)] if mask is not None else tensor.reshape(-1)
 
@@ -369,9 +370,7 @@ def _percentile_range(
         )
         values = tensor.reshape(-1)
 
-    low = float(compute_quantile(values.float(), pct_low / 100.0).item())
-    high = float(compute_quantile(values.float(), pct_high / 100.0).item())
-    return low, high
+    return values.float()
 
 
 # Backwards-compatible alias.

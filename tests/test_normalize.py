@@ -349,3 +349,12 @@ class TestPartialInputBounds:
         result = tio.Normalize(out_min=0.0, out_max=1.0, in_max=50.0)(self._image())
         out = result.t1.data.flatten().tolist()
         assert out == pytest.approx([0.0, 1.0, 1.0])
+
+    def test_explicit_bound_ignores_its_percentile(self) -> None:
+        # percentile_low is out of range, but must be ignored (not even validated)
+        # because in_min is given explicitly; only in_max uses a percentile.
+        result = tio.Normalize(
+            out_min=0.0, out_max=1.0, in_min=50.0, percentile_low=101.0
+        )(self._image())
+        out = result.t1.data.flatten().tolist()
+        assert out == pytest.approx([0.0, 0.0, 1.0])
