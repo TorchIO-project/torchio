@@ -66,6 +66,51 @@ class TestBasic:
 
 
 class TestPercentiles:
+    @pytest.mark.parametrize(
+        ("bounds", "expected"),
+        [
+            ({"in_min": 50.0}, [0.0, 0.0, 1.0]),
+            ({"in_max": 50.0}, [0.0, 1.0, 1.0]),
+            ({"in_min": tio.Choice([50.0])}, [0.0, 0.0, 1.0]),
+            ({"in_max": tio.Choice([50.0])}, [0.0, 1.0, 1.0]),
+        ],
+    )
+    def test_single_explicit_bound(self, bounds: dict, expected: list[float]) -> None:
+        image = tio.ScalarImage(torch.tensor([0.0, 50.0, 100.0]).reshape(1, 1, 1, 3))
+        result = tio.Normalize(out_min=0.0, out_max=1.0, **bounds)(image)
+        torch.testing.assert_close(result.data.flatten(), torch.tensor(expected))
+
+    @pytest.mark.parametrize("bound", ["in_min", "in_max"])
+    def test_single_bound_with_masked_percentiles(self, bound: str) -> None:
+        data = torch.tensor([0.0, 20.0, 40.0, 60.0, 80.0]).reshape(1, 1, 1, 5)
+        subject = tio.Subject(
+            a=tio.ScalarImage(data),
+            b=tio.ScalarImage(data * 2),
+            mask=tio.LabelMap(torch.tensor([0, 1, 1, 1, 0]).reshape(1, 1, 1, 5)),
+        )
+        bounds = {bound: 0.0 if bound == "in_min" else 160.0}
+        transform = tio.Normalize(
+            out_min=0.0,
+            out_max=1.0,
+            percentile_low=25.0,
+            percentile_high=75.0,
+            masking_method="mask",
+            **bounds,
+        )
+        result = transform(subject)
+        ranges = {"a": (0.0, 50.0), "b": (0.0, 100.0)}
+        if bound == "in_max":
+            ranges = {"a": (30.0, 160.0), "b": (60.0, 160.0)}
+        assert result.applied_transforms[-1].params["in_ranges"] == ranges
+        restored = result.apply_inverse_transform()
+        for name, (low, high) in ranges.items():
+            expected = subject[name].data.clamp(low, high)
+            torch.testing.assert_close(
+                result[name].data, (expected - low) / (high - low)
+            )
+            torch.testing.assert_close(restored[name].data, expected)
+        torch.testing.assert_close(result.mask.data, subject.mask.data)
+
     def test_percentile_clipping(self) -> None:
         data = torch.cat(
             [
@@ -98,6 +143,145 @@ class TestPercentiles:
         # Most values should be in [0, 1], outliers clipped
         in_range = (result.t1.data >= -0.01) & (result.t1.data <= 1.01)
         assert in_range.float().mean() > 0.98
+
+
+class TestInputRangeContract:
+    @pytest.mark.parametrize(
+        "bounds",
+        [{}, {"in_min": -20.0}, {"in_max": 180.0}, {"in_min": -20.0, "in_max": 180.0}],
+        ids=["auto", "minimum", "maximum", "both"],
+    )
+    @pytest.mark.parametrize("dtype", [torch.float32, torch.float64, torch.int16])
+    @pytest.mark.parametrize("shape", [(2, 7, 9, 1), (2, 4, 5, 6)])
+    @pytest.mark.parametrize("masked", [False, True])
+    @pytest.mark.parametrize("batched", [False, True])
+    def test_matches_numpy_reference(
+        self,
+        bounds: dict[str, float],
+        dtype: torch.dtype,
+        shape: tuple[int, int, int, int],
+        masked: bool,
+        batched: bool,
+    ) -> None:
+        rng = np.random.default_rng(1509)
+        data = torch.from_numpy(rng.normal(70, 50, size=shape)).to(dtype)
+        mask = torch.zeros((1, *shape[1:]), dtype=torch.int16)
+        mask[:, 1:-1, 1:-1, :] = 1
+        subjects = [
+            tio.Subject(
+                a=tio.ScalarImage((data + 30 * index).to(dtype)),
+                b=tio.ScalarImage((data * 2 + 10 - 30 * index).to(dtype)),
+                mask=tio.LabelMap(mask.clone()),
+            )
+            for index in range(2 if batched else 1)
+        ]
+        source = tio.SubjectsBatch.from_subjects(subjects) if batched else subjects[0]
+        result = tio.Normalize(
+            out_min=-2.0,
+            out_max=3.0,
+            percentile_low=10.0,
+            percentile_high=90.0,
+            masking_method="mask" if masked else None,
+            **bounds,
+        )(source)
+        for name in ("a", "b"):
+            # Keep the existing first-element, batch-shared range convention.
+            reference_data = subjects[0][name].data.float().numpy()
+            values = reference_data
+            if masked:
+                values = values[np.broadcast_to(mask.numpy().astype(bool), shape)]
+            # Independent percentile implementation and documented affine map.
+            low, high = np.percentile(values, [10, 90])
+            low = bounds.get("in_min", low)
+            high = bounds.get("in_max", high)
+            original = source[name].data.float().numpy()
+            expected = (np.clip(original, low, high) - low) / (high - low) * 5 - 2
+            actual = result[name].data.numpy()
+            np.testing.assert_allclose(actual, expected, atol=2e-5, rtol=2e-5)
+            assert actual.shape == original.shape
+            assert actual.min() >= -2.0 - 1e-5
+            assert actual.max() <= 3.0 + 1e-5
+        torch.testing.assert_close(result.mask.data, source.mask.data)
+
+    @pytest.mark.parametrize("bound", ["in_min", "in_max"])
+    @pytest.mark.parametrize("kind", ["tuple", "choice", "distribution"])
+    @pytest.mark.parametrize("seed", [0, 7, 1509])
+    def test_random_bound_is_shared_and_reproducible(
+        self, bound: str, kind: str, seed: int
+    ) -> None:
+        lower, upper = (10.0, 30.0) if bound == "in_min" else (60.0, 80.0)
+        specifications = {
+            "tuple": (lower, upper),
+            "choice": tio.Choice([lower, upper]),
+            "distribution": torch.distributions.Uniform(lower, upper),
+        }
+        data = torch.linspace(0, 100, 24).reshape(1, 4, 6, 1)
+        subject = tio.Subject(a=tio.ScalarImage(data), b=tio.ScalarImage(data * 2))
+        bounds: dict = {bound: specifications[kind]}
+        transform = tio.Normalize(out_min=0.0, out_max=1.0, **bounds)
+        torch.manual_seed(seed)
+        result = transform(subject)
+        index = 0 if bound == "in_min" else 1
+        ranges = result.applied_transforms[-1].params["in_ranges"]
+        sampled = ranges["a"][index]
+        assert lower <= sampled <= upper
+        assert ranges["b"][index] == sampled
+        if kind == "choice":
+            assert sampled in (lower, upper)
+        torch.manual_seed(seed)
+        replay = transform(subject)
+        for name in ("a", "b"):
+            torch.testing.assert_close(replay[name].data, result[name].data)
+            low, high = ranges[name]
+            expected = (subject[name].data.clamp(low, high) - low) / (high - low)
+            torch.testing.assert_close(result[name].data, expected)
+
+    @pytest.mark.parametrize("bound", ["in_min", "in_max"])
+    def test_empty_mask_retains_explicit_bound(self, bound: str) -> None:
+        data = torch.tensor([0.0, 50.0, 100.0]).reshape(1, 1, 1, 3)
+        transform = tio.Normalize(
+            out_min=0.0,
+            out_max=1.0,
+            masking_method=lambda x: torch.zeros_like(x, dtype=torch.bool),
+            **{bound: 50.0},
+        )
+        with pytest.warns(RuntimeWarning, match="mask is empty"):
+            result = transform(tio.ScalarImage(data))
+        expected = [0.0, 0.0, 1.0] if bound == "in_min" else [0.0, 1.0, 1.0]
+        torch.testing.assert_close(result.data.flatten(), torch.tensor(expected))
+
+    @pytest.mark.parametrize("bound", ["in_min", "in_max"])
+    def test_equal_inferred_and_explicit_bounds_warn(self, bound: str) -> None:
+        data = torch.tensor([0.0, 50.0, 100.0]).reshape(1, 1, 1, 3)
+        value = 100.0 if bound == "in_min" else 0.0
+        bounds: dict = {bound: value}
+        with pytest.warns(RuntimeWarning, match="input range is zero"):
+            result = tio.Normalize(**bounds)(tio.ScalarImage(data))
+        torch.testing.assert_close(result.data, data)
+
+    @pytest.mark.skipif(not torch.cuda.is_available(), reason="CUDA is unavailable")
+    @pytest.mark.parametrize("bound", ["in_min", "in_max"])
+    @pytest.mark.parametrize("dtype", [torch.float32, torch.float64, torch.int16])
+    def test_partial_bound_matches_cpu_on_cuda(
+        self, bound: str, dtype: torch.dtype
+    ) -> None:
+        data = torch.linspace(0, 100, 24).reshape(1, 4, 6, 1).to(dtype)
+        transform = tio.Normalize(
+            out_min=0.0,
+            out_max=1.0,
+            masking_method="mask",
+            **{bound: 50.0},
+        )
+        outputs = []
+        for device in ("cpu", "cuda"):
+            subject = tio.Subject(
+                image=tio.ScalarImage(data.to(device)),
+                mask=tio.LabelMap((data > 20).to(device)),
+            )
+            result = transform(subject)
+            assert result.image.data.device.type == device
+            outputs.append(result.image.data.cpu())
+        torch.testing.assert_close(outputs[0], outputs[1], atol=2e-5, rtol=2e-5)
 
 
 class TestMasking:
