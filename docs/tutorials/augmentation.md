@@ -41,7 +41,7 @@ a tuple gives a uniform range:
 tio.Affine(degrees=90)
 
 # Rotate uniformly between -15° and 15°
-tio.Affine(degrees=15)
+tio.Affine(degrees=(-15, 15))
 
 # Rotate uniformly between 5° and 20°
 tio.Affine(degrees=(5, 20))
@@ -61,6 +61,18 @@ You can mix `Choice`, ranges, and fixed values per axis:
 ```python
 # Fixed along I, random along J, discrete along K
 tio.Affine(degrees=(0, (-10, 10), tio.Choice([-90, 0, 90])))
+```
+
+For continuous sampling beyond a uniform range, pass any
+`torch.distributions.Distribution`.  A fresh value is drawn each time
+the transform is applied:
+
+<!-- pytest-codeblocks:skip -->
+```python
+import torch
+
+# Sample the rotation angle from a normal distribution (mean 0°, std 5°)
+tio.Affine(degrees=torch.distributions.Normal(0, 5))
 ```
 
 ## Probability control
