@@ -142,7 +142,8 @@ class EnsureShapeMultiple(SpatialTransform):
         )
 
     def make_params(self, batch: SubjectsBatch) -> dict[str, Any]:
-        first_images = next(iter(batch.images.values()))
+        images = self._get_images(batch)
+        first_images = next(iter(images.values()))
         data_tensor = first_images.data
         current_shape: TypeThreeInts = (
             data_tensor.shape[-3],
