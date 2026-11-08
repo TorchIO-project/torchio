@@ -41,3 +41,15 @@ class TestCopyAffine:
         original = subject.t1.affine._matrix.clone()
         tio.CopyAffine(target="t1")(subject)
         torch.testing.assert_close(subject.t1.affine._matrix, original)
+
+    def test_copy_affine_respects_image_selection(self) -> None:
+        t1 = tio.ScalarImage(torch.rand(1, 5, 5, 5))
+        t2 = tio.ScalarImage(torch.rand(1, 5, 5, 5))
+        t3 = tio.ScalarImage(torch.rand(1, 5, 5, 5))
+        t1.affine._matrix[0, 3] = 42.0
+        t2.affine._matrix[0, 3] = 1.0
+        t3.affine._matrix[0, 3] = 2.0
+        subject = tio.Subject(t1=t1, t2=t2, t3=t3)
+        result = tio.CopyAffine(target="t1", include=["t1", "t2"])(subject)
+        assert result.t2.affine._matrix[0, 3] == 42.0
+        assert result.t3.affine._matrix[0, 3] == 2.0

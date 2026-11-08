@@ -49,3 +49,10 @@ class TestLambda:
         result = tio.Lambda(lambda x: x * 0, types_to_apply="unknown")(subject)
         assert result.t1.data.sum() == 0
         assert result.seg.data.sum() == 0
+
+    def test_lambda_respects_image_selection(self) -> None:
+        subject = _make_subject()
+        original_seg = subject.seg.data.clone()
+        result = tio.Lambda(lambda x: 2 * x, include=["t1"])(subject)
+        torch.testing.assert_close(result.t1.data, 2 * subject.t1.data)
+        torch.testing.assert_close(result.seg.data, original_seg)

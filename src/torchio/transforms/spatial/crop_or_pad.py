@@ -564,7 +564,7 @@ class CropOrPad(SpatialTransform):
     # --- Standard batch path (for SubjectsBatch, Tensor, etc.) ---
 
     def make_params(self, batch: SubjectsBatch) -> dict[str, Any]:
-        first_images = next(iter(batch.images.values()))
+        first_images = next(iter(self._get_images(batch).values()))
         spacing = first_images.affines[0].spacing
 
         data_tensor = first_images.data

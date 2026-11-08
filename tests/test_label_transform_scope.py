@@ -41,6 +41,9 @@ def _make_input(
         pytest.param(
             partial(tio.OneHot, num_classes=2), [[1, 0], [0, 1]], id="one-hot"
         ),
+        pytest.param(partial(tio.SequentialLabels), [[0, 1]], id="sequential-labels"),
+        pytest.param(partial(tio.Contour), [[1, 1]], id="contour"),
+        pytest.param(partial(tio.KeepLargestComponent), [[0, 1]], id="keep-largest"),
     ],
 )
 @pytest.mark.parametrize(
@@ -81,7 +84,7 @@ def test_label_transform_respects_image_selection(
 
 
 @pytest.mark.parametrize("as_batch", [False, True], ids=["subject", "batch"])
-@pytest.mark.parametrize("name", ["remap", "one-hot"])
+@pytest.mark.parametrize("name", ["remap", "one-hot", "sequential"])
 @pytest.mark.parametrize("selection", [{"include": ["a"]}, {"exclude": ["b"]}])
 def test_label_inverse_respects_image_selection(
     as_batch: bool,
@@ -93,6 +96,9 @@ def test_label_inverse_respects_image_selection(
         # Only the inverse mapping could change this excluded label map.
         subject.b.set_data(torch.full_like(subject.b.data, 9))
         transform = tio.RemapLabels({1: 9}, **selection)
+    elif name == "sequential":
+        subject.b.set_data(torch.tensor([0.0, 5.0]).reshape(1, 1, 1, 2))
+        transform = tio.SequentialLabels(**selection)
     else:
         # An excluded map may already have several channels before encoding a.
         subject.b.set_data(torch.tensor([1.0, 0.0, 0.0, 1.0]).reshape(2, 1, 1, 2))

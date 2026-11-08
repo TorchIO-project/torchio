@@ -48,3 +48,12 @@ class TestTranspose:
         subject = tio.Subject(t1=tio.ScalarImage(data))
         result = tio.Transpose()(subject)
         assert result.t1.data.shape == (1, 10, 10, 10)
+
+    def test_transpose_respects_image_selection(self) -> None:
+        data_a = torch.rand(1, 8, 10, 12)
+        data_b = torch.rand(1, 8, 10, 12)
+        subject = tio.Subject(a=tio.ScalarImage(data_a), b=tio.ScalarImage(data_b))
+        result = tio.Transpose(include=["a"])(subject)
+        assert result.a.data.shape == (1, 12, 10, 8)
+        assert result.b.data.shape == (1, 8, 10, 12)
+        torch.testing.assert_close(result.b.data, subject.b.data)
