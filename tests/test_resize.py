@@ -45,3 +45,10 @@ class TestResize:
         subject = _make_subject()
         result = tio.Resize(5)(subject)
         assert result.seg.data.shape[1:] == (5, 5, 5)
+
+    def test_resize_respects_image_selection(self) -> None:
+        subject = _make_subject()
+        result = tio.Resize(5, include=["t1"])(subject)
+        assert result.t1.data.shape[1:] == (5, 5, 5)
+        assert result.seg.data.shape[1:] == (10, 10, 10)
+        torch.testing.assert_close(result.seg.data, subject.seg.data)

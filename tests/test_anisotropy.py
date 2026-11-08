@@ -50,6 +50,12 @@ class TestAnisotropy:
         result = tio.Anisotropy(downsampling=1.0)(subject)
         torch.testing.assert_close(result.t1.data, original)
 
+    def test_anisotropy_respects_image_selection(self) -> None:
+        subject = _make_subject()
+        result = tio.Anisotropy(downsampling=3.0, include=["t1"])(subject)
+        assert not torch.allclose(result.t1.data, subject.t1.data)
+        torch.testing.assert_close(result.seg.data, subject.seg.data)
+
 
 class TestAnisotropyPerInstance:
     def _batch(self, batch_size: int = 6) -> tio.SubjectsBatch:

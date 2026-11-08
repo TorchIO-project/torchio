@@ -130,7 +130,7 @@ class Reorient(SpatialTransform):
         self.orientation = _validate_orientation(orientation)
 
     def make_params(self, batch: SubjectsBatch) -> dict[str, Any]:
-        first_images = next(iter(batch.images.values()))
+        first_images = next(iter(self._get_images(batch).values()))
         affine_np = first_images.affines[0].numpy()
         current_codes = "".join(
             nib.orientations.aff2axcodes(affine_np),
