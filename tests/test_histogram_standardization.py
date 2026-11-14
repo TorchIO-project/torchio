@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 from pathlib import Path
+from threading import Barrier
 
+import numpy as np
 import pytest
 import torch
 
@@ -138,3 +140,104 @@ class TestHistogramStandardizationEdgeCases:
         images = [tio.ScalarImage(torch.randn(1, 5, 5, 5)) for _ in range(3)]
         landmarks = compute_histogram_landmarks(images)
         assert landmarks.ndim == 1
+
+
+class TestParallelLandmarks:
+    @pytest.mark.parametrize("num_workers", [0, 1, 2, 8])
+    @pytest.mark.parametrize("masked", [False, True])
+    def test_matches_numpy_reference(self, num_workers: int, masked: bool) -> None:
+        generator = torch.Generator().manual_seed(970)
+        tensors = [
+            torch.randn(2, 4, 5, 6, generator=generator) * (i + 1) + i for i in range(4)
+        ]
+        original = [tensor.clone() for tensor in tensors]
+        quantiles = (0.05, 0.25, 0.5, 0.75, 0.95)
+        mask_fn = (lambda x: x > 0) if masked else None
+        database = np.stack(
+            [
+                np.percentile(
+                    tensor[tensor > 0].numpy() if masked else tensor.numpy(),
+                    np.array(quantiles) * 100,
+                )
+                for tensor in tensors
+            ]
+        )
+        # Independently map each training image's cutoff range to [0, 100].
+        expected = np.mean(
+            (database - database[:, :1]) * 100 / (database[:, -1:] - database[:, :1]),
+            axis=0,
+        )
+        actual = compute_histogram_landmarks(
+            [tio.ScalarImage(tensor) for tensor in tensors],
+            quantiles=quantiles,
+            cutoff=(0.05, 0.95),
+            masking_method=mask_fn,
+            num_workers=num_workers,
+        )
+        torch.testing.assert_close(actual, torch.tensor(expected, dtype=torch.float32))
+        for tensor, before in zip(tensors, original, strict=True):
+            torch.testing.assert_close(tensor, before, rtol=0, atol=0)
+
+    @pytest.mark.parametrize("num_workers", [1, 2, 8])
+    def test_mixed_sources_match_sequential(
+        self, tmp_path: Path, num_workers: int
+    ) -> None:
+        images = TestHistogramStandardization._make_images(n=4)
+        expected = compute_histogram_landmarks(images)
+        paths = [
+            tmp_path / "plain.nii",
+            tmp_path / "compressed.nii.gz",
+            tmp_path / "lazy.nii",
+        ]
+        for image, path in zip(images[:3], paths, strict=True):
+            image.save(path)
+        lazy_image = tio.ScalarImage(paths[2])
+        assert not lazy_image.is_loaded
+        sources = [paths[0], str(paths[1]), lazy_image, images[3]]
+        actual = compute_histogram_landmarks(sources, num_workers=num_workers)
+        torch.testing.assert_close(actual, expected, rtol=0, atol=0)
+        # The trained landmarks also produce identical standardized images.
+        sequential = tio.HistogramStandardization(expected)(images[0])
+        parallel = tio.HistogramStandardization(actual)(images[0])
+        torch.testing.assert_close(parallel.data, sequential.data, rtol=0, atol=0)
+
+    def test_masking_runs_concurrently(self) -> None:
+        barrier = Barrier(2)
+        images = TestHistogramStandardization._make_images(n=2)
+        expected = compute_histogram_landmarks(images)
+
+        def mask(tensor: torch.Tensor) -> torch.Tensor:
+            # Both workers must enter the callable before either can finish.
+            barrier.wait(timeout=10)
+            return torch.ones_like(tensor, dtype=torch.bool)
+
+        actual = compute_histogram_landmarks(images, masking_method=mask, num_workers=2)
+        torch.testing.assert_close(actual, expected, rtol=0, atol=0)
+
+    def test_single_image_with_multiple_workers(self) -> None:
+        images = TestHistogramStandardization._make_images(n=1)
+        expected = compute_histogram_landmarks(images)
+        actual = compute_histogram_landmarks(images, num_workers=4)
+        torch.testing.assert_close(actual, expected, rtol=0, atol=0)
+
+    @pytest.mark.parametrize("num_workers", [0, 2])
+    def test_reader_errors_propagate(self, tmp_path: Path, num_workers: int) -> None:
+        with pytest.raises(FileNotFoundError):
+            compute_histogram_landmarks(
+                [tmp_path / "missing.nii"], num_workers=num_workers
+            )
+
+    def test_masking_errors_propagate(self) -> None:
+        def broken_mask(tensor: torch.Tensor) -> torch.Tensor:
+            raise RuntimeError("Failed to compute training mask")
+
+        with pytest.raises(RuntimeError, match="Failed to compute training mask"):
+            compute_histogram_landmarks(
+                TestHistogramStandardization._make_images(n=2),
+                masking_method=broken_mask,
+                num_workers=2,
+            )
+
+    def test_negative_worker_count(self) -> None:
+        with pytest.raises(ValueError, match="num_workers must be non-negative"):
+            compute_histogram_landmarks([], num_workers=-1)
