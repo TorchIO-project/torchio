@@ -133,11 +133,11 @@ def _compute_image_percentiles(
 ) -> np.ndarray:
     """Load one training image and return only its percentile values."""
     tensor = _load_tensor(source)
-    if masking_method is not None:
-        mask = masking_method(tensor)
+    if masking_method is None:
+        values = tensor.numpy()
     else:
-        mask = torch.ones_like(tensor, dtype=torch.bool)
-    values = tensor[mask].numpy()
+        mask = masking_method(tensor)
+        values = tensor[mask].numpy()
     return np.percentile(values, percentiles)
 
 
