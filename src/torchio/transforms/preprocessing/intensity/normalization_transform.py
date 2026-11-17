@@ -20,6 +20,12 @@ class NormalizationTransform(IntensityTransform):
             - A function: the mask image is computed as a function of the intensity image.
               The function must receive and return a [`torch.Tensor`][torch.Tensor]
 
+            - Integer bounds: exclude border voxels from the statistics. An integer excludes that many
+              voxels at both ends of each spatial axis. A triple `(i, j, k)` sets the same count at both
+              ends of each axis independently. Six integers `(i0, i1, j0, j1, k0, k1)` set the lower and
+              upper counts for each axis separately. The bounds select an interior region and leave the
+              image shape unchanged. Choose counts that leave enough voxels to compute the statistics.
+
         **kwargs: See [`Transform`][torchio.transforms.Transform] for additional
             keyword arguments.
 
@@ -34,6 +40,17 @@ class NormalizationTransform(IntensityTransform):
         >>> transformed = transform(subject)  # use only values within the brain
         >>> transform = tio.ZNormalization(masking_method=lambda x: x > x.mean())
         >>> transformed = transform(subject)  # use values above the image mean
+
+        Use an integer to exclude one voxel at both ends of every spatial axis:
+
+        >>> import torch
+        >>> image = tio.ScalarImage(tensor=torch.arange(64, dtype=torch.float32).reshape(1, 4, 4, 4))
+        >>> normalized = tio.ZNormalization(masking_method=1)(image)
+        >>> normalized.shape == image.shape
+        True
+        >>> interior = normalized.data[:, 1:-1, 1:-1, 1:-1]
+        >>> torch.isclose(interior.mean(), torch.tensor(0.0), atol=1e-6).item()
+        True
     """
 
     def __init__(self, masking_method: TypeMaskingMethod = None, **kwargs):
