@@ -222,6 +222,7 @@ class TestParallelLandmarks:
         assert not lazy_image.is_loaded
         sources = [paths[0], str(paths[1]), lazy_image, images[3]]
         actual = compute_histogram_landmarks(sources, num_workers=num_workers)
+        assert lazy_image.is_loaded
         torch.testing.assert_close(actual, expected, rtol=0, atol=0)
         # The trained landmarks also produce identical standardized images.
         sequential = tio.HistogramStandardization(expected)(images[0])
@@ -264,6 +265,11 @@ class TestParallelLandmarks:
                 masking_method=broken_mask,
                 num_workers=2,
             )
+
+    @pytest.mark.parametrize("num_workers", [0, 2])
+    def test_empty_training_images(self, num_workers: int) -> None:
+        with pytest.raises(ValueError, match="At least one training image is required"):
+            compute_histogram_landmarks([], num_workers=num_workers)
 
     def test_negative_worker_count(self) -> None:
         with pytest.raises(ValueError, match="num_workers must be non-negative"):

@@ -120,6 +120,10 @@ def compute_histogram_landmarks(
         with ThreadPoolExecutor(max_workers=num_workers) as executor:
             all_percentile_values = list(executor.map(compute_percentiles, images))
 
+    if not all_percentile_values:
+        msg = "At least one training image is required"
+        raise ValueError(msg)
+
     database = np.vstack(all_percentile_values)
     landmarks = _compute_average_mapping(database)
     return torch.as_tensor(landmarks, dtype=torch.float32)
@@ -134,11 +138,12 @@ def _compute_image_percentiles(
     """Load one training image and return only its percentile values."""
     tensor = _load_tensor(source)
     if masking_method is None:
-        values = tensor.numpy()
-    else:
-        mask = masking_method(tensor)
-        values = tensor[mask].numpy()
-    return np.percentile(values, percentiles)
+        return np.percentile(tensor.numpy(), percentiles)
+
+    mask = masking_method(tensor)
+    values = tensor[mask].numpy()
+    # Boolean indexing makes a copy, so partitioning it cannot change the image.
+    return np.percentile(values, percentiles, overwrite_input=mask.dtype == torch.bool)
 
 
 def _build_quantiles(cutoff: tuple[float, float]) -> tuple[float, ...]:

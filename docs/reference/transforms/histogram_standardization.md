@@ -29,7 +29,8 @@ torch.testing.assert_close(parallel, sequential, rtol=0, atol=0)
 
 Choose the number of workers according to available memory and storage speed.
 Each worker may hold a full image, an optional mask, and intermediate percentile arrays.
-For large datasets, pass file paths rather than loading all images beforehand.
+Passing a lazy `ScalarImage` loads its data and leaves it cached on the object.
+For large datasets, pass file paths to avoid keeping the full dataset in memory.
 Using more workers is not always faster, especially for small datasets or when
 other numerical libraries already use multiple CPU threads.
 
