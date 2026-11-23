@@ -246,6 +246,22 @@ class TestParallelLandmarks:
             )
         torch.testing.assert_close(actual, expected, rtol=0, atol=0)
 
+    @pytest.mark.parametrize("grad_enabled", [False, True])
+    def test_workers_respect_inference_mode(self, grad_enabled: bool) -> None:
+        images = TestHistogramStandardization._make_images(n=2)
+
+        def mask(tensor: torch.Tensor) -> torch.Tensor:
+            assert torch.is_inference_mode_enabled()
+            assert torch.is_grad_enabled() == grad_enabled
+            return tensor > tensor.mean()
+
+        with torch.inference_mode(), torch.set_grad_enabled(grad_enabled):
+            expected = compute_histogram_landmarks(images, masking_method=mask)
+            actual = compute_histogram_landmarks(
+                images, masking_method=mask, num_workers=2
+            )
+        torch.testing.assert_close(actual, expected, rtol=0, atol=0)
+
     def test_masking_runs_concurrently(self) -> None:
         barrier = Barrier(2)
         images = TestHistogramStandardization._make_images(n=2)

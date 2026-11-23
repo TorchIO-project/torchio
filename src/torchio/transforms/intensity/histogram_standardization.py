@@ -117,12 +117,18 @@ def compute_histogram_landmarks(
     if num_workers == 0:
         all_percentile_values = list(map(compute_percentiles, images))
     else:
-        with ThreadPoolExecutor(
-            max_workers=num_workers,
-            initializer=torch.set_grad_enabled,
-            initargs=(torch.is_grad_enabled(),),
-        ) as executor:
-            all_percentile_values = list(executor.map(compute_percentiles, images))
+        inference_mode = torch.is_inference_mode_enabled()
+        grad_enabled = torch.is_grad_enabled()
+
+        def compute_in_worker(source: ScalarImage | Path | str) -> np.ndarray:
+            with (
+                torch.inference_mode(inference_mode),
+                torch.set_grad_enabled(grad_enabled),
+            ):
+                return compute_percentiles(source)
+
+        with ThreadPoolExecutor(max_workers=num_workers) as executor:
+            all_percentile_values = list(executor.map(compute_in_worker, images))
 
     if not all_percentile_values:
         msg = "At least one training image is required"
