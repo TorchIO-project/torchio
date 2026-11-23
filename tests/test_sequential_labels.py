@@ -51,3 +51,39 @@ class TestSequentialLabels:
         original = subject.t1.data.clone()
         result = tio.SequentialLabels()(subject)
         torch.testing.assert_close(result.t1.data, original)
+
+    def test_batch_uses_each_samples_own_labels(self) -> None:
+        """Each sample must be renumbered from its own labels, not sample 0's."""
+        data0 = torch.zeros(1, 4, 4, 4, dtype=torch.float32)
+        data0[0, 0, 0, 0] = 5
+        data1 = torch.zeros(1, 4, 4, 4, dtype=torch.float32)
+        data1[0, 0, 0, 0] = 7
+
+        sub0 = tio.Subject(seg=tio.LabelMap(data0))
+        sub1 = tio.Subject(seg=tio.LabelMap(data1))
+        batch = tio.SubjectsBatch.from_subjects([sub0, sub1])
+
+        out = tio.SequentialLabels()(batch)
+
+        out_data = out.images["seg"].data
+        assert sorted(out_data[0].unique().tolist()) == [0.0, 1.0]
+        assert sorted(out_data[1].unique().tolist()) == [0.0, 1.0]
+        # Sample 1's own label (7) must survive as non-background, not be
+        # zeroed out because it was absent from sample 0's label set.
+        assert out_data[1, 0, 0, 0, 0].item() != 0.0
+
+    def test_batch_inverse_restores_each_sample(self) -> None:
+        data0 = torch.zeros(1, 4, 4, 4, dtype=torch.float32)
+        data0[0, 0, 0, 0] = 5
+        data1 = torch.zeros(1, 4, 4, 4, dtype=torch.float32)
+        data1[0, 0, 0, 0] = 7
+
+        sub0 = tio.Subject(seg=tio.LabelMap(data0))
+        sub1 = tio.Subject(seg=tio.LabelMap(data1))
+        batch = tio.SubjectsBatch.from_subjects([sub0, sub1])
+        original = batch.images["seg"].data.clone()
+
+        transformed = tio.SequentialLabels()(batch)
+        restored = transformed.apply_inverse_transform()
+
+        torch.testing.assert_close(restored.images["seg"].data, original)
