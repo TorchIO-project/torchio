@@ -23,6 +23,11 @@ class SequentialLabels(Transform):
         The background (label 0) is always mapped to 0. Even if there
         are no zeros in the input, zero will appear in the output.
 
+    Note:
+        Each sample in a batch is renumbered from its own set of label
+        values, since different subjects can have different labels
+        present.
+
     Args:
         **kwargs: See [`Transform`][torchio.Transform].
 
@@ -35,13 +40,16 @@ class SequentialLabels(Transform):
         super().__init__(**kwargs)
 
     def make_params(self, batch: SubjectsBatch) -> dict[str, Any]:
-        """Compute the remapping from the first sample's labels."""
-        remappings: dict[str, dict[int, int]] = {}
+        """Compute the remapping from each sample's own labels."""
+        remappings: dict[str, list[dict[int, int]]] = {}
         for name, img_batch in batch.images.items():
             if not issubclass(img_batch._image_class, LabelMap):
                 continue
-            unique = sorted(int(v) for v in img_batch.data[0].unique().tolist())
-            remappings[name] = {old: new for new, old in enumerate(unique)}
+            sample_remappings = []
+            for sample_data in img_batch.data:
+                unique = sorted(int(v) for v in sample_data.unique().tolist())
+                sample_remappings.append({old: new for new, old in enumerate(unique)})
+            remappings[name] = sample_remappings
         return {"remappings": remappings}
 
     def apply_transform(
@@ -54,10 +62,10 @@ class SequentialLabels(Transform):
         for name, img_batch in batch.images.items():
             if name not in remappings:
                 continue
-            remapping = remappings[name]
             data = torch.zeros_like(img_batch.data)
-            for old, new in remapping.items():
-                data[img_batch.data == old] = new
+            for sample_index, remapping in enumerate(remappings[name]):
+                for old, new in remapping.items():
+                    data[sample_index][img_batch.data[sample_index] == old] = new
             img_batch.data = data
         return batch
 
@@ -80,7 +88,7 @@ class _SequentialLabelsInverse(Transform):
     def __init__(
         self,
         *,
-        remappings: dict[str, dict[int, int]],
+        remappings: dict[str, list[dict[int, int]]],
         **kwargs: Any,
     ) -> None:
         super().__init__(**kwargs)
@@ -97,9 +105,10 @@ class _SequentialLabelsInverse(Transform):
         for name, img_batch in batch.images.items():
             if name not in self._remappings:
                 continue
-            inverse = {v: k for k, v in self._remappings[name].items()}
             data = torch.zeros_like(img_batch.data)
-            for old, new in inverse.items():
-                data[img_batch.data == old] = new
+            for sample_index, remapping in enumerate(self._remappings[name]):
+                inverse = {v: k for k, v in remapping.items()}
+                for old, new in inverse.items():
+                    data[sample_index][img_batch.data[sample_index] == old] = new
             img_batch.data = data
         return batch
