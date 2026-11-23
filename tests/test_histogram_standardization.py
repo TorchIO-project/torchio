@@ -229,6 +229,23 @@ class TestParallelLandmarks:
         parallel = tio.HistogramStandardization(actual)(images[0])
         torch.testing.assert_close(parallel.data, sequential.data, rtol=0, atol=0)
 
+    @pytest.mark.parametrize("masked", [False, True])
+    def test_workers_respect_no_grad(self, masked: bool) -> None:
+        data = torch.arange(120.0, requires_grad=True).reshape(1, 4, 5, 6)
+        image = tio.ScalarImage(data)
+
+        def mask(tensor: torch.Tensor) -> torch.Tensor:
+            assert not torch.is_grad_enabled()
+            return tensor > 30
+
+        mask_fn = mask if masked else None
+        with torch.no_grad():
+            expected = compute_histogram_landmarks([image], masking_method=mask_fn)
+            actual = compute_histogram_landmarks(
+                [image], masking_method=mask_fn, num_workers=2
+            )
+        torch.testing.assert_close(actual, expected, rtol=0, atol=0)
+
     def test_masking_runs_concurrently(self) -> None:
         barrier = Barrier(2)
         images = TestHistogramStandardization._make_images(n=2)

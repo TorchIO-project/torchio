@@ -117,7 +117,11 @@ def compute_histogram_landmarks(
     if num_workers == 0:
         all_percentile_values = list(map(compute_percentiles, images))
     else:
-        with ThreadPoolExecutor(max_workers=num_workers) as executor:
+        with ThreadPoolExecutor(
+            max_workers=num_workers,
+            initializer=torch.set_grad_enabled,
+            initargs=(torch.is_grad_enabled(),),
+        ) as executor:
             all_percentile_values = list(executor.map(compute_percentiles, images))
 
     if not all_percentile_values:
