@@ -13,6 +13,8 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from collections.abc import Sequence
+from concurrent.futures import ThreadPoolExecutor
+from functools import partial
 from pathlib import Path
 from typing import Any
 
@@ -52,6 +54,7 @@ def compute_histogram_landmarks(
     quantiles: Sequence[float] | None = None,
     cutoff: tuple[float, float] = DEFAULT_CUTOFF,
     masking_method: Callable[[Tensor], Tensor] | None = None,
+    num_workers: int = 0,
 ) -> Tensor:
     """Compute average histogram landmarks from training images.
 
@@ -73,20 +76,33 @@ def compute_histogram_landmarks(
             `(C, I, J, K)` and returns a boolean mask of the same
             shape.  Only `True` voxels are used for percentile
             computation.  `None` uses all voxels.
+            With parallel workers, this callable must be thread-safe and
+            must not modify shared state or input images. It runs in
+            worker threads, which do not inherit thread-local PyTorch
+            settings such as grad mode, inference mode or autocast.
+        num_workers: Number of threads used to load images and compute
+            their percentiles. `0` (default) processes images sequentially.
+            Increasing this value can speed up large datasets, but also
+            increases peak memory use because multiple images are processed
+            at once. Results are collected in input order.
 
     Returns:
         1-D tensor of landmark values, one per quantile.
 
     Examples:
         >>> import torchio as tio
-        >>> from torchio.transforms.histogram_standardization import (
+        >>> from torchio.transforms.intensity.histogram_standardization import (
         ...     compute_histogram_landmarks,
         ... )
         >>> landmarks = compute_histogram_landmarks([  # doctest: +SKIP
         ...     tio.ScalarImage("subject_a_t1.nii"),
         ...     tio.ScalarImage("subject_b_t1.nii"),
-        ... ])
+        ... ], num_workers=4)
     """
+    if num_workers < 0:
+        msg = f"num_workers must be non-negative, got {num_workers}"
+        raise ValueError(msg)
+
     if quantiles is None:
         quantiles = _build_quantiles(cutoff)
     else:
@@ -95,20 +111,41 @@ def compute_histogram_landmarks(
     _validate_quantiles(quantiles, cutoff)
     percentiles = [100.0 * q for q in quantiles]
 
-    all_percentile_values: list[np.ndarray] = []
-    for img_source in images:
-        tensor = _load_tensor(img_source)
-        if masking_method is not None:
-            mask = masking_method(tensor)
-        else:
-            mask = torch.ones_like(tensor, dtype=torch.bool)
-        values = tensor[mask].numpy()
-        pv = np.percentile(values, percentiles)
-        all_percentile_values.append(pv)
+    compute_percentiles = partial(
+        _compute_image_percentiles,
+        percentiles=percentiles,
+        masking_method=masking_method,
+    )
+    if num_workers == 0:
+        all_percentile_values = list(map(compute_percentiles, images))
+    else:
+        with ThreadPoolExecutor(max_workers=num_workers) as executor:
+            all_percentile_values = list(executor.map(compute_percentiles, images))
+
+    if not all_percentile_values:
+        msg = "At least one training image is required"
+        raise ValueError(msg)
 
     database = np.vstack(all_percentile_values)
     landmarks = _compute_average_mapping(database)
     return torch.as_tensor(landmarks, dtype=torch.float32)
+
+
+def _compute_image_percentiles(
+    source: ScalarImage | Path | str,
+    *,
+    percentiles: list[float],
+    masking_method: Callable[[Tensor], Tensor] | None,
+) -> np.ndarray:
+    """Load one training image and return only its percentile values."""
+    tensor = _load_tensor(source)
+    if masking_method is None:
+        return np.percentile(tensor.numpy(), percentiles)
+
+    mask = masking_method(tensor)
+    values = tensor[mask].numpy()
+    # Boolean indexing makes a copy, so partitioning it cannot change the image.
+    return np.percentile(values, percentiles, overwrite_input=mask.dtype == torch.bool)
 
 
 def _build_quantiles(cutoff: tuple[float, float]) -> tuple[float, ...]:
@@ -173,7 +210,7 @@ class HistogramStandardization(IntensityTransform):
     [Nyúl and Udupa (1999)](https://ieeexplore.ieee.org/document/836373).
 
     Landmarks must be precomputed using
-    [`compute_histogram_landmarks`][torchio.transforms.histogram_standardization.compute_histogram_landmarks]
+    [`compute_histogram_landmarks`][torchio.transforms.intensity.histogram_standardization.compute_histogram_landmarks]
     and are passed directly to this transform.  Each instance targets
     **one modality**; for multi-modal subjects, compose multiple
     instances with the `include` parameter:
@@ -188,7 +225,7 @@ class HistogramStandardization(IntensityTransform):
     Args:
         landmarks: 1-D tensor (or path to a `.npy` / `.pt` file)
             of standard-space landmark values, as returned by
-            [`compute_histogram_landmarks`][torchio.transforms.histogram_standardization.compute_histogram_landmarks].
+            [`compute_histogram_landmarks`][torchio.transforms.intensity.histogram_standardization.compute_histogram_landmarks].
         cutoff: Lower and upper quantile bounds.
         **kwargs: See [`Transform`][torchio.Transform].
 
