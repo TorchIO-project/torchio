@@ -262,6 +262,24 @@ class TestParallelLandmarks:
             )
         torch.testing.assert_close(actual, expected, rtol=0, atol=0)
 
+    def test_workers_respect_cpu_autocast(self) -> None:
+        # Values near 1 round to 1 in bfloat16, changing the foreground mask.
+        values = torch.tensor([1.001, 1.002, 0.998, 0.999, 1.5, 0.5, 2.0, 0.0])
+        data = torch.stack([values, torch.ones_like(values)]).reshape(2, 2, 2, 2)
+        image = tio.ScalarImage(data)
+        weights = torch.tensor([[1.0], [-1.0]])
+
+        def mask(tensor: torch.Tensor) -> torch.Tensor:
+            scores = tensor.movedim(0, -1).reshape(-1, 2) @ weights
+            return (scores > 0).reshape(1, 2, 2, 2).expand_as(tensor)
+
+        with torch.autocast("cpu", dtype=torch.bfloat16):
+            expected = compute_histogram_landmarks([image], masking_method=mask)
+            actual = compute_histogram_landmarks(
+                [image], masking_method=mask, num_workers=2
+            )
+        torch.testing.assert_close(actual, expected, rtol=0, atol=0)
+
     def test_masking_runs_concurrently(self) -> None:
         barrier = Barrier(2)
         images = TestHistogramStandardization._make_images(n=2)

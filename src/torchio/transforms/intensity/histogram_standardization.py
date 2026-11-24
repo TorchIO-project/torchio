@@ -119,11 +119,19 @@ def compute_histogram_landmarks(
     else:
         inference_mode = torch.is_inference_mode_enabled()
         grad_enabled = torch.is_grad_enabled()
+        cpu_autocast = partial(
+            torch.autocast,
+            "cpu",
+            enabled=torch.is_autocast_enabled("cpu"),
+            dtype=torch.get_autocast_dtype("cpu"),
+            cache_enabled=torch.is_autocast_cache_enabled(),
+        )
 
         def compute_in_worker(source: ScalarImage | Path | str) -> np.ndarray:
             with (
                 torch.inference_mode(inference_mode),
                 torch.set_grad_enabled(grad_enabled),
+                cpu_autocast(),
             ):
                 return compute_percentiles(source)
 
