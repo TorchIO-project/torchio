@@ -62,12 +62,10 @@ at [OpenAI](https://openai.com/), Co-Founder and Head of Policy of Anthropic ([l
     </tr>
     <tr>
         <td align="left">
-            <b>Tutorials</b>
+            <b>Examples</b>
         </td>
         <td align="center">
-            <a href="https://github.com/TorchIO-project/torchio/blob/main/tutorials/README.md">
-                <img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Google Colab">
-            </a>
+            <a href="https://docs.torchio.org/stable/examples/">View stable examples</a>
         </td>
     </tr>
     <tr>
@@ -259,14 +257,23 @@ This project was originally supported by the following institutions:
 
 ## Getting started
 
-See [Getting started](https://docs.torchio.org/quickstart.html) for
-[installation](https://docs.torchio.org/quickstart.html#installation)
-instructions
-and a [Hello, World!](https://docs.torchio.org/quickstart.html#hello-world)
-example.
+Use Python 3.10 or later. For the stable release, start in a fresh environment
+and follow the [installation instructions](https://docs.torchio.org/stable/getting-started/#installation)
+and try the [Hello, World! example](https://docs.torchio.org/stable/getting-started/#hello-world).
+The [stable examples gallery](https://docs.torchio.org/stable/examples/) has longer examples.
 
-Longer usage examples can be found in the
-[tutorials](https://github.com/TorchIO-project/torchio/blob/main/tutorials/README.md).
+To try the development branch, run `python -m pip install .` from the root of
+your checkout. The quickstart and first tutorial for your checkout are in
+`docs/get-started/quickstart.md` and `docs/tutorials/first-pipeline.md`. The
+[development quickstart](https://docs.torchio.org/dev/get-started/quickstart/) and
+[first development tutorial](https://docs.torchio.org/dev/tutorials/first-pipeline/)
+are also published online from the development branch.
+
+To try a published prerelease, choose a version from the
+[releases page](https://github.com/TorchIO-project/torchio/releases).
+For example, install v2.0.0a2 with `python -m pip install "torchio==2.0.0a2"` and
+follow the [quickstart for v2.0.0a2](https://github.com/TorchIO-project/torchio/blob/v2.0.0a2/docs/get-started/quickstart.md).
+For another prerelease, open `docs/get-started/quickstart.md` in its release tag.
 
 Read the [documentation](https://docs.torchio.org/) for more information.
 

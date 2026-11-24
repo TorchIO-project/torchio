@@ -6,9 +6,8 @@ the core data structures.
 
 ## Prerequisites
 
-```
-uv add torchio
-```
+This tutorial uses TorchIO v2. Follow the
+[development or prerelease installation instructions](https://github.com/TorchIO-project/torchio#getting-started).
 
 You need at least one NIfTI file. If you do not have one, create a
 synthetic image:
