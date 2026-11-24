@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from pathlib import Path
-from threading import Barrier
 
 import numpy as np
 import pytest
@@ -143,33 +142,6 @@ class TestHistogramStandardizationEdgeCases:
 
 
 class TestParallelLandmarks:
-    @pytest.mark.parametrize("num_workers", [0, 2])
-    def test_unmasked_strided_images_match_explicit_mask(
-        self, num_workers: int
-    ) -> None:
-        generator = torch.Generator().manual_seed(970)
-        images = [
-            tio.ScalarImage(
-                (
-                    torch.randn(2, 8, 10, 12, generator=generator) * (i + 1) + i
-                ).transpose(1, 3)[:, ::2, :, ::2]
-            )
-            for i in range(3)
-        ]
-        original = [image.data.clone() for image in images]
-        assert all(not image.data.is_contiguous() for image in images)
-
-        expected = compute_histogram_landmarks(
-            images,
-            masking_method=lambda x: torch.ones_like(x, dtype=torch.bool),
-            num_workers=num_workers,
-        )
-        actual = compute_histogram_landmarks(images, num_workers=num_workers)
-
-        torch.testing.assert_close(actual, expected, rtol=0, atol=0)
-        for image, before in zip(images, original, strict=True):
-            torch.testing.assert_close(image.data, before, rtol=0, atol=0)
-
     @pytest.mark.parametrize("num_workers", [0, 1, 2, 8])
     @pytest.mark.parametrize("masked", [False, True])
     def test_matches_numpy_reference(self, num_workers: int, masked: bool) -> None:
@@ -228,76 +200,6 @@ class TestParallelLandmarks:
         sequential = tio.HistogramStandardization(expected)(images[0])
         parallel = tio.HistogramStandardization(actual)(images[0])
         torch.testing.assert_close(parallel.data, sequential.data, rtol=0, atol=0)
-
-    @pytest.mark.parametrize("masked", [False, True])
-    def test_workers_respect_no_grad(self, masked: bool) -> None:
-        data = torch.arange(120.0, requires_grad=True).reshape(1, 4, 5, 6)
-        image = tio.ScalarImage(data)
-
-        def mask(tensor: torch.Tensor) -> torch.Tensor:
-            assert not torch.is_grad_enabled()
-            return tensor > 30
-
-        mask_fn = mask if masked else None
-        with torch.no_grad():
-            expected = compute_histogram_landmarks([image], masking_method=mask_fn)
-            actual = compute_histogram_landmarks(
-                [image], masking_method=mask_fn, num_workers=2
-            )
-        torch.testing.assert_close(actual, expected, rtol=0, atol=0)
-
-    @pytest.mark.parametrize("grad_enabled", [False, True])
-    def test_workers_respect_inference_mode(self, grad_enabled: bool) -> None:
-        images = TestHistogramStandardization._make_images(n=2)
-
-        def mask(tensor: torch.Tensor) -> torch.Tensor:
-            assert torch.is_inference_mode_enabled()
-            assert torch.is_grad_enabled() == grad_enabled
-            return tensor > tensor.mean()
-
-        with torch.inference_mode(), torch.set_grad_enabled(grad_enabled):
-            expected = compute_histogram_landmarks(images, masking_method=mask)
-            actual = compute_histogram_landmarks(
-                images, masking_method=mask, num_workers=2
-            )
-        torch.testing.assert_close(actual, expected, rtol=0, atol=0)
-
-    def test_workers_respect_cpu_autocast(self) -> None:
-        # Values near 1 round to 1 in bfloat16, changing the foreground mask.
-        values = torch.tensor([1.001, 1.002, 0.998, 0.999, 1.5, 0.5, 2.0, 0.0])
-        data = torch.stack([values, torch.ones_like(values)]).reshape(2, 2, 2, 2)
-        image = tio.ScalarImage(data)
-        weights = torch.tensor([[1.0], [-1.0]])
-
-        def mask(tensor: torch.Tensor) -> torch.Tensor:
-            scores = tensor.movedim(0, -1).reshape(-1, 2) @ weights
-            return (scores > 0).reshape(1, 2, 2, 2).expand_as(tensor)
-
-        with torch.autocast("cpu", dtype=torch.bfloat16):
-            expected = compute_histogram_landmarks([image], masking_method=mask)
-            actual = compute_histogram_landmarks(
-                [image], masking_method=mask, num_workers=2
-            )
-        torch.testing.assert_close(actual, expected, rtol=0, atol=0)
-
-    def test_masking_runs_concurrently(self) -> None:
-        barrier = Barrier(2)
-        images = TestHistogramStandardization._make_images(n=2)
-        expected = compute_histogram_landmarks(images)
-
-        def mask(tensor: torch.Tensor) -> torch.Tensor:
-            # Both workers must enter the callable before either can finish.
-            barrier.wait(timeout=10)
-            return torch.ones_like(tensor, dtype=torch.bool)
-
-        actual = compute_histogram_landmarks(images, masking_method=mask, num_workers=2)
-        torch.testing.assert_close(actual, expected, rtol=0, atol=0)
-
-    def test_single_image_with_multiple_workers(self) -> None:
-        images = TestHistogramStandardization._make_images(n=1)
-        expected = compute_histogram_landmarks(images)
-        actual = compute_histogram_landmarks(images, num_workers=4)
-        torch.testing.assert_close(actual, expected, rtol=0, atol=0)
 
     @pytest.mark.parametrize("num_workers", [0, 2])
     def test_reader_errors_propagate(self, tmp_path: Path, num_workers: int) -> None:

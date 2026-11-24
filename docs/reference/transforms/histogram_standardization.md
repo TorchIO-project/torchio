@@ -16,27 +16,18 @@ from torchio.transforms.intensity.histogram_standardization import (
     compute_histogram_landmarks,
 )
 
-# Paths to training images can be used instead of in-memory images.
-generator = torch.Generator().manual_seed(970)
-images = [
-    tio.ScalarImage(torch.randn(1, 8, 8, 8, generator=generator))
-    for _ in range(4)
-]
-sequential = compute_histogram_landmarks(images)
-parallel = compute_histogram_landmarks(images, num_workers=2)
-torch.testing.assert_close(parallel, sequential, rtol=0, atol=0)
+# File paths can be passed instead of in-memory images.
+images = [tio.ScalarImage(torch.randn(1, 8, 8, 8)) for _ in range(4)]
+landmarks = compute_histogram_landmarks(images, num_workers=2)
 ```
 
-Choose the number of workers according to available memory and storage speed.
-Each worker may hold a full image, an optional mask, and intermediate percentile arrays.
-Passing a lazy `ScalarImage` loads its data and leaves it cached on the object.
-For large datasets, pass file paths to avoid keeping the full dataset in memory.
-Using more workers is not always faster, especially for small datasets or when
-other numerical libraries already use multiple CPU threads.
+Choose the number of workers according to available memory and storage speed,
+as each worker holds a full image while it is processed. Passing a lazy
+`ScalarImage` loads its data and leaves it cached on the object, so pass file
+paths for large datasets.
 
 Workers are threads, so a custom `masking_method` can be a local function or
-lambda. It must be thread-safe and must not modify shared state or input images.
-Results are collected in input order before averaging the landmarks.
+lambda, but it must be thread-safe and must not modify input images.
 
 ::: torchio.transforms.intensity.histogram_standardization.compute_histogram_landmarks
     options:

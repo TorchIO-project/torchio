@@ -77,7 +77,9 @@ def compute_histogram_landmarks(
             shape.  Only `True` voxels are used for percentile
             computation.  `None` uses all voxels.
             With parallel workers, this callable must be thread-safe and
-            must not modify shared state or input images.
+            must not modify shared state or input images. It runs in
+            worker threads, which do not inherit thread-local PyTorch
+            settings such as grad mode, inference mode or autocast.
         num_workers: Number of threads used to load images and compute
             their percentiles. `0` (default) processes images sequentially.
             Increasing this value can speed up large datasets, but also
@@ -117,26 +119,8 @@ def compute_histogram_landmarks(
     if num_workers == 0:
         all_percentile_values = list(map(compute_percentiles, images))
     else:
-        inference_mode = torch.is_inference_mode_enabled()
-        grad_enabled = torch.is_grad_enabled()
-        cpu_autocast = partial(
-            torch.autocast,
-            "cpu",
-            enabled=torch.is_autocast_enabled("cpu"),
-            dtype=torch.get_autocast_dtype("cpu"),
-            cache_enabled=torch.is_autocast_cache_enabled(),
-        )
-
-        def compute_in_worker(source: ScalarImage | Path | str) -> np.ndarray:
-            with (
-                torch.inference_mode(inference_mode),
-                torch.set_grad_enabled(grad_enabled),
-                cpu_autocast(),
-            ):
-                return compute_percentiles(source)
-
         with ThreadPoolExecutor(max_workers=num_workers) as executor:
-            all_percentile_values = list(executor.map(compute_in_worker, images))
+            all_percentile_values = list(executor.map(compute_percentiles, images))
 
     if not all_percentile_values:
         msg = "At least one training image is required"
