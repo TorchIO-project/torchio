@@ -63,18 +63,23 @@ class Mask(IntensityTransform):
         batch: SubjectsBatch,
         params: dict[str, Any],
     ) -> SubjectsBatch:
-        """Apply the mask to each selected image."""
-        mask = self._resolve_mask(batch)
+        """Apply each element's mask to that element's selected images."""
+        masks = self._resolve_masks(batch)
         for _name, img_batch in self._get_images(batch).items():
-            expanded = mask.expand_as(img_batch.data)
+            expanded = torch.stack(
+                [
+                    mask.expand_as(data)
+                    for mask, data in zip(masks, img_batch.data, strict=True)
+                ]
+            )
             img_batch.data = torch.where(expanded, img_batch.data, self.outside_value)
         return batch
 
-    def _resolve_mask(self, batch: SubjectsBatch) -> Tensor:
-        """Build a boolean mask from the masking method."""
+    def _resolve_masks(self, batch: SubjectsBatch) -> list[Tensor]:
+        """Build one boolean mask per batch element."""
         if callable(self.masking_method) and not isinstance(self.masking_method, str):
             first_img = next(iter(self._get_images(batch).values()))
-            return self.masking_method(first_img.data[0]).bool()
+            return [self.masking_method(data).bool() for data in first_img.data]
 
         if isinstance(self.masking_method, str):
             key = self.masking_method
@@ -88,13 +93,13 @@ class Mask(IntensityTransform):
             if not issubclass(mask_batch._image_class, LabelMap):
                 msg = f'Masking method "{key}" must refer to a LabelMap.'
                 raise TypeError(msg)
-            mask_data = mask_batch.data[0]
+            mask_data = mask_batch.data
             if self.labels is not None:
                 mask = torch.zeros_like(mask_data, dtype=torch.bool)
                 for label in self.labels:
                     mask = mask | (mask_data == label)
-                return mask
-            return mask_data.bool()
+                return list(mask)
+            return list(mask_data.bool())
 
         msg = (
             f"masking_method must be a str or callable, got {type(self.masking_method)}"
