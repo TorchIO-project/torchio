@@ -46,3 +46,23 @@ class TestMask:
         result = tio.Mask(masking_method="seg", outside_value=-1)(subject)
         outside = subject.seg.data == 0
         assert (result.t1.data[outside.expand_as(result.t1.data)] == -1).all()
+
+    def test_batch_uses_each_element_label_map(self) -> None:
+        first = _make_subject()
+        second = _make_subject()
+        second.seg.set_data(second.seg.data.flip(1))
+        batch = tio.SubjectsBatch.from_subjects([first, second])
+        result = tio.Mask(masking_method="seg")(batch)
+        for i, subject in enumerate((first, second)):
+            expected = tio.Mask(masking_method="seg")(subject)
+            torch.testing.assert_close(result.images["t1"].data[i], expected.t1.data)
+
+    def test_batch_uses_each_element_callable_mask(self) -> None:
+        first = _make_subject(with_label=False)
+        second = _make_subject(with_label=False)
+        batch = tio.SubjectsBatch.from_subjects([first, second])
+        transform = tio.Mask(masking_method=lambda x: x > 50, outside_value=-1)
+        result = transform(batch)
+        for i, subject in enumerate((first, second)):
+            expected = transform(subject)
+            torch.testing.assert_close(result.images["t1"].data[i], expected.t1.data)
