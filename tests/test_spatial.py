@@ -432,6 +432,23 @@ class TestSpatialPerInstance:
         assert result.t1.data.shape == batch.t1.data.shape
         assert not torch.allclose(result.t1.data[0], result.t1.data[1])
 
+    def test_per_instance_cubic_uses_default_pad_value(self) -> None:
+        pytest.importorskip("interpol")
+        torch.manual_seed(0)
+        subjects = [
+            tio.Subject(t1=tio.ScalarImage(torch.full((1, 12, 12, 12), 100.0)))
+            for _ in range(3)
+        ]
+        batch = tio.SubjectsBatch.from_subjects(subjects)
+        transform = AffineTransform(
+            degrees=(20.0, 80.0),
+            default_pad_value=-500.0,
+            image_interpolation="cubic",
+        )
+        data = transform(batch).t1.data
+        assert (data == -500.0).any()
+        assert not (data.abs() < 1).any()
+
     def test_per_instance_false_is_shared(self) -> None:
         torch.manual_seed(0)
         batch = self._identical_batch()
@@ -1021,6 +1038,26 @@ class TestHighOrderInterpolation:
             image_interpolation="nearest",
         )(subject)
         assert result.t1.data.shape == subject.t1.data.shape
+
+    def test_cubic_uses_default_pad_value(self) -> None:
+        subject = tio.Subject(t1=tio.ScalarImage(torch.full((1, 10, 10, 10), 100.0)))
+        kwargs = {"degrees": (0.0, 0.0, 45.0), "default_pad_value": -500.0}
+        linear = tio.Affine(image_interpolation="linear", **kwargs)(subject)
+        cubic = tio.Affine(image_interpolation="cubic", **kwargs)(subject)
+        # The rotated-out corners are filled with the pad value, not 0
+        assert cubic.t1.data[0, 0, 0, 5] == -500.0
+        assert not (cubic.t1.data.abs() < 1).any()
+        # Every order fills the same out-of-bounds voxels
+        torch.testing.assert_close(cubic.t1.data == -500, linear.t1.data == -500)
+
+    def test_cubic_uses_default_pad_label(self) -> None:
+        data = torch.ones(1, 10, 10, 10, dtype=torch.int64)
+        subject = tio.Subject(seg=tio.LabelMap(data))
+        kwargs = {"degrees": (0.0, 0.0, 45.0), "default_pad_label": 7}
+        nearest = tio.Affine(label_interpolation="nearest", **kwargs)(subject)
+        cubic = tio.Affine(label_interpolation="cubic", **kwargs)(subject)
+        assert cubic.seg.data[0, 0, 0, 5] == 7
+        torch.testing.assert_close(cubic.seg.data == 7, nearest.seg.data == 7)
 
 
 def _sphere_label(

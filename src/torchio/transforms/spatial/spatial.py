@@ -1750,14 +1750,18 @@ def _sample_batch_interpol(
     # Our grid is (I_out, J_out, K_out, 3). Add batch dim.
     grid_b = voxel_grid.unsqueeze(0).expand(batch_size, -1, -1, -1, -1)
 
+    # Without extrapolation, grid_pull returns 0 for samples more than
+    # 0.05 voxels outside the input. Extrapolate instead and let
+    # _fill_out_of_bounds apply the fill value with the half-voxel rule.
     sampled = interpol.grid_pull(
         data.float(),
         grid_b,
         interpolation=order,
         bound="dct2",
-        extrapolate=False,
+        extrapolate=True,
         prefilter=True,
     )
+    sampled = _fill_out_of_bounds(sampled, grid_b, data.shape[-3:], fill_value)
     return sampled.to(data.dtype)
 
 
@@ -1872,10 +1876,48 @@ def _sample_batch_interpol_per_sample(
         voxel_grid,
         interpolation=order,
         bound="dct2",
-        extrapolate=False,
+        extrapolate=True,
         prefilter=True,
     )
+    sampled = _fill_out_of_bounds(sampled, voxel_grid, data.shape[-3:], fill_value)
     return sampled.to(data.dtype)
+
+
+def _fill_out_of_bounds(
+    sampled: Tensor,
+    voxel_grid: Tensor,
+    input_shape: Sequence[int],
+    fill_value: float | Tensor,
+) -> Tensor:
+    """Set samples taken from outside the input volume to *fill_value*.
+
+    A sample is out of bounds when its source coordinate is more than
+    half a voxel beyond the first or last voxel center on any axis. This
+    is the same rule as the `mask > 0.5` test in
+    [`_sample_batch_grid_sample`][], so all interpolation orders fill the
+    same voxels.
+
+    Args:
+        sampled: `(B, C, I_out, J_out, K_out)` resampled batch.
+        voxel_grid: `(B, I_out, J_out, K_out, 3)` sampling grid in input
+            voxel coordinates.
+        input_shape: Spatial shape of the input volume `(I, J, K)`.
+        fill_value: Scalar or per-channel fill for out-of-bounds samples.
+
+    Returns:
+        *sampled* with out-of-bounds voxels replaced by *fill_value*.
+    """
+    sizes = torch.as_tensor(
+        tuple(input_shape),
+        dtype=voxel_grid.dtype,
+        device=voxel_grid.device,
+    )
+    in_bounds = ((voxel_grid > -0.5) & (voxel_grid < sizes - 0.5)).all(dim=-1)
+    in_bounds = rearrange(in_bounds, "b i j k -> b 1 i j k")
+    fill_tensor = _prepare_fill_value(fill_value, sampled)
+    if fill_tensor is None:
+        fill_tensor = sampled.new_zeros(())
+    return torch.where(in_bounds, sampled, fill_tensor)
 
 
 def _build_per_sample_grids(
